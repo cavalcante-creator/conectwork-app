@@ -1,0 +1,5 @@
+testes/node_modules/
+testes/resultado-*.json
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
