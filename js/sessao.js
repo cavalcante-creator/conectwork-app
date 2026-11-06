@@ -32,12 +32,22 @@
     const { ic, LOGO, CURVES } = U();
     app().innerHTML = `<div class="login">
       <section class="brandpanel">${CURVES}
-        <div style="position:relative">${LOGO(120)}<h1>Conect<span>work</span></h1><div class="slogan">INTEGRAÇÃO QUE CONECTA EMPRESAS</div>
-          <p class="lead">Contrate profissionais, receba as notas, pague e acompanhe toda a cadeia de prestação de serviços em um só lugar, com cada empresa conferida pela nossa equipe.</p></div>
-        <div class="pillars"><div class="pillar">${ic('net')}<span>Conexão entre empresas</span></div><div class="pillar">${ic('hand')}<span>Troca de serviços</span></div><div class="pillar">${ic('shield')}<span>Segurança e confiança</span></div><div class="pillar">${ic('bolt')}<span>Agilidade nos processos</span></div></div>
+        <div class="bp-topo">${LOGO(120)}<div><h1>Conect<span>work</span></h1><div class="slogan">PLATAFORMA MAIS COMPLETA EM OUTSOURCING</div></div></div>
+        <p class="tagline">Toda papelada e burocracia em um só lugar, na palma da sua mão.</p>
+        <ul class="beneficios">
+          <li>${ic('file')}<span>Contratos, entregas e notas organizados</span></li>
+          <li>${ic('wallet')}<span>Pagamentos com data e comprovante</span></li>
+          <li>${ic('shield')}<span>Documentos e conformidade em dia</span></li>
+        </ul>
+        <div class="selos"><span>Empresas que contratam</span><span>Prestadoras</span><span>Profissionais MEI</span></div>
       </section>
       <section class="loginside">${conteudo}</section></div>`;
   }
+
+  /* "Cadastrar empresa" e "Tenho um convite": a Etapa 1 liga CW.entrada; até lá, um aviso */
+  const naoPronto = () => U().toast('Essa opção chega na próxima etapa do Conectwork. Por enquanto, fale com a equipe Conectwork.');
+  const cadastrarEmpresa = () => (CW.entrada.cadastrarEmpresa || naoPronto)();
+  const abrirConvite = () => (CW.entrada.abrirConvite || naoPronto)();
 
   function telaCarregando(msg) {
     app().innerHTML = `<div class="carregando"><div class="box"><div class="giro"></div><span>${U().esc(msg || 'Carregando…')}</span></div></div>`;
@@ -55,22 +65,30 @@
     let card;
     if (modo === 'esqueci') {
       card = `<form class="lform" id="lg-form-esq" novalidate>
-        <h3>Recuperar senha</h3>
-        <p class="sub">Informe o e-mail de acesso. Enviamos um link para você criar uma senha nova.</p>
+        <div class="lg-cab"><h2>Recuperar senha</h2>
+        <p class="sub">Informe o e-mail de acesso. Enviamos um link para você criar uma senha nova.</p></div>
         <label class="f"><span>E-mail</span><input id="lg-esq-email" type="email" autocomplete="username" placeholder="voce@empresa.com.br" value="${esc(email)}"></label>
         <p class="err" id="lg-erro" role="alert"></p><p class="okmsg" id="lg-ok" role="status" hidden></p>
         <button class="btn" id="lg-esq-enviar" type="submit">${ic('send')}Enviar link</button>
         <button class="linkbtn" type="button" data-lg-modo="login" style="align-self:center">Voltar para o login</button></form>`;
     } else {
       card = `<form class="lform" id="lg-form" novalidate>
+        <div class="lg-cab"><h2>Acesse sua conta</h2><p class="sub">Que bom ter você de volta.</p></div>
         <label class="f"><span>E-mail</span><input id="lg-email" type="email" autocomplete="username" placeholder="voce@empresa.com.br" value="${esc(email)}"></label>
         <label class="f"><span>Senha</span><input id="lg-senha" type="password" autocomplete="current-password"></label>
         <p class="err" id="lg-erro" role="alert">${esc(msg || '')}</p>
         <button class="btn" id="lg-entrar" type="submit">${ic('lock')}Entrar</button>
-        <button class="linkbtn" type="button" id="lg-esqueci" data-lg-modo="esqueci" style="align-self:center">Esqueci minha senha</button></form>`;
+        <button class="linkbtn" type="button" id="lg-esqueci" data-lg-modo="esqueci" style="align-self:center">Esqueci minha senha</button></form>
+        <div class="divisoria" id="lg-novo"><span>Ainda não usa o Conectwork?</span></div>
+        <div class="lg-novos">
+          <button class="btn sec" type="button" id="lg-cadastrar">${ic('building')}Cadastrar empresa</button>
+          <button class="btn sec" type="button" id="lg-convite">${ic('mail')}Tenho um convite</button>
+        </div>`;
     }
-    moldura(`<div><h2>Entrar</h2><p class="sub">Cada pessoa entra com o próprio login e vê só o que o cargo dela permite.</p></div>
-      <div class="logincard card" id="lg"><div class="card-b">${card}</div></div>`);
+    moldura(`<div class="logincard card" id="lg"><div class="card-b">${card}
+      <p class="lg-termos" id="lg-termos">Ao entrar, você concorda com os <b>Termos de uso</b> e a <b>Política de privacidade</b>.</p></div></div>`);
+    const bc = document.getElementById('lg-cadastrar'); if (bc) bc.onclick = cadastrarEmpresa;
+    const bv = document.getElementById('lg-convite'); if (bv) bv.onclick = abrirConvite;
     app().querySelectorAll('[data-lg-modo]').forEach(b => b.onclick = () => telaLogin(b.dataset.lgModo === 'esqueci' ? 'esqueci' : 'login'));
     const f = document.getElementById('lg-form'); if (f) f.onsubmit = ev => { ev.preventDefault(); entrar(); };
     const fe = document.getElementById('lg-form-esq'); if (fe) fe.onsubmit = ev => { ev.preventDefault(); esqueci(); };
@@ -141,9 +159,8 @@
         <button class="maisbtn" id="sa-convite">${ic('mail')}<span>Tenho um convite<br><small>Recebeu um link de convite por WhatsApp ou e-mail? Use-o para entrar na empresa que te convidou.</small></span>${ic('chev')}</button>
       </div>
       <div><button class="linkbtn" id="sa-sair">${ic('logout')}Sair</button></div>`);
-    const naoPronto = () => U().toast('Essa opção chega na próxima etapa do Conectwork. Por enquanto, fale com a equipe Conectwork.');
-    document.getElementById('sa-cadastrar').onclick = () => (CW.entrada.cadastrarEmpresa || naoPronto)();
-    document.getElementById('sa-convite').onclick = () => (CW.entrada.abrirConvite || naoPronto)();
+    document.getElementById('sa-cadastrar').onclick = cadastrarEmpresa;
+    document.getElementById('sa-convite').onclick = abrirConvite;
     document.getElementById('sa-sair').onclick = sair;
   }
 

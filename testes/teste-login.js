@@ -1,4 +1,4 @@
-/* Teste de tela do login (padrão do painel da Colafix): entrar, erros, "Esqueci minha senha", F5, sair. */
+/* Teste de tela do login (padrão do painel de referência): entrar, erros, "Esqueci minha senha", F5, sair. */
 const H = require('./harness');
 const { ok, fim } = H.placar('login');
 
@@ -11,9 +11,58 @@ const { ok, fim } = H.placar('login');
   // L1 sem sessão: tela de login no visual do protótipo
   await H.preparar(page, d); await page.goto(H.BASE); await page.waitForSelector('#lg-email', { timeout: 8000 });
   const l1 = await page.evaluate(() => ({ marca: !!document.querySelector('.brandpanel h1') && document.querySelector('.brandpanel h1').innerText,
-    titulo: (document.querySelector('.loginside h2') || {}).innerText, senha: (document.getElementById('lg-senha') || {}).type, esq: !!document.getElementById('lg-esqueci'),
+    titulo: (document.querySelector('#lg h2') || {}).innerText, senha: (document.getElementById('lg-senha') || {}).type, esq: !!document.getElementById('lg-esqueci'),
     shell: !!document.querySelector('.shell'), fonte: getComputedStyle(document.body).fontFamily }));
-  ok('L1 sem login abre a tela de entrar (marca, e-mail, senha e "Esqueci minha senha"), sem o app por trás', l1.marca === 'Conectwork' && l1.titulo === 'Entrar' && l1.senha === 'password' && l1.esq && !l1.shell && /Sora/.test(l1.fonte), JSON.stringify(l1));
+  ok('L1 sem login abre a tela de entrar (marca, e-mail, senha e "Esqueci minha senha"), sem o app por trás', l1.marca === 'Conectwork' && l1.titulo === 'Acesse sua conta' && l1.senha === 'password' && l1.esq && !l1.shell && /Sora/.test(l1.fonte), JSON.stringify(l1));
+
+  // L1b textos da página de entrada (produto para o cliente final)
+  const l1b = await page.evaluate(() => {
+    const txt = s => Array.from(document.querySelectorAll(s)).map(x => x.innerText.trim());
+    const tudo = document.body.innerText;
+    return { slogan: txt('.brandpanel .slogan')[0], tag: txt('.brandpanel .tagline')[0], ben: txt('.beneficios li'), selos: txt('.selos span'),
+      sub: txt('#lg .lg-cab .sub')[0], ph: document.getElementById('lg-email').placeholder, div: txt('#lg-novo')[0],
+      novos: txt('.lg-novos button'), termos: txt('#lg-termos')[0], pilares: document.querySelectorAll('.pillars,.pillar').length,
+      velhos: /Cada pessoa entra com o próprio login|Integração que conecta empresas/i.test(tudo) };
+  });
+  ok('L1b painel: slogan, frase de destaque, 3 benefícios e 3 selos (sem os ícones antigos)',
+    l1b.slogan === 'PLATAFORMA MAIS COMPLETA EM OUTSOURCING' && l1b.tag === 'Toda papelada e burocracia em um só lugar, na palma da sua mão.'
+    && JSON.stringify(l1b.ben) === JSON.stringify(['Contratos, entregas e notas organizados', 'Pagamentos com data e comprovante', 'Documentos e conformidade em dia'])
+    && JSON.stringify(l1b.selos) === JSON.stringify(['Empresas que contratam', 'Prestadoras', 'Profissionais MEI']) && l1b.pilares === 0, JSON.stringify(l1b));
+  ok('L1c cartão: subtítulo, placeholder, divisória, dois botões e aviso de termos; frases antigas removidas',
+    l1b.sub === 'Que bom ter você de volta.' && l1b.ph === 'voce@empresa.com.br' && l1b.div === 'Ainda não usa o Conectwork?'
+    && JSON.stringify(l1b.novos) === JSON.stringify(['Cadastrar empresa', 'Tenho um convite'])
+    && l1b.termos === 'Ao entrar, você concorda com os Termos de uso e a Política de privacidade.' && !l1b.velhos, JSON.stringify(l1b));
+
+  // L1d cartão centralizado na vertical; botões lado a lado
+  const l1d = await page.evaluate(() => {
+    const c = document.getElementById('lg').getBoundingClientRect(), s = document.querySelector('.loginside').getBoundingClientRect();
+    const [a, b] = Array.from(document.querySelectorAll('.lg-novos button')).map(x => x.getBoundingClientRect());
+    return { cima: Math.round(c.top - s.top), baixo: Math.round(s.bottom - c.bottom), lado: Math.abs(a.top - b.top) < 2 && b.left > a.right };
+  });
+  ok('L1d cartão centralizado na vertical e botões lado a lado', Math.abs(l1d.cima - l1d.baixo) <= 4 && l1d.lado, JSON.stringify(l1d));
+
+  // L1e "Cadastrar empresa" e "Tenho um convite" avisam que chegam na próxima etapa (sem entrar)
+  const toast = () => page.evaluate(() => document.getElementById('toast').classList.contains('show') ? document.getElementById('toast').innerText : '');
+  await page.click('#lg-cadastrar'); await H.dorme(150); const t1 = await toast();
+  await page.click('#lg-convite'); await H.dorme(150); const t2 = await toast();
+  ok('L1e "Cadastrar empresa" e "Tenho um convite" avisam que a opção chega na próxima etapa', /próxima etapa/.test(t1) && /próxima etapa/.test(t2) && !(await log()).some(x => x[0] === 'signIn'), t1 + ' · ' + t2);
+
+  // L1f celular: painel vira cabeçalho compacto e o cartão vem logo abaixo
+  await page.setViewportSize({ width: 390, height: 800 }); await H.dorme(250);
+  const l1f = await page.evaluate(() => {
+    const bp = document.querySelector('.brandpanel').getBoundingClientRect(), c = document.getElementById('lg').getBoundingClientRect();
+    const vis = s => { const e = document.querySelector(s); return !!e && getComputedStyle(e).display !== 'none'; };
+    return { alt: Math.round(bp.height), abaixo: c.top >= bp.bottom - 1 && c.top - bp.bottom < 60, slogan: vis('.brandpanel .slogan'), escondidos: !vis('.beneficios') && !vis('.selos') && !vis('.brandpanel .tagline'),
+      rolagem: document.documentElement.scrollWidth > window.innerWidth };
+  });
+  ok('L1f celular: cabeçalho compacto (logo e slogan), cartão logo abaixo, sem rolagem para o lado', l1f.alt < 130 && l1f.abaixo && l1f.slogan && l1f.escondidos && !l1f.rolagem, JSON.stringify(l1f));
+  await page.setViewportSize({ width: 1280, height: 900 });
+
+  // L1g modo escuro: o cartão segue o tema
+  const cor = () => page.evaluate(() => getComputedStyle(document.getElementById('lg')).backgroundColor);
+  const claro = await cor(); await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark')); const escuro = await cor();
+  await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'));
+  ok('L1g modo claro e escuro mudam o cartão', claro !== escuro && /rgb\(255, 255, 255\)/.test(claro), claro + ' / ' + escuro);
 
   // L2 campos vazios
   await page.click('#lg-entrar'); let e = await erro();
