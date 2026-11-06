@@ -1,4 +1,4 @@
-/* Base dos testes de tela (mesmo jeito do painel da Colafix): abre o app num Chromium do Playwright,
+/* Base dos testes de tela (mesmo jeito do painel de referência): abre o app num Chromium do Playwright,
    serve os arquivos do repositório num endereço falso e troca o Firebase da CDN pelo simulado (mock-firebase.js). */
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path');

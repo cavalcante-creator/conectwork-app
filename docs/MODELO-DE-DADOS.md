@@ -41,3 +41,30 @@ Regras: contratante cria e paga ou recusa; prestador só preenche `nota`; cada l
 
 ### `pessoas/{id}` (profissionais)
 `nome`, `funcao`, `area`, `cidade`, `uf`, `vinculoId` (intermediária), `alocadoId` (contratante atual), `meiEmpresaId`, `docs` (nome, validade, arquivo), `desde`, `encerramento`.
+
+## Etapa 2 em diante · motor comum e modalidades (substitui o rascunho de cobranças acima)
+
+### `contratos/{id}`
+`modalidade` (`os` | `continua`), `numero` (CW-AAAA-0000 para OS), `tomadorId`, `prestadorId`, `partes` ([tomadorId, prestadorId]), `objeto`, `entregaveis`, `criteriosAceite`, `valorCentavos` (OS) ou `regraMedicao` (contínua: período e base), `vencimentoRegra` (ex.: 20 dias após nota válida), `interlocutor` (pessoa da prestadora), `inicio`, `fim`, `status` (`assinatura` | `execucao` | `entregue` | `aceito` | `ativo` | `encerrado` | `cancelado`), `assinaturas` ({tomador:{uid, em}, prestador:{uid, em}}), `versoes` (alterações de escopo, preço e prazo com concordância), `triagem` (respostas e resultado), `demandaId`, `criadoPor`, `criadoEm`.
+
+### `demandas/{id}` e `demandas/{id}/propostas/{prestadorId}`
+Demanda: `tomadorId`, `titulo`, `categoria`, `escopo`, `entregaveis`, `local`, `prazo`, `criteriosAceite`, `orcamento`, `triagem`, `status` (`rascunho` | `analise_juridica` | `aberta` | `contratada` | `cancelada`).
+Proposta: `prestadorId`, `valorCentavos`, `prazo`, `condicoes`, `status` (`enviada` | `escolhida` | `nao_escolhida` | `retirada`). Recusa do prestador fica em `demandas/{id}/recusas/{prestadorId}` e não afeta reputação.
+
+### `medicoes/{id}` (equipe contínua)
+`contratoId`, `periodo` (AAAA-MM-Q1/Q2 ou AAAA-MM), `valorCentavos`, `memoria` (como foi calculado), `origem` (`manual` | `integracao`), `tipo` (`periodo` | `encerramento`), `status` (`enviada` | `confirmada_prestadora` | `aprovada` | `divergencia`).
+
+### `titulos/{id}` (contas a pagar e receber)
+`contratoId`, `origemId` (aceite ou medição), `tomadorId`, `prestadorId`, `partes`, `espelho` (dados para a nota), `nota` (chave, número, série, emitente, valor lido, XML), `chaveUnica` (para impedir duplicidade), `valorBrutoCentavos`, `retencoes`, `valorLiquidoCentavos`, `vencimento`, `estado` (`recebido` | `em_validacao` | `pendente_correcao` | `aprovado` | `liberado` | `agendado` | `liquidado` | `baixado`), `sinais` (`vencido`, `disputa`, `substituido`, `cancelado`), `aprovacoes` (técnica, fiscal, financeira com uid e data), `comprovante`, `historico`.
+
+### `avaliacoes/{id}`
+`tipo` (`servico_os` | `servico_prestadora` | `profissional` | `tomador`), `de`, `para`, `ref` (contrato, título ou medição), `notas` (qualidade, prazo, comunicação, aderência ao escopo; para tomador: clareza do escopo, processo de aceite, pontualidade), `comentario`, `resposta`, `visivelEm` (quando os dois avaliarem ou após 7 dias).
+
+### `certidoes/{prestadorId}_{tipo}`
+`tipo` (`federal` | `fgts` | `trabalhista`), `validade`, `arquivo`, `situacao`.
+
+### `consentimentos/{uid}_{finalidade}` e `consentimentos_log/{id}`
+Estado atual por finalidade (`operacional`, `contrato`, `cobranca`, `cursos`, `ofertas`, `whatsapp`, `email`, `push`) e histórico imutável: `uid`, `finalidade`, `aceite`, `textoVersao`, `canal`, `em` (hora do servidor), `revogadoEm`.
+
+### `cursos/{id}` e `cursos/{id}/inscricoes/{uid}`
+`titulo`, `emissor`, `carga`, `modalidade`, `validade`, `certificado`, `area`, `demandaId` (opcional). Inscrição não cria vínculo nem contratação.

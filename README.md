@@ -1,6 +1,6 @@
 # Conectwork · app real
 
-Plataforma que liga quem contrata (indústria), quem fornece profissionais (intermediária) e quem presta o serviço (MEI): pedido de nota, conferência, pagamento e histórico.
+Plataforma que organiza a contratação de serviços entre empresas: o **tomador** (quem contrata), a **prestadora** (empresa que presta o serviço, às vezes com equipe própria) e o **profissional** (MEI ou PJ). Duas modalidades (serviço por OS e equipe contínua) com um motor comum: aceite ou medição, espelho de faturamento, nota, validação, contas a pagar e receber e histórico.
 
 Este repositório começa com o **kit de partida**: regras do projeto, requisitos, modelo de dados, regras de segurança do Firestore e os pedidos prontos para o Claude Code. O código é escrito pelo Claude Code, etapa por etapa.
 

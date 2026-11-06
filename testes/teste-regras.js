@@ -53,6 +53,13 @@ async function deve(nome, permitido, op) {
   await deve('Membro lê a própria empresa (mesmo em análise)', true, () => getDoc(doc(db('bruno'), 'empresas', 'alfa')));
   await deve('Membro lê a área privada da própria empresa', true, () => getDoc(doc(db('bruno'), 'empresas', 'alfa', 'privado', 'cadastro')));
   await deve('Membro bloqueado (ativo=false) NÃO lê a empresa em análise', false, () => getDoc(doc(db('duda'), 'empresas', 'alfa')));
+  /* cadastro novo: entra em análise; plano e módulos só a equipe master define (receita é mensalidade, sem taxa) */
+  const nova = extra => Object.assign({ nome: 'Nova', status: 'analise', tipo: 'contratante', criadoPor: P.carla }, extra || {});
+  await deve('Cadastro novo entra em análise', true, () => setDoc(doc(db('carla'), 'empresas', 'nova1'), nova()));
+  await deve('Cadastro novo NÃO escolhe o próprio plano', false, () => setDoc(doc(db('carla'), 'empresas', 'nova2'), nova({ plano: 'rede' })));
+  await deve('Cadastro novo NÃO liga módulos', false, () => setDoc(doc(db('carla'), 'empresas', 'nova3'), nova({ modulos: ['contratos'] })));
+  await deve('Cadastro novo NÃO nasce aprovado', false, () => setDoc(doc(db('carla'), 'empresas', 'nova4'), nova({ status: 'aprovado' })));
+  await deve('Cadastro NÃO é criado em nome de outra pessoa', false, () => setDoc(doc(db('carla'), 'empresas', 'nova5'), nova({ criadoPor: P.ana })));
   await deve('Admin NÃO aprova a própria empresa (status só a equipe master muda)', false, () => updateDoc(doc(db('ana'), 'empresas', 'alfa'), { status: 'aprovado' }));
   await deve('Equipe master aprova empresa', true, () => updateDoc(doc(db('master'), 'empresas', 'alfa'), { status: 'aprovado' }));
   await semear();

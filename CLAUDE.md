@@ -3,7 +3,24 @@
 Leia este arquivo inteiro antes de qualquer tarefa. Ele vale mais do que qualquer suposição.
 
 ## O que é
-Plataforma que liga três elos: **contratante** (indústria, ex.: Colafix), **intermediária** (empresa que fornece profissionais, ex.: Zenith, Nexus) e **prestador** (profissional MEI). O fluxo central: fechamento do valor → pedido de nota → envio e conferência do XML → pagamento → histórico. Fase 1 = piloto na Colafix.
+Plataforma que organiza a contratação de serviços entre empresas: **tomador** (quem contrata, ex.: Colafix), **prestadora** (empresa que presta o serviço, às vezes com equipe própria, ex.: Zenith, Nexus) e **profissional** (MEI ou PJ). Organiza contratação, comprovação da entrega, nota fiscal, contas a pagar e receber e reputação. Fase 1 = piloto na Colafix.
+
+## Duas modalidades, um motor comum
+Toda contratação passa por uma **triagem** e segue uma de duas modalidades:
+1. **Serviço por OS** (entrega identificável): demanda → propostas → contrato e ordem de serviço (OS) com assinatura → execução → entrega → aceite (total, parcial ou divergência).
+2. **Equipe contínua** (terceirização por prestadora com equipe e supervisor próprios): contrato com a prestadora → **medição do período** (pode vir do painel do RH da Colafix) → aprovação da medição. Exige controles extras: certidões da prestadora em dia, documentos de segurança e interlocutor da prestadora.
+
+As duas usam o **mesmo motor**: aceite ou medição aprovada → **espelho de faturamento** → envio da nota → **validação tripla** (contrato/OS + aceite/medição + nota) → **título** em contas a pagar e receber → pagamento → avaliação e histórico.
+
+## Regras do modelo de negócio
+- **Receita = mensalidade** de tomadores (planos Essencial, Profissional, Rede) e de empresas parceiras do clube de ofertas. **Sem comissão sobre os serviços.** Cadastro do profissional é gratuito.
+- **O dinheiro não passa pelo Conectwork:** sai do tomador direto para o prestador. O app registra, agenda, concilia e mostra o comprovante.
+- **"Agendado" não é "pago".** Só baixa com liquidação confirmada.
+- **Vencimento** vem do contrato e não pode ser adiado por um lado só.
+- **Uma nota não gera dois títulos.** Nota divergente não pode ser paga. Troca de conta bancária exige revisão reforçada.
+- **Funções separadas no tomador:** solicitante, aprovador técnico, responsável fiscal e tesouraria. Quem pede não aprova o pagamento sozinho.
+- **Avaliação:** no serviço por OS, depois do aceite, recíproca, visível quando os dois avaliarem ou após 7 dias. Na equipe contínua, o tomador avalia o **serviço da prestadora**; quem avalia o profissional é a **prestadora**, a cada serviço pago. Recusar oportunidade nunca reduz reputação. Nota baixa não desativa ninguém automaticamente.
+- **Triagem:** perguntas sobre entrega x posto, chefia direta, jornada controlada, exclusividade e relação nos últimos 18 meses (Lei 6.019, arts. 5º-C e 5º-D). Resultado: "compatível", "requer análise jurídica" ou "não publicar neste modelo". É controle preventivo, não certificado jurídico.
 
 ## Como o projeto é feito (igual ao painel da Colafix)
 - JavaScript puro, **sem etapa de build**, publicado no **GitHub Pages**.
@@ -28,12 +45,18 @@ firestore.rules       regras de segurança
 testes/               testes automatizados
 ```
 
+## Identidade e comunicação
+- Na interface aparece **só o nome Conectwork**. Nunca usar marcas de terceiros em telas, textos ou dados de exemplo (os dados reais das empresas do piloto existem só no banco de produção).
+- Mensagem principal: "Contrate serviços com mais organização, rastreabilidade e gestão de riscos." Slogan: "Plataforma mais completa em outsourcing · Toda papelada e burocracia em um só lugar, na palma da sua mão."
+- Nunca prometer "sem risco trabalhista", "blindagem" ou garantia contra processos. Aviso padrão: "O Conectwork organiza a contratação e a gestão documental. A validade da relação depende da operação real, da legislação aplicável e da análise jurídica e contábil adequada."
+- **Consentimentos separados** (operacional, contrato, cobrança, cursos, ofertas, WhatsApp, e-mail, push). Cursos e ofertas **desmarcados por padrão**; registrar texto, versão, data, finalidade, canal e revogação.
+
 ## Regras de ouro
 1. **Cada empresa só vê o que é dela.** Todo documento tem `empresaId` (ou `partes` quando envolve duas empresas). A segurança vem do `firestore.rules`, nunca só da tela. Toda mudança de coleção ou campo atualiza as regras **e** os testes das regras.
 2. **Permissão em dois níveis:** módulos ligados por empresa (equipe Conectwork) e cargo por pessoa (administrador da empresa), com ajuste individual (`extras` e `sem`), no mesmo modelo de `acessos` do painel da Colafix.
 3. **Toda ação que muda dados grava no histórico** (`log`), com quem, quando, empresa e o que foi feito. O histórico não pode ser editado nem apagado.
 4. **Nada de segredo no front.** Certificado digital, chaves de API de WhatsApp, banco ou NFS-e só no servidor (Cloud Functions, em etapa futura). Se uma tarefa exigir isso, pare e avise.
-5. **Linguagem de PJ.** Prestador é **profissional** ou **prestador**, nunca "funcionário". Fim de contrato é **encerramento do serviço**, nunca "demissão". Pagamento é **pagamento da nota**, nunca "salário". Isso reduz risco trabalhista; não negocie esta regra.
+5. **Linguagem e comportamento de relação empresarial.** Prestador é **profissional** ou **prestador**, nunca "funcionário". Fim de contrato é **encerramento do serviço**, nunca "demissão". Pagamento é **pagamento da nota**, nunca "salário". O app **não** terá controle de ponto de PJ, localização contínua, obrigação de ficar conectado, punição por recusa nem ordens disciplinares. Não negocie esta regra.
 6. **Textos em português do Brasil**, simples, sem jargão. Erros dizem o que aconteceu e o que fazer.
 7. **Validações reais:** CNPJ e CPF por dígito verificador, e-mail, celular com DDD, datas.
 8. **LGPD:** só guarde o necessário. Dados bancários e documentos ficam em área privada da empresa. Nada de dados pessoais em logs além de nome e e-mail.
@@ -47,6 +70,9 @@ testes/               testes automatizados
 | financeiro | Pagar, receber, relatórios, conta, dados da empresa |
 | rh | Fechamentos, integração, relatórios, catálogo |
 | operacional | Notas a emitir, profissionais, catálogo |
+| solicitante | Abre demandas e acompanha contratos; não aprova pagamento |
+| aprovador | Aprovador técnico: aprova entregas e medições; não libera pagamento |
+| tesouraria | Agenda pagamentos liberados e confirma a liquidação |
 | contador | Só leitura: cobranças e relatórios |
 | consulta | Só leitura das telas liberadas |
 A **equipe Conectwork** (master) não é cargo: é quem tem o documento `master/{uid}`.

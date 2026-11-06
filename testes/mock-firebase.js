@@ -1,4 +1,4 @@
-/* Firebase "compat" simulado, só para os testes de tela (sem internet), no mesmo jeito do painel da Colafix.
+/* Firebase "compat" simulado, só para os testes de tela (sem internet), no mesmo jeito do painel de referência.
    Servidor = localStorage '__srv' ({ users: {email: {uid, pass, disabled}}, docs: {caminho: dados} }).
    Controles em localStorage '__ctl': { offline, tooMany, enumProt (padrão true), negar: [prefixos de caminho], latenciaMs }.
    Registro do que aconteceu em window.__mockLog (ex.: ['signIn', email], ['reset', email, opcoes], ['grava', caminho]). */

@@ -39,11 +39,14 @@ Não invente regra de negócio: se faltar algo, pergunte.
 ```
 Leia de novo o CLAUDE.md e o docs/REQUISITOS-FASE1.md (Etapa 1). Monte a Etapa 1, módulo por módulo,
 nesta ordem, com testes ao final de cada um:
-1. modulos/cadastro.js: cadastro de empresa em 6 etapas igual ao protótipo (validações reais, CNPJ sem
-   repetir), gravando empresas/{id}, empresas/{id}/privado/cadastro e o acesso admin do fundador. Protocolo
-   no formato CW-AAAA-0000. Tela "Meu cadastro" para empresa não aprovada, com "Corrigir cadastro".
+1. modulos/cadastro.js: cadastro de empresa começando por "Crie seu acesso" (nome, e-mail, senha forte;
+   createUserWithEmailAndPassword + sendEmailVerification; pula se já estiver logado), depois as etapas do
+   protótipo com validações reais e CNPJ sem repetir. O rascunho fica só no navegador; no envio grava
+   empresas/{id}, empresas/{id}/privado/cadastro e o acesso admin do fundador. Protocolo CW-AAAA-0000.
+   Tela "Meu cadastro" para empresa não aprovada, com "Corrigir cadastro".
 2. modulos/cadastros-master.js: análise de cadastros para a equipe master (lista por situação, análise com
-   documentos conferidos, taxa, módulos, aprovar, pedir ajuste e recusar com motivo obrigatório).
+   documentos conferidos, plano (Essencial, Profissional, Rede ou Gratuito para profissional), módulos,
+   aprovar, pedir ajuste e recusar com motivo obrigatório). Não existe taxa por pagamento: a receita é mensalidade.
 3. modulos/usuarios.js: usuários e acessos (cargo, ajuste de acesso com extras e sem, bloquear e liberar),
    convites com link e botões "Enviar pelo WhatsApp" (wa.me com mensagem pronta) e "Copiar link",
    reenviar e cancelar convite.
@@ -57,5 +60,7 @@ Ao terminar: resumo, arquivos, testes e passos no console do Firebase.
 
 ---
 
-## Pedido 3 · Etapa 2 (cobranças e notas)
-Será escrito quando a Etapa 1 estiver no ar, junto com as regras de retenção de impostos definidas com o contador.
+## Pedido 3 · Etapa 2 (motor comum)
+Será escrito quando a Etapa 1 estiver no ar. Cobre contratos com modalidade, aceite e medição, espelho de
+faturamento, validação tripla, títulos com estados e funções separadas (ver docs/REQUISITOS-FASE1.md).
+Antes dele: regras de retenção definidas com o contador e parecer jurídico sobre a modalidade equipe contínua.

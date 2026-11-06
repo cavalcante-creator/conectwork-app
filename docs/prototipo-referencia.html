@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Conectwork</title>
+<title>Conectwork · Plataforma mais completa em outsourcing</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -554,6 +554,25 @@ tr.tot td{background:var(--surface2)!important;font-weight:600}
   .shell{display:block}body,main{background:#fff!important;color:#000}
   .card{box-shadow:none;border:1px solid #ccc;break-inside:avoid}
 }
+.pill.mos{background:#EEEDFE;color:#3C3489}.pill.mct{background:#E1F5EE;color:#085041}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .pill.mos{background:#26215C;color:#CECBF6}:root:not([data-theme="light"]) .pill.mct{background:#04342C;color:#9FE1CB}}
+:root[data-theme="dark"] .pill.mos{background:#26215C;color:#CECBF6}:root[data-theme="dark"] .pill.mct{background:#04342C;color:#9FE1CB}
+.yn{display:flex;gap:4px;flex:none}.yn button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 14px;cursor:pointer;font-weight:500;color:var(--muted)}
+.yn button.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi{display:flex;flex-direction:column;gap:2px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;color:var(--ink)}
+.kpi:hover{border-color:var(--blue)}.kpi span{font-size:12px;color:var(--muted)}.kpi strong{font-size:20px;font-weight:600}
+.estbar{display:flex;flex-wrap:wrap;gap:4px}.estbar span{font-size:11px;padding:3px 8px;border-radius:999px;background:var(--surface2);color:var(--faint);border:1px solid var(--line)}
+.estbar span.on{background:var(--infobg);color:var(--info);border-color:transparent}.estbar span.cur{background:var(--blue);color:#fff}
+.privbar{position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:45;max-width:760px;margin:0 auto;display:flex;gap:12px;align-items:center;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:0 14px 40px -12px rgba(5,13,36,.5)}
+.privbar p{margin:0;flex:1;font-size:13px}.privbar svg.i{color:var(--blue)}
+@media (max-width:760px){.privbar{bottom:calc(84px + env(safe-area-inset-bottom,0px))}}
+.offbar{position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;z-index:50;background:#8A5300;color:#fff;text-align:center;font-size:13px;padding:6px 12px}
+.bellbtn{display:inline-flex;align-items:center;gap:6px;background:var(--surface2);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12.5px;font-weight:600;cursor:pointer}
+.bellbtn b{background:var(--danger);color:#fff;border-radius:999px;padding:0 6px;font-size:11px}.bellbtn svg.i{width:15px;height:15px}
+.brandpanel .tagline{font-size:22px;line-height:1.35;color:#fff;font-weight:500;margin-top:22px;max-width:30ch}
+.brandpanel .tagline+.lead{margin-top:14px}
+@media (max-width:860px){.brandpanel .tagline{display:block;font-size:18px;margin-top:14px}}
 </style>
 </head>
 <body>
@@ -621,26 +640,26 @@ function docsReq(e){
 }
 
 /* ===================== Dados ===================== */
-const KEY='conectwork-proto-v9';
+const KEY='conectwork-proto-v11';
 const D=(n,t)=>({nome:n,tam:t});
 function seedBase(){
   return {
     seq:1004,proto:5,
     empresas:[
       {id:'colafix',tipo:'contratante',status:'aprovado',protocolo:'CW-2026-0001',enviadoEm:'2026-09-02',avaliadoEm:'2026-09-03',taxa:2.5,
-       dados:{cnpj:'12.345.678/0001-95',razao:'Colafix Indústria de Adesivos Ltda',fantasia:'Colafix',abertura:'2009-03-17',porte:'Demais',regime:'Lucro Presumido',cnae:'2091-6/00 — Fabricação de adesivos e selantes',im:'1234567',ie:'096/1234567'},
+       dados:{cnpj:'12.345.678/0001-95',razao:'Empresa Contratante A Indústria Ltda',fantasia:'Contratante A',abertura:'2009-03-17',porte:'Demais',regime:'Lucro Presumido',cnae:'2091-6/00 — Fabricação de adesivos e selantes',im:'1234567',ie:'096/1234567'},
        end:{cep:'94010-000',logradouro:'Av. Dorival Cândido Luz de Oliveira',numero:'4200',compl:'Pavilhão 2',bairro:'São Vicente',cidade:'Gravataí',uf:'RS'},
-       resp:{nome:'Marina Costa',cpf:'123.456.789-09',cargo:'Gerente de RH',email:'rh@colafix.com.br',cel:'(51) 99812-3344',emailFin:'financeiro@colafix.com.br'},
+       resp:{nome:'Marina Costa',cpf:'123.456.789-09',cargo:'Gerente de RH',email:'rh@contratante-a.com.br',cel:'(51) 99812-3344',emailFin:'financeiro@contratante-a.com.br'},
        banco:{banco:'341 — Itaú Unibanco',tipoConta:'Corrente',agencia:'1234',conta:'56789-0',pixTipo:'CNPJ',pix:'12.345.678/0001-95'},
-       docs:{contrato:D('contrato-social-colafix.pdf',412000),cartao:D('cartao-cnpj.pdf',88000),endereco:D('conta-luz-ago.pdf',230000),identidade:D('cnh-marina.jpg',640000)},
+       docs:{contrato:D('contrato-social-contratante-a.pdf',412000),cartao:D('cartao-cnpj.pdf',88000),endereco:D('conta-luz-ago.pdf',230000),identidade:D('cnh-marina.jpg',640000)},
        conferidos:{contrato:true,cartao:true,endereco:true,identidade:true},
        historico:[{em:'2026-09-02',txt:'Cadastro enviado para análise'},{em:'2026-09-03',txt:'Cadastro aprovado'}]},
       {id:'zenith',tipo:'ambos',status:'aprovado',protocolo:'CW-2026-0002',enviadoEm:'2026-09-04',avaliadoEm:'2026-09-05',taxa:2,
-       dados:{cnpj:'62.944.495/0001-64',razao:'Zenith Serviços de Manutenção Ltda',fantasia:'Zenith Serviços',abertura:'2016-07-01',porte:'Empresa de pequeno porte (EPP)',regime:'Simples Nacional',cnae:'3314-7/10 — Manutenção de máquinas e equipamentos',im:'7788990',ie:''},
+       dados:{cnpj:'98.765.432/0001-98',razao:'Intermediária C Serviços Ltda',fantasia:'Intermediária C',abertura:'2016-07-01',porte:'Empresa de pequeno porte (EPP)',regime:'Simples Nacional',cnae:'3314-7/10 — Manutenção de máquinas e equipamentos',im:'7788990',ie:''},
        end:{cep:'90010-150',logradouro:'Rua dos Andradas',numero:'1001',compl:'Sala 804',bairro:'Centro Histórico',cidade:'Porto Alegre',uf:'RS'},
-       resp:{nome:'Marcelo',cpf:'987.654.321-00',cargo:'Sócio-administrador',email:'marcelo@zenithservicos.com.br',cel:'(51) 98123-4567',emailFin:'notas@zenithservicos.com.br'},
-       banco:{banco:'001 — Banco do Brasil',tipoConta:'Corrente',agencia:'3456',conta:'12345-6',pixTipo:'E-mail',pix:'financeiro@zenithservicos.com.br'},
-       docs:{contrato:D('alteracao-contratual-2024.pdf',560000),cartao:D('cartao-cnpj-zenith.pdf',90000),endereco:D('iptu-2026.pdf',310000),identidade:D('rg-rafael.pdf',420000),certificado:D('zenith-a1.pfx',6200)},
+       resp:{nome:'Marcelo',cpf:'987.654.321-00',cargo:'Sócio-administrador',email:'marcelo@intermediaria-c.com.br',cel:'(51) 98123-4567',emailFin:'notas@intermediaria-c.com.br'},
+       banco:{banco:'001 — Banco do Brasil',tipoConta:'Corrente',agencia:'3456',conta:'12345-6',pixTipo:'E-mail',pix:'financeiro@intermediaria-c.com.br'},
+       docs:{contrato:D('alteracao-contratual-2024.pdf',560000),cartao:D('cartao-cnpj-intermediaria-c.pdf',90000),endereco:D('iptu-2026.pdf',310000),identidade:D('rg-rafael.pdf',420000),certificado:D('intermediaria-c-a1.pfx',6200)},
        conferidos:{contrato:true,cartao:true,endereco:true,identidade:true,certificado:true},
        historico:[{em:'2026-09-04',txt:'Cadastro enviado para análise'},{em:'2026-09-05',txt:'Cadastro aprovado'}]},
       {id:'mei-joao',tipo:'prestador',status:'aprovado',protocolo:'CW-2026-0003',enviadoEm:'2026-09-10',avaliadoEm:'2026-09-10',taxa:0,
@@ -661,9 +680,9 @@ function seedBase(){
     ],
     notaSeq:{zenith:87,'mei-joao':12},
     cobrancas:[
-      {id:'C-1001',contratante:'colafix',prestador:'zenith',descricao:'Equipe de manutenção — outubro/2026',valor:18450,competencia:'2026-10',status:'nota',origem:'api',criada:'2026-11-01',nota:{numero:87,emitida:'2026-11-02',servico:'14.01',chave:'43261162944495000164000000000870000000871234567890'}},
+      {id:'C-1001',contratante:'colafix',prestador:'zenith',descricao:'Equipe de manutenção — outubro/2026',valor:18450,competencia:'2026-10',status:'nota',origem:'api',criada:'2026-11-01',nota:{numero:87,emitida:'2026-11-02',servico:'14.01',chave:'43261198765432000198000000000870000000871234567890'}},
       {id:'C-1002',contratante:'zenith',prestador:'mei-joao',descricao:'Manutenção elétrica — outubro/2026',valor:3200,competencia:'2026-10',status:'aguardando',origem:'manual',criada:'2026-11-02'},
-      {id:'C-1003',contratante:'colafix',prestador:'zenith',descricao:'Equipe de manutenção — setembro/2026',valor:17900,competencia:'2026-09',status:'paga',origem:'api',criada:'2026-10-01',pagaEm:'2026-10-08',taxaValor:447.5,nota:{numero:86,emitida:'2026-10-02',servico:'14.01',chave:'43261062944495000164000000000860000000861234567890'}},
+      {id:'C-1003',contratante:'colafix',prestador:'zenith',descricao:'Equipe de manutenção — setembro/2026',valor:17900,competencia:'2026-09',status:'paga',origem:'api',criada:'2026-10-01',pagaEm:'2026-10-08',taxaValor:447.5,nota:{numero:86,emitida:'2026-10-02',servico:'14.01',chave:'43261098765432000198000000000860000000861234567890'}},
       {id:'C-1000',contratante:'zenith',prestador:'mei-joao',descricao:'Manutenção elétrica — setembro/2026',valor:2950,competencia:'2026-09',status:'paga',origem:'manual',criada:'2026-10-02',pagaEm:'2026-10-09',taxaValor:59,nota:{numero:12,emitida:'2026-10-03',servico:'14.01',chave:'43261045111222000110000000000120000000121234567890'}}
     ],
     apiLog:[{em:'2026-11-01 09:14',competencia:'2026-10',valor:18450,cobranca:'C-1001'},{em:'2026-10-01 08:52',competencia:'2026-09',valor:17900,cobranca:'C-1003'}]
@@ -672,25 +691,25 @@ function seedBase(){
 function seed(){
   const d=seedBase();
   d.empresas.push({id:'nexus',tipo:'ambos',status:'aprovado',protocolo:'CW-2026-0005',enviadoEm:'2026-09-12',avaliadoEm:'2026-09-13',taxa:2,
-    dados:{cnpj:'77.889.911/0001-46',razao:'Nexus Serviços Industriais Ltda',fantasia:'Nexus Serviços',abertura:'2019-04-02',porte:'Microempresa (ME)',regime:'Simples Nacional',cnae:'3314-7/99 — Manutenção e reparação de máquinas industriais',im:'6677889',ie:''},
+    dados:{cnpj:'77.889.911/0001-46',razao:'Prestadora B Serviços Industriais Ltda',fantasia:'Prestadora B',abertura:'2019-04-02',porte:'Microempresa (ME)',regime:'Simples Nacional',cnae:'3314-7/99 — Manutenção e reparação de máquinas industriais',im:'6677889',ie:''},
     end:{cep:'94035-120',logradouro:'Rua Anápio Gomes',numero:'880',compl:'',bairro:'Centro',cidade:'Gravataí',uf:'RS'},
-    resp:{nome:'Fernanda Rocha',cpf:'741.852.963-55',cargo:'Sócia-administradora',email:'fernanda@nexusservicos.com.br',cel:'(51) 99500-1122',emailFin:''},
+    resp:{nome:'Fernanda Rocha',cpf:'741.852.963-55',cargo:'Sócia-administradora',email:'fernanda@prestadora-b.com.br',cel:'(51) 99500-1122',emailFin:''},
     banco:{banco:'748 — Sicredi',tipoConta:'Corrente',agencia:'0116',conta:'99887-1',pixTipo:'CNPJ',pix:'77.889.911/0001-46'},
-    docs:{contrato:D('contrato-nexus.pdf',500000),cartao:D('cartao-cnpj-nexus.pdf',88000),endereco:D('conta-luz-nexus.pdf',210000),identidade:D('rg-fernanda.pdf',400000),certificado:D('nexus-a1.pfx',6000)},
+    docs:{contrato:D('contrato-prestadora-b.pdf',500000),cartao:D('cartao-cnpj-prestadora-b.pdf',88000),endereco:D('conta-luz-prestadora-b.pdf',210000),identidade:D('rg-fernanda.pdf',400000),certificado:D('prestadora-b-a1.pfx',6000)},
     conferidos:{contrato:true,cartao:true,endereco:true,identidade:true,certificado:true},
     historico:[{em:'2026-09-12',txt:'Cadastro enviado para análise'},{em:'2026-09-13',txt:'Cadastro aprovado'}]});
   const M={colafix:['cobrancas','integracao','equipe','catalogo','conta'],zenith:['cobrancas','equipe','profissionais','emissao','catalogo','conta'],'mei-joao':['cobrancas','conta'],nexus:['cobrancas','equipe','profissionais'],alfa:[]};
   d.empresas.forEach(e=>e.modulos=M[e.id]||[]);
   d.usuarios=[
     {id:'u-ana',nome:'Iasmyn',email:'iasmyn@conectwork.com.br',empresa:'master',cargo:'admin',ativo:true},
-    {id:'u-marina',nome:'Marina Costa',email:'marina@colafix.com.br',empresa:'colafix',cargo:'admin',ativo:true},
-    {id:'u-paula',nome:'Juliana',email:'juliana.rh@colafix.com.br',empresa:'colafix',cargo:'rh',ativo:true},
-    {id:'u-carlos',nome:'Carlos Teixeira',email:'carlos.fin@colafix.com.br',empresa:'colafix',cargo:'financeiro',ativo:true},
-    {id:'u-rafael',nome:'Marcelo',email:'marcelo@zenithservicos.com.br',empresa:'zenith',cargo:'admin',ativo:true},
-    {id:'u-juliana',nome:'Larissa Prado',email:'larissa@zenithservicos.com.br',empresa:'zenith',cargo:'financeiro',ativo:true},
-    {id:'u-diego',nome:'Diego Alves',email:'diego@zenithservicos.com.br',empresa:'zenith',cargo:'operacional',ativo:true},
+    {id:'u-marina',nome:'Marina Costa',email:'marina@contratante-a.com.br',empresa:'colafix',cargo:'admin',ativo:true},
+    {id:'u-paula',nome:'Juliana',email:'juliana.rh@contratante-a.com.br',empresa:'colafix',cargo:'rh',ativo:true},
+    {id:'u-carlos',nome:'Carlos Teixeira',email:'carlos.fin@contratante-a.com.br',empresa:'colafix',cargo:'financeiro',ativo:true},
+    {id:'u-rafael',nome:'Marcelo',email:'marcelo@intermediaria-c.com.br',empresa:'zenith',cargo:'admin',ativo:true},
+    {id:'u-juliana',nome:'Larissa Prado',email:'larissa@intermediaria-c.com.br',empresa:'zenith',cargo:'financeiro',ativo:true},
+    {id:'u-diego',nome:'Diego Alves',email:'diego@intermediaria-c.com.br',empresa:'zenith',cargo:'operacional',ativo:true},
     {id:'u-joao',nome:'João Pereira',email:'joao.eletrica@email.com',empresa:'mei-joao',cargo:'admin',ativo:true},
-    {id:'u-fernanda',nome:'Fernanda Rocha',email:'fernanda@nexusservicos.com.br',empresa:'nexus',cargo:'admin',ativo:true},
+    {id:'u-fernanda',nome:'Fernanda Rocha',email:'fernanda@prestadora-b.com.br',empresa:'nexus',cargo:'admin',ativo:true},
     {id:'u-patricia',nome:'Patrícia Lima',email:'patricia@alfalog.com.br',empresa:'alfa',cargo:'admin',ativo:true}];
   const P=(id,nome,funcao,area,cidade,hab,vh,nota,vinculo,alocado,mei)=>({id,nome,funcao,area,cidade,uf:'RS',hab,vh,nota,vinculo,alocado:alocado||'',catalogo:true,mei:mei||''});
   d.pessoas=[
@@ -724,37 +743,37 @@ seed=function(){ const d=__seedRep();
   d.pessoas.forEach(p=>{ const x=EX[p.id]; if(!x) return; p.desde=x[0]; p.st={tot:x[1][0],prazo:x[1][1],prim:x[1][2]}; p.docs=x[2].map(([nome,validade])=>({nome,validade})); p.consente=true; });
   let n=0; const A=(pessoa,de,org,autor,data,q,s,pp,c,txt,resp)=>({id:'A'+(++n),pessoa,de,org,autor,data,n:{q,s,p:pp,c},txt:txt||'',resp:resp||''});
   d.avaliacoes=[
-    A('p-joao','colafix','Colafix','Marina Costa','2026-10-08',5,5,5,5,'Resolveu a pane do painel da linha 2 no mesmo dia. Muito cuidadoso com bloqueio e etiquetagem.'),
-    A('p-joao','colafix','Colafix','Juliana','2026-09-09',5,5,4,5,'Sempre manda a nota no dia certo. Facilita muito o fechamento.','Obrigado, Juliana! Sigo à disposição.'),
-    A('p-joao','zenith','Zenith Serviços','Marcelo','2026-08-20',5,5,5,4,'Um dos nossos melhores eletricistas.'),
-    A('p-joao','colafix','Colafix','Marina Costa','2026-07-10',5,4,5,5,'Bom trabalho na parada programada.'),
-    A('p-marcos','colafix','Colafix','Marina Costa','2026-09-15',5,5,4,4,'Troca dos redutores feita antes do prazo.'),
-    A('p-marcos','zenith','Zenith Serviços','Diego Alves','2026-07-02',4,5,5,4,''),
-    A('p-marcos','colafix','Colafix','Juliana','2026-05-20',5,4,5,5,'Pessoa de confiança na manutenção.'),
-    A('p-lucas','colafix','Colafix','Marina Costa','2026-08-12',4,4,3,4,'Bom operador, precisa melhorar o horário de chegada.','Entendido, já ajustei meu transporte.'),
-    A('p-lucas','zenith','Zenith Serviços','Diego Alves','2026-06-30',4,5,4,4,''),
-    A('p-tiago','colafix','Colafix','Juliana','2026-09-30',4,5,5,4,''),
-    A('p-tiago','zenith','Zenith Serviços','Marcelo','2026-07-14',5,4,4,5,'Sempre disposto a ajudar a equipe.'),
-    A('p-tiago','colafix','Colafix','Marina Costa','2026-06-11',4,4,5,4,''),
-    A('p-bruna','zenith','Zenith Serviços','Marcelo','2026-10-02',5,5,5,5,'Reprogramou o CLP da envasadora sem parar a produção.'),
-    A('p-bruna','zenith','Cliente da Zenith · indústria química','Supervisor de manutenção','2026-08-18',5,5,5,5,'Domina inversores e supervisório.'),
-    A('p-bruna','zenith','Cliente da Zenith · alimentos','Coordenadora de engenharia','2026-04-27',5,5,4,5,''),
-    A('p-rodrigo','zenith','Zenith Serviços','Diego Alves','2026-09-22',5,4,4,4,'Solda de qualidade, acabamento muito bom.'),
-    A('p-rodrigo','zenith','Cliente da Zenith · metalurgia','Encarregado de caldeiraria','2026-06-05',4,5,4,4,''),
-    A('p-rodrigo','zenith','Zenith Serviços','Marcelo','2026-03-18',5,4,5,4,''),
-    A('p-vanessa','zenith','Cliente da Zenith · papel e celulose','Gerente de manutenção','2026-08-08',5,5,5,5,'Montou o plano de preventivas do zero.'),
-    A('p-vanessa','zenith','Zenith Serviços','Marcelo','2026-05-14',5,5,5,4,''),
-    A('p-vanessa','zenith','Cliente da Zenith · alimentos','Supervisor de PCM','2026-02-20',5,4,5,5,''),
-    A('p-andre','colafix','Colafix','Marina Costa','2026-10-01',5,5,4,4,''),
-    A('p-andre','nexus','Nexus Serviços','Fernanda Rocha','2026-07-21',4,5,5,4,'Muito atento à segurança.'),
-    A('p-andre','colafix','Colafix','Juliana','2026-04-09',5,4,4,5,''),
-    A('p-felipe','nexus','Nexus Serviços','Fernanda Rocha','2026-10-15',5,5,5,5,'Entregas sempre no horário.'),
-    A('p-camila','nexus','Cliente da Nexus · química','Gerente da qualidade','2026-09-03',5,5,4,5,''),
-    A('p-camila','nexus','Nexus Serviços','Fernanda Rocha','2026-06-17',4,5,5,5,''),
-    A('p-camila','nexus','Cliente da Nexus · plásticos','Coordenador de produção','2026-03-29',5,5,5,4,'Organizou o laboratório e os registros da ISO.'),
-    A('p-renato','nexus','Nexus Serviços','Fernanda Rocha','2026-08-25',5,5,5,5,''),
-    A('p-renato','nexus','Cliente da Nexus · logística','Diretor de operações','2026-05-30',5,5,4,5,'Treinamentos de NR muito bem conduzidos.'),
-    A('p-renato','nexus','Cliente da Nexus · metalurgia','Técnica de segurança','2026-02-12',4,5,5,5,'')];
+    A('p-joao','colafix','Contratante A','Marina Costa','2026-10-08',5,5,5,5,'Resolveu a pane do painel da linha 2 no mesmo dia. Muito cuidadoso com bloqueio e etiquetagem.'),
+    A('p-joao','colafix','Contratante A','Juliana','2026-09-09',5,5,4,5,'Sempre manda a nota no dia certo. Facilita muito o fechamento.','Obrigado, Juliana! Sigo à disposição.'),
+    A('p-joao','zenith','Intermediária C','Marcelo','2026-08-20',5,5,5,4,'Um dos nossos melhores eletricistas.'),
+    A('p-joao','colafix','Contratante A','Marina Costa','2026-07-10',5,4,5,5,'Bom trabalho na parada programada.'),
+    A('p-marcos','colafix','Contratante A','Marina Costa','2026-09-15',5,5,4,4,'Troca dos redutores feita antes do prazo.'),
+    A('p-marcos','zenith','Intermediária C','Diego Alves','2026-07-02',4,5,5,4,''),
+    A('p-marcos','colafix','Contratante A','Juliana','2026-05-20',5,4,5,5,'Pessoa de confiança na manutenção.'),
+    A('p-lucas','colafix','Contratante A','Marina Costa','2026-08-12',4,4,3,4,'Bom operador, precisa melhorar o horário de chegada.','Entendido, já ajustei meu transporte.'),
+    A('p-lucas','zenith','Intermediária C','Diego Alves','2026-06-30',4,5,4,4,''),
+    A('p-tiago','colafix','Contratante A','Juliana','2026-09-30',4,5,5,4,''),
+    A('p-tiago','zenith','Intermediária C','Marcelo','2026-07-14',5,4,4,5,'Sempre disposto a ajudar a equipe.'),
+    A('p-tiago','colafix','Contratante A','Marina Costa','2026-06-11',4,4,5,4,''),
+    A('p-bruna','zenith','Intermediária C','Marcelo','2026-10-02',5,5,5,5,'Reprogramou o CLP da envasadora sem parar a produção.'),
+    A('p-bruna','zenith','Cliente da Intermediária C · indústria química','Supervisor de manutenção','2026-08-18',5,5,5,5,'Domina inversores e supervisório.'),
+    A('p-bruna','zenith','Cliente da Intermediária C · alimentos','Coordenadora de engenharia','2026-04-27',5,5,4,5,''),
+    A('p-rodrigo','zenith','Intermediária C','Diego Alves','2026-09-22',5,4,4,4,'Solda de qualidade, acabamento muito bom.'),
+    A('p-rodrigo','zenith','Cliente da Intermediária C · metalurgia','Encarregado de caldeiraria','2026-06-05',4,5,4,4,''),
+    A('p-rodrigo','zenith','Intermediária C','Marcelo','2026-03-18',5,4,5,4,''),
+    A('p-vanessa','zenith','Cliente da Intermediária C · papel e celulose','Gerente de manutenção','2026-08-08',5,5,5,5,'Montou o plano de preventivas do zero.'),
+    A('p-vanessa','zenith','Intermediária C','Marcelo','2026-05-14',5,5,5,4,''),
+    A('p-vanessa','zenith','Cliente da Intermediária C · alimentos','Supervisor de PCM','2026-02-20',5,4,5,5,''),
+    A('p-andre','colafix','Contratante A','Marina Costa','2026-10-01',5,5,4,4,''),
+    A('p-andre','nexus','Prestadora B','Fernanda Rocha','2026-07-21',4,5,5,4,'Muito atento à segurança.'),
+    A('p-andre','colafix','Contratante A','Juliana','2026-04-09',5,4,4,5,''),
+    A('p-felipe','nexus','Prestadora B','Fernanda Rocha','2026-10-15',5,5,5,5,'Entregas sempre no horário.'),
+    A('p-camila','nexus','Cliente da Prestadora B · química','Gerente da qualidade','2026-09-03',5,5,4,5,''),
+    A('p-camila','nexus','Prestadora B','Fernanda Rocha','2026-06-17',4,5,5,5,''),
+    A('p-camila','nexus','Cliente da Prestadora B · plásticos','Coordenador de produção','2026-03-29',5,5,5,4,'Organizou o laboratório e os registros da ISO.'),
+    A('p-renato','nexus','Prestadora B','Fernanda Rocha','2026-08-25',5,5,5,5,''),
+    A('p-renato','nexus','Cliente da Prestadora B · logística','Diretor de operações','2026-05-30',5,5,4,5,'Treinamentos de NR muito bem conduzidos.'),
+    A('p-renato','nexus','Cliente da Prestadora B · metalurgia','Técnica de segurança','2026-02-12',4,5,5,5,'')];
   d.avalEmpresas=[{empresa:'zenith',de:'mei-joao',data:'2026-10-10',n:{pag:5,com:5,org:4},cobranca:'C-1000'}];
   d.cobrancas.forEach(c=>{ if(c.id==='C-1000') c.avalContr=true; });
   const mj=d.empresas.find(e=>e.id==='mei-joao'); mj.fat={'2026-01':2800,'2026-02':2950,'2026-03':3100,'2026-04':2900,'2026-05':3200,'2026-06':3050,'2026-07':2980,'2026-08':3150}; mj.das={'2026-10':true};
@@ -836,7 +855,7 @@ function render(){
       <div class="usercard">${av}<div class="t"><strong>${esc(label)}</strong><small>${esc(sub)}</small></div><button class="iconbtn" id="sair" aria-label="Sair" title="Sair">${ic('logout')}</button></div>
     </aside>
     <div class="content">
-      <div class="appbar"><div class="crumbs">Conectwork ${ic('chev')} ${pg.crumb?`<span>${cur[1]}</span> ${ic('chev')} <b>${esc(pg.crumb)}</b>`:`<b>${cur[1]}</b>`}</div>${trocaBtn()}${zapBtn()}<button class="tourbtn helpbtn" data-ajuda aria-label="Ajuda">${ic('help')}<span>Ajuda</span></button><button class="tourbtn" data-tour>${ic('play')}Tour</button><span class="env">Ambiente de testes</span></div>
+      <div class="appbar"><div class="crumbs">Conectwork ${ic('chev')} ${pg.crumb?`<span>${cur[1]}</span> ${ic('chev')} <b>${esc(pg.crumb)}</b>`:`<b>${cur[1]}</b>`}</div>${trocaBtn()}${bellBtn()}${zapBtn()}<button class="tourbtn helpbtn" data-ajuda aria-label="Ajuda">${ic('help')}<span>Ajuda</span></button><button class="tourbtn" data-tour>${ic('play')}Tour</button><span class="env">Ambiente de testes</span></div>
       <div class="topbar"><div class="grow"><h1>${pg.title}</h1>${pg.sub?`<p class="sub">${pg.sub}</p>`:''}</div>${pg.action||''}</div>
       <main>${pg.body}<p class="foot-note">Protótipo com dados fictícios, salvos só neste navegador. <button id="reset">Restaurar dados de exemplo</button></p></main>
     </div></div>${bottomNav(tabs)}`;
@@ -859,6 +878,16 @@ function pageFor(){
     case 'cadastros':
       if(revId&&emp(revId)) return {title:'Análise de cadastro',crumb:nome(revId),action:`<button class="btn sec" data-back>${ic('back')}Voltar para cadastros</button>`,body:viewRevisao(emp(revId))};
       return {title:'Cadastros',sub:'Avalie quem entra na rede, confira os documentos e defina a taxa de cada empresa.',body:viewCadastros()};
+    case 'contratos': return {title:'Contratos e OS',sub:'As duas modalidades no mesmo lugar: serviço por OS e equipe contínua com prestadora.',action:emp(session)&&emp(session).tipo!=='prestador'&&podeAgir()?`<button class="btn" data-triagem>${ic('plus')}Nova contratação</button>`:'',body:viewContratos()};
+    case 'demandas': return {title:'Demandas',sub:'Toda contratação começa pela triagem. Depois, a demanda recebe propostas e você compara.',action:podeAgir()?`<button class="btn" data-triagem>${ic('plus')}Nova contratação</button>`:'',body:viewDemandas()};
+    case 'oportunidades': return {title:'Oportunidades',sub:'Demandas abertas de empresas da rede, compatíveis com a sua área.',body:viewOportunidades()};
+    case 'titulos': return {title:'Contas a pagar e receber',sub:'O título nasce quando a nota é enviada e passa por validação, liberação, agendamento e conciliação.',body:viewTitulos()};
+    case 'conformidade': return {title:session==='master'?'Conformidade da rede':'Conformidade',sub:'Documentos, certidões, licenças e lembretes, com alerta antes de vencer.',body:viewConformidade()};
+    case 'aprendizado': return {title:'Aprendizado',sub:'Cursos e convites de formação, separados da contratação.',body:viewAprendizado()};
+    case 'ofertas': return {title:'Clube de ofertas',sub:'Condições de parceiros, identificadas como publicidade.',body:viewOfertas()};
+    case 'notificacoes': return {title:'Notificações',sub:'Avisos do app, com o motivo de cada um.',body:viewNotificacoes()};
+    case 'privacidade': return {title:'Consentimentos e privacidade',sub:'Você decide o que recebe e por qual canal.',body:viewPrivacidade()};
+    case 'moderacao': return {title:'Moderação e disputas',sub:'Revisão humana de contestações e conteúdos.',body:viewModeracao()};
     case 'relatorios': return {title:'Relatórios',sub:'Notas, valores e pagamentos por competência, prontos para a contabilidade.',body:viewRelatorios()};
     case 'auditoria': return {title:'Histórico de alterações',sub:'Quem fez o quê, e quando.',body:viewAuditoria()};
     case 'mei': return {title:'Minha área MEI',sub:'O que o MEI precisa lembrar, num lugar só.',body:viewMei()};
@@ -867,7 +896,7 @@ function pageFor(){
     case 'profissionais': return {title:'Profissionais',sub:'Pessoas que a sua empresa disponibiliza. Quem estiver no catálogo pode ser solicitado por outras empresas.',action:`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sec" data-pnovo>${ic('plus')}Cadastrar</button><button class="btn" data-pconv>${ZAPIC}Convidar profissional</button></div>`,body:viewProf()};
     case 'catalogo': return {title:'Catálogo de profissionais',sub:'Profissionais disponibilizados pelas empresas da rede, prontos para solicitar.',body:viewCatalogo()};
     case 'conta': return {title:'Conta e benefícios',sub:'Conta digital e serviços financeiros com o banco dos sócios.',body:viewConta()};
-    case 'roadmap': return {title:'Roadmap do produto',sub:'Do piloto na Colafix à plataforma aberta para qualquer empresa.',body:viewRoadmap()};
+    case 'roadmap': return {title:'Roadmap do produto',sub:'Do piloto na Contratante A à plataforma aberta para qualquer empresa.',body:viewRoadmap()};
     case 'todas': return {title:'Todas as cobranças',sub:'A cadeia inteira: quem contratou quem e em que pé está cada nota.',body:viewLista('todas')};
   }
 }
@@ -882,8 +911,8 @@ function renderLogin(){
       ${us.map(u=>`<button class="uacc" data-uid="${u.id}"><span class="t"><strong>${esc(u.nome)}</strong><small>${esc(CARGOS[u.cargo]?CARGOS[u.cargo].nome:'')}</small></span>${ic('arrow')}</button>`).join('')}</div>`; }).join('');
   $('#app').innerHTML=`<div class="login">
     <section class="brandpanel">${CURVES}
-      <div style="position:relative">${LOGO(120)}<h1>Conect<span>work</span></h1><div class="slogan">INTEGRAÇÃO QUE CONECTA EMPRESAS</div>
-        <p class="lead">Contrate profissionais, receba as notas, pague e acompanhe toda a cadeia de prestação de serviços em um só lugar, com cada empresa conferida pela nossa equipe.</p></div>
+      <div style="position:relative">${LOGO(120)}<h1>Conect<span>work</span></h1><div class="slogan">PLATAFORMA MAIS COMPLETA EM OUTSOURCING</div>
+        <p class="lead tagline">Toda papelada e burocracia em um só lugar, na palma da sua mão.</p><p class="lead">Contrate serviços, receba as notas, pague e acompanhe toda a cadeia de prestação de serviços, com cada empresa conferida pela nossa equipe.</p></div>
       <div class="pillars">
         <div class="pillar">${ic('net')}<span>Conexão entre empresas</span></div><div class="pillar">${ic('hand')}<span>Troca de serviços</span></div>
         <div class="pillar">${ic('shield')}<span>Segurança e confiança</span></div><div class="pillar">${ic('bolt')}<span>Agilidade nos processos</span></div>
@@ -1114,7 +1143,7 @@ function histCard(e){
 }
 function viewEmpresa(e){
   return profileHead(e)+`<div class="grid-main"><div>${detailCards(e)}</div><div class="stack">
-    <div class="card"><div class="card-h"><span class="ic">${ic('star')}</span><h3>Benefícios</h3></div><div class="card-b"><dl class="dl"><div><dt>Taxa Conectwork</dt><dd style="font-size:20px">${e.taxa.toLocaleString('pt-BR')}%</dd></div><div><dt>Cliente desde</dt><dd>${fmtData(e.avaliadoEm)}</dd></div></dl>
+    <div class="card"><div class="card-h"><span class="ic">${ic('star')}</span><h3>Benefícios</h3></div><div class="card-b"><dl class="dl"><div><dt>Plano</dt><dd style="font-size:20px">${esc(e.plano||'—')}</dd></div><div><dt>Cliente desde</dt><dd>${fmtData(e.avaliadoEm)}</dd></div></dl>
     <p class="hint" style="margin:14px 0 0;font-size:12.5px">A taxa é definida pela equipe Conectwork e cobrada sobre cada pagamento que sua empresa faz na plataforma.</p></div></div>
     ${docsCard(e,false)}
     <div class="banner info">${ic('alert')}<span>Para alterar dados cadastrais ou bancários, fale com a equipe Conectwork. Alterações passam por nova conferência.</span></div>
@@ -1146,12 +1175,12 @@ function viewRevisao(e){
   const req=docsReq(e).filter(([k,l,r])=>r), faltam=req.filter(([k])=>!e.conferidos?.[k]).length;
   let dec;
   if(e.status==='aprovado') dec=`<div class="card-b stack" style="gap:14px"><div class="banner ok">${ic('check')}<span><strong>Aprovado em ${fmtData(e.avaliadoEm)}</strong>Empresa ativa na rede.</span></div>
-      <label class="f"><span>Taxa Conectwork (%)</span><input id="rTaxa" type="number" step="0.1" min="0" max="20" value="${e.taxa}"></label>
-      <button class="btn" data-dec="taxa">Salvar taxa</button></div>`;
+      <label class="f"><span>Plano (mensalidade)</span><select id="rPlano">${Object.keys(PLANOS).map(k=>`<option ${k===(e.plano||"")?"selected":""}>${k}</option>`).join("")}</select><em class="hint">Valores das mensalidades a definir</em></label>
+      <button class="btn" data-dec="taxa">Salvar plano</button></div>`;
   else if(e.status==='recusado') dec=`<div class="card-b"><div class="banner danger">${ic('x')}<span><strong>Recusado</strong>${esc(e.motivo)}</span></div></div>`;
   else dec=`<div class="card-b stack" style="gap:14px">
       ${e.status==='pendencia'?`<div class="banner warn">${ic('alert')}<span><strong>Aguardando correção da empresa</strong>${esc(e.motivo)}</span></div>`:''}
-      <label class="f"><span>Taxa Conectwork (%)</span><input id="rTaxa" type="number" step="0.1" min="0" max="20" value="${e.taxa}"><em class="hint">Benefício negociado com a empresa</em></label>
+      <label class="f"><span>Plano (mensalidade)</span><select id="rPlano">${Object.keys(PLANOS).map(k=>`<option ${k===(e.plano||"")?"selected":""}>${k}</option>`).join("")}</select><em class="hint">Valores das mensalidades a definir</em></label>
       <button class="btn ok" data-dec="aprovar" ${faltam?'disabled':''}>${ic('check')}Aprovar cadastro</button>
       ${faltam?`<p class="hint" style="margin:-6px 0 0;font-size:12px">${faltam===1?'Falta conferir 1 documento obrigatório para aprovar.':'Faltam conferir '+faltam+' documentos obrigatórios para aprovar.'}</p>`:''}
       <label class="f"><span>Motivo do ajuste ou recusa</span><textarea id="rMotivo" rows="3" placeholder="Ex.: O comprovante de endereço está ilegível. Envie uma cópia mais nítida."></textarea><em class="ferr" id="rErr"></em></label>
@@ -1168,7 +1197,8 @@ function acts(c){
   let a=''; if(!podeAgir()) return '';
   if(c.contratante===session&&c.status==='nota') a+=`<button class="btn sec sm" data-act="recusar" data-id="${c.id}">${ic('x')}Recusar</button>`;
   if(c.prestador===session&&c.status==='aguardando') a+=`<button class="btn sm" data-act="emitir" data-id="${c.id}">${ic('file')}Emitir nota</button>`;
-  if(c.contratante===session&&c.status==='nota') a+=`<button class="btn ok sm" data-act="pagar" data-id="${c.id}">${ic('wallet')}Pagar</button>`;
+  if(c.titulo) a+=`<button class="btn sec sm" data-titb="${c.id}">${ic('cal')}Título: ${estNome(tEstado(c))}</button>`;
+  if(c.contratante===session&&c.status==='nota'&&!c.titulo) a+=`<button class="btn ok sm" data-act="pagar" data-id="${c.id}">${ic('wallet')}Pagar</button>`;
   if(c.contratante===session&&c.status==='aguardando') a+=`<button class="btn ghost sm" data-act="cancelar" data-id="${c.id}" aria-label="Cancelar cobrança ${c.id}" title="Cancelar cobrança">${ic('trash')}</button>`;
   return a;
 }
@@ -1203,12 +1233,12 @@ function viewInicio(){
   if(session==='master'){
     const all=db.cobrancas, tx=all.filter(c=>c.status==='paga').reduce((s,c)=>s+Number(c.taxaValor||0),0);
     hero=heroBox('Volume na rede',brl(soma(all)),`${all.length} cobranças entre ${db.empresas.filter(e=>e.status==='aprovado').length} empresas aprovadas`,
-      [['Em circulação',brl(soma(all.filter(c=>c.status!=='paga'))),''],['Taxas recebidas',brl(tx),''],['Aguardando nota',String(all.filter(c=>c.status==='aguardando').length),all.filter(c=>c.status==='aguardando').length===1?'cobrança':'cobranças'],['Cadastros em análise',String(db.empresas.filter(e=>e.status==='analise').length),'para avaliar']],
+      [['Em circulação',brl(soma(all.filter(c=>c.status!=='paga'))),''],['Empresas com plano',String(db.empresas.filter(x=>x.plano&&x.plano!=='Gratuito').length),'mensalidade'],['Aguardando nota',String(all.filter(c=>c.status==='aguardando').length),all.filter(c=>c.status==='aguardando').length===1?'cobrança':'cobranças'],['Cadastros em análise',String(db.empresas.filter(e=>e.status==='analise').length),'para avaliar']],
       `<button class="btn light" data-go="cadastros">${ic('users')}Avaliar cadastros</button>`);
   } else {
     const t=emp(session).tipo, apagar=soma(pag.filter(c=>c.status==='nota')), areceber=soma(rec.filter(c=>c.status!=='paga'));
-    if(t==='contratante') hero=heroBox('Pronto para pagar',brl(apagar),(n=>n?`${n===1?'1 nota conferida':n+' notas conferidas'}, só falta pagar`:'Nenhuma nota esperando pagamento')(pag.filter(c=>c.status==='nota').length),
-      [['Aguardando nota',brl(soma(pag.filter(c=>c.status==='aguardando'))),''],['Pago no total',brl(soma(pag.filter(c=>c.status==='paga'))),''],['Taxa Conectwork',emp(session).taxa.toLocaleString('pt-BR')+'%','benefício atual'],['Fechamentos via RH',String((db.apiLog||[]).length),'recebidos']],
+    if(t==='contratante') hero=heroBox('Em contas a pagar',brl(apagar),(n=>n?`${n===1?'1 nota':n+' notas'} em contas a pagar, seguindo validação e agendamento`:'Nenhuma nota em contas a pagar')(pag.filter(c=>c.status==='nota').length),
+      [['Aguardando nota',brl(soma(pag.filter(c=>c.status==='aguardando'))),''],['Pago no total',brl(soma(pag.filter(c=>c.status==='paga'))),''],['Plano',esc(emp(session).plano||'—'),'mensalidade'],['Fechamentos via RH',String((db.apiLog||[]).length),'recebidos']],
       `<button class="btn light" data-go="pagar">${ic('wallet')}Ver cobranças</button><button class="btn glass" data-go="api">${ic('plug')}Integração RH</button>`);
     else if(t==='ambos') hero=heroBox('A receber',brl(areceber),`e ${brl(apagar)} pronto para pagar aos seus prestadores`,
       [['Notas para emitir',String(rec.filter(c=>c.status==='aguardando').length),'pendentes'],['Recebido',brl(soma(rec.filter(c=>c.status==='paga'))),''],['A pagar',brl(apagar),''],['Aguardando notas',String(pag.filter(c=>c.status==='aguardando').length),'dos prestadores']],
@@ -1217,7 +1247,7 @@ function viewInicio(){
       [['Notas pendentes',brl(soma(rec.filter(c=>c.status==='aguardando'))),''],['Esperando pagamento',brl(soma(rec.filter(c=>c.status==='nota'))),''],['Recebido',brl(soma(rec.filter(c=>c.status==='paga'))),''],['Notas emitidas',String(rec.filter(c=>c.nota).length),'no Conectwork']],
       `<button class="btn light" data-go="receber">${ic('receipt')}Emitir notas</button>`);
   }
-  return hero+`<div class="grid-main"><div class="stack">${todoCard()}${session==='master'?chainCard():chartCard()}${session!=='master'?confCard():''}</div><div class="card"><div class="card-h"><h3>Atividade recente</h3></div>${feed()}</div></div>`;
+  return hero+kpiCard()+`<div class="grid-main"><div class="stack">${todoCard()}${session==='master'?chainCard():chartCard()}${session!=='master'?confCard():''}</div><div class="card"><div class="card-h"><h3>Atividade recente</h3></div>${feed()}</div></div>`;
 }
 function heroBox(lbl,big,note,splits,cta){
   return `<section class="hero"><div style="position:relative"><div class="lbl">${lbl}</div><div class="big">${big}</div><div class="note">${note}</div><div class="cta">${cta}</div></div>
@@ -1228,7 +1258,7 @@ function todoCard(){
   if(session==='master') it=db.empresas.filter(e=>e.status==='analise').map(e=>`<div class="todo"><span class="ic warn">${ic('users')}</span><div class="t"><strong>${esc(nome(e.id))}</strong><small>${esc(TIPOS[e.tipo])} · enviado em ${fmtData(e.enviadoEm)}</small></div><button class="btn sm" data-rev="${e.id}">Analisar</button></div>`);
   else {
     db.cobrancas.filter(c=>c.prestador===session&&c.status==='aguardando').forEach(c=>it.push(`<div class="todo"><span class="ic warn">${ic('file')}</span><div class="t"><strong>Emitir nota para ${esc(nome(c.contratante))}</strong><small>${esc(c.descricao)} · ${brl(c.valor)}</small></div><button class="btn sm" data-act="emitir" data-id="${c.id}">Emitir</button></div>`));
-    todoRep(it); todoInd(it); todoEnc(it); (db.solicitacoes||[]).filter(x=>x.fornecedor===session&&x.status==='aberta').forEach(x=>it.push(`<div class="todo"><span class="ic info">${ic('users')}</span><div class="t"><strong>${esc(nome(x.contratante))} solicitou ${esc(pes(x.pessoa).nome)}</strong><small>${esc(x.duracao)} a partir de ${fmtData(x.inicio)} · ${esc(x.obs)}</small></div><button class="btn sm" data-solok="${x.id}">Aceitar</button></div>`)); db.cobrancas.filter(c=>c.contratante===session&&c.status==='nota').forEach(c=>it.push(`<div class="todo"><span class="ic info">${ic('wallet')}</span><div class="t"><strong>Pagar ${esc(nome(c.prestador))}</strong><small>Nota nº ${c.nota.numero} · ${brl(c.valor)}</small></div><button class="btn ok sm" data-act="pagar" data-id="${c.id}">Pagar</button></div>`));
+    todoRep(it); todoInd(it); todoEnc(it); (db.solicitacoes||[]).filter(x=>x.fornecedor===session&&x.status==='aberta').forEach(x=>it.push(`<div class="todo"><span class="ic info">${ic('users')}</span><div class="t"><strong>${esc(nome(x.contratante))} solicitou ${esc(pes(x.pessoa).nome)}</strong><small>${esc(x.duracao)} a partir de ${fmtData(x.inicio)} · ${esc(x.obs)}</small></div><button class="btn sm" data-solok="${x.id}">Aceitar</button></div>`)); db.cobrancas.filter(c=>c.contratante===session&&c.status==='nota'&&!c.titulo).forEach(c=>it.push(`<div class="todo"><span class="ic info">${ic('wallet')}</span><div class="t"><strong>Pagar ${esc(nome(c.prestador))}</strong><small>Nota nº ${c.nota.numero} · ${brl(c.valor)}</small></div><button class="btn ok sm" data-act="pagar" data-id="${c.id}">Pagar</button></div>`));
   }
   it.sort((a,b)=>(b.includes('data-act=')?1:0)-(a.includes('data-act=')?1:0));
   return `<div class="card"><div class="card-h"><h3>Precisa da sua ação</h3><span class="count">${it.length}</span></div>${it.length?it.join(''):`<div class="empty"><span class="ic">${ic('check')}</span>Tudo em dia por aqui.</div>`}</div>`;
@@ -1309,7 +1339,7 @@ function dlgNova(){
 }
 function dlgEmitir(c){
   const p=emp(c.prestador), t=emp(c.contratante); eModo='xml'; eArq=null; const podeEm=temMod(p,'emissao');
-  openDlg(head('Emitir nota fiscal de serviço','NFS-e para '+esc(t.dados.razao))+`<div class="dlg-b">${summary(c)}${c.recusa?`<div class="banner danger">${ic('alert')}<span><strong>A nota nº ${c.recusa.nota} foi recusada: ${esc(c.recusa.motivo)}</strong>${esc(c.recusa.txt)}</span></div>`:''}
+  openDlg(head('Emitir nota fiscal de serviço','NFS-e para '+esc(t.dados.razao))+`<div class="dlg-b">${summary(c)}${c.espelho?`<div class="banner info">${ic('file')}<span><strong>Espelho de faturamento · ${esc(c.espelho.os)}</strong>Emita a nota para ${esc(c.espelho.razao)} (CNPJ ${esc(c.espelho.cnpj)}), ${esc(c.espelho.end)}. Serviço: ${esc(c.espelho.desc)}. Valor aprovado ${brl(c.espelho.valor)}. Vencimento ${fmtData(c.espelho.venc)}.</span></div>`:''}${c.recusa?`<div class="banner danger">${ic('alert')}<span><strong>A nota nº ${c.recusa.nota} foi recusada: ${esc(c.recusa.motivo)}</strong>${esc(c.recusa.txt)}</span></div>`:''}
     <dl class="kv"><dt>Prestador</dt><dd>${esc(p.dados.razao)}<br><span class="hint">${esc(p.dados.cnpj)} · IM ${esc(p.dados.im||'—')}</span></dd><dt>Tomador</dt><dd>${esc(t.dados.razao)}<br><span class="hint">${esc(t.dados.cnpj)} · ${esc(t.end.cidade)}/${esc(t.end.uf)}</span></dd><dt>Competência</dt><dd>${fmtComp(c.competencia)}</dd></dl>
     <div class="optc" style="grid-template-columns:repeat(${podeEm?2:1},minmax(0,1fr))"><button type="button" class="opt" role="radio" aria-checked="true" data-emodo="xml"><span class="oi">${ic('upload')}</span><strong>Enviar o XML</strong><small>A nota foi emitida no Emissor Nacional. O Conectwork confere valor e CNPJs.</small></button>${podeEm?`<button type="button" class="opt" role="radio" aria-checked="false" data-emodo="emitir"><span class="oi">${ic('file')}</span><strong>Emitir pelo Conectwork <span class="ph2">Fase 2</span></strong><small>Emissão direta, com o certificado guardado no servidor.</small></button>`:''}</div>
     <div class="up" id="eXmlBox"><span class="ic">${ic('upload')}</span><div class="t"><strong>XML da NFS-e</strong><small id="eXmlNome">Nenhum arquivo selecionado</small></div><label class="btn sec sm">Selecionar<input type="file" id="eXml" accept=".xml,text/xml"></label></div>
@@ -1330,7 +1360,7 @@ function dlgEmitir(c){
 function dlgPagar(c){
   const t=emp(c.contratante), p=emp(c.prestador), taxa=Number(t.taxa||0), tv=Math.round(c.valor*taxa)/100;
   openDlg(head('Confirmar pagamento',`Nota nº ${c.nota.numero} de ${fmtData(c.nota.emitida)}`)+`<div class="dlg-b">${summary(c)}
-    <dl class="kv"><dt>Destino</dt><dd>${esc(p.banco.banco)}<br><span class="hint">Ag. ${esc(p.banco.agencia)} · Conta ${esc(p.banco.conta)} · Pix ${esc(p.banco.pixTipo)}</span></dd><dt>Valor da nota</dt><dd>${brl(c.valor)}</dd><dt>Taxa Conectwork</dt><dd>${taxa.toLocaleString('pt-BR')}% · ${brl(tv)}</dd></dl>
+    <dl class="kv"><dt>Destino</dt><dd>${esc(p.banco.banco)}<br><span class="hint">Ag. ${esc(p.banco.agencia)} · Conta ${esc(p.banco.conta)} · Pix ${esc(p.banco.pixTipo)}</span></dd><dt>Valor da nota</dt><dd>${brl(c.valor)}</dd></dl>
     <div class="total"><span>Total</span><span>${brl(c.valor+tv)}</span></div>
     <p class="sim">${ic('alert')}<span>Pagamento simulado. Depois ele sai pela conta vinculada ao banco de vocês.</span></p></div>
     <div class="dlg-f"><button class="btn sec" data-close>Voltar</button><button class="btn ok" id="pOk">${ic('check')}Pagar ${brl(c.valor+tv)}</button></div>`);
@@ -1340,7 +1370,7 @@ function dlgDetalhe(c){
   const p=emp(c.prestador), t=emp(c.contratante), s=c.nota&&SERVICOS.find(x=>x[0]===c.nota.servico);
   const tl=[['Cobrança criada',c.criada,true],['Nota emitida',c.nota?.emitida,!!c.nota],['Pagamento',c.pagaEm,!!c.pagaEm]];
   const nf=c.nota?`<div class="nfse"><div class="hd"><div><small>NFS-e · simulação</small><strong>Nº ${c.nota.numero}</strong></div><div style="text-align:right"><small>Valor</small><strong>${brl(c.valor)}</strong></div></div>
-    <div class="bd"><dl class="kv"><dt>Prestador</dt><dd>${esc(p.dados.razao)}<br><span class="hint">${esc(p.dados.cnpj)}</span></dd><dt>Tomador</dt><dd>${esc(t.dados.razao)}<br><span class="hint">${esc(t.dados.cnpj)}</span></dd><dt>Serviço</dt><dd>${s?esc(s[0]+' — '+s[1]):''}</dd><dt>Discriminação</dt><dd>${esc(c.nota.descricao||c.descricao)}</dd><dt>Emissão</dt><dd>${fmtData(c.nota.emitida)}</dd><dt>Origem</dt><dd>${c.nota.origem==='emitir'?'Emitida pelo Conectwork':c.nota.origem==='xml'?'XML enviado pelo prestador · conferido':'Registrada no Conectwork'}</dd></dl>
+    <div class="bd"><dl class="kv"><dt>Prestador</dt><dd>${esc(p.dados.razao)}<br><span class="hint">${esc(p.dados.cnpj)}</span></dd><dt>Tomador</dt><dd>${esc(t.dados.razao)}<br><span class="hint">${esc(t.dados.cnpj)}</span></dd><dt>Serviço</dt><dd>${s?esc(s[0]+' — '+s[1]):''}</dd><dt>Discriminação</dt><dd>${esc(c.nota.descricao||c.descricao)}</dd><dt>Emissão</dt><dd>${fmtData(c.nota.emitida)}</dd>${c.vencimento?`<dt>Vencimento</dt><dd>${fmtData(c.vencimento)}</dd>`:''}${c.contrato?`<dt>Contrato</dt><dd>${esc(c.contrato)}</dd>`:''}<dt>Origem</dt><dd>${c.nota.origem==='emitir'?'Emitida pelo Conectwork':c.nota.origem==='xml'?'XML enviado pelo prestador · conferido':'Registrada no Conectwork'}</dd></dl>
     <p class="chave">Chave ${c.nota.chave.replace(/(\d{5})/g,'$1 ')}</p></div></div>`:'';
   openDlg(head(`Cobrança ${c.id}`,`Competência ${fmtComp(c.competencia)}${c.origem==='api'?' · criada pela integração do RH':''}`)+`<div class="dlg-b">${summary(c)}
     <ul class="tl">${tl.map(([l,d,ok])=>`<li class="${ok?'done':''}"><span class="dot">${ok?CHECK:''}</span>${l}<small>${d?fmtData(d):'pendente'}</small></li>`).join('')}</ul>${nf}</div>
@@ -1367,8 +1397,8 @@ function doAct(act,id){
   }
 }
 function decide(kind){
-  const e=emp(revId), taxa=Number($('#rTaxa')?.value);
-  if(kind==='taxa'){ if(!isFinite(taxa)||taxa<0) return; e.taxa=taxa; e.historico.push({em:hoje(),txt:`Taxa ajustada para ${taxa.toLocaleString('pt-BR')}%`}); save(); toast(`Taxa de ${nome(e.id)} ajustada.`); render(); return; }
+  const e=emp(revId), taxa=0; const pl=$('#rPlano'); if(pl) e.plano=pl.value;
+  if(kind==='taxa'){ e.historico.push({em:hoje(),txt:`Plano ajustado para ${e.plano}`}); save(); toast(`Plano de ${nome(e.id)}: ${e.plano}.`); render(); return; }
   if(kind==='aprovar'){ e.modulos=(e.modulos&&e.modulos.length)?e.modulos:(e.tipo==='prestador'?['cobrancas','conta']:['cobrancas','equipe']); e.status='aprovado'; e.taxa=isFinite(taxa)?taxa:e.taxa; e.avaliadoEm=hoje(); e.motivo=''; e.historico.push({em:hoje(),txt:'Cadastro aprovado'}); save(); toast(`${nome(e.id)} aprovada e liberada na rede.`); render(); return; }
   const m=$('#rMotivo').value.trim();
   if(!m){ $('#rErr').textContent='Escreva o motivo. Ele aparece para a empresa.'; $('#rMotivo').focus(); return; }
@@ -1493,7 +1523,7 @@ function viewProf(){
     <td>${p.encerra?`<span class="pill warn">Encerra em ${fmtData(p.encerra.data).slice(0,5)}</span>`:p.alocado?`<span class="pill info">Na ${esc(nome(p.alocado))}</span>`:'<span class="pill ok">Disponível</span>'}</td>
     <td class="m-hide">${p.convite?`<span class="pill warn">Convite enviado</span><br><button class="linkbtn" data-onb="${p.id}" style="font-size:12px;margin-top:4px">Ver o cadastro dele (simulação)</button>`:p.mei?'<span class="tag">Login ativo</span>':'<span class="hint">Sem login</span>'}</td>
     <td class="r"><label class="check" style="display:inline-flex;padding:6px 10px;border:0;background:none"><input type="checkbox" data-pcat="${p.id}" ${p.catalogo?'checked':''}><span>No catálogo</span></label></td></tr>`).join('');
-  return faseBanner(2,'Na fase 2, a Zenith passa a operar os profissionais pelo Conectwork. Cada um ganha cadastro próprio, ligado à empresa que o disponibiliza.')+notaEmp(session)+`
+  return faseBanner(2,'Na fase 2, a Intermediária C passa a operar os profissionais pelo Conectwork. Cada um ganha cadastro próprio, ligado à empresa que o disponibiliza.')+notaEmp(session)+`
     <div class="grid-2" style="grid-template-columns:repeat(3,minmax(0,1fr))">
       <div class="card"><div class="card-b"><span class="hint" style="font-size:12px">Profissionais</span><div style="font-size:24px;font-weight:600">${ps.length}</div></div></div>
       <div class="card"><div class="card-b"><span class="hint" style="font-size:12px">Alocados em clientes</span><div style="font-size:24px;font-weight:600">${aloc}</div></div></div>
@@ -1567,10 +1597,10 @@ function viewConta(){
 function viewRoadmap(){
   const nPes=(db.pessoas||[]).length, nEmp=db.empresas.filter(e=>e.status==='aprovado').length;
   const F=[
-    {n:1,t:'Piloto Colafix',p:'Colafix → Zenith → profissionais MEI. Resolve o pedido e a conferência das notas.',now:true,it:[
-      [1,'Cadastro completo de empresas com análise e aprovação'],[1,'Vários logins por empresa, com cargos e ajuste de acesso'],[1,'Integração com o painel do RH da Colafix (fechamento → pedido de nota)'],[1,'MEI envia o XML da nota e o sistema confere valor e CNPJs'],[1,'Pagamento registrado e histórico da cadeia'],[1,'Currículo do profissional: histórico, selos e avaliações'],[1,'Área do MEI: DAS, declaração anual e limite'],[1,'Avisos pelo WhatsApp e indicação entre profissionais'],[0,'Implantação com dados reais e treinamento']]},
-    {n:2,t:'Operação Zenith',p:'A empresa intermediária gerencia os profissionais e fatura o cliente pelo Conectwork.',it:[
-      [0,'Cadastro de profissionais ligado à empresa que os disponibiliza'],[0,'Emissão de NFS-e direto pelo Conectwork (servidor com certificado)'],[0,'Nota consolidada da Zenith para a Colafix'],[0,'Módulos liberados por plano e mensalidade por empresa'],[0,'Segundo e terceiro clientes fora da Colafix']]},
+    {n:1,t:'Piloto Contratante A',p:'Contratante A → Intermediária C → profissionais MEI. Resolve o pedido e a conferência das notas.',now:true,it:[
+      [1,'Cadastro completo de empresas com análise e aprovação'],[1,'Vários logins por empresa, com cargos e ajuste de acesso'],[1,'Integração com o painel do RH da Contratante A (fechamento → pedido de nota)'],[1,'MEI envia o XML da nota e o sistema confere valor e CNPJs'],[1,'Pagamento registrado e histórico da cadeia'],[1,'Currículo do profissional: histórico, selos e avaliações'],[1,'Área do MEI: DAS, declaração anual e limite'],[1,'Avisos pelo WhatsApp e indicação entre profissionais'],[1,'Contratos nas duas modalidades, com assinatura, aceite e espelho de faturamento'],[1,'Triagem, demandas, propostas e comparador'],[0,'Implantação com dados reais e treinamento']]},
+    {n:2,t:'Operação Intermediária C',p:'A empresa intermediária gerencia os profissionais e fatura o cliente pelo Conectwork.',it:[
+      [0,'Cadastro de profissionais ligado à empresa que os disponibiliza'],[0,'Emissão de NFS-e direto pelo Conectwork (servidor com certificado)'],[0,'Nota consolidada da Intermediária C para a Contratante A'],[0,'Módulos liberados por plano e mensalidade por empresa'],[0,'Segundo e terceiro clientes fora da Contratante A']]},
     {n:3,t:'Plataforma aberta',p:'Catálogo de profissionais e serviços financeiros com o banco dos sócios.',it:[
       [0,'Catálogo de profissionais por área (manutenção, produção, serviços B2B)'],[0,'Solicitação e contratação dentro da plataforma'],[0,'Conta digital, antecipação e crédito com o banco dos sócios'],[0,'Avaliação dos profissionais e das empresas'],[0,'Abertura para qualquer empresa do Brasil']]}];
   return `<div class="grid-2" style="grid-template-columns:repeat(4,minmax(0,1fr))">
@@ -1636,11 +1666,11 @@ function revHtml(a,p,dono){
   return `<div class="rev"><div class="rh">${avatarTxt(a.autor,'sm')}<div class="t"><strong>${esc(a.autor)}</strong><small>${esc(a.org)} · ${fmtData(a.data)}</small></div>${estrelas(mediaAv(a))}</div>
     <div class="crit">${CRIT.map(([k,l])=>`<span>${l} <b>${a.n[k]}</b></span>`).join('')}</div>
     ${a.txt?`<p>${esc(a.txt)}</p>`:''}
-    ${a.resp?`<div class="rresp"><strong>Resposta de ${esc(p.nome.split(' ')[0])}</strong>${esc(a.resp)}</div>`:dono?`<button class="linkbtn" data-resp="${a.id}" style="align-self:flex-start">${ic('edit')}Responder</button>`:''}</div>`;
+    ${a.resp?`<div class="rresp"><strong>Resposta de ${esc(p.nome.split(' ')[0])}</strong>${esc(a.resp)}</div>`:dono?`<button class="linkbtn" data-resp="${a.id}" style="align-self:flex-start">${ic('edit')}Responder</button>`:''}${dono?`<button class="linkbtn" data-contestar="${a.id}" style="align-self:flex-start;color:var(--muted)">Contestar avaliação</button>`:''}</div>`;
 }
 function viewPerfil(p){
   const r=rep(p), dono=!!p.mei&&p.mei===session, me=emp(session), contr=session!=='master'&&me&&me.tipo!=='prestador';
-  const podeAval=!dono&&session!=='master'&&p.alocado===session;
+  const podeAval=!dono&&session!=='master'&&p.vinculo===session;
   const podeSol=contr&&p.vinculo!==session&&!p.alocado&&p.catalogo&&p.consente!==false;
   const servs=p.mei?db.cobrancas.filter(c=>c.prestador===p.mei).sort((a,b)=>b.criada.localeCompare(a.criada)):[];
   const orgs=new Set(r.av.map(a=>a.org)); if(p.alocado) orgs.add(nome(p.alocado));
@@ -1662,7 +1692,7 @@ function viewPerfil(p){
         ${barra('Notas aceitas na 1ª conferência · peso 20',r.prim,Math.round(r.prim*100)+'%')}
         ${barra('Documentos e NRs válidos · peso 15',r.dok,Math.round(r.dok*100)+'%')}
         ${barra('Avaliações de quem contratou · peso 40',r.media!=null?r.media/5:0,r.media!=null?fmt1(r.media)+' de 5':'sem avaliações')}
-        <p class="hint" style="margin:0;font-size:12.5px">${r.novo?'O índice aparece a partir de 3 avaliações e 3 notas na plataforma. ':''}A parte automática vem das notas e documentos registrados no Conectwork. Só a empresa onde ele trabalha avalia, uma vez por mês, e o profissional pode responder.</p></div></div>
+        <p class="hint" style="margin:0;font-size:12.5px">${r.novo?'O índice aparece a partir de 3 avaliações e 3 notas na plataforma. ':''}A parte automática vem das notas e documentos registrados no Conectwork. Quem avalia o profissional é a prestadora, a cada serviço pago. O profissional pode responder.</p></div></div>
       <div class="card"><div class="card-h"><span class="ic">${ic('hand')}</span><h3>Avaliações</h3><span class="count">${r.av.length}</span></div>${r.av.length?r.av.map(a=>revHtml(a,p,dono)).join(''):`<div class="empty"><span class="ic">${ic('star')}</span>Nenhuma avaliação ainda.</div>`}</div>
     </div><div class="stack">
       <div class="card"><div class="card-h"><span class="ic">${ic('shield')}</span><h3>Documentos e NRs</h3>${dono?`<button class="linkbtn end" data-docnovo="${p.id}">${ic('plus')}Adicionar</button>`:''}</div>${(p.docs||[]).map((d,di)=>{ const [k,l]=docSt(d); return `<div class="docrow ${k==='ok'?'ok':''}"><span class="ic">${ic(k==='ok'?'check':'alert')}</span><div class="t"><strong>${esc(d.nome)}</strong><small>Validade ${fmtData(d.validade)}</small></div><span class="pill ${k}">${l}</span>${dono?`<button class="btn sec sm" data-renova="${p.id}|${di}">Renovar</button>`:''}</div>`; }).join('')||'<div class="empty">Nenhum documento registrado.</div>'}</div>
@@ -1827,16 +1857,16 @@ function bind4(){ bind5();
 }
 const __seed3=seed;
 seed=function(){ const d=__seed3();
-  d.avaliacoes.forEach(a=>{ if(a.org==='Zenith Serviços'||a.org==='Nexus Serviços'){ const p=d.pessoas.find(x=>x.id===a.pessoa);
-    if(p&&p.alocado){ a.de=p.alocado; a.org='Colafix'; a.autor='Juliana'; } else { a.org='Cliente da '+(p&&p.vinculo==='nexus'?'Nexus':'Zenith')+' · indústria'; a.autor='Gestor do cliente'; } } });
+  d.avaliacoes.forEach(a=>{ if(a.org==='Intermediária C'||a.org==='Prestadora B'){ const p=d.pessoas.find(x=>x.id===a.pessoa);
+    if(p&&p.alocado){ a.de=p.alocado; a.org='Contratante A'; a.autor='Juliana'; } else { a.org='Cliente da '+(p&&p.vinculo==='nexus'?'Prestadora B':'Intermediária C')+' · indústria'; a.autor='Gestor do cliente'; } } });
   const TEL={'u-paula':'(51) 99811-2200','u-carlos':'(51) 99733-4410','u-juliana':'(51) 98455-6120','u-diego':'(51) 99120-7788','u-ana':'(51) 99000-1234'};
   d.usuarios.forEach(u=>{ const e=d.empresas.find(x=>x.id===u.empresa); u.tel=TEL[u.id]||(e&&u.cargo==='admin'?e.resp.cel:''); u.zap=true; });
   const W=(emp,ev,texto,em)=>({id:'W'+emp+em,emp,ev,texto,em,lida:false});
   d.whats=[
-    W('mei-joao','Pedido de nota','Olá! A Zenith Serviços pediu a nota de R$ 3.200,00 referente a Manutenção elétrica — outubro/2026. Envie em 1 minuto pelo app: conectwork.app','2026-11-02T12:05:00.000Z'),
+    W('mei-joao','Pedido de nota','Olá! A Intermediária C pediu a nota de R$ 3.200,00 referente a Manutenção elétrica — outubro/2026. Envie em 1 minuto pelo app: conectwork.app','2026-11-02T12:05:00.000Z'),
     W('mei-joao','Lembrete','Lembrete: o DAS de novembro vence no dia 20. Quando pagar, marque no app para não receber mais este aviso.','2026-11-05T12:00:00.000Z'),
-    W('colafix','Nota recebida','A nota nº 87 da Zenith Serviços chegou e já foi conferida (R$ 18.450,00). O pagamento está liberado: conectwork.app','2026-11-02T17:20:00.000Z'),
-    W('zenith','Solicitação','A Colafix solicitou Bruna Martins por 3 meses a partir de 16/11. Responda pelo app: conectwork.app','2026-11-05T13:40:00.000Z'),
+    W('colafix','Nota recebida','A nota nº 87 da Intermediária C chegou e já foi conferida (R$ 18.450,00). O pagamento está liberado: conectwork.app','2026-11-02T17:20:00.000Z'),
+    W('zenith','Solicitação','A Contratante A solicitou Bruna Martins por 3 meses a partir de 16/11. Responda pelo app: conectwork.app','2026-11-05T13:40:00.000Z'),
     W('zenith','Indicação','João Pereira indicou Carlos Henrique (Soldador) para trabalhar com vocês. Veja no app: conectwork.app','2026-11-05T19:10:00.000Z')];
   d.indicacoes=[{id:'I1',de:'p-joao',para:'zenith',nome:'Carlos Henrique',funcao:'Soldador',tel:'(51) 99654-8899',motivo:'Trabalhamos juntos 3 anos na metalúrgica, muito caprichoso',status:'nova',data:'2026-11-05'}];
   return d; };
@@ -1845,7 +1875,7 @@ I.play='<path d="M8 5.5v13l10.5-6.5z"/>';
 I.more='<circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/>';
 let selPag=new Set(), listaAtual=[];
 function cobTr(c,sel){
-  const o=ordem(c), pode=sel&&c.status==='nota'&&c.contratante===session&&podeAgir();
+  const o=ordem(c), pode=sel&&c.status==='nota'&&c.contratante===session&&podeAgir()&&tEstado(c)==='liberado';
   return `<tr class="click${selPag.has(c.id)?' sel':''}" data-open="${c.id}" tabindex="0">
     ${sel?`<td class="selc">${pode?`<input type="checkbox" data-sel="${c.id}" ${selPag.has(c.id)?'checked':''} aria-label="Selecionar ${c.id} para pagar">`:''}</td>`:''}
     <td class="m-full"><div class="cell"><span class="pair">${avatar(c.contratante,'sm')}${avatar(c.prestador,'sm')}</span><div style="min-width:0"><strong>${esc(nome(c.contratante))} → ${esc(nome(c.prestador))}</strong><small>${esc(c.descricao)}</small>${c.recusa&&c.status==='aguardando'?`<span class="pill danger" style="margin-top:4px">Nota nº ${c.recusa.nota} recusada: ${esc(c.recusa.motivo)}</span>`:''}</div></div></td>
@@ -1861,7 +1891,7 @@ function viewLista(modo){
   const chips=[['todas','Todas'],['aguardando','Aguardando nota'],['nota','A pagar'],['paga','Pagas']];
   const arr=ordena(filtro==='todas'?base:base.filter(c=>c.status===filtro));
   listaAtual=arr.map(c=>c.id);
-  const sel=modo==='pagar', pagaveis=arr.filter(c=>c.status==='nota'&&c.contratante===session&&podeAgir());
+  const sel=modo==='pagar', pagaveis=arr.filter(c=>c.status==='nota'&&c.contratante===session&&podeAgir()&&tEstado(c)==='liberado');
   [...selPag].forEach(id=>{ const c=db.cobrancas.find(x=>x.id===id); if(!c||c.status!=='nota'||c.contratante!==session) selPag.delete(id); });
   const escolhidas=db.cobrancas.filter(c=>selPag.has(c.id)), taxa=Number((emp(session)||{}).taxa||0), tot=soma(escolhidas), tx=Math.round(tot*taxa)/100;
   const todas=pagaveis.length&&pagaveis.every(c=>selPag.has(c.id));
@@ -1870,7 +1900,7 @@ function viewLista(modo){
       <span class="end" style="font-size:13px;color:var(--muted)">Em aberto <strong style="color:var(--ink)">${brl(soma(base.filter(c=>c.status!=='paga')))}</strong></span></div>
     ${arr.length?`<div class="scroll"><table class="resp"><thead><tr>${sel?`<th class="selc">${pagaveis.length?`<input type="checkbox" data-selall ${todas?'checked':''} aria-label="Selecionar todas as notas a pagar">`:''}</th>`:''}<th>Contratante → prestador</th><th>Cobrança</th><th>Competência</th><th>Valor</th><th>Situação</th><th></th></tr></thead><tbody>${arr.map(c=>cobTr(c,sel)).join('')}</tbody></table></div>`
       :`<div class="empty"><span class="ic">${ic('inbox')}</span>${base.length?'Nada neste filtro.':(modo==='pagar'?'Nenhuma cobrança ainda. Crie a primeira ou receba pelo RH.':'Nenhuma cobrança para você por enquanto.')}</div>`}
-    ${sel&&escolhidas.length?`<div class="lote"><div><strong>${escolhidas.length===1?'1 nota selecionada':escolhidas.length+' notas selecionadas'}</strong><small>${brl(tot)} + taxa Conectwork ${brl(tx)}</small></div><button class="btn sec sm" data-selclear>Limpar</button><button class="btn ok" data-lote>${ic('wallet')}Pagar ${brl(tot+tx)}</button></div>`:''}
+    ${sel&&escolhidas.length?`<div class="lote"><div><strong>${escolhidas.length===1?'1 nota selecionada':escolhidas.length+' notas selecionadas'}</strong><small>Sem taxa sobre o pagamento: o dinheiro vai direto ao prestador</small></div><button class="btn sec sm" data-selclear>Limpar</button><button class="btn ok" data-lote>${ic('cal')}Agendar ${brl(tot)}</button></div>`:''}
   </div>`;
 }
 function dlgLote(){
@@ -1878,7 +1908,7 @@ function dlgLote(){
   const taxa=Number(emp(session).taxa||0), tot=soma(cs), tx=Math.round(tot*taxa)/100;
   openDlg(head(`Pagar ${cs.length===1?'1 nota':cs.length+' notas'}`,'Cada prestador recebe na conta cadastrada no Conectwork.')+`<div class="dlg-b">
     <div class="stack" style="gap:8px">${cs.map(c=>`<div class="summary"><span class="pair">${avatar(c.prestador,'sm')}</span><div class="t"><strong>${esc(nome(c.prestador))}</strong><small>Nota nº ${c.nota.numero} · ${esc(c.descricao)}</small></div><div class="v" style="font-size:16px">${brl(c.valor)}</div></div>`).join('')}</div>
-    <dl class="kv"><dt>Notas</dt><dd>${brl(tot)}</dd><dt>Taxa Conectwork</dt><dd>${taxa.toLocaleString('pt-BR')}% · ${brl(tx)}</dd></dl>
+    <dl class="kv"><dt>Notas</dt><dd>${brl(tot)}</dd></dl>
     <div class="total"><span>Total</span><span>${brl(tot+tx)}</span></div>
     <p class="sim">${ic('alert')}<span>Pagamento simulado. Depois ele sai pela conta vinculada ao banco de vocês.</span></p></div>
     <div class="dlg-f"><button class="btn sec" data-close>Voltar</button><button class="btn ok" id="ltOk">${ic('check')}Pagar ${brl(tot+tx)}</button></div>`);
@@ -1890,7 +1920,7 @@ function dlgDetalhe(c){
   const tl=[['Cobrança criada',c.criada,true],['Nota emitida',c.nota?.emitida,!!c.nota],['Pagamento',c.pagaEm,!!c.pagaEm]];
   const pos=listaAtual.indexOf(c.id), ant=pos>0?listaAtual[pos-1]:null, prox=pos>=0&&pos<listaAtual.length-1?listaAtual[pos+1]:null;
   const nf=c.nota?`<div class="nfse"><div class="hd"><div><small>NFS-e · simulação</small><strong>Nº ${c.nota.numero}</strong></div><div style="text-align:right"><small>Valor</small><strong>${brl(c.valor)}</strong></div></div>
-    <div class="bd"><dl class="kv"><dt>Prestador</dt><dd>${esc(p.dados.razao)}<br><span class="hint">${esc(p.dados.cnpj)}</span></dd><dt>Tomador</dt><dd>${esc(t.dados.razao)}<br><span class="hint">${esc(t.dados.cnpj)}</span></dd><dt>Serviço</dt><dd>${s?esc(s[0]+' — '+s[1]):''}</dd><dt>Discriminação</dt><dd>${esc(c.nota.descricao||c.descricao)}</dd><dt>Emissão</dt><dd>${fmtData(c.nota.emitida)}</dd><dt>Origem</dt><dd>${c.nota.origem==='emitir'?'Emitida pelo Conectwork':c.nota.origem==='xml'?'XML enviado pelo prestador · conferido':'Registrada no Conectwork'}</dd></dl>
+    <div class="bd"><dl class="kv"><dt>Prestador</dt><dd>${esc(p.dados.razao)}<br><span class="hint">${esc(p.dados.cnpj)}</span></dd><dt>Tomador</dt><dd>${esc(t.dados.razao)}<br><span class="hint">${esc(t.dados.cnpj)}</span></dd><dt>Serviço</dt><dd>${s?esc(s[0]+' — '+s[1]):''}</dd><dt>Discriminação</dt><dd>${esc(c.nota.descricao||c.descricao)}</dd><dt>Emissão</dt><dd>${fmtData(c.nota.emitida)}</dd>${c.vencimento?`<dt>Vencimento</dt><dd>${fmtData(c.vencimento)}</dd>`:''}${c.contrato?`<dt>Contrato</dt><dd>${esc(c.contrato)}</dd>`:''}<dt>Origem</dt><dd>${c.nota.origem==='emitir'?'Emitida pelo Conectwork':c.nota.origem==='xml'?'XML enviado pelo prestador · conferido':'Registrada no Conectwork'}</dd></dl>
     <p class="chave">Chave ${c.nota.chave.replace(/(\d{5})/g,'$1 ')}</p></div></div>`:'';
   openDlg(`<div class="drnav">${pos>=0?`<button class="btn sec sm" data-drnav="${ant||''}" ${ant?'':'disabled'} aria-label="Cobrança anterior">‹</button><span>${pos+1} de ${listaAtual.length}</span><button class="btn sec sm" data-drnav="${prox||''}" ${prox?'':'disabled'} aria-label="Próxima cobrança">›</button>`:''}</div>`+head(`Cobrança ${c.id}`,`Competência ${fmtComp(c.competencia)}${c.origem==='api'?' · criada pela integração do RH':''}`)+`<div class="dlg-b">${summary(c)}
     <ul class="tl">${tl.map(([l,d,ok])=>`<li class="${ok?'done':''}"><span class="dot">${ok?CHECK:''}</span>${l}<small>${d?fmtData(d):'pendente'}</small></li>`).join('')}</ul>${nf}</div>
@@ -1917,26 +1947,26 @@ function dlgMais(){
 /* ===================== Tour guiado ===================== */
 let ti=0; window.tourOn=false;
 const TOUR=[
-  {u:null,sel:'.lgroups',who:'Tela de entrada',t:'Cada pessoa tem o próprio login',d:'As pessoas aparecem agrupadas por empresa: a equipe Conectwork, a Colafix (quem contrata), a Zenith e a Nexus (quem fornece profissionais) e o João, um MEI. Cada uma vê só o que o cargo dela permite. Vamos passar pelo sistema pelo olhar de cada uma.'},
+  {u:null,sel:'.lgroups',who:'Tela de entrada',t:'Cada pessoa tem o próprio login',d:'As pessoas aparecem agrupadas por empresa: a equipe Conectwork, a Contratante A (quem contrata), a Intermediária C e a Prestadora B (quem fornece profissionais) e o João, um MEI. Cada uma vê só o que o cargo dela permite. Vamos passar pelo sistema pelo olhar de cada uma.'},
   {u:null,sel:'.signup',who:'Tela de entrada',t:'Cadastro de empresa em 6 etapas',d:'Empresa nova se cadastra aqui: dados fiscais, endereço, responsável, banco, documentos e revisão com aceites. CNPJ e CPF são validados e nada opera antes da aprovação da equipe Conectwork.'},
   {u:'u-ana',tab:'inicio',sel:'.hero',who:'Equipe Conectwork · master',t:'A visão da rede inteira',d:'A equipe master acompanha o volume que passa pela plataforma, o que está em aberto, as taxas recebidas e os cadastros esperando análise.'},
   {u:'u-ana',tab:'cadastros',sel:'main .card',who:'Equipe Conectwork · master',t:'Análise de cadastros',d:'Cada empresa nova cai aqui. A equipe confere dados e documentos um a um e decide: aprovar, pedir ajuste com motivo escrito ou recusar. Também define a taxa e libera os módulos de cada empresa.'},
-  {u:'u-ana',tab:'roadmap',sel:'.phases',who:'Equipe Conectwork · master',t:'As três fases do produto',d:'Fase 1: piloto na Colafix. Fase 2: a Zenith opera os profissionais e emite notas pela plataforma. Fase 3: catálogo aberto e serviços financeiros com o banco dos sócios. O que tem ✓ já está neste protótipo.'},
-  {u:'u-paula',tab:'api',sel:'.steps3',who:'Colafix · RH',t:'Integração com o painel do RH',d:'No painel da Colafix, o RH confere as horas pelo Face ID e aperta "Fechar valor". O fechamento chega aqui sozinho e vira o pedido de nota para o prestador. A Juliana, do RH, só vê o que precisa: cobranças, integração e catálogo.'},
-  {u:'u-marina',tab:'inicio',sel:'.hero',who:'Colafix · administradora',t:'O que está pronto para pagar',d:'A Marina abre o sistema e já vê quanto tem para pagar, o que espera nota e a taxa negociada com o Conectwork.'},
-  {u:'u-marina',tab:'inicio',sel:'.grid-main .stack > .card',who:'Colafix · administradora',t:'Precisa da sua ação',d:'Tudo o que depende dela, em ordem de urgência: pagamentos primeiro, depois a avaliação mensal dos terceirizados que trabalham na Colafix.'},
-  {u:'u-marina',tab:'pagar',sel:'main .card',who:'Colafix · administradora',t:'Cobranças, notas e pagamento em lote',d:'Cada linha mostra a situação da nota, do pedido ao pagamento. Marque várias notas conferidas e pague todas de uma vez. Clicando na linha, o detalhe abre ao lado, e dá para passar de uma cobrança para a outra pelas setas.'},
-  {u:'u-marina',tab:'usuarios',sel:'main .card',who:'Colafix · administradora',t:'Usuários e acessos',d:'A administradora convida as pessoas da empresa, escolhe o cargo de cada uma e pode ajustar o acesso individualmente, no mesmo modelo do painel da Colafix.'},
-  {u:'u-marina',tab:'catalogo',sel:'.catg',who:'Colafix · fase 3',t:'Catálogo de profissionais',d:'Na fase 3, a Colafix encontra profissionais das empresas da rede por área e habilidade, com índice, selos e avaliações, e solicita direto pela plataforma.'},
-  {u:'u-rafael',tab:'receber',sel:'main .card',who:'Zenith · administrador',t:'A Zenith recebe da Colafix',d:'A Zenith está no meio da cadeia: recebe a cobrança da Colafix, envia a nota e acompanha o pagamento.'},
-  {u:'u-rafael',tab:'profissionais',sel:'main .card',who:'Zenith · fase 2',t:'Os profissionais da Zenith',d:'Cada profissional tem cadastro próprio, índice de reputação e documentos com validade. A Zenith decide quem aparece no catálogo e vê alertas de NR ou ASO vencendo.'},
-  {u:'u-rafael',tab:'inicio',sel:'.zapbtn',who:'Zenith · administrador',t:'Avisos pelo WhatsApp',d:'Pedido de nota, nota recebida, pagamento, avaliações e indicações também chegam pelo WhatsApp. Aqui está a prévia de como as mensagens aparecem no celular.'},
-  {u:'u-joao',tab:'receber',sel:'main .card',who:'João · MEI',t:'O MEI envia a nota',d:'O João recebe o pedido de nota da Zenith. Ele emite no Emissor Nacional e envia o XML aqui; o sistema confere valor e CNPJs na hora. No celular, o botão "Emitir nota" fica fixo na tela.'},
+  {u:'u-ana',tab:'roadmap',sel:'.phases',who:'Equipe Conectwork · master',t:'As três fases do produto',d:'Fase 1: piloto na Contratante A. Fase 2: a Intermediária C opera os profissionais e emite notas pela plataforma. Fase 3: catálogo aberto e serviços financeiros com o banco dos sócios. O que tem ✓ já está neste protótipo.'},
+  {u:'u-paula',tab:'api',sel:'.steps3',who:'Contratante A · RH',t:'Integração com o painel do RH',d:'No painel de RH da Contratante A, o RH confere as horas pelo Face ID e aperta "Fechar valor". O fechamento chega aqui sozinho e vira o pedido de nota para o prestador. A Juliana, do RH, só vê o que precisa: cobranças, integração e catálogo.'},
+  {u:'u-marina',tab:'inicio',sel:'.hero',who:'Contratante A · administradora',t:'O que está pronto para pagar',d:'A Marina abre o sistema e já vê quanto tem para pagar, o que espera nota e a taxa negociada com o Conectwork.'},
+  {u:'u-marina',tab:'inicio',sel:'.grid-main .stack > .card',who:'Contratante A · administradora',t:'Precisa da sua ação',d:'Tudo o que depende dela, em ordem de urgência: pagamentos primeiro, depois a avaliação mensal dos terceirizados que trabalham na Contratante A.'},
+  {u:'u-marina',tab:'pagar',sel:'main .card',who:'Contratante A · administradora',t:'Cobranças, notas e pagamento em lote',d:'Cada linha mostra a situação da nota, do pedido ao pagamento. Marque várias notas conferidas e pague todas de uma vez. Clicando na linha, o detalhe abre ao lado, e dá para passar de uma cobrança para a outra pelas setas.'},
+  {u:'u-marina',tab:'usuarios',sel:'main .card',who:'Contratante A · administradora',t:'Usuários e acessos',d:'A administradora convida as pessoas da empresa, escolhe o cargo de cada uma e pode ajustar o acesso individualmente, no mesmo modelo do painel de RH da Contratante A.'},
+  {u:'u-marina',tab:'catalogo',sel:'.catg',who:'Contratante A · fase 3',t:'Catálogo de profissionais',d:'Na fase 3, a Contratante A encontra profissionais das empresas da rede por área e habilidade, com índice, selos e avaliações, e solicita direto pela plataforma.'},
+  {u:'u-rafael',tab:'receber',sel:'main .card',who:'Intermediária C · administrador',t:'A Intermediária C recebe da Contratante A',d:'A Intermediária C está no meio da cadeia: recebe a cobrança da Contratante A, envia a nota e acompanha o pagamento.'},
+  {u:'u-rafael',tab:'profissionais',sel:'main .card',who:'Intermediária C · fase 2',t:'Os profissionais da Intermediária C',d:'Cada profissional tem cadastro próprio, índice de reputação e documentos com validade. A Intermediária C decide quem aparece no catálogo e vê alertas de NR ou ASO vencendo.'},
+  {u:'u-rafael',tab:'inicio',sel:'.zapbtn',who:'Intermediária C · administrador',t:'Avisos pelo WhatsApp',d:'Pedido de nota, nota recebida, pagamento, avaliações e indicações também chegam pelo WhatsApp. Aqui está a prévia de como as mensagens aparecem no celular.'},
+  {u:'u-joao',tab:'receber',sel:'main .card',who:'João · MEI',t:'O MEI envia a nota',d:'O João recebe o pedido de nota da Intermediária C. Ele emite no Emissor Nacional e envia o XML aqui; o sistema confere valor e CNPJs na hora. No celular, o botão "Emitir nota" fica fixo na tela.'},
   {u:'u-joao',tab:'mei',sel:'.hero',who:'João · MEI',t:'A área do MEI',d:'Faturamento do ano contra o limite do MEI, lembrete do DAS, declaração anual com o valor já somado e documentos vencendo. É o que faz o MEI abrir o app sem precisar de cobrança.'},
-  {u:'u-joao',tab:'mei',sel:'[data-indicar]',who:'João · MEI',t:'Indicação entre profissionais',d:'O João indica alguém de confiança. Se a Zenith cadastrar, os dois ganham um benefício com o banco dos sócios e ele ganha um selo no currículo.'},
+  {u:'u-joao',tab:'mei',sel:'[data-indicar]',who:'João · MEI',t:'Indicação entre profissionais',d:'O João indica alguém de confiança. Se a Intermediária C cadastrar, os dois ganham um benefício com o banco dos sócios e ele ganha um selo no currículo.'},
   {u:'u-joao',tab:'curriculo',sel:'.ringbox',who:'João · MEI',t:'Currículo e Índice Conectwork',d:'Cada serviço vira histórico. O índice soma notas no prazo, notas aceitas de primeira, documentos válidos e as avaliações mensais da empresa onde ele trabalha. O currículo é dele, mesmo se mudar de empresa.'},
   {u:'u-joao',tab:'conta',sel:'.hero',who:'João · fase 3',t:'Conta e benefícios',d:'Na fase 3, a conta digital, a antecipação de notas e o crédito vêm do banco dos sócios, usando o histórico da plataforma.'},
-  {u:null,sel:null,who:'Fim do tour',t:'Pronto: essa é a cadeia inteira',d:'Colafix fecha o valor, a Zenith e o MEI enviam as notas, tudo é conferido e pago, e cada serviço vira reputação. Agora é só entrar com qualquer pessoa e explorar à vontade.'}
+  {u:null,sel:null,who:'Fim do tour',t:'Pronto: essa é a cadeia inteira',d:'Contratante A fecha o valor, a Intermediária C e o MEI enviam as notas, tudo é conferido e pago, e cada serviço vira reputação. Agora é só entrar com qualquer pessoa e explorar à vontade.'}
 ];
 function tourGo(i){
   ti=Math.max(0,Math.min(TOUR.length-1,i)); const st=TOUR[ti];
@@ -2035,8 +2065,8 @@ function renderLogin(){
       <button class="btn" id="lNovaOk">${conv?'Criar senha e entrar':'Salvar senha nova'}</button></div>`; }
   $('#app').innerHTML=`<div class="login">
     <section class="brandpanel">${CURVES}
-      <div style="position:relative">${LOGO(120)}<h1>Conect<span>work</span></h1><div class="slogan">INTEGRAÇÃO QUE CONECTA EMPRESAS</div>
-        <p class="lead">Contrate profissionais, receba as notas, pague e acompanhe toda a cadeia de prestação de serviços em um só lugar, com cada empresa conferida pela nossa equipe.</p></div>
+      <div style="position:relative">${LOGO(120)}<h1>Conect<span>work</span></h1><div class="slogan">PLATAFORMA MAIS COMPLETA EM OUTSOURCING</div>
+        <p class="lead tagline">Toda papelada e burocracia em um só lugar, na palma da sua mão.</p><p class="lead">Contrate serviços, receba as notas, pague e acompanhe toda a cadeia de prestação de serviços, com cada empresa conferida pela nossa equipe.</p></div>
       <div class="pillars"><div class="pillar">${ic('net')}<span>Conexão entre empresas</span></div><div class="pillar">${ic('hand')}<span>Troca de serviços</span></div><div class="pillar">${ic('shield')}<span>Segurança e confiança</span></div><div class="pillar">${ic('bolt')}<span>Agilidade nos processos</span></div></div>
     </section>
     <section class="loginside">
@@ -2226,7 +2256,7 @@ function viewRelatorios(){
       <div class="filters">${temPag?`<button class="chip" data-relm="pagar" aria-pressed="${relModo==='pagar'}">A pagar e pagas</button>`:''}${temRec?`<button class="chip" data-relm="receber" aria-pressed="${relModo==='receber'}">A receber e recebidas</button>`:''}</div>
       <select class="sel" id="relComp" aria-label="Competência"><option value="todas">Todas as competências</option>${comps.map(c=>`<option value="${c}" ${c===relComp?'selected':''}>${fmtComp(c)}</option>`).join('')}</select>
       <div class="end" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sec sm" data-csv>${ic('download')}Excel</button><button class="btn sec sm" data-print>${ic('file')}PDF</button><button class="btn sec sm" data-xmls>${ic('download')}XMLs</button></div></div>
-    <div class="relsum"><div><span>Cobranças</span><strong>${ls.length}</strong></div><div><span>Valor das notas</span><strong>${brl(soma(ls))}</strong></div><div><span>${relModo==='pagar'?'Pago':'Recebido'}</span><strong>${brl(soma(ls.filter(c=>c.status==='paga')))}</strong></div><div><span>${relModo==='pagar'?'Taxas Conectwork':'Em aberto'}</span><strong>${relModo==='pagar'?brl(tx):brl(soma(ls.filter(c=>c.status!=='paga')))}</strong></div></div>
+    <div class="relsum"><div><span>Cobranças</span><strong>${ls.length}</strong></div><div><span>Valor das notas</span><strong>${brl(soma(ls))}</strong></div><div><span>${relModo==='pagar'?'Pago':'Recebido'}</span><strong>${brl(soma(ls.filter(c=>c.status==='paga')))}</strong></div><div><span>Em aberto</span><strong>${brl(soma(ls.filter(c=>c.status!=='paga')))}</strong></div></div>
     ${ls.length?`<div class="scroll"><table><thead><tr><th>Competência</th><th>Cobrança</th><th>${relModo==='pagar'?'Prestador':'Tomador'}</th><th>Nota</th><th class="r">Valor</th><th>Situação</th><th>Pago em</th></tr></thead><tbody>${ls.map(c=>`<tr><td>${fmtComp(c.competencia)}</td><td>${esc(c.id)}</td><td>${esc(nome(outro(c)))}</td><td>${c.nota?'nº '+c.nota.numero:'—'}</td><td class="r num">${brl(c.valor)}</td><td>${sit(c)}</td><td>${c.pagaEm?fmtData(c.pagaEm):'—'}</td></tr>`).join('')}
       <tr class="tot"><td colspan="4"><strong>Total</strong></td><td class="r num">${brl(soma(ls))}</td><td colspan="2"></td></tr></tbody></table></div>`:`<div class="empty"><span class="ic">${ic('file')}</span>Nenhuma cobrança nesse período.</div>`}</div>
     ${Object.keys(porP).length?`<div class="card"><div class="card-h"><h3>Resumo por ${relModo==='pagar'?'prestador':'tomador'}</h3></div><div class="scroll"><table><thead><tr><th>${relModo==='pagar'?'Prestador':'Tomador'}</th><th>Cobranças</th><th class="r">Valor</th><th class="r">${relModo==='pagar'?'Pago':'Recebido'}</th></tr></thead><tbody>${Object.entries(porP).map(([k,x])=>`<tr><td>${esc(nome(k))}</td><td>${x.n}</td><td class="r num">${brl(x.v)}</td><td class="r num">${brl(x.pago)}</td></tr>`).join('')}</tbody></table></div></div>`:''}
@@ -2272,11 +2302,11 @@ function dlgAjuda(){
   TOUR.splice(1,0,{u:null,sel:'.logincard',who:'Tela de entrada',t:'Entrar com senha ou código no WhatsApp',d:'Cada pessoa entra com e-mail e senha ou pede um código de 6 dígitos no WhatsApp, sem precisar lembrar senha. Quem esquece cria uma nova pelo link do e-mail, e quem foi convidado cria a senha no primeiro acesso.'});
   const iu=at('Usuários e acessos'); if(iu>=0){ TOUR[iu].d='A administradora convida as pessoas, escolhe o cargo e ajusta o acesso de cada uma. O contador entra com o cargo "Contador (só leitura)". Convites pendentes ficam marcados até a pessoa criar a senha.';
     TOUR.splice(iu+1,0,
-      {u:'u-carlos',tab:'relatorios',sel:'main .card',who:'Colafix · financeiro',t:'Relatórios para a contabilidade',d:'Por competência: notas, valores, taxas e o que foi pago, com resumo por prestador. Exporta para Excel, PDF e os XMLs do mês.'},
-      {u:'u-marina',tab:'auditoria',sel:'main .card',who:'Colafix · administradora',t:'Histórico de alterações',d:'Tudo o que as pessoas fazem fica registrado com data, hora e autor: convites, pagamentos, notas recusadas, documentos. O histórico não pode ser apagado.'},
+      {u:'u-carlos',tab:'relatorios',sel:'main .card',who:'Contratante A · financeiro',t:'Relatórios para a contabilidade',d:'Por competência: notas, valores, taxas e o que foi pago, com resumo por prestador. Exporta para Excel, PDF e os XMLs do mês.'},
+      {u:'u-marina',tab:'auditoria',sel:'main .card',who:'Contratante A · administradora',t:'Histórico de alterações',d:'Tudo o que as pessoas fazem fica registrado com data, hora e autor: convites, pagamentos, notas recusadas, documentos. O histórico não pode ser apagado.'},
       {u:'u-marina',tab:'inicio',sel:'[data-ajuda]',who:'Todos',t:'Central de ajuda',d:'Perguntas frequentes de acordo com quem está usando, busca por dúvida, contato do suporte e atalho para este tour.'}); }
-  const ip=at('Os profissionais da Zenith'); if(ip>=0) TOUR[ip].d='Cada profissional tem cadastro próprio, índice de reputação e documentos com validade. A Zenith convida novos profissionais pelo WhatsApp: eles completam o próprio cadastro, com CNPJ do MEI, Pix e documentos.';
-  const ie=at('O MEI envia a nota'); if(ie>=0) TOUR[ie].d='O João recebe o pedido de nota da Zenith, emite no Emissor Nacional e envia o XML; o sistema confere valor e CNPJs. Se a nota vier errada, quem paga pode recusar com motivo, e ele envia uma nova.';
+  const ip=at('Os profissionais da Intermediária C'); if(ip>=0) TOUR[ip].d='Cada profissional tem cadastro próprio, índice de reputação e documentos com validade. A Intermediária C convida novos profissionais pelo WhatsApp: eles completam o próprio cadastro, com CNPJ do MEI, Pix e documentos.';
+  const ie=at('O MEI envia a nota'); if(ie>=0) TOUR[ie].d='O João recebe o pedido de nota da Intermediária C, emite no Emissor Nacional e envia o XML; o sistema confere valor e CNPJs. Se a nota vier errada, quem paga pode recusar com motivo, e ele envia uma nova.';
   const ic2=at('Currículo e Índice Conectwork'); if(ic2>=0) TOUR[ic2].d+=' Quando um documento vai vencer, ele mesmo renova pelo currículo.';
 })();
 
@@ -2302,10 +2332,10 @@ seed=function(){ const d=__seed6();
   d.usuarios.push(
     {id:'u-renata-c',nome:'Renata Alves',email:'renata@alvescontabil.com.br',tel:'(51) 99876-5432',empresa:'colafix',cargo:'contador',ativo:true,zap:true},
     {id:'u-renata-z',nome:'Renata Alves',email:'renata@alvescontabil.com.br',tel:'(51) 99876-5432',empresa:'zenith',cargo:'contador',ativo:true,zap:true},
-    {id:'u-bruno',nome:'Bruno Lima',email:'bruno.compras@colafix.com.br',tel:'',empresa:'colafix',cargo:'consulta',ativo:true,pendente:true,zap:true});
+    {id:'u-bruno',nome:'Bruno Lima',email:'bruno.compras@contratante-a.com.br',tel:'',empresa:'colafix',cargo:'consulta',ativo:true,pendente:true,zap:true});
   d.pessoas.push({id:'p-gustavo',nome:'Gustavo Rocha',funcao:'Mecânico de manutenção',area:'Manutenção industrial',cidade:'Gravataí',uf:'RS',hab:[],vh:0,nota:0,vinculo:'zenith',alocado:'',catalogo:false,consente:false,mei:'',desde:'2026-11-04',st:{tot:0,prazo:0,prim:0},docs:[],convite:{tel:'(51) 99432-1100',em:'2026-11-04'}});
   const H=(min,uid,quem,emp,txt)=>({em:new Date(Date.now()-min*60000).toISOString(),uid,quem,empresa:emp,txt});
-  d.log=[H(35,'u-marina','Marina Costa','colafix','Convite enviado para bruno.compras@colafix.com.br.'),H(180,'u-paula','Juliana','colafix','Fechamento recebido. Cobrança C-1001 criada para Zenith Serviços.'),H(1500,'u-rafael','Marcelo','zenith','Convite enviado pelo WhatsApp para Gustavo Rocha.'),H(2900,'u-carlos','Carlos Teixeira','colafix','Relatório exportado para Excel.'),H(5000,'u-ana','Iasmyn','master','Alfa Logística: cadastro recebido para análise.')];
+  d.log=[H(35,'u-marina','Marina Costa','colafix','Convite enviado para bruno.compras@contratante-a.com.br.'),H(180,'u-paula','Juliana','colafix','Fechamento recebido. Cobrança C-1001 criada para Intermediária C.'),H(1500,'u-rafael','Marcelo','zenith','Convite enviado pelo WhatsApp para Gustavo Rocha.'),H(2900,'u-carlos','Carlos Teixeira','colafix','Relatório exportado para Excel.'),H(5000,'u-ana','Iasmyn','master','Alfa Logística: cadastro recebido para análise.')];
   return d; };
 /* ===================== Encerramento de contrato de PJ ===================== */
 const MOT_ENC=['Fim do serviço contratado','Pedido do profissional','Decisão da empresa contratante','Redução de demanda','Outro motivo'];
@@ -2362,14 +2392,592 @@ zapCob=function(c,ev){ __zapCob(c,ev);
   if(ev==='paga'&&c.tipo==='encerramento'){ const e=(db.encerramentos||[]).find(x=>x.cobranca===c.id); if(e&&e.status!=='concluido'){ const p=pes(e.pessoa);
     p.alocado=''; p.encerra=null; (p.hist||(p.hist=[])).push({cliente:e.contratante,fim:e.data,motivo:e.motivo}); e.status='concluido';
     zap(e.fornecedor,`O encerramento de ${p.nome} na ${nome(e.contratante)} foi concluído e pago. ${p.nome.split(' ')[0]} aparece como disponível nos seus profissionais.`,'Encerramento'); } } };
-function bind7(){
+function bind7(){ bind8();
   const q=s=>document.querySelectorAll(s);
   q('[data-enc]').forEach(b=>b.onclick=enviarEnc);
   q('[data-encrep]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); dlgEncRep(db.encerramentos.find(x=>x.id===b.dataset.encrep)); });
   const ev=$('#enV'); if(ev) ev.oninput=()=>$('#enErr').textContent='';
 }
+/* ===================== Duas modalidades: triagem, demandas, propostas, contratos e OS ===================== */
+I.contract='<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M9.5 13h6M9.5 16.5h4"/><path d="M9 20c1-1.5 2-1.5 3 0"/>';
+I.target='<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>';
+const PLANOS={Essencial:'Cobranças, notas, usuários e integração RH',Profissional:'Essencial + contratos, profissionais e emissão de NFS-e',Rede:'Profissional + demandas, catálogo e conta',Gratuito:'Profissional MEI: grátis'};
+MODULOS.splice(1,0,{id:'contratos',nome:'Contratos e OS',fase:1,desc:'Contratos das duas modalidades, aceite, medição e espelho de faturamento'},{id:'demandas',nome:'Demandas e propostas',fase:2,desc:'Triagem, demanda, propostas, comparador e OS'});
+TAB_MOD.contratos='contratos'; TAB_MOD.demandas='demandas'; TAB_MOD.oportunidades='demandas';
+FASE.demandas=2; FASE.oportunidades=2;
+['rh','financeiro','consulta','contador','operacional'].forEach(k=>CARGOS[k].tabs.push('contratos'));
+CARGOS.rh.tabs.push('demandas'); CARGOS.operacional.tabs.push('oportunidades');
+const MODAL={os:['Serviço por OS','purple'],continua:['Equipe contínua','teal']};
+const ST_CT={assinatura:['warn','Aguardando assinatura'],execucao:['info','Em execução'],entregue:['warn','Entrega para analisar'],aceito:['ok','Aceito'],ativo:['ok','Ativo'],encerrado:['danger','Encerrado']};
+const modPill=m=>`<span class="pill ${m==='os'?'mos':'mct'}">${MODAL[m][0]}</span>`;
+const ctPartes=c=>c.contratante===session||c.prestador===session||session==='master';
+const DIA=864e5, maisDias=(d,n)=>new Date(new Date(d+'T12:00:00').getTime()+n*DIA).toISOString().slice(0,10);
 
-load(); try{ uid=localStorage.getItem(KEY+':u')||null; }catch(e){ uid=null; } { const u=usr(); session=u?u.empresa:null; } render();
+/* ---------- tabs ---------- */
+const __tabsEmp=tabsEmpresa;
+tabsEmpresa=function(e){ const all=__tabsEmp(e); const t=e.tipo, ins=[];
+  ins.push(['contratos','Contratos e OS','contract']);
+  if(t!=='prestador') ins.push(['demandas','Demandas','target']);
+  if(t!=='contratante') ins.push(['oportunidades','Oportunidades','target']);
+  const ok=ins.filter(([k])=>!TAB_MOD[k]||temMod(e,TAB_MOD[k]));
+  all.splice(1,0,...ok); return all; };
+
+/* ---------- Contratos ---------- */
+function viewContratos(){
+  const cs=(db.contratos||[]).filter(ctPartes).sort((a,b)=>(b.criado||'').localeCompare(a.criado||''));
+  const pend=cs.filter(c=>(c.status==='assinatura'&&!c.assin[c.contratante===session?'contratante':'prestador'])||(c.status==='entregue'&&c.contratante===session)||(c.status==='execucao'&&c.prestador===session&&c.modalidade==='os'));
+  return `${pend.length?`<div class="banner warn">${ic('alert')}<span><strong>${pend.length===1?'1 contrato precisa':'Há '+pend.length+' contratos que precisam'} da sua ação</strong>Assinatura, entrega ou análise de entrega.</span></div>`:''}
+  <div class="card"><div class="card-h"><h3>Contratos e ordens de serviço</h3><span class="count">${cs.length}</span><span class="end hint" style="font-size:12px">${modPill('os')} entrega definida · ${modPill('continua')} prestadora com equipe própria</span></div>
+  ${cs.length?`<div class="scroll"><table class="resp"><thead><tr><th>Contrato</th><th>Modalidade</th><th>Outra parte</th><th>Valor ou medição</th><th>Situação</th></tr></thead><tbody>${cs.map(c=>{ const outra=c.contratante===session?c.prestador:c.contratante; const st=ST_CT[c.status]||['info',c.status];
+    return `<tr class="click" data-ct="${c.id}" tabindex="0"><td class="m-full"><div class="cell"><div style="min-width:0"><strong>${esc(c.objeto)}</strong><small>${esc(c.id)}${c.modalidade==='os'&&c.prazo?' · entrega até '+fmtData(c.prazo):''}</small></div></div></td><td>${modPill(c.modalidade)}</td><td class="m-hide">${esc(session==='master'?nome(c.contratante)+' → '+nome(c.prestador):nome(outra))}</td><td class="num">${c.modalidade==='os'?brl(c.valor):esc(c.medicao)}</td><td><span class="pill ${st[0]}">${st[1]}</span></td></tr>`; }).join('')}</tbody></table></div>`:`<div class="empty"><span class="ic">${ic('contract')}</span>Nenhum contrato ainda. Comece por uma nova contratação em Demandas.</div>`}</div>`;
+}
+function dlgContrato(c){
+  const souT=c.contratante===session, souP=c.prestador===session, lado=souT?'contratante':'prestador', pe=emp(c.prestador);
+  const cert=c.modalidade==='continua'&&pe&&pe.certidoes?Object.entries(pe.certidoes).map(([k,v])=>{ const s=docSt({validade:v}); return `<div class="docrow"><span class="ic">${ic(s[0]==='ok'?'check':'alert')}</span><div class="t"><strong>Certidão ${k==='federal'?'federal (Receita e PGFN)':k==='fgts'?'de regularidade do FGTS':'trabalhista (CNDT)'}</strong><small>Validade ${fmtData(v)}</small></div><span class="pill ${s[0]}">${s[1]}</span></div>`; }).join(''):'';
+  const meds=db.cobrancas.filter(x=>x.contrato===c.id||(c.modalidade==='continua'&&x.contratante===c.contratante&&x.prestador===c.prestador));
+  const ac=[]; if(c.status==='assinatura'&&(souT||souP)&&!c.assin[lado]&&podeAgir()) ac.push(`<button class="btn" data-assina="${c.id}">${ic('edit')}Assinar contrato</button>`);
+  if(c.modalidade==='os'&&c.status==='execucao'&&souP&&podeAgir()) ac.push(`<button class="btn" data-entrega="${c.id}">${ic('upload')}Enviar entrega</button>`);
+  if(c.modalidade==='os'&&c.status==='entregue'&&souT&&podeAgir()) ac.push(`<button class="btn" data-aceite="${c.id}">${ic('check')}Analisar entrega</button>`);
+  openDlg(head(esc(c.objeto),`${esc(c.id)} · ${MODAL[c.modalidade][0]}`)+`<div class="dlg-b">
+    <div class="summary"><span class="pair">${avatar(c.contratante,'sm')}${avatar(c.prestador,'sm')}</span><div class="t"><strong>${esc(nome(c.contratante))} contrata ${esc(nome(c.prestador))}</strong><small>${c.modalidade==='os'?'Entrega até '+fmtData(c.prazo):'Desde '+fmtData(c.inicio)+' · medição '+esc(c.medicao).toLowerCase()}</small></div><div class="v" style="font-size:16px">${c.modalidade==='os'?brl(c.valor):''}</div></div>
+    <dl class="kv">${c.modalidade==='os'?`<dt>Entregáveis</dt><dd>${esc(c.entregaveis)}</dd><dt>Critério de aceite</dt><dd>${esc(c.aceiteCrit)}</dd>`:`<dt>Interlocutor</dt><dd>${esc(c.interlocutor)} (responsável da prestadora pela equipe)</dd><dt>Medição</dt><dd>${esc(c.medicao)}</dd>`}<dt>Vencimento</dt><dd>${esc(c.vencRegra)}</dd><dt>Triagem</dt><dd>${esc(c.triagem||'—')}</dd></dl>
+    <ul class="tl"><li class="${c.assin.contratante?'done':''}"><span class="dot">${c.assin.contratante?CHECK:''}</span>Assinado por ${esc(nome(c.contratante))}<small>${c.assin.contratante?fmtData(c.assin.contratante.em)+' · '+esc(c.assin.contratante.nome):'pendente'}</small></li><li class="${c.assin.prestador?'done':''}"><span class="dot">${c.assin.prestador?CHECK:''}</span>Assinado por ${esc(nome(c.prestador))}<small>${c.assin.prestador?fmtData(c.assin.prestador.em)+' · '+esc(c.assin.prestador.nome):'pendente'}</small></li>
+      ${(c.marcos||[]).map(m=>`<li class="done"><span class="dot">${CHECK}</span>${esc(m.txt)}<small>${fmtData(m.em)}</small></li>`).join('')}</ul>
+    ${c.divergencia?`<div class="banner warn">${ic('alert')}<span><strong>Divergência apontada na entrega</strong>${esc(c.divergencia)}</span></div>`:''}
+    ${cert?`<div class="card"><div class="card-h"><h3>Certidões da prestadora</h3><span class="hint end" style="font-size:12px">Controle exigido na equipe contínua</span></div>${cert}</div>`:''}
+    ${meds.length?`<div class="card"><div class="card-h"><h3>${c.modalidade==='os'?'Faturamento':'Medições e notas'}</h3></div>${meds.map(x=>`<div class="docrow"><span class="ic">${ic('receipt')}</span><div class="t"><strong>${esc(x.descricao)}</strong><small>${x.id} · ${brl(x.valor)}</small></div>${pill(x)}</div>`).join('')}</div>`:''}
+    <p class="hint" style="margin:0;font-size:12px">Assinatura simulada no protótipo. No sistema real, assinatura eletrônica com identificação do signatário e registro de integridade.</p></div>
+    <div class="dlg-f">${ac.join('')}<button class="btn sec" data-close>Fechar</button></div>`,true);
+  const q=s=>document.querySelectorAll('#dlg '+s);
+  q('[data-assina]').forEach(b=>b.onclick=()=>dlgAssinar(c));
+  q('[data-entrega]').forEach(b=>b.onclick=()=>dlgEntrega(c));
+  q('[data-aceite]').forEach(b=>b.onclick=()=>dlgAceite(c));
+}
+function dlgAssinar(c){ const u=usr(), lado=c.contratante===session?'contratante':'prestador';
+  openDlg(head('Assinar contrato',`${esc(c.id)} · ${esc(c.objeto)}`)+`<div class="dlg-b"><p style="margin:0">Você assina em nome da <b>${esc(nome(session))}</b>. O contrato registra as partes, o objeto, ${c.modalidade==='os'?'os entregáveis, o critério de aceite':'a medição, o interlocutor da prestadora'}, o valor e a regra de vencimento.</p>
+    <label class="check"><input type="checkbox" id="asOk"><span>Li o contrato e concordo em nome da empresa. Declaro que a execução será feita com autonomia da prestadora.</span></label><p class="err" id="asErr"></p></div>
+    <div class="dlg-f"><button class="btn sec" data-close>Voltar</button><button class="btn" id="asBtn">${ic('edit')}Assinar como ${esc(u?u.nome.split(' ')[0]:nome(session))}</button></div>`);
+  $('#asBtn').onclick=()=>{ if(!$('#asOk').checked){ $('#asErr').textContent='Marque que leu e concorda para assinar.'; return; }
+    c.assin[lado]={nome:u?u.nome:nome(session),em:hoje()}; const outro=lado==='contratante'?c.prestador:c.contratante;
+    if(c.assin.contratante&&c.assin.prestador){ c.status=c.modalidade==='os'?'execucao':'ativo'; (c.marcos||(c.marcos=[])).push({txt:'Contrato assinado pelas duas partes',em:hoje()}); zap(outro,`O contrato ${c.id} (${c.objeto}) foi assinado pelas duas partes e já está ${c.modalidade==='os'?'em execução':'ativo'}.`,'Contrato'); }
+    else zap(outro,`A ${nome(session)} assinou o contrato ${c.id} (${c.objeto}). Falta a sua assinatura: ${LINK_APP}`,'Contrato');
+    save(); $('#dlg').close(); toast(`Contrato ${c.id} assinado.`); render(); };
+}
+function dlgEntrega(c){ const v={};
+  openDlg(head('Enviar entrega',`${esc(c.id)} · critério de aceite: ${esc(c.aceiteCrit)}`)+`<div class="dlg-b">
+    <label class="f"><span>O que foi entregue</span><textarea id="enTx" rows="3" placeholder="Descreva o resultado, testes feitos e pendências, se houver."></textarea></label>
+    <div class="up" id="enUp"><span class="ic">${ic('upload')}</span><div class="t"><strong>Evidência</strong><small id="enArq">Relatório, fotos, laudo ou medição</small></div><label class="btn sec sm">Selecionar<input type="file" id="enF"></label></div><p class="err" id="enEr"></p></div>
+    <div class="dlg-f"><button class="btn sec" data-close>Voltar</button><button class="btn" id="enOk">${ic('send')}Enviar para aceite</button></div>`);
+  $('#enF').onchange=e=>{ const f=e.target.files[0]; if(f){ v.arq=f.name; $('#enArq').textContent=f.name; $('#enUp').classList.add('ok'); } };
+  $('#enOk').onclick=()=>{ const t=$('#enTx').value.trim(); if(!t){ $('#enEr').textContent='Descreva o que foi entregue.'; return; }
+    c.status='entregue'; c.entrega={txt:t,arq:v.arq||'',em:hoje()}; c.divergencia=''; c.prazoAceite=maisDias(hoje(),5); (c.marcos||(c.marcos=[])).push({txt:'Entrega enviada para aceite'+(v.arq?' ('+v.arq+')':''),em:hoje()});
+    zap(c.contratante,`A ${nome(c.prestador)} enviou a entrega da ${c.id} (${c.objeto}). Analise até ${fmtData(c.prazoAceite)}: ${LINK_APP}`,'Entrega');
+    save(); $('#dlg').close(); toast('Entrega enviada para aceite.'); render(); };
+}
+function dlgAceite(c){ let modo='total';
+  openDlg(head('Analisar entrega',`${esc(c.id)} · prazo para responder até ${fmtData(c.prazoAceite||hoje())}`)+`<div class="dlg-b">
+    <div class="summary"><div class="t"><strong>${esc(c.entrega?c.entrega.txt:'')}</strong><small>${c.entrega&&c.entrega.arq?'Evidência: '+esc(c.entrega.arq):'Sem arquivo anexado'}</small></div><div class="v" style="font-size:16px">${brl(c.valor)}</div></div>
+    <p class="hint" style="margin:0;font-size:12.5px">Critério de aceite combinado: ${esc(c.aceiteCrit)}</p>
+    <div class="optc">${[['total','Aprovar','A entrega atende ao combinado.'],['parcial','Aprovar em parte','Paga só o que foi entregue.'],['div','Apontar divergência','Volta para a prestadora corrigir.']].map(([k,t,d],i)=>`<button type="button" class="opt" role="radio" aria-checked="${i===0}" data-ac="${k}"><strong>${t}</strong><small>${d}</small></button>`).join('')}</div>
+    <label class="f" id="acValBox" hidden><span>Valor aprovado (R$)</span><input id="acVal" inputmode="decimal"></label>
+    <label class="f"><span id="acTxL">Comentário <i>(opcional)</i></span><textarea id="acTx" rows="2"></textarea></label><p class="err" id="acEr"></p></div>
+    <div class="dlg-f"><button class="btn sec" data-close>Voltar</button><button class="btn" id="acOk">Confirmar</button></div>`);
+  document.querySelectorAll('#dlg [data-ac]').forEach(b=>b.onclick=()=>{ modo=b.dataset.ac; document.querySelectorAll('#dlg [data-ac]').forEach(x=>x.setAttribute('aria-checked',String(x===b))); $('#acValBox').hidden=modo!=='parcial'; $('#acTxL').innerHTML=modo==='div'?'Motivo da divergência (obrigatório)':'Comentário <i>(opcional)</i>'; $('#acEr').textContent=''; });
+  $('#acOk').onclick=()=>{ const t=$('#acTx').value.trim();
+    if(modo==='div'){ if(!t){ $('#acEr').textContent='Explique a divergência para a prestadora corrigir.'; return; }
+      c.status='execucao'; c.divergencia=t; c.marcos.push({txt:'Divergência apontada: '+t,em:hoje()}); zap(c.prestador,`A ${nome(c.contratante)} apontou divergência na entrega da ${c.id}: ${t}`,'Entrega');
+      save(); $('#dlg').close(); toast('Divergência enviada para a prestadora.'); render(); return; }
+    const val=modo==='parcial'?parseValor($('#acVal').value):c.valor;
+    if(modo==='parcial'&&(val<=0||val>=c.valor)){ $('#acEr').textContent='Informe um valor maior que zero e menor que o total da OS.'; return; }
+    c.status='aceito'; c.marcos.push({txt:(modo==='parcial'?'Aceite parcial: '+brl(val):'Entrega aceita')+(t?' · '+t:''),em:hoje()});
+    const t2=emp(c.contratante), venc=maisDias(hoje(),20);
+    const cb={id:'C-'+(db.seq++),contratante:c.contratante,prestador:c.prestador,descricao:`${c.id} · ${c.objeto}`,valor:val,competencia:hoje().slice(0,7),status:'aguardando',origem:'os',criada:hoje(),contrato:c.id,vencimento:venc,
+      espelho:{razao:t2.dados.razao,cnpj:t2.dados.cnpj,end:`${t2.end.logradouro}, ${t2.end.numero} · ${t2.end.cidade}/${t2.end.uf}`,os:c.id,desc:c.objeto,valor:val,venc}};
+    db.cobrancas.push(cb);
+    zap(c.prestador,`Serviço aprovado: ${c.id} (${brl(val)}). Confira os dados do espelho de faturamento e envie sua nota fiscal: ${LINK_APP}`,'Serviço aprovado');
+    save(); $('#dlg').close(); toast(`Entrega aceita. Espelho de faturamento enviado para ${nome(c.prestador)}.`); render(); };
+}
+
+/* ---------- Triagem e nova contratação ---------- */
+const TRI=[['entrega','O objetivo é uma entrega ou um serviço definido, e não ocupar um posto de trabalho?',true],
+  ['chefia','Alguém da sua empresa vai dar ordens diárias para quem executa?',false],
+  ['jornada','Haverá horário fixo controlado pela sua empresa?',false],
+  ['pessoal','Só uma pessoa específica pode fazer o serviço, sem substituição?',false],
+  ['ex18','Quem vai executar foi empregado ou prestou serviço à sua empresa nos últimos 18 meses?',false],
+  ['equipe','A execução será contínua, por uma empresa prestadora com equipe e supervisor próprios?',null]];
+function triResultado(r){
+  const risco=(r.chefia?1:0)+(r.jornada?1:0)+(r.pessoal?1:0);
+  if((r.chefia&&r.jornada)||(!r.entrega&&!r.equipe&&risco>=1)) return ['danger','Não publicar neste modelo','As respostas descrevem um posto de trabalho subordinado. Reformule a operação real ou use uma modalidade legal adequada (por exemplo, contratação como empregado).'];
+  if(r.ex18||risco>=1) return ['warn','Requer análise jurídica','Há sinais que precisam de avaliação antes de contratar (relação recente com a empresa, chefia, jornada ou pessoalidade). A demanda fica salva para o jurídico.'];
+  return ['ok','Compatível com o fluxo empresarial', r.equipe?'Modalidade indicada: equipe contínua, com contrato com a prestadora e controles extras.':'Modalidade indicada: serviço por OS, com demanda, propostas e aceite da entrega.'];
+}
+function dlgTriagem(){ const r={};
+  openDlg(head('Nova contratação · triagem','Antes de contratar, responda com sinceridade. A triagem é um controle preventivo, não um parecer jurídico.')+`<div class="dlg-b"><div class="stack" style="gap:8px">${TRI.map(([k,q])=>`<div class="rate" style="align-items:flex-start"><span style="font-size:13.5px">${q}</span><div class="yn" data-tri="${k}"><button type="button" data-v="1">Sim</button><button type="button" data-v="0">Não</button></div></div>`).join('')}</div>
+    <div id="triRes"></div><p class="err" id="triEr"></p></div>
+    <div class="dlg-f"><button class="btn sec" data-close>Cancelar</button><button class="btn" id="triOk">Ver resultado</button></div>`);
+  document.querySelectorAll('#dlg [data-tri]').forEach(g=>g.querySelectorAll('button').forEach(b=>b.onclick=()=>{ r[g.dataset.tri]=b.dataset.v==='1'; g.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); $('#triEr').textContent=''; }));
+  $('#triOk').onclick=()=>{ if(TRI.some(([k])=>r[k]===undefined)){ $('#triEr').textContent='Responda todas as perguntas.'; return; }
+    const [k,t,d]=triResultado(r); const resumo=t;
+    $('#triRes').innerHTML=`<div class="banner ${k}">${ic(k==='ok'?'check':'alert')}<span><strong>${t}</strong>${d}</span></div>`;
+    const f=$('#dlg .dlg-f'); f.innerHTML=`<button class="btn sec" data-close>Fechar</button>`+(k==='ok'?(r.equipe?`<button class="btn" id="triGo">Registrar contrato com prestadora</button>`:`<button class="btn" id="triGo">Criar demanda</button>`):k==='warn'?`<button class="btn" id="triJur">Salvar para análise jurídica</button>`:'');
+    f.querySelector('[data-close]').onclick=()=>$('#dlg').close();
+    const go=$('#triGo'); if(go) go.onclick=()=>r.equipe?dlgContratoContinuo(resumo):dlgDemanda(resumo);
+    const ju=$('#triJur'); if(ju) ju.onclick=()=>{ (db.demandas||(db.demandas=[])).push({id:'D-'+String(db.dseq++).padStart(4,'0'),contratante:session,titulo:'Contratação em análise jurídica',categoria:'—',escopo:'Respostas da triagem: '+TRI.map(([kk,q])=>q+' '+(r[kk]?'Sim':'Não')).join(' | '),entregaveis:'',aceite:'',prazo:'',orcamento:'',status:'juridico',triagem:t,criada:hoje(),propostas:[],recusas:[]}); save(); $('#dlg').close(); toast('Contratação salva para análise jurídica.'); render(); };
+  };
+}
+function dlgDemanda(tri){
+  openDlg(head('Nova demanda','Descreva o resultado esperado, não a rotina de quem vai executar.')+`<div class="dlg-b"><div class="fgrid">
+    <label class="f c8"><span>Título</span><input id="dmT" placeholder="Ex.: Pintura epóxi do piso do almoxarifado"></label>
+    <label class="f c4"><span>Categoria</span><select id="dmC">${AREAS.map(a=>`<option>${a}</option>`).join('')}</select></label>
+    <label class="f c12"><span>Problema a resolver e escopo</span><textarea id="dmE" rows="2"></textarea></label>
+    <label class="f c12"><span>Entregáveis</span><input id="dmEn" placeholder="Ex.: piso pintado e liberado; laudo de aderência"></label>
+    <label class="f c12"><span>Critério de aceite</span><input id="dmA" placeholder="Ex.: inspeção visual e teste de aderência aprovados"></label>
+    <label class="f c6"><span>Prazo de entrega</span><input id="dmP" type="date"></label>
+    <label class="f c6"><span>Orçamento indicativo <i>(opcional)</i></span><input id="dmO" placeholder="Ex.: R$ 15.000 a R$ 20.000"></label></div><p class="err" id="dmEr"></p></div>
+    <div class="dlg-f"><button class="btn sec" data-close>Voltar</button><button class="btn" id="dmOk">${ic('send')}Publicar demanda</button></div>`);
+  $('#dmOk').onclick=()=>{ const g=id=>$(id).value.trim(); if(!g('#dmT')||!g('#dmE')||!g('#dmEn')||!g('#dmA')){ $('#dmEr').textContent='Preencha título, escopo, entregáveis e critério de aceite.'; return; }
+    if(!g('#dmP')||diasAte(g('#dmP'))<=0){ $('#dmEr').textContent='Informe um prazo depois de hoje.'; return; }
+    const d={id:'D-'+String(db.dseq++).padStart(4,'0'),contratante:session,titulo:g('#dmT'),categoria:g('#dmC'),escopo:g('#dmE'),entregaveis:g('#dmEn'),aceite:g('#dmA'),prazo:g('#dmP'),orcamento:g('#dmO'),status:'aberta',triagem:tri,criada:hoje(),propostas:[],recusas:[]};
+    (db.demandas||(db.demandas=[])).push(d);
+    db.empresas.filter(e=>e.status==='aprovado'&&e.id!==session&&e.tipo!=='contratante'&&temMod(e,'demandas')).forEach(e=>zap(e.id,`Nova oportunidade: ${d.titulo} (${d.categoria}), da ${nome(session)}. Envie sua proposta até o prazo: ${LINK_APP}`,'Oportunidade'));
+    save(); $('#dlg').close(); toast(`Demanda ${d.id} publicada para prestadores compatíveis.`); tab='demandas'; render(); };
+}
+function dlgContratoContinuo(tri){
+  const ps=db.empresas.filter(e=>e.status==='aprovado'&&e.tipo==='ambos'&&e.id!==session);
+  openDlg(head('Contrato com prestadora','Equipe contínua: a prestadora dirige a própria equipe. Você mede e aprova o serviço do período.')+`<div class="dlg-b"><div class="fgrid">
+    <label class="f c6"><span>Prestadora</span><select id="ccP">${ps.map(p=>`<option value="${p.id}">${esc(nome(p.id))}</option>`).join('')}</select></label>
+    <label class="f c6"><span>Medição</span><select id="ccM"><option>Quinzenal</option><option>Mensal</option></select></label>
+    <label class="f c12"><span>Objeto do contrato</span><input id="ccO" placeholder="Ex.: Manutenção preventiva das linhas de envase"></label>
+    <label class="f c6"><span>Interlocutor da prestadora</span><input id="ccI" placeholder="Nome do supervisor da prestadora"></label>
+    <label class="f c6"><span>Início</span><input id="ccD" type="date" value="${hoje()}"></label></div><p class="err" id="ccEr"></p></div>
+    <div class="dlg-f"><button class="btn sec" data-close>Voltar</button><button class="btn" id="ccOk">Criar contrato e assinar</button></div>`);
+  $('#ccOk').onclick=()=>{ const o=$('#ccO').value.trim(), it=$('#ccI').value.trim(); if(!o||!it){ $('#ccEr').textContent='Informe o objeto e o interlocutor da prestadora.'; return; }
+    const c={id:'CT-'+String(db.cseq++).padStart(4,'0'),modalidade:'continua',contratante:session,prestador:$('#ccP').value,objeto:o,medicao:$('#ccM').value,interlocutor:it,inicio:$('#ccD').value,vencRegra:'20 dias após nota válida da medição',status:'assinatura',assin:{},triagem:tri,criado:hoje(),marcos:[]};
+    db.contratos.push(c); save(); $('#dlg').close(); toast(`Contrato ${c.id} criado. Assine para enviar à prestadora.`); tab='contratos'; render(); setTimeout(()=>dlgAssinar(c),300); };
+}
+
+/* ---------- Demandas (tomador) e comparador ---------- */
+function viewDemandas(){
+  const ds=(db.demandas||[]).filter(d=>d.contratante===session).sort((a,b)=>b.criada.localeCompare(a.criada));
+  const st=d=>d.status==='aberta'?`<span class="pill info">${d.propostas.length===1?'1 proposta':d.propostas.length+' propostas'}</span>`:d.status==='contratada'?'<span class="pill ok">Contratada</span>':d.status==='juridico'?'<span class="pill warn">Em análise jurídica</span>':'<span class="pill">'+d.status+'</span>';
+  return `<div class="card"><div class="card-h"><h3>Suas demandas</h3><span class="count">${ds.length}</span></div>
+    ${ds.length?`<div class="scroll"><table class="resp"><thead><tr><th>Demanda</th><th>Categoria</th><th>Prazo</th><th>Situação</th></tr></thead><tbody>${ds.map(d=>`<tr class="click" data-dm="${d.id}" tabindex="0"><td class="m-full"><div class="cell"><div style="min-width:0"><strong>${esc(d.titulo)}</strong><small>${esc(d.id)} · ${esc(d.triagem||'')}</small></div></div></td><td class="m-hide">${esc(d.categoria)}</td><td>${d.prazo?fmtData(d.prazo):'—'}</td><td>${st(d)}</td></tr>`).join('')}</tbody></table></div>`:`<div class="empty"><span class="ic">${ic('target')}</span>Nenhuma demanda. Use "Nova contratação" para começar pela triagem.</div>`}</div>`;
+}
+function dlgComparador(d){
+  const ps=d.propostas.slice().sort((a,b)=>a.valor-b.valor);
+  const nota=eid=>{ const l=(db.avalServico||[]).filter(a=>a.para===eid); return l.length?fmt1(l.reduce((s,a)=>s+a.media,0)/l.length)+' ★ ('+l.length+')':'Novo'; };
+  openDlg(head(esc(d.titulo),`${esc(d.id)} · ${esc(d.categoria)} · prazo ${d.prazo?fmtData(d.prazo):'—'}`)+`<div class="dlg-b">
+    <dl class="kv"><dt>Escopo</dt><dd>${esc(d.escopo)}</dd><dt>Entregáveis</dt><dd>${esc(d.entregaveis||'—')}</dd><dt>Aceite</dt><dd>${esc(d.aceite||'—')}</dd>${d.orcamento?`<dt>Orçamento</dt><dd>${esc(d.orcamento)}</dd>`:''}</dl>
+    ${ps.length?`<div class="scroll"><table><thead><tr><th>Prestadora</th><th class="r">Valor</th><th>Prazo</th><th>Avaliação</th><th></th></tr></thead><tbody>${ps.map(p=>`<tr><td><strong>${esc(nome(p.prestador))}</strong><br><small class="hint">${esc(p.cond)}</small></td><td class="r num">${brl(p.valor)}</td><td>${fmtData(p.prazo)}</td><td>${nota(p.prestador)}</td><td>${d.status==='aberta'&&podeAgir()&&confEmp(p.prestador)[0]==='danger'?'<span class="pill danger">Bloqueada: documento vencido</span>':d.status==='aberta'&&podeAgir()?`<button class="btn sm" data-escolher="${p.prestador}">Escolher</button>`:p.status==='escolhida'?'<span class="pill ok">Escolhida</span>':''}</td></tr>`).join('')}</tbody></table></div>`:`<div class="empty" style="padding:16px">${d.status==='juridico'?'Esta contratação está aguardando análise jurídica.':'Ainda sem propostas. As prestadoras compatíveis foram avisadas.'}</div>`}</div>
+    <div class="dlg-f"><button class="btn sec" data-close>Fechar</button></div>`);
+  document.querySelectorAll('#dlg [data-escolher]').forEach(b=>b.onclick=()=>{ const p=d.propostas.find(x=>x.prestador===b.dataset.escolher);
+    d.propostas.forEach(x=>x.status=x===p?'escolhida':'nao_escolhida'); d.status='contratada';
+    const c={id:'OS-2026-'+String(db.oseq++).padStart(4,'0'),modalidade:'os',contratante:session,prestador:p.prestador,objeto:d.titulo,entregaveis:d.entregaveis,aceiteCrit:d.aceite,prazo:p.prazo,valor:p.valor,vencRegra:'20 dias após nota válida',status:'assinatura',assin:{},triagem:d.triagem,demanda:d.id,criado:hoje(),marcos:[{txt:'Proposta escolhida na demanda '+d.id,em:hoje()}]};
+    db.contratos.push(c);
+    zap(p.prestador,`Sua proposta para "${d.titulo}" foi escolhida pela ${nome(session)}. Assine a ${c.id}: ${LINK_APP}`,'Proposta');
+    d.propostas.filter(x=>x!==p).forEach(x=>zap(x.prestador,`A demanda "${d.titulo}" foi contratada com outra prestadora. Obrigado pela proposta.`,'Proposta'));
+    save(); $('#dlg').close(); toast(`${c.id} criada com ${nome(p.prestador)}. Falta assinar.`); tab='contratos'; render(); setTimeout(()=>dlgAssinar(c),300); });
+}
+
+/* ---------- Oportunidades (prestador) ---------- */
+function viewOportunidades(){
+  const ds=(db.demandas||[]).filter(d=>d.status==='aberta'&&d.contratante!==session&&!(d.recusas||[]).includes(session));
+  return `<div class="banner info">${ic('alert')}<span><strong>Recusar não tira pontos.</strong>Você escolhe as oportunidades que fazem sentido. Recusa não afeta sua reputação nem sua posição.</span></div>
+  ${ds.length?`<div class="catg" style="padding:0">${ds.map(d=>{ const mp=d.propostas.find(p=>p.prestador===session); return `<article class="pcard"><div class="top">${avatar(d.contratante)}<div style="min-width:0"><strong>${esc(d.titulo)}</strong><small>${esc(nome(d.contratante))} · ${esc(d.categoria)}</small></div></div>
+    <p style="margin:0;font-size:13px">${esc(d.escopo)}</p>
+    <dl class="mini"><div><dt>Entregáveis</dt><dd>${esc(d.entregaveis)}</dd></div><div><dt>Prazo</dt><dd>${fmtData(d.prazo)}</dd></div><div><dt>Aceite</dt><dd>${esc(d.aceite)}</dd></div><div><dt>Orçamento</dt><dd>${esc(d.orcamento||'A combinar')}</dd></div></dl>
+    <div class="foot">${mp?`<span class="pill ok">Proposta enviada: ${brl(mp.valor)}</span>`:podeAgir()?`<button class="btn ghost sm" data-recusa="${d.id}">Não tenho interesse</button><button class="btn sm" data-propor="${d.id}">Enviar proposta</button>`:''}</div></article>`; }).join('')}</div>`:`<div class="card"><div class="empty"><span class="ic">${ic('target')}</span>Nenhuma oportunidade aberta agora. Avisamos pelo WhatsApp quando surgir uma da sua área.</div></div>`}`;
+}
+function dlgPropor(d){
+  openDlg(head('Enviar proposta',esc(d.titulo))+`<div class="dlg-b"><div class="fgrid">
+    <label class="f c6"><span>Valor total (R$)</span><input id="ppV" inputmode="decimal"></label>
+    <label class="f c6"><span>Entrega até</span><input id="ppP" type="date" value="${d.prazo}"></label>
+    <label class="f c12"><span>Condições</span><textarea id="ppC" rows="2" placeholder="Ex.: material incluso; equipe de 3 pessoas da nossa empresa; garantia de 12 meses"></textarea></label></div><p class="err" id="ppEr"></p></div>
+    <div class="dlg-f"><button class="btn sec" data-close>Voltar</button><button class="btn" id="ppOk">${ic('send')}Enviar proposta</button></div>`);
+  $('#ppOk').onclick=()=>{ const v=parseValor($('#ppV').value); if(v<=0){ $('#ppEr').textContent='Informe o valor da proposta.'; return; } if(!$('#ppP').value){ $('#ppEr').textContent='Informe o prazo.'; return; }
+    d.propostas.push({prestador:session,valor:v,prazo:$('#ppP').value,cond:$('#ppC').value.trim()||'Sem condições adicionais',status:'enviada',em:hoje()});
+    zap(d.contratante,`Nova proposta da ${nome(session)} para "${d.titulo}": ${brl(v)}. Compare no app: ${LINK_APP}`,'Proposta');
+    save(); $('#dlg').close(); toast('Proposta enviada.'); render(); };
+}
+
+/* ---------- Avaliação de serviço (OS e prestadora) ---------- */
+const CRIT_S=[['q','Qualidade do resultado'],['p','Cumprimento do prazo'],['c','Comunicação'],['e','Aderência ao escopo']];
+function dlgAvalServico(c){ const v={}, para=c.prestador;
+  openDlg(head(`Avaliar o serviço da ${esc(nome(para))}`,`${esc(c.descricao)}. ${c.origem==='os'?'Avaliação da entrega aceita.':'Você avalia o serviço da prestadora, não as pessoas da equipe.'} Fica visível quando as duas partes avaliarem, ou em 7 dias.`)+`<div class="dlg-b">${starRows(CRIT_S)}
+    <label class="f"><span id="asvL">Comentário <i>(opcional)</i></span><textarea id="asvT" rows="2"></textarea></label><p class="err" id="asvE"></p></div>
+    <div class="dlg-f"><button class="btn sec" data-close>Agora não</button><button class="btn" id="asvOk">${ic('star')}Enviar avaliação</button></div>`);
+  ligaEstrelas(v,'#asvE');
+  $('#asvOk').onclick=()=>{ if(CRIT_S.some(([k])=>!v[k])){ $('#asvE').textContent='Dê uma nota de 1 a 5 em cada critério.'; return; }
+    const media=(v.q+v.p+v.c+v.e)/4, t=$('#asvT').value.trim();
+    if(media<=2.5&&!t){ $('#asvE').textContent='Para notas baixas, explique o motivo. Isso ajuda a prestadora a responder.'; $('#asvL').textContent='Motivo (obrigatório para nota baixa)'; return; }
+    (db.avalServico||(db.avalServico=[])).push({de:session,para,ref:c.id,n:Object.assign({},v),media,txt:t,data:hoje()}); c.avalServ=true;
+    zap(para,`A ${nome(session)} avaliou o serviço ${c.id}: ${fmt1(media)} de 5. A nota aparece quando vocês dois avaliarem.`,'Avaliação');
+    save(); $('#dlg').close(); toast('Avaliação registrada.'); render(); };
+}
+
+/* ---------- Pendências (substitui a avaliação mensal por pessoa) ---------- */
+function todoRep(it){
+  const e=emp(session); if(!e) return;
+  db.cobrancas.filter(c=>c.contratante===session&&c.status==='paga'&&!c.avalServ&&emp(c.prestador)&&emp(c.prestador).tipo==='ambos'&&podeAgir()).slice(0,3)
+    .forEach(c=>it.push(`<div class="todo"><span class="ic info">${ic('star')}</span><div class="t"><strong>Avaliar o serviço da ${esc(nome(c.prestador))}</strong><small>${esc(c.descricao)} · avalia o serviço, não as pessoas</small></div><button class="btn sm" data-avserv="${c.id}">Avaliar</button></div>`));
+  db.cobrancas.filter(c=>c.contratante===session&&c.status==='paga'&&podeAgir()).forEach(c=>{ const p=(db.pessoas||[]).find(x=>x.mei&&x.mei===c.prestador&&x.vinculo===session);
+    if(p&&!(db.avaliacoes||[]).some(a=>a.ref===c.id)) it.push(`<div class="todo"><span class="ic info">${ic('star')}</span><div class="t"><strong>Avaliar o serviço de ${esc(p.nome)}</strong><small>Nota nº ${c.nota?c.nota.numero:''} paga · conta para o currículo dele</small></div><button class="btn sm" data-avalref="${p.id}|${c.id}">Avaliar</button></div>`); });
+  (db.pessoas||[]).filter(p=>p.vinculo===session).forEach(p=>(p.docs||[]).filter(d=>docSt(d)[0]!=='ok').forEach(d=>{ const [k,l]=docSt(d);
+    it.push(`<div class="todo"><span class="ic ${k==='danger'?'warn':'info'}">${ic('shield')}</span><div class="t"><strong>${esc(d.nome)} de ${esc(p.nome)}</strong><small>${l} · validade ${fmtData(d.validade)}</small></div><button class="btn sec sm" data-perfil="${p.id}">Ver</button></div>`); }));
+  db.cobrancas.filter(c=>c.prestador===session&&c.status==='paga'&&!c.avalContr).forEach(c=>it.push(`<div class="todo"><span class="ic info">${ic('hand')}</span><div class="t"><strong>Como foi trabalhar para a ${esc(nome(c.contratante))}?</strong><small>Pagamento de ${brl(c.valor)} recebido · avalie em 10 segundos</small></div><button class="btn sm" data-avemp="${c.id}">Avaliar</button></div>`));
+  (db.contratos||[]).filter(c=>c.status==='assinatura'&&((c.contratante===session&&!c.assin.contratante)||(c.prestador===session&&!c.assin.prestador))).forEach(c=>it.push(`<div class="todo"><span class="ic warn">${ic('edit')}</span><div class="t"><strong>Assinar ${esc(c.id)}</strong><small>${esc(c.objeto)} · ${MODAL[c.modalidade][0]}</small></div><button class="btn sm" data-ctab="${c.id}">Abrir</button></div>`));
+  (db.contratos||[]).filter(c=>c.status==='entregue'&&c.contratante===session).forEach(c=>it.push(`<div class="todo"><span class="ic warn">${ic('check')}</span><div class="t"><strong>Analisar entrega da ${esc(c.id)}</strong><small>${esc(c.objeto)} · responder até ${fmtData(c.prazoAceite||hoje())}</small></div><button class="btn sm" data-ctab="${c.id}">Analisar</button></div>`));
+  if(e.tipo==='prestador'){ const mes=hoje().slice(0,7); if(!(e.das||{})[mes]) it.push(`<div class="todo"><span class="ic warn">${ic('receipt')}</span><div class="t"><strong>DAS de ${MESES[+mes.slice(5)-1]}</strong><small>Vence no dia 20 · sem multa até lá</small></div><button class="btn sec sm" data-go="mei">Ver</button></div>`); }
+}
+function todoEnc(it){
+  (db.encerramentos||[]).filter(e=>e.fornecedor===session&&!e.repasse).forEach(e=>{ const p=pes(e.pessoa);
+    it.push(`<div class="todo"><span class="ic warn">${ic('x')}</span><div class="t"><strong>Encerramento de ${esc(p.nome)} na ${esc(nome(e.contratante))}</strong><small>Último dia ${fmtData(e.data)} · ${esc(e.motivo)} · cobrar a nota final</small></div><button class="btn sm" data-encrep="${e.id}">Cobrar nota final</button></div>`); });
+}
+
+function bind8(){ bind9();
+  const q=s=>document.querySelectorAll(s);
+  q('[data-ct]').forEach(r=>{ const o=()=>dlgContrato(db.contratos.find(x=>x.id===r.dataset.ct)); r.onclick=o; r.onkeydown=e=>{ if(e.key==='Enter') o(); }; });
+  q('[data-ctab]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); dlgContrato(db.contratos.find(x=>x.id===b.dataset.ctab)); });
+  q('[data-dm]').forEach(r=>{ const o=()=>dlgComparador(db.demandas.find(x=>x.id===r.dataset.dm)); r.onclick=o; r.onkeydown=e=>{ if(e.key==='Enter') o(); }; });
+  q('[data-triagem]').forEach(b=>b.onclick=dlgTriagem);
+  q('[data-propor]').forEach(b=>b.onclick=()=>dlgPropor(db.demandas.find(x=>x.id===b.dataset.propor)));
+  q('[data-recusa]').forEach(b=>b.onclick=()=>{ const d=db.demandas.find(x=>x.id===b.dataset.recusa); (d.recusas||(d.recusas=[])).push(session); save(); toast('Oportunidade dispensada. Isso não afeta sua reputação.'); render(); });
+  q('[data-avserv]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); dlgAvalServico(db.cobrancas.find(x=>x.id===b.dataset.avserv)); });
+  q('[data-avalref]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const [pid,cid]=b.dataset.avalref.split('|'); dlgAvaliar(pes(pid),cid); });
+}
+const __seed7=seed;
+seed=function(){ const d=__seed7();
+  const PL={colafix:'Essencial',zenith:'Profissional',nexus:'Profissional','mei-joao':'Gratuito'};
+  d.empresas.forEach(e=>{ e.taxa=0; e.plano=PL[e.id]||''; if(['colafix','zenith','nexus'].includes(e.id)) e.modulos.push('contratos','demandas'); if(e.id==='mei-joao') e.modulos.push('contratos','demandas'); });
+  d.empresas.find(e=>e.id==='zenith').certidoes={federal:'2027-01-10',fgts:'2026-11-25',trabalhista:'2027-02-01'};
+  d.empresas.find(e=>e.id==='nexus').certidoes={federal:'2026-12-20',fgts:'2026-12-05',trabalhista:'2026-10-30'};
+  d.cobrancas.forEach(c=>{ c.taxaValor=0; if(c.contratante==='colafix'&&c.prestador==='zenith') c.contrato='CT-0001'; if(c.contratante==='zenith'&&c.prestador==='mei-joao') c.contrato='CT-0002'; if(c.id==='C-1003') c.avalServ=true; });
+  d.avaliacoes.forEach(a=>{ if(a.de==='colafix'){ const p=d.pessoas.find(x=>x.id===a.pessoa); a.de=p.vinculo; a.org=p.vinculo==='zenith'?'Intermediária C':'Prestadora B'; a.autor=p.vinculo==='zenith'?'Marcelo':'Fernanda Rocha'; } });
+  d.avalServico=[{de:'colafix',para:'zenith',ref:'C-1003',n:{q:5,p:5,c:4,e:5},media:4.75,txt:'Equipe organizada; supervisor sempre disponível.',data:'2026-10-09'}];
+  d.dseq=8; d.cseq=3; d.oseq=43;
+  d.contratos=[
+    {id:'CT-0001',modalidade:'continua',contratante:'colafix',prestador:'zenith',objeto:'Manutenção industrial com equipe da prestadora',medicao:'Quinzenal',interlocutor:'Marcelo',inicio:'2024-03-01',vencRegra:'20 dias após nota válida da medição',status:'ativo',assin:{contratante:{nome:'Marina Costa',em:'2024-02-26'},prestador:{nome:'Marcelo',em:'2024-02-27'}},triagem:'Compatível com o fluxo empresarial (equipe contínua com controles)',criado:'2024-02-26',marcos:[]},
+    {id:'CT-0002',modalidade:'continua',contratante:'zenith',prestador:'mei-joao',objeto:'Manutenção elétrica em clientes da Intermediária C',medicao:'Mensal',interlocutor:'João Pereira',inicio:'2024-03-04',vencRegra:'10 dias após nota válida',status:'ativo',assin:{contratante:{nome:'Marcelo',em:'2024-03-01'},prestador:{nome:'João Pereira',em:'2024-03-01'}},triagem:'Requer análise jurídica (pessoalidade): aguardando parecer',criado:'2024-03-01',marcos:[]},
+    {id:'OS-2026-0042',modalidade:'os',contratante:'colafix',prestador:'nexus',objeto:'Reforma do quadro elétrico da linha 2',entregaveis:'Quadro montado e testado; laudo de inspeção',aceiteCrit:'Teste de carga aprovado pela manutenção da Contratante A',prazo:'2026-11-28',valor:12800,vencRegra:'20 dias após nota válida',status:'entregue',assin:{contratante:{nome:'Marina Costa',em:'2026-11-03'},prestador:{nome:'Fernanda Rocha',em:'2026-11-03'}},triagem:'Compatível com o fluxo empresarial',criado:'2026-11-03',prazoAceite:'2026-11-12',entrega:{txt:'Quadro montado, cabos identificados e teste de carga feito com a manutenção. Laudo anexo.',arq:'laudo-quadro-linha2.pdf',em:'2026-11-07'},marcos:[{txt:'Contrato assinado pelas duas partes',em:'2026-11-03'},{txt:'Entrega enviada para aceite (laudo-quadro-linha2.pdf)',em:'2026-11-07'}]}];
+  d.demandas=[{id:'D-0007',contratante:'colafix',titulo:'Pintura epóxi do piso do almoxarifado',categoria:'Manutenção industrial',escopo:'Preparar e pintar 420 m² de piso com epóxi de alta resistência, com a área liberada em até 3 dias.',entregaveis:'Piso pintado e liberado; laudo de aderência',aceite:'Inspeção visual e teste de aderência aprovados',prazo:'2026-12-15',orcamento:'R$ 15.000 a R$ 20.000',status:'aberta',triagem:'Compatível com o fluxo empresarial',criada:'2026-11-04',
+    propostas:[{prestador:'nexus',valor:15900,prazo:'2026-12-12',cond:'Material incluso; equipe própria de 3 pessoas; garantia de 12 meses',status:'enviada',em:'2026-11-05'}],recusas:[]},
+    {id:'D-0006',contratante:'colafix',titulo:'Automação do alimentador da envasadora 3',categoria:'Elétrica e automação',escopo:'Integrar o alimentador ao CLP da linha e entregar documentação.',entregaveis:'Alimentador integrado; programa comentado; treinamento de 2 h',aceite:'Linha rodando 8 h sem parada pelo alimentador',prazo:'2027-01-20',orcamento:'',status:'aberta',triagem:'Compatível com o fluxo empresarial',criada:'2026-11-05',propostas:[],recusas:[]}];
+  return d; };
+
+/* tour: passos das duas modalidades */
+(function(){ const at=t=>TOUR.findIndex(x=>x.t===t);
+  const ia=at('Precisa da sua ação'); if(ia>=0) TOUR[ia].d='Tudo o que depende dela, em ordem de urgência: pagamentos, entregas para analisar, contratos para assinar e a avaliação do serviço da prestadora. Ela avalia o serviço, não as pessoas da equipe.';
+  const ic3=at('Currículo e Índice Conectwork'); if(ic3>=0) TOUR[ic3].d='Cada serviço vira histórico. O índice soma notas no prazo, notas aceitas de primeira, documentos válidos e as avaliações da prestadora a cada serviço pago. O currículo é dele, mesmo se mudar de empresa. Quando um documento vai vencer, ele mesmo renova.';
+  const ip=at('O que está pronto para pagar'); if(ip>=0) TOUR.splice(ip+1,0,
+    {u:'u-marina',tab:'contratos',sel:'main .card',who:'Contratante A · administradora',t:'Duas modalidades de contratação',d:'Serviço por OS, para entregas definidas (como a reforma do quadro elétrico), e equipe contínua, quando uma prestadora com equipe e supervisor próprios atende a fábrica (como a Intermediária C). Cada contrato tem assinatura das duas partes, aceite ou medição e espelho de faturamento. Na equipe contínua, as certidões da prestadora ficam no contrato.'},
+    {u:'u-marina',tab:'demandas',sel:'[data-triagem]',who:'Contratante A · administradora',t:'Toda contratação começa pela triagem',d:'Perguntas simples: é uma entrega ou um posto? Haverá chefia ou horário controlado? A pessoa trabalhou na empresa nos últimos 18 meses? O resultado diz se é compatível, se precisa de análise jurídica ou se não deve ser publicado, e indica a modalidade.'});
+  const iz=at('Os profissionais da Intermediária C'); if(iz>=0) TOUR.splice(iz,0,
+    {u:'u-fernanda',tab:'oportunidades',sel:'main',who:'Prestadora B · administradora',t:'Oportunidades e propostas',d:'As prestadoras veem as demandas da sua área e enviam proposta com valor, prazo e condições. Recusar não tira pontos. O tomador compara as propostas e escolhe; a escolha vira uma OS para as duas partes assinarem.'});
+})();
+/* ===================== Prompt mestre: matching, aprendizado, consentimentos, títulos, conformidade, ofertas ===================== */
+I.bell='<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/>';
+I.book='<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23"/><path d="M8 7h8M8 11h6"/>';
+I.gift='<rect x="3.5" y="9" width="17" height="11" rx="1.5"/><path d="M12 9v11M3.5 13h17"/><path d="M12 9c-2-4-6-4-6-1.5S10 9 12 9c2 0 6 .5 6-1.5S14 5 12 9z"/>';
+I.cal='<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>';
+const ESPEC=['Logística e empilhadeira','Elétrica e automação','Manutenção industrial','Produção e operação','Serviços B2B'];
+CARGOS.solicitante={nome:'Solicitante',tabs:['inicio','demandas','contratos','notificacoes'],desc:'Abre demandas e acompanha contratos; não aprova pagamento.'};
+CARGOS.aprovador={nome:'Aprovador técnico',tabs:['inicio','contratos','demandas','notificacoes'],desc:'Aprova entregas e medições; não libera pagamento.'};
+CARGOS.tesouraria={nome:'Tesouraria',tabs:['inicio','titulos','pagar','notificacoes'],desc:'Agenda pagamentos liberados e confirma a liquidação.'};
+['financeiro','admin'].forEach(k=>{ if(Array.isArray(CARGOS[k].tabs)) CARGOS[k].tabs.push('titulos'); });
+Object.values(CARGOS).forEach(c=>{ if(Array.isArray(c.tabs)) c.tabs.push('notificacoes','privacidade','aprendizado','ofertas','conformidade'); });
+const pode=acao=>{ const u=usr(); if(!u) return true; if(!podeAgir()) return false; const m={validar:['admin','financeiro'],liberar:['admin','financeiro'],agendar:['admin','tesouraria'],confirmar:['admin','tesouraria'],aceitar:['admin','aprovador','rh'],demandar:['admin','solicitante','rh']}; return !m[acao]||m[acao].includes(u.cargo); };
+
+/* ---------- abas novas ---------- */
+const __tabsEmp2=tabsEmpresa;
+tabsEmpresa=function(e){ const all=__tabsEmp2(e), t=e.tipo;
+  const iEmp=all.findIndex(x=>x[0]==='empresa');
+  const extra=[];
+  if(t!=='prestador'||true) extra.push(['titulos',t==='prestador'?'Títulos a receber':'Contas a pagar e receber','cal']);
+  extra.push(['conformidade','Conformidade','shield'],['aprendizado','Aprendizado','book'],['ofertas','Clube de ofertas','gift'],['notificacoes','Notificações','bell'],['privacidade','Privacidade','lock']);
+  all.splice(iEmp<0?all.length:iEmp,0,...extra); return all; };
+FASE.ofertas=3; FASE.aprendizado=2;
+const __tabsForM=tabsFor;
+tabsFor=function(u){ const t=__tabsForM(u); const sid=(u||usr())?(u||usr()).empresa:session;
+  if(sid==='master'){ const i=t.findIndex(x=>x[0]==='roadmap'); t.splice(i,0,['conformidade','Conformidade da rede','shield'],['moderacao','Moderação e disputas','hand'],['notificacoes','Notificações','bell']); }
+  return t; };
+
+/* ---------- notificações internas ---------- */
+function notificar(alvo,tipo,titulo,texto,motivo,irPara){ (db.notifs||(db.notifs=[])).unshift({id:'N'+Date.now()+Math.random().toString(36).slice(2,5),alvo,tipo,titulo,texto,motivo,irPara:irPara||'',em:new Date().toISOString(),lida:false}); }
+const minhasNotifs=()=>{ const u=usr(); return (db.notifs||[]).filter(n=>n.alvo===session||(u&&n.alvo===u.id)); };
+function viewNotificacoes(){ const ls=minhasNotifs(); ls.forEach(n=>n.lida=true); save();
+  const dh=iso=>fmtData(iso.slice(0,10))+' '+new Date(iso).toTimeString().slice(0,5);
+  return `<div class="card"><div class="card-h"><h3>Notificações</h3><span class="count">${ls.length}</span><span class="end hint" style="font-size:12px">Cada aviso diz por que você recebeu.</span></div>
+  ${ls.length?ls.map(n=>`<div class="todo"><span class="ic ${n.tipo==='curso'?'info':n.tipo==='alerta'?'warn':'info'}">${ic(n.tipo==='curso'?'book':n.tipo==='alerta'?'alert':n.tipo==='oportunidade'?'target':'bell')}</span><div class="t"><strong>${esc(n.titulo)}</strong><small style="white-space:normal">${esc(n.texto)}</small><small style="white-space:normal;color:var(--info)">Por que você recebeu: ${esc(n.motivo)}</small></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><small class="hint">${dh(n.em)}</small>${n.irPara?`<button class="btn sec sm" data-go="${n.irPara}">Abrir</button>`:''}</div></div>`).join(''):`<div class="empty"><span class="ic">${ic('bell')}</span>Nenhuma notificação.</div>`}</div>`; }
+
+/* ---------- consentimentos e privacidade ---------- */
+const CONS=[['operacional','Alertas operacionais','Avisos sobre o seu trabalho na plataforma (pedidos de nota, entregas, aceite).',true],['contrato','Avisos de contrato','Assinaturas, aditivos e vencimentos de contrato.',true],['cobranca','Avisos de cobrança','Títulos, vencimentos e confirmações de pagamento.',true],
+  ['cursos','Convites de cursos','Convites de cursos e treinamentos, inclusive de outras áreas.',false],['ofertas','Ofertas comerciais','Ofertas de parceiros do Clube de ofertas, identificadas como publicidade.',false],
+  ['whatsapp','Canal WhatsApp','Receber os avisos acima também pelo WhatsApp.',false],['email','Canal e-mail','Receber os avisos acima também por e-mail.',true],['push','Notificações push','Receber notificações no celular com o app instalado.',false]];
+const VERSAO_TERMO='v1.0 · 01/11/2026';
+const consDe=uid=>{ db.consent=db.consent||{}; if(!db.consent[uid]) db.consent[uid]=Object.fromEntries(CONS.map(([k,,,d])=>[k,d])); return db.consent[uid]; };
+function viewPrivacidade(){ const u=usr(); if(!u) return '<div class="card"><div class="empty">Entre com uma pessoa para ver os consentimentos.</div></div>';
+  const c=consDe(u.id), reg=(db.consentLog||[]).filter(r=>r.uid===u.id).slice(0,20);
+  return `<div class="banner info">${ic('lock')}<span><strong>O cadastro não autoriza publicidade.</strong>Cursos e ofertas comerciais vêm desligados e só chegam se você autorizar. Recusar não tira acesso ao serviço principal.</span></div>
+  <div class="grid-main"><div class="card"><div class="card-h"><h3>O que você autoriza</h3><span class="hint end" style="font-size:12px">Termo ${VERSAO_TERMO}</span></div>
+    ${CONS.map(([k,t,d])=>`<label class="docrow" style="cursor:pointer"><span class="ic">${ic(k==='cursos'?'book':k==='ofertas'?'gift':k==='whatsapp'?'bell':'check')}</span><div class="t"><strong>${t}</strong><small style="white-space:normal">${d}</small></div><input type="checkbox" data-cons="${k}" ${c[k]?'checked':''} aria-label="${t}"></label>`).join('')}</div>
+  <div class="card"><div class="card-h"><h3>Registro de consentimentos</h3></div>${reg.length?reg.map(r=>`<div class="todo"><span class="ic ${r.aceite?'info':'warn'}">${ic(r.aceite?'check':'x')}</span><div class="t"><strong>${esc(r.titulo)}: ${r.aceite?'autorizado':'revogado'}</strong><small>${fmtData(r.em.slice(0,10))} ${new Date(r.em).toTimeString().slice(0,5)} · termo ${esc(r.versao)} · canal app</small></div></div>`).join(''):`<div class="empty" style="padding:20px">Nenhuma alteração ainda. Cada mudança fica registrada com data, hora e versão do termo.</div>`}
+    <p class="hint" style="margin:0;padding:0 20px 16px;font-size:12px">Para pedir cópia ou exclusão dos seus dados, fale com privacidade@conectwork.com.br (endereço de demonstração).</p></div></div>`; }
+function bannerPriv(){ try{ if(localStorage.getItem(KEY+':priv')) return; }catch(e){}
+  if(document.getElementById('privbar')) return;
+  const d=document.createElement('div'); d.id='privbar'; d.className='privbar'; d.setAttribute('role','region'); d.setAttribute('aria-label','Privacidade');
+  d.innerHTML=`<span>${ic('lock')}</span><p><strong>Ambiente de demonstração com dados fictícios.</strong> Usamos seus dados só para operar o serviço. Cursos e ofertas comerciais dependem da sua autorização.</p><button class="btn sm" id="privOk">Entendi</button>`;
+  document.body.appendChild(d); $('#privOk').onclick=()=>{ try{ localStorage.setItem(KEY+':priv','1'); }catch(e){} d.remove(); }; }
+
+/* ---------- conformidade ---------- */
+const DOC_EMP=[['federal','Certidão federal (Receita e PGFN)'],['fgts','Certidão de regularidade do FGTS'],['trabalhista','Certidão trabalhista (CNDT)']];
+function confEmp(eid){ const e=emp(eid); if(!e) return ['ok','Regular',[]];
+  const itens=[];
+  if(e.tipo!=='contratante'){ Object.entries(e.certidoes||{}).forEach(([k,v])=>itens.push({nome:(DOC_EMP.find(x=>x[0]===k)||[k,k])[1],validade:v,rev:(e.revDocs||{})[k]})); }
+  (db.pessoas||[]).filter(p=>p.mei===eid).forEach(p=>(p.docs||[]).forEach(d=>itens.push({nome:d.nome,validade:d.validade,rev:d.rev})));
+  const st=itens.map(i=>i.rev?'rev':docSt(i)[0]);
+  const res=st.includes('danger')?['danger','Bloqueado']:st.includes('rev')?['info','Em revisão']:st.includes('warn')?['warn','Atenção']:['ok','Regular'];
+  return [res[0],res[1],itens]; }
+function viewConformidade(){
+  if(session==='master'){ const pend=[]; db.empresas.forEach(e=>Object.entries(e.revDocs||{}).forEach(([k,r])=>pend.push({e,k,r})));
+    (db.pessoas||[]).forEach(p=>(p.docs||[]).forEach((d,i)=>{ if(d.rev) pend.push({p,i,d}); }));
+    const lst=db.empresas.filter(e=>e.status==='aprovado'&&e.tipo!=='contratante');
+    return `<div class="card"><div class="card-h"><h3>Documentos em revisão</h3><span class="count">${pend.length}</span></div>${pend.length?pend.map(x=>x.e?`<div class="todo"><span class="ic info">${ic('file')}</span><div class="t"><strong>${esc(nome(x.e.id))} · ${esc((DOC_EMP.find(y=>y[0]===x.k)||[x.k,x.k])[1])}</strong><small>Nova validade ${fmtData(x.r.validade)} · ${esc(x.r.arquivo)}</small></div><button class="btn ok sm" data-revok="e|${x.e.id}|${x.k}">Aprovar</button></div>`:`<div class="todo"><span class="ic info">${ic('file')}</span><div class="t"><strong>${esc(x.p.nome)} · ${esc(x.d.nome)}</strong><small>Nova validade ${fmtData(x.d.rev.validade)} · ${esc(x.d.rev.arquivo)}</small></div><button class="btn ok sm" data-revok="p|${x.p.id}|${x.i}">Aprovar</button></div>`).join(''):`<div class="empty" style="padding:20px">Nada aguardando revisão.</div>`}</div>
+    <div class="card"><div class="card-h"><h3>Situação das prestadoras</h3></div><div class="scroll"><table><thead><tr><th>Empresa</th><th>CNPJ</th><th>Situação</th></tr></thead><tbody>${lst.map(e=>{ const [k,l]=confEmp(e.id); return `<tr><td>${esc(nome(e.id))}</td><td>${esc(e.dados.cnpj)}</td><td><span class="pill ${k}">${l}</span></td></tr>`; }).join('')}</tbody></table></div></div>`; }
+  const e=emp(session);
+  if(e.tipo==='contratante'){ const ps=[...new Set((db.contratos||[]).filter(c=>c.contratante===session).map(c=>c.prestador))];
+    return `<div class="banner info">${ic('shield')}<span><strong>Conformidade das prestadoras que você contrata</strong>Prestadora com documento vencido fica bloqueada para novas contratações até regularizar.</span></div><div class="card"><div class="scroll"><table><thead><tr><th>Prestadora</th><th>CNPJ</th><th>Última verificação</th><th>Situação</th></tr></thead><tbody>${ps.map(id=>{ const [k,l]=confEmp(id); return `<tr><td>${esc(nome(id))}</td><td>${esc(emp(id).dados.cnpj)}</td><td>${fmtData(emp(id).verificadoEm||'2026-11-04')} · manual</td><td><span class="pill ${k}">${l}</span></td></tr>`; }).join('')}</tbody></table></div></div>`; }
+  const [k,l,itens]=confEmp(session), mes=hoje().slice(0,7);
+  const blocos=itens.map((i,ix)=>{ const s=i.rev?['info','Em revisão']:docSt(i); return `<div class="docrow"><span class="ic">${ic(s[0]==='ok'?'check':'alert')}</span><div class="t"><strong>${esc(i.nome)}</strong><small>Validade ${fmtData(i.validade)}${i.rev?' · nova versão enviada':''}</small></div><span class="pill ${s[0]}">${s[1]}</span>${s[0]!=='ok'&&!i.rev?`<button class="btn sec sm" data-confup="${ix}">Atualizar</button>`:''}</div>`; }).join('');
+  return `<section class="hero"><div style="position:relative"><div class="lbl">Situação de conformidade</div><div class="big">${l}</div><div class="note">CNPJ ${esc(e.dados.cnpj)} · situação cadastral ativa · última verificação ${fmtData(e.verificadoEm||'2026-11-04')} (manual na demonstração)</div></div>
+    <div class="splits"><div class="split"><span>Documentos</span><strong>${itens.length}</strong></div><div class="split"><span>Pendências</span><strong>${itens.filter(i=>!i.rev&&docSt(i)[0]!=='ok').length}</strong></div>${e.tipo==='prestador'?`<div class="split"><span>DAS de ${MESES[+mes.slice(5)-1]}</span><strong>${(e.das||{})[mes]?'Pago':'Vence dia 20'}</strong></div><div class="split"><span>Declaração anual</span><strong>Até 31/05</strong></div>`:`<div class="split"><span>Contratos ativos</span><strong>${(db.contratos||[]).filter(c=>c.prestador===session&&['ativo','execucao'].includes(c.status)).length}</strong></div><div class="split"><span>Estado</span><strong>${l}</strong></div>`}</div></section>
+    ${k==='danger'?`<div class="banner danger">${ic('alert')}<span><strong>Bloqueado para novas contratações</strong>Há documento vencido. Envie a versão atualizada; depois da revisão da equipe Conectwork, a situação volta a regular. Contratos em andamento não são afetados.</span></div>`:''}
+    <div class="card"><div class="card-h"><h3>Documentos e licenças</h3></div>${blocos||'<div class="empty">Nenhum documento cadastrado.</div>'}</div>`; }
+function dlgConfUp(ix){ const [, ,itens]=confEmp(session), it=itens[ix], v={};
+  openDlg(head('Atualizar documento',esc(it.nome))+`<div class="dlg-b"><label class="f"><span>Nova validade</span><input id="cuV" type="date"></label>
+    <div class="up" id="cuUp"><span class="ic">${ic('upload')}</span><div class="t"><strong>Arquivo</strong><small id="cuA">PDF ou foto</small></div><label class="btn sec sm">Selecionar<input type="file" id="cuF"></label></div><p class="err" id="cuE"></p></div>
+    <div class="dlg-f"><button class="btn sec" data-close>Voltar</button><button class="btn" id="cuOk">Enviar para revisão</button></div>`);
+  $('#cuF').onchange=e=>{ const f=e.target.files[0]; if(f){ v.a=f.name; $('#cuA').textContent=f.name; $('#cuUp').classList.add('ok'); } };
+  $('#cuOk').onclick=()=>{ const val=$('#cuV').value; if(!val||diasAte(val)<=0){ $('#cuE').textContent='Informe uma validade depois de hoje.'; return; } if(!v.a){ $('#cuE').textContent='Selecione o arquivo.'; return; }
+    const e=emp(session), k=Object.keys(e.certidoes||{}).find(x=>(DOC_EMP.find(y=>y[0]===x)||[])[1]===it.nome);
+    if(k){ e.revDocs=e.revDocs||{}; e.revDocs[k]={validade:val,arquivo:v.a}; }
+    else { const p=(db.pessoas||[]).find(x=>x.mei===session); const d=p&&p.docs.find(x=>x.nome===it.nome); if(d) d.rev={validade:val,arquivo:v.a}; }
+    notificar('master','alerta',`Documento para revisão: ${nome(session)}`,`${it.nome} com nova validade ${fmtData(val)}.`,'Você é da equipe Conectwork e revisa documentos.','conformidade');
+    save(); $('#dlg').close(); toast(`${it.nome} enviado para revisão.`); render(); }; }
+
+/* ---------- títulos (contas a pagar e receber) ---------- */
+const EST=[['recebido','Recebido'],['validacao','Em validação'],['pendente','Pendente de correção'],['aprovado','Aprovado'],['liberado','Liberado para programação'],['agendado','Agendado'],['conciliado','Liquidado e conciliado'],['baixado','Baixado']];
+const estNome=k=>(EST.find(x=>x[0]===k)||[k,k])[1];
+const tEstado=c=>c.titulo?c.titulo.estado:(c.status==='paga'?'baixado':'');
+function tSinais(c){ const s=[]; if(c.titulo&&c.titulo.estado!=='baixado'&&c.vencimento&&diasAte(c.vencimento)<0) s.push('Vencido'); if(c.titulo&&c.titulo.disputa) s.push('Em disputa'); return s; }
+function criarTitulo(c){ const dupla=db.cobrancas.some(x=>x!==c&&x.nota&&c.nota&&x.nota.numero===c.nota.numero&&x.prestador===c.prestador&&x.titulo&&!['baixado'].includes(x.titulo.estado));
+  c.vencimento=c.vencimento||maisDias(hoje(),20);
+  c.titulo={estado:dupla?'pendente':'recebido',hist:[{em:hoje(),txt:dupla?'Possível duplicidade: mesma nota já tem título ativo':'Título preliminar criado: Recebido, aguardando validação'}],dup:dupla}; }
+function tPasso(c,estado,txt){ c.titulo.estado=estado; c.titulo.hist.push({em:hoje(),txt}); }
+function viewTitulos(){
+  const base=db.cobrancas.filter(c=>(c.contratante===session||c.prestador===session)&&(c.titulo||c.status==='paga'));
+  const grupos=EST.map(([k,l])=>[k,l,base.filter(c=>tEstado(c)===k)]);
+  const prox=base.filter(c=>['aprovado','liberado','agendado'].includes(tEstado(c))&&c.vencimento).sort((a,b)=>a.vencimento.localeCompare(b.vencimento));
+  return `<div class="relsum card" style="grid-template-columns:repeat(4,minmax(0,1fr));border-bottom:1px solid var(--line)">${[['Bloqueados (validação)',base.filter(c=>['recebido','validacao','pendente'].includes(tEstado(c))).length],['Liberados',base.filter(c=>tEstado(c)==='liberado').length],['Agendados',base.filter(c=>tEstado(c)==='agendado').length],['Conciliados e baixados',base.filter(c=>['conciliado','baixado'].includes(tEstado(c))).length]].map(([l,n])=>`<div><span>${l}</span><strong>${n}</strong></div>`).join('')}</div>
+  <div class="grid-main"><div class="card"><div class="card-h"><h3>Títulos</h3><span class="end hint" style="font-size:12px">"Agendado" não é "pago": só baixa com liquidação confirmada.</span></div>
+    ${base.length?`<div class="scroll"><table class="resp"><thead><tr><th>Título</th><th>Outra parte</th><th>Valor</th><th>Vencimento</th><th>Estado</th></tr></thead><tbody>${base.sort((a,b)=>(a.vencimento||'').localeCompare(b.vencimento||'')).map(c=>{ const k=tEstado(c), sig=tSinais(c); return `<tr class="click" data-tit="${c.id}" tabindex="0"><td class="m-full"><div class="cell"><div style="min-width:0"><strong>${esc(c.descricao)}</strong><small>${esc(c.id)}${c.nota?' · nota nº '+c.nota.numero:''}</small></div></div></td><td class="m-hide">${esc(nome(c.contratante===session?c.prestador:c.contratante))}</td><td class="num">${brl(c.valor)}</td><td>${c.vencimento?fmtData(c.vencimento):'—'}</td><td><span class="pill ${['baixado','conciliado'].includes(k)?'ok':k==='pendente'?'danger':['recebido','validacao'].includes(k)?'warn':'info'}">${estNome(k)}</span>${sig.map(x=>` <span class="pill danger">${x}</span>`).join('')}</td></tr>`; }).join('')}</tbody></table></div>`:`<div class="empty"><span class="ic">${ic('cal')}</span>Nenhum título ainda. O título nasce quando a nota é enviada.</div>`}</div>
+  <div class="card"><div class="card-h"><span class="ic">${ic('cal')}</span><h3>Calendário de pagamentos</h3></div>${prox.length?prox.map(c=>`<div class="todo"><span class="ic info" style="flex-direction:column;width:44px;height:44px;font-size:11px;line-height:1.1"><b style="font-size:15px">${c.vencimento.slice(8,10)}</b>${MESES[+c.vencimento.slice(5,7)-1]}</span><div class="t"><strong>${esc(nome(c.contratante===session?c.prestador:c.contratante))}</strong><small>${brl(c.valor)} · ${estNome(tEstado(c))}</small></div></div>`).join(''):`<div class="empty" style="padding:20px">Nenhum vencimento programado.</div>`}</div></div>`; }
+function dlgTitulo(c){ const k=tEstado(c), souT=c.contratante===session, p=emp(c.prestador), t=emp(c.contratante);
+  const conta=p&&p.banco?`${(p.banco.banco||'').split(' ')[0]} · Ag ${p.banco.agencia} · Conta ****${String(p.banco.conta).slice(-3)}`:'—';
+  const chk=[['Contrato ou OS',!!c.contrato||c.origem==='api'],['Entrega aceita ou medição aprovada',true],['Emitente e tomador conferem',true],['Valor confere com o aprovado',!c.recusa],['Sem duplicidade de nota',!(c.titulo&&c.titulo.dup)]];
+  const ac=[];
+  if(souT&&k==='recebido'&&pode('validar')) ac.push(`<button class="btn" data-tac="validar">Iniciar validação</button>`);
+  if(souT&&k==='validacao'&&pode('validar')) ac.push(`<button class="btn sec" data-tac="pendente">Pendente de correção</button><button class="btn ok" data-tac="aprovar">Aprovar</button>`);
+  if(souT&&k==='aprovado'&&pode('liberar')) ac.push(`<button class="btn" data-tac="liberar">Liberar para programação</button>`);
+  if(souT&&k==='liberado'&&pode('agendar')) ac.push(`<button class="btn" data-tac="agendar">Agendar pagamento</button>`);
+  if(souT&&k==='agendado'&&pode('confirmar')) ac.push(`<button class="btn ok" data-tac="liquidar">Confirmar liquidação</button>`);
+  if(souT&&k==='conciliado'&&pode('confirmar')) ac.push(`<button class="btn" data-tac="baixar">Dar baixa</button>`);
+  openDlg(head(`Título ${esc(c.id)}`,`${esc(c.descricao)}`)+`<div class="dlg-b">${summary(c)}
+    <div class="estbar">${EST.map(([kk,l],i)=>`<span class="${EST.findIndex(x=>x[0]===k)>=i?'on':''} ${kk===k?'cur':''}" title="${l}">${l}</span>`).join('')}</div>
+    <dl class="kv"><dt>Vencimento</dt><dd>${c.vencimento?fmtData(c.vencimento):'—'} <span class="hint">(definido em contrato)</span></dd><dt>Valor bruto</dt><dd>${brl(c.valor)}</dd><dt>Retenções</dt><dd>Nenhuma informada (definidas pelo responsável fiscal por tipo de serviço)</dd><dt>Valor líquido</dt><dd>${brl(c.valor)}</dd><dt>Conta favorecida</dt><dd>${esc(conta)} <span class="hint">(dados ocultos)</span></dd>${c.titulo&&c.titulo.agendadoPara?`<dt>Agendado para</dt><dd>${fmtData(c.titulo.agendadoPara)}</dd>`:''}${c.titulo&&c.titulo.comprovante?`<dt>Comprovante</dt><dd>${esc(c.titulo.comprovante)}</dd>`:''}</dl>
+    <div class="card"><div class="card-h"><h3>Validação tripla</h3><span class="pill warn end">Conferência manual</span></div>${chk.map(([l,ok])=>`<div class="docrow ${ok?'ok':''}"><span class="ic">${ic(ok?'check':'alert')}</span><div class="t"><strong>${l}</strong></div></div>`).join('')}</div>
+    <ul class="tl">${(c.titulo?c.titulo.hist:[]).map(h=>`<li class="done"><span class="dot">${CHECK}</span>${esc(h.txt)}<small>${fmtData(h.em)}</small></li>`).join('')}</ul>
+    <p class="hint" style="margin:0;font-size:12px">O dinheiro sai do tomador direto para o prestador; não passa pelo Conectwork. Conferência parcial não é validação fiscal oficial.</p></div>
+    <div class="dlg-f">${ac.join('')}<button class="btn sec" data-close>Fechar</button></div>`,true);
+  document.querySelectorAll('#dlg [data-tac]').forEach(b=>b.onclick=()=>acaoTitulo(c,b.dataset.tac)); }
+function acaoTitulo(c,a){ const quem=(usr()||{}).nome||nome(session);
+  if(a==='validar'){ tPasso(c,'validacao','Validação iniciada por '+quem); }
+  if(a==='aprovar'){ tPasso(c,'aprovado','Aprovado na validação por '+quem); zap(c.prestador,`O título ${c.id} foi aprovado na validação. Vencimento ${fmtData(c.vencimento)}.`,'Título'); }
+  if(a==='liberar'){ tPasso(c,'liberado','Liberado para programação por '+quem); }
+  if(a==='pendente'){ return dlgRecusar(c); }
+  if(a==='agendar'){ if(!confirm(`Agendar o pagamento de ${brl(c.valor)} para ${fmtData(c.vencimento)}?`)) return; c.titulo.agendadoPara=c.vencimento; tPasso(c,'agendado',`Pagamento agendado para ${fmtData(c.vencimento)} por ${quem}`); zap(c.prestador,`Pagamento de ${brl(c.valor)} agendado para ${fmtData(c.vencimento)}. Agendado ainda não é pago: avisaremos quando for confirmado.`,'Pagamento'); }
+  if(a==='liquidar'){ if(!confirm('Confirmar que o banco liquidou este pagamento?')) return; c.titulo.comprovante=`comprovante-${c.id}.pdf`; tPasso(c,'conciliado','Liquidação confirmada e conciliada por '+quem); c.status='paga'; c.pagaEm=hoje(); zapCob(c,'paga'); }
+  if(a==='baixar'){ tPasso(c,'baixado','Título baixado por '+quem); }
+  save(); $('#dlg').close(); toast(`${c.id}: ${estNome(c.titulo.estado)}.`); render(); }
+
+/* ---------- aprendizado ---------- */
+function viewAprendizado(){ const u=usr(), cs=consDe(u?u.id:'x'), cur=db.cursos||[];
+  return `<div class="banner warn">${ic('alert')}<span><strong>Curso não é contratação.</strong>A inscrição não garante trabalho, não autoriza executar serviços e não substitui requisitos técnicos, documentos ou regras de segurança.</span></div>
+  ${cs.cursos?'':`<div class="banner info">${ic('lock')}<span><strong>Você não recebe convites de cursos.</strong>Pode ver o catálogo normalmente. Para receber convites, autorize em <button class="linkbtn" data-go="privacidade">Privacidade</button>.</span></div>`}
+  <div class="catg" style="padding:0">${cur.map(k=>{ const insc=u&&(k.inscritos||[]).includes(u.id); return `<article class="pcard"><div class="top"><span class="avatar" style="background:var(--grad)">${ic('book')}</span><div style="min-width:0"><strong>${esc(k.titulo)}</strong><small>${esc(k.emissor)}</small></div></div>
+    <dl class="mini"><div><dt>Carga horária</dt><dd>${esc(k.carga)}</dd></div><div><dt>Modalidade</dt><dd>${esc(k.modalidade)}</dd></div><div><dt>Inscrições até</dt><dd>${fmtData(k.validade)}</dd></div><div><dt>Certificado</dt><dd>${esc(k.certificado)}</dd></div></dl>
+    ${k.demanda?`<p class="hint" style="margin:0;font-size:12px">Ligado à demanda ${esc(k.demanda)}, mas independente dela.</p>`:''}
+    <div class="foot">${insc?'<span class="pill ok">Inscrição registrada</span>':`<span class="tag gray">${esc(k.area)}</span><button class="btn sm" data-aprender="${k.id}">Quero aprender</button>`}</div></article>`; }).join('')}</div>`; }
+function dlgAprender(k){ openDlg(head('Quero aprender',esc(k.titulo))+`<div class="dlg-b"><div class="banner warn">${ic('alert')}<span>A inscrição não é contratação e não garante trabalho. Para executar serviços, continuam valendo a qualificação, os documentos e as regras de segurança.</span></div>
+  <label class="check"><input type="checkbox" id="apOk"><span>Entendi. Quero registrar meu interesse neste curso.</span></label><p class="err" id="apE"></p></div>
+  <div class="dlg-f"><button class="btn sec" data-close>Voltar</button><button class="btn" id="apBtn">${ic('book')}Registrar inscrição</button></div>`);
+  $('#apBtn').onclick=()=>{ if(!$('#apOk').checked){ $('#apE').textContent='Confirme que entendeu o aviso.'; return; } const u=usr(); (k.inscritos||(k.inscritos=[])).push(u.id); save(); $('#dlg').close(); toast('Inscrição registrada. O emissor do curso entra em contato.'); render(); }; }
+
+/* ---------- clube de ofertas ---------- */
+function viewOfertas(){ const u=usr(), cs=consDe(u?u.id:'x');
+  return `<div class="banner info">${ic('gift')}<span><strong>Área opcional e separada da contratação.</strong>Participar não é condição para conseguir serviços ou receber pagamentos. Cada oferta é de responsabilidade do parceiro.</span></div>
+  <div class="catg" style="padding:0">${(db.ofertas||[]).map(o=>`<article class="pcard"><div class="top"><span class="avatar" style="background:var(--grad)">${ic('gift')}</span><div style="min-width:0"><strong>${esc(o.titulo)}</strong><small>${esc(o.parceiro)}</small></div><span class="pill warn">${o.patrocinada?'Oferta patrocinada':'Parceiro'}</span></div>
+    <dl class="mini"><div><dt>Categoria</dt><dd>${esc(o.cat)}</dd></div><div><dt>Público elegível</dt><dd>${esc(o.publico)}</dd></div><div><dt>Condição</dt><dd>${esc(o.condicao)}</dd></div><div><dt>Validade</dt><dd>${fmtData(o.validade)}</dd></div></dl>
+    <p class="hint" style="margin:0;font-size:12px">${esc(o.restricoes)}</p>
+    <div class="foot">${(o.contatos||[]).includes(u&&u.id)?'<span class="pill ok">Contato solicitado</span>':`<button class="btn sec sm" data-ofver="${o.id}">Ver condições</button><button class="btn sm" data-ofcont="${o.id}">Solicitar contato</button>`}</div></article>`).join('')}</div>
+  ${cs.ofertas?'':`<p class="hint" style="margin:0;font-size:12.5px">Você não recebe ofertas por aviso. Elas só aparecem aqui quando você abre o Clube.</p>`}`; }
+function dlgOferta(o,contato){ const u=usr();
+  openDlg(head(esc(o.titulo),esc(o.parceiro)+' · '+(o.patrocinada?'Oferta patrocinada':'Parceiro'))+`<div class="dlg-b"><dl class="kv"><dt>Condição</dt><dd>${esc(o.condicao)}</dd><dt>Elegibilidade</dt><dd>${esc(o.publico)}</dd><dt>Restrições</dt><dd>${esc(o.restricoes)}</dd><dt>Validade</dt><dd>${fmtData(o.validade)}</dd><dt>Canal</dt><dd>${esc(o.canal)}</dd></dl>
+    <p class="hint" style="margin:0;font-size:12px">O Conectwork não promete aprovação, crédito, rentabilidade, cobertura ou contratação e não faz recomendação financeira individual.</p>
+    ${contato?`<div class="banner info">${ic('lock')}<span><strong>O que será enviado</strong>Para ${esc(o.parceiro)}: seu nome, e-mail e celular, só para contato sobre esta oferta.</span></div><label class="check"><input type="checkbox" id="ofOk"><span>Autorizo enviar esses dados ao parceiro para esta finalidade.</span></label><p class="err" id="ofE"></p>`:''}</div>
+    <div class="dlg-f"><button class="btn sec" data-close>Fechar</button>${contato?'<button class="btn" id="ofBtn">Solicitar contato</button>':''}</div>`);
+  const b=$('#ofBtn'); if(b) b.onclick=()=>{ if(!$('#ofOk').checked){ $('#ofE').textContent='Autorize o envio para continuar, ou feche sem solicitar.'; return; }
+    (o.contatos||(o.contatos=[])).push(u.id); (db.consentLog||(db.consentLog=[])).unshift({uid:u.id,titulo:'Contato com '+o.parceiro,aceite:true,versao:VERSAO_TERMO,em:new Date().toISOString()}); save(); $('#dlg').close(); toast(`Contato solicitado a ${o.parceiro}.`); render(); }; }
+
+/* ---------- moderação e disputas (master) ---------- */
+function viewModeracao(){ const ds=db.disputas||[];
+  return `<div class="card"><div class="card-h"><h3>Contestações de avaliação</h3><span class="count">${ds.filter(d=>d.status==='aberta').length}</span></div>${ds.length?ds.map(d=>`<div class="todo"><span class="ic ${d.status==='aberta'?'warn':'info'}">${ic('hand')}</span><div class="t"><strong>${esc(d.quem)} contesta avaliação de ${esc(d.org)}</strong><small style="white-space:normal">${esc(d.motivo)}</small></div>${d.status==='aberta'?`<button class="btn sec sm" data-disp="${d.id}|manter">Manter</button><button class="btn sm" data-disp="${d.id}|remover">Remover</button>`:`<span class="pill ok">${d.status==='removida'?'Removida':'Mantida'}</span>`}</div>`).join(''):`<div class="empty" style="padding:20px">Nenhuma contestação.</div>`}</div>
+  <p class="hint" style="margin:0;font-size:12.5px">Remoção só para fraude, ameaça, conteúdo discriminatório ou dado pessoal exposto. Crítica legítima permanece. Nota baixa isolada não bloqueia ninguém.</p>`; }
+
+/* ---------- matching ---------- */
+const compativel=(eid,d)=>{ const e=emp(eid); return !!e&&e.status==='aprovado'&&e.tipo!=='contratante'&&(e.esp||[]).includes(d.especialidade||d.categoria); };
+const __viewOport=viewOportunidades;
+viewOportunidades=function(){ const ds=(db.demandas||[]).filter(d=>d.status==='aberta'&&d.contratante!==session&&!(d.recusas||[]).includes(session)&&compativel(session,d));
+  const e=emp(session), [ck]=confEmp(session);
+  return `<div class="banner info">${ic('target')}<span><strong>Você recebe demandas da sua especialidade.</strong>Suas especialidades: ${esc((e.esp||[]).join(', ')||'nenhuma cadastrada')}. Recusar não tira pontos.</span></div>
+  ${ck==='danger'?`<div class="banner danger">${ic('alert')}<span><strong>Conformidade bloqueada</strong>Você pode ver as oportunidades, mas precisa regularizar os documentos para ser contratado.</span></div>`:''}
+  ${ds.length?`<div class="catg" style="padding:0">${ds.map(d=>{ const mp=d.propostas.find(p=>p.prestador===session); return `<article class="pcard"><div class="top">${avatar(d.contratante)}<div style="min-width:0"><strong>${esc(d.id)} · ${esc(d.titulo)}</strong><small>${esc(nome(d.contratante))} · ${esc(d.especialidade||d.categoria)}</small></div></div>
+    <p style="margin:0;font-size:13px">${esc(d.escopo)}</p>
+    <dl class="mini"><div><dt>Entregáveis</dt><dd>${esc(d.entregaveis)}</dd></div><div><dt>Prazo</dt><dd>${fmtData(d.prazo)}</dd></div><div><dt>Aceite</dt><dd>${esc(d.aceite)}</dd></div><div><dt>Orçamento</dt><dd>${esc(d.orcamento||'A negociar')}</dd></div></dl>
+    <p class="hint" style="margin:0;font-size:12px;color:var(--info)">Por que você recebeu: especialidade ${esc(d.especialidade||d.categoria)} cadastrada e cadastro aprovado.</p>
+    <div class="foot">${mp?`<span class="pill ok">Proposta enviada: ${brl(mp.valor)}</span>`:podeAgir()?`<button class="btn ghost sm" data-recusa="${d.id}">Não tenho interesse</button><button class="btn sm" data-propor="${d.id}">Enviar proposta</button>`:''}</div></article>`; }).join('')}</div>`:`<div class="card"><div class="empty"><span class="ic">${ic('target')}</span>Nenhuma oportunidade compatível com as suas especialidades agora.</div></div>`}`; };
+
+/* demanda: especialidade e curso opcional; matching e convites */
+function dlgDemanda(tri){
+  openDlg(head('Nova demanda','Descreva o resultado esperado, não a rotina de quem vai executar.')+`<div class="dlg-b"><div class="fgrid">
+    <label class="f c8"><span>Título</span><input id="dmT" placeholder="Ex.: Movimentação de 1.000 toneladas"></label>
+    <label class="f c4"><span>Especialidade exigida</span><select id="dmC">${ESPEC.map(a=>`<option>${a}</option>`).join('')}</select></label>
+    <label class="f c12"><span>Problema a resolver e escopo</span><textarea id="dmE" rows="2"></textarea></label>
+    <label class="f c6"><span>Entregáveis</span><input id="dmEn"></label>
+    <label class="f c6"><span>Critério de aceite</span><input id="dmA"></label>
+    <label class="f c4"><span>Prazo de entrega</span><input id="dmP" type="date"></label>
+    <label class="f c4"><span>Local aproximado</span><input id="dmL" placeholder="Ex.: Cidade/UF, sem rastreamento"></label>
+    <label class="f c4"><span>Orçamento <i>(opcional)</i></span><input id="dmO" placeholder="Faixa ou 'a negociar'"></label>
+    <label class="f c12"><span>Requisitos de segurança <i>(opcional)</i></span><input id="dmS" placeholder="Ex.: NR-11 válida, EPI completo"></label>
+    <label class="c12 check"><input type="checkbox" id="dmCur"><span><strong style="font-weight:600">Incluir curso relacionado</strong><br><small class="hint">O convite vai também para pessoas de outras áreas que autorizaram receber cursos. Curso não é contratação.</small></span></label>
+    <label class="f c8" id="dmCurT" hidden><span>Nome do curso</span><input id="dmCurN" placeholder="Ex.: Operação segura de empilhadeira"></label>
+    <label class="f c4" id="dmCurH" hidden><span>Carga horária</span><input id="dmCurC" placeholder="Ex.: 16 h"></label></div><p class="err" id="dmEr"></p></div>
+    <div class="dlg-f"><button class="btn sec" data-close>Voltar</button><button class="btn" id="dmOk">${ic('send')}Publicar demanda</button></div>`);
+  $('#dmCur').onchange=e=>{ $('#dmCurT').hidden=!e.target.checked; $('#dmCurH').hidden=!e.target.checked; };
+  $('#dmOk').onclick=()=>{ const g=id=>$(id).value.trim(); if(!g('#dmT')||!g('#dmE')||!g('#dmEn')||!g('#dmA')){ $('#dmEr').textContent='Preencha título, escopo, entregáveis e critério de aceite.'; return; }
+    if(!g('#dmP')||diasAte(g('#dmP'))<=0){ $('#dmEr').textContent='Informe um prazo depois de hoje.'; return; }
+    if($('#dmCur').checked&&!g('#dmCurN')){ $('#dmEr').textContent='Informe o nome do curso ou desmarque a opção.'; return; }
+    const d={id:'CW-'+(100+db.dseq++),contratante:session,titulo:g('#dmT'),categoria:g('#dmC'),especialidade:g('#dmC'),escopo:g('#dmE'),entregaveis:g('#dmEn'),aceite:g('#dmA'),prazo:g('#dmP'),local:g('#dmL'),seguranca:g('#dmS'),orcamento:g('#dmO'),status:'aberta',triagem:tri,criada:hoje(),propostas:[],recusas:[]};
+    (db.demandas||(db.demandas=[])).push(d); publicarMatching(d, $('#dmCur').checked?{titulo:g('#dmCurN'),carga:g('#dmCurC')||'A definir'}:null);
+    save(); $('#dlg').close(); toast(`Demanda ${d.id} publicada. ${d._match} prestador(es) compatível(is) avisado(s)${d._conv!=null?', '+d._conv+' convite(s) de curso':''}.`); tab='demandas'; render(); };
+}
+function publicarMatching(d,curso){ let n=0, cv=null;
+  db.empresas.filter(e=>e.id!==d.contratante&&compativel(e.id,d)).forEach(e=>{ n++; notificar(e.id,'oportunidade',`Oportunidade ${d.id}: ${d.titulo}`,`${nome(d.contratante)} · prazo ${fmtData(d.prazo)}.`,`Sua especialidade ${d.especialidade} é a exigida pela demanda.`,'oportunidades'); zap(e.id,`Nova oportunidade ${d.id}: ${d.titulo}. Você recebeu porque sua especialidade é ${d.especialidade}: ${LINK_APP}`,'Oportunidade'); });
+  if(curso){ const k={id:'CUR-'+String((db.cursos||[]).length+1).padStart(2,'0'),titulo:curso.titulo,emissor:nome(d.contratante)+' · curso interno',carga:curso.carga,modalidade:'Presencial',validade:d.prazo,certificado:'Certificado de participação',area:d.especialidade,demanda:d.id,inscritos:[]}; (db.cursos||(db.cursos=[])).push(k); cv=0;
+    (db.usuarios||[]).filter(u=>u.ativo&&!u.pendente&&consDe(u.id).cursos&&u.empresa!==d.contratante).forEach(u=>{ cv++; notificar(u.id,'curso',`Convite de curso: ${k.titulo}`,`${k.carga} · ${k.modalidade}. Curso não é contratação.`,'Você autorizou receber convites de cursos.','aprendizado'); }); }
+  d._match=n; d._conv=cv; }
+
+/* aceite: solicitar correção + marcos */
+const __dlgContrato=dlgContrato;
+dlgContrato=function(c){ __dlgContrato(c); if(c.modalidade==='os'&&c.status==='execucao'&&c.prestador===session&&podeAgir()){ const f=$('#dlg .dlg-f'); const b=document.createElement('button'); b.className='btn sec'; b.textContent='Registrar marco'; b.onclick=()=>{ const t=prompt('Descreva o marco da execução (ex.: frente 1 concluída):'); if(t&&t.trim()){ c.marcos.push({txt:'Marco: '+t.trim(),em:hoje()}); zap(c.contratante,`${nome(c.prestador)} registrou um marco na ${c.id}: ${t.trim()}`,'Execução'); save(); $('#dlg').close(); toast('Marco registrado.'); render(); } }; f.insertBefore(b,f.firstChild); } };
+
+/* espelho com instruções completas + título ao enviar nota */
+const __zapCob2=zapCob;
+zapCob=function(c,ev){ __zapCob2(c,ev); if(ev==='nota'&&!c.titulo){ criarTitulo(c); notificar(c.contratante,'alerta',`Título ${c.id} recebido`,`${nome(c.prestador)} enviou a nota nº ${c.nota.numero} (${brl(c.valor)}). Estado: Recebido, aguardando validação.`,'Você é o tomador deste serviço.','titulos'); } };
+
+/* KPIs no início */
+function kpiCard(){ if(session==='master') return ''; const e=emp(session); if(!e) return '';
+  const cob=db.cobrancas, ct=db.contratos||[], dm=db.demandas||[];
+  const L=e.tipo==='prestador'||e.tipo==='ambos'&&false?[]:[];
+  const tom=[['Demandas abertas',dm.filter(d=>d.contratante===session&&d.status==='aberta').length,'demandas'],['Propostas recebidas',dm.filter(d=>d.contratante===session).reduce((s,d)=>s+d.propostas.length,0),'demandas'],['Contratos ativos',ct.filter(c=>c.contratante===session&&['ativo','execucao'].includes(c.status)).length,'contratos'],['Entregas para aceite',ct.filter(c=>c.contratante===session&&c.status==='entregue').length,'contratos'],['Títulos bloqueados',cob.filter(c=>c.contratante===session&&['recebido','validacao','pendente'].includes(tEstado(c))).length,'titulos'],['Agendados',cob.filter(c=>c.contratante===session&&tEstado(c)==='agendado').length,'titulos']];
+  const pre=[['Demandas compatíveis',dm.filter(d=>d.status==='aberta'&&d.contratante!==session&&compativel(session,d)).length,'oportunidades'],['Propostas em análise',dm.filter(d=>d.status==='aberta'&&d.propostas.some(p=>p.prestador===session)).length,'oportunidades'],['Contratos ativos',ct.filter(c=>c.prestador===session&&['ativo','execucao'].includes(c.status)).length,'contratos'],['Notas em validação',cob.filter(c=>c.prestador===session&&['recebido','validacao'].includes(tEstado(c))).length,'titulos'],['Pagamentos confirmados',cob.filter(c=>c.prestador===session&&['conciliado','baixado'].includes(tEstado(c))).length,'titulos'],['Conformidade',confEmp(session)[1],'conformidade']];
+  const ls=e.tipo==='contratante'?tom:e.tipo==='prestador'?pre:tom.slice(0,3).concat(pre.slice(0,3));
+  return `<div class="kpis">${ls.map(([l,v,t])=>`<button class="kpi" data-go="${t}"><span>${l}</span><strong>${v}</strong></button>`).join('')}</div>`; }
+
+function bind9(){ const q=s=>document.querySelectorAll(s);
+  q('[data-cons]').forEach(c=>c.onchange=()=>{ const u=usr(), cs=consDe(u.id); cs[c.dataset.cons]=c.checked; (db.consentLog||(db.consentLog=[])).unshift({uid:u.id,titulo:CONS.find(x=>x[0]===c.dataset.cons)[1],aceite:c.checked,versao:VERSAO_TERMO,em:new Date().toISOString()}); save(); toast(c.checked?'Autorização registrada.':'Autorização revogada.'); render(); });
+  q('[data-tit]').forEach(r=>{ const o=()=>dlgTitulo(db.cobrancas.find(x=>x.id===r.dataset.tit)); r.onclick=o; r.onkeydown=e=>{ if(e.key==='Enter') o(); }; });
+  q('[data-aprender]').forEach(b=>b.onclick=()=>dlgAprender(db.cursos.find(x=>x.id===b.dataset.aprender)));
+  q('[data-ofver]').forEach(b=>b.onclick=()=>dlgOferta(db.ofertas.find(x=>x.id===b.dataset.ofver),false));
+  q('[data-ofcont]').forEach(b=>b.onclick=()=>dlgOferta(db.ofertas.find(x=>x.id===b.dataset.ofcont),true));
+  q('[data-confup]').forEach(b=>b.onclick=()=>dlgConfUp(+b.dataset.confup));
+  q('[data-revok]').forEach(b=>b.onclick=()=>{ const [t,id,k]=b.dataset.revok.split('|'); if(t==='e'){ const e=emp(id); e.certidoes[k]=e.revDocs[k].validade; delete e.revDocs[k]; notificar(id,'alerta','Documento aprovado',`${(DOC_EMP.find(y=>y[0]===k)||[k,k])[1]} regularizado.`,'Você enviou o documento para revisão.','conformidade'); } else { const p=pes(id), d=p.docs[+k]; d.validade=d.rev.validade; d.arquivo=d.rev.arquivo; delete d.rev; if(p.mei) notificar(p.mei,'alerta','Documento aprovado',`${d.nome} regularizado.`,'Você enviou o documento para revisão.','conformidade'); } save(); toast('Documento aprovado e regularizado.'); render(); });
+  q('[data-disp]').forEach(b=>b.onclick=()=>{ const [id,r]=b.dataset.disp.split('|'); const d=db.disputas.find(x=>x.id===id); d.status=r==='remover'?'removida':'mantida'; if(r==='remover'){ const a=(db.avaliacoes||[]).find(x=>x.id===d.aval); if(a) db.avaliacoes=db.avaliacoes.filter(x=>x!==a); } save(); toast(r==='remover'?'Avaliação removida.':'Avaliação mantida.'); render(); });
+  q('[data-contestar]').forEach(b=>b.onclick=()=>{ const a=db.avaliacoes.find(x=>x.id===b.dataset.contestar); const m=prompt('Explique por que você contesta esta avaliação:'); if(m&&m.trim()){ (db.disputas||(db.disputas=[])).push({id:'DS'+Date.now(),aval:a.id,quem:(usr()||{}).nome||'',org:a.org,motivo:m.trim(),status:'aberta'}); notificar('master','alerta','Contestação de avaliação',m.trim(),'Você é da equipe Conectwork e modera avaliações.','moderacao'); save(); toast('Contestação enviada para revisão humana.'); render(); } });
+}
+const __seed8=seed;
+seed=function(){ const d=__seed8();
+  const E=id=>d.empresas.find(e=>e.id===id);
+  E('nexus').certidoes.trabalhista='2026-11-20'; E('nexus').verificadoEm='2026-11-04'; E('zenith').esp=['Manutenção industrial','Elétrica e automação','Produção e operação']; E('nexus').esp=['Elétrica e automação','Manutenção industrial','Logística e empilhadeira']; E('mei-joao').esp=['Elétrica e automação']; if(E('alfa')) E('alfa').esp=['Logística e empilhadeira'];
+  d.empresas.push({id:'mei-log',tipo:'prestador',status:'aprovado',protocolo:'CW-2026-0006',enviadoEm:'2026-10-01',avaliadoEm:'2026-10-02',taxa:0,plano:'Gratuito',modulos:['cobrancas','conta','contratos','demandas'],esp:['Logística e empilhadeira'],
+    dados:{cnpj:'55.667.788/0001-86',razao:'Profissional de Demonstração 55667788',fantasia:'Profissional de Demonstração',abertura:'2023-04-10',porte:'MEI',regime:'MEI (SIMEI)',cnae:'4930-2/01 — Transporte de carga municipal',im:'9988776',ie:''},
+    end:{cep:'92010-000',logradouro:'Rua de Demonstração',numero:'100',compl:'',bairro:'Centro',cidade:'Canoas',uf:'RS'},resp:{nome:'Profissional de Demonstração',cpf:'741.852.963-55',cargo:'Titular',email:'logistica.demo@email.com',cel:'(51) 99111-2233',emailFin:''},
+    banco:{banco:'077 — Inter',tipoConta:'Pagamento',agencia:'0001',conta:'1234567-8',pixTipo:'CNPJ',pix:'55.667.788/0001-86'},docs:{contrato:D('ccmei.pdf',100000),cartao:D('cartao-cnpj.pdf',80000),endereco:D('comprovante.pdf',150000),identidade:D('cnh.pdf',400000)},conferidos:{contrato:true,cartao:true,endereco:true,identidade:true},historico:[{em:'2026-10-01',txt:'Cadastro enviado para análise'},{em:'2026-10-02',txt:'Cadastro aprovado'}],fat:{'2026-09':2400,'2026-10':2800}});
+  d.usuarios.push({id:'u-logdemo',nome:'Profissional de Demonstração',email:'logistica.demo@email.com',tel:'(51) 99111-2233',empresa:'mei-log',cargo:'admin',ativo:true,zap:true});
+  d.pessoas.push({id:'p-logdemo',nome:'Profissional de Demonstração',funcao:'Operador de empilhadeira',area:'Logística',cidade:'Canoas',uf:'RS',hab:['NR-11','Empilhadeira','Carga e descarga'],vh:45,nota:0,vinculo:'nexus',alocado:'',catalogo:true,consente:true,mei:'mei-log',desde:'2025-04-10',st:{tot:6,prazo:6,prim:6},docs:[{nome:'NR-11',validade:'2027-03-01'},{nome:'ASO',validade:'2027-01-15'}]});
+  d.consent={'u-joao':{operacional:true,contrato:true,cobranca:true,cursos:true,ofertas:false,whatsapp:true,email:true,push:false},'u-logdemo':{operacional:true,contrato:true,cobranca:true,cursos:true,ofertas:false,whatsapp:true,email:true,push:false},'u-rafael':{operacional:true,contrato:true,cobranca:true,cursos:false,ofertas:false,whatsapp:true,email:true,push:false}};
+  d.consentLog=[{uid:'u-joao',titulo:'Convites de cursos',aceite:true,versao:VERSAO_TERMO,em:'2026-10-20T13:10:00.000Z'},{uid:'u-joao',titulo:'Canal WhatsApp',aceite:true,versao:VERSAO_TERMO,em:'2026-10-20T13:10:00.000Z'}];
+  d.dseq=3;
+  d.demandas=[{id:'CW-101',contratante:'colafix',titulo:'Movimentação de 1.000 toneladas',categoria:'Logística e empilhadeira',especialidade:'Logística e empilhadeira',escopo:'Movimentar 1.000 toneladas em duas frentes de 500 toneladas, do pátio para o armazém, em 20 dias.',entregaveis:'Duas frentes concluídas e relatório de movimentação',aceite:'Conferência do inventário ao fim de cada frente',prazo:'2026-11-30',local:'Gravataí/RS',seguranca:'NR-11 válida e empilhadeira inspecionada',orcamento:'A negociar',status:'aberta',triagem:'Compatível com o fluxo empresarial',criada:'2026-11-05',propostas:[{prestador:'nexus',valor:38500,prazo:'2026-11-28',cond:'Duas equipes próprias, uma por frente; empilhadeiras da prestadora',status:'enviada',em:'2026-11-06'}],recusas:[]},
+    {id:'CW-102',contratante:'colafix',titulo:'Montagem elétrica e automação da envasadora 3',categoria:'Elétrica e automação',especialidade:'Elétrica e automação',escopo:'Montar o painel elétrico e integrar o alimentador ao CLP da linha.',entregaveis:'Painel montado; programa comentado; treinamento de 2 h',aceite:'Linha rodando 8 h sem parada pelo alimentador',prazo:'2027-01-20',local:'Gravataí/RS',seguranca:'NR-10 válida',orcamento:'',status:'aberta',triagem:'Compatível com o fluxo empresarial',criada:'2026-11-05',propostas:[],recusas:[]}];
+  d.cursos=[{id:'CUR-01',titulo:'Operação segura de empilhadeira (NR-11)',emissor:'Contratante A · curso interno',carga:'16 h',modalidade:'Presencial',validade:'2026-11-25',certificado:'Certificado de participação',area:'Logística e empilhadeira',demanda:'CW-101',inscritos:[]},
+    {id:'CUR-02',titulo:'Leitura de diagramas elétricos',emissor:'Escola técnica parceira (demonstração)',carga:'8 h',modalidade:'Online',validade:'2026-12-15',certificado:'Certificado do emissor',area:'Elétrica e automação',demanda:'',inscritos:[]}];
+  d.notifs=[{id:'N1',alvo:'mei-log',tipo:'oportunidade',titulo:'Oportunidade CW-101: Movimentação de 1.000 toneladas',texto:'Contratante A · prazo 30/11/2026.',motivo:'Sua especialidade Logística e empilhadeira é a exigida pela demanda.',irPara:'oportunidades',em:'2026-11-05T12:00:00.000Z',lida:false},
+    {id:'N2',alvo:'u-joao',tipo:'curso',titulo:'Convite de curso: Operação segura de empilhadeira (NR-11)',texto:'16 h · Presencial. Curso não é contratação.',motivo:'Você autorizou receber convites de cursos.',irPara:'aprendizado',em:'2026-11-05T12:00:00.000Z',lida:false}];
+  d.ofertas=[{id:'OF1',titulo:'Cursos de NR com condição para a rede',parceiro:'Escola técnica parceira (demonstração)',cat:'Cursos',publico:'Profissionais e empresas cadastradas',condicao:'Condição informada pelo parceiro',validade:'2026-12-31',restricoes:'Sujeito a vagas e regras do parceiro.',canal:'Contato do parceiro',patrocinada:true,contatos:[]},
+    {id:'OF2',titulo:'Conta PJ para MEI',parceiro:'Instituição financeira parceira (demonstração)',cat:'Bancos e serviços financeiros',publico:'MEI com cadastro aprovado',condicao:'Condições sujeitas à análise do parceiro',validade:'2026-12-31',restricoes:'Abertura depende de análise e contrato com a instituição.',canal:'Site do parceiro',patrocinada:true,contatos:[]},
+    {id:'OF3',titulo:'Orientação sobre plano de saúde empresarial',parceiro:'Corretora habilitada parceira (demonstração)',cat:'Saúde',publico:'Empresas cadastradas',condicao:'Cotação feita pelo parceiro',validade:'2026-12-31',restricoes:'O Conectwork não coleta dados de saúde; o atendimento é feito pelo parceiro.',canal:'Contato do parceiro',patrocinada:false,contatos:[]},
+    {id:'OF4',titulo:'Consórcio de equipamentos',parceiro:'Administradora autorizada parceira (demonstração)',cat:'Consórcio',publico:'Empresas cadastradas',condicao:'Regras do grupo informadas pela administradora',validade:'2026-12-31',restricoes:'Contemplação conforme regras do grupo; sem promessa de prazo.',canal:'Contato do parceiro',patrocinada:true,contatos:[]}];
+  d.disputas=[];
+  // títulos
+  const C=id=>d.cobrancas.find(c=>c.id===id);
+  C('C-1001').vencimento='2026-11-22'; C('C-1001').titulo={estado:'validacao',hist:[{em:'2026-11-02',txt:'Título preliminar criado: Recebido, aguardando validação'},{em:'2026-11-03',txt:'Validação iniciada por Carlos Teixeira'}]};
+  C('C-1003').vencimento='2026-10-21'; C('C-1003').titulo={estado:'baixado',comprovante:'comprovante-C-1003.pdf',agendadoPara:'2026-10-08',hist:[{em:'2026-10-02',txt:'Título preliminar criado'},{em:'2026-10-03',txt:'Aprovado na validação'},{em:'2026-10-03',txt:'Liberado para programação'},{em:'2026-10-04',txt:'Pagamento agendado para 08/10/2026'},{em:'2026-10-08',txt:'Liquidação confirmada e conciliada'},{em:'2026-10-09',txt:'Título baixado'}]};
+  C('C-1000').vencimento='2026-10-13'; C('C-1000').titulo={estado:'baixado',comprovante:'comprovante-C-1000.pdf',hist:[{em:'2026-10-09',txt:'Liquidação confirmada e conciliada'},{em:'2026-10-09',txt:'Título baixado'}]};
+  const c2=C('C-1002'); c2.recusa={motivo:'Valor diferente do combinado',txt:'A nota nº 13 veio com R$ 3.400,00; o combinado para outubro é R$ 3.200,00.',nota:13}; c2.recusas=[{nota:13,motivo:'Valor diferente do combinado',txt:c2.recusa.txt,em:'2026-11-04',por:'Larissa Prado'}];
+  d.cobrancas.push({id:'C-1004',contratante:'colafix',prestador:'nexus',descricao:'OS-2026-0041 · Inspeção termográfica dos painéis',valor:4200,competencia:'2026-10',status:'nota',origem:'os',criada:'2026-10-28',contrato:'OS-2026-0041',vencimento:'2026-11-20',nota:{numero:311,emitida:'2026-10-29',servico:'14.01',chave:'43261077889911000146000000003110000003111234567890',origem:'xml'},titulo:{estado:'agendado',agendadoPara:'2026-11-20',hist:[{em:'2026-10-29',txt:'Título preliminar criado'},{em:'2026-10-30',txt:'Aprovado na validação por Carlos Teixeira'},{em:'2026-10-30',txt:'Liberado para programação por Carlos Teixeira'},{em:'2026-10-31',txt:'Pagamento agendado para 20/11/2026'}]}});
+  d.contratos.push({id:'OS-2026-0041',modalidade:'os',contratante:'colafix',prestador:'nexus',objeto:'Inspeção termográfica dos painéis',entregaveis:'Relatório termográfico',aceiteCrit:'Relatório com todos os painéis',prazo:'2026-10-27',valor:4200,vencRegra:'20 dias após nota válida',status:'aceito',assin:{contratante:{nome:'Marina Costa',em:'2026-10-10'},prestador:{nome:'Fernanda Rocha',em:'2026-10-10'}},triagem:'Compatível com o fluxo empresarial',criado:'2026-10-10',marcos:[{txt:'Entrega aceita',em:'2026-10-28'}]},
+    {id:'OS-2026-0040',modalidade:'os',contratante:'colafix',prestador:'zenith',objeto:'Troca de rolamentos da esteira 4',entregaveis:'Esteira operando com rolamentos novos',aceiteCrit:'Teste de 2 h sem vibração anormal',prazo:'2026-11-25',valor:6900,vencRegra:'20 dias após nota válida',status:'assinatura',assin:{contratante:{nome:'Marina Costa',em:'2026-11-05'}},triagem:'Compatível com o fluxo empresarial',criado:'2026-11-05',marcos:[]});
+  d.usuarios.push({id:'u-tes',nome:'Tesouraria de Demonstração',email:'tesouraria@contratante-a.com.br',tel:'',empresa:'colafix',cargo:'tesouraria',ativo:true,zap:false},{id:'u-aprov',nome:'Aprovador Técnico de Demonstração',email:'manutencao@contratante-a.com.br',tel:'',empresa:'colafix',cargo:'aprovador',ativo:true,zap:false});
+  return d; };
+
+function bellBtn(){ if(!session) return ''; const n=minhasNotifs().filter(x=>!x.lida).length; return `<button class="bellbtn" data-go="notificacoes" aria-label="Notificações${n?', '+n+' novas':''}">${ic('bell')}${n?`<b>${n}</b>`:''}</button>`; }
+function netState(){ const upd=()=>{ let b=document.getElementById('offbar'); if(navigator.onLine){ if(b) b.remove(); return; } if(!b){ b=document.createElement('div'); b.id='offbar'; b.className='offbar'; b.setAttribute('role','status'); document.body.appendChild(b); } b.textContent='Você está offline. O que você fizer fica salvo neste aparelho para sincronizar depois. Notas e pagamentos não são processados offline.'; };
+  addEventListener('online',upd); addEventListener('offline',upd); upd(); }
+function dlgLote(){ const cs=db.cobrancas.filter(c=>selPag.has(c.id)&&tEstado(c)==='liberado'); if(!cs.length) return; const tot=soma(cs);
+  openDlg(head(`Agendar ${cs.length===1?'1 pagamento':cs.length+' pagamentos'}`,'Cada pagamento fica agendado para o vencimento do contrato. Agendado ainda não é pago.')+`<div class="dlg-b"><div class="stack" style="gap:8px">${cs.map(c=>`<div class="summary"><span class="pair">${avatar(c.prestador,'sm')}</span><div class="t"><strong>${esc(nome(c.prestador))}</strong><small>Nota nº ${c.nota.numero} · vence ${fmtData(c.vencimento)}</small></div><div class="v" style="font-size:16px">${brl(c.valor)}</div></div>`).join('')}</div>
+    <div class="total"><span>Total</span><span>${brl(tot)}</span></div></div>
+    <div class="dlg-f"><button class="btn sec" data-close>Voltar</button><button class="btn ok" id="ltOk">${ic('cal')}Confirmar agendamento</button></div>`);
+  $('#ltOk').onclick=()=>{ const quem=(usr()||{}).nome||''; cs.forEach(c=>{ c.titulo.agendadoPara=c.vencimento; tPasso(c,'agendado',`Pagamento agendado para ${fmtData(c.vencimento)} por ${quem}`); zap(c.prestador,`Pagamento de ${brl(c.valor)} agendado para ${fmtData(c.vencimento)}.`,'Pagamento'); }); selPag.clear(); save(); $('#dlg').close(); toast(`${cs.length===1?'1 pagamento agendado':cs.length+' pagamentos agendados'}.`); render(); }; }
+const __dlgRec=dlgRecusar;
+dlgRecusar=function(c){ __dlgRec(c); const b=$('#rcOk'); if(!b) return; const old=b.onclick; b.onclick=()=>{ old(); if(c.recusa&&c.titulo&&c.titulo.estado!=='pendente'){ tPasso(c,'pendente','Pendente de correção: '+c.recusa.motivo); save(); render(); } }; };
+const __zapCob3=zapCob;
+zapCob=function(c,ev){ const tinha=!!c.titulo; __zapCob3(c,ev); if(ev==='nota'&&tinha&&c.titulo.estado==='pendente'){ tPasso(c,'recebido',`Nota substituída: nova nota nº ${c.nota.numero} recebida`); } };
+const __todoRep2=todoRep;
+todoRep=function(it){ __todoRep2(it); if(session==='master') return;
+  db.cobrancas.filter(c=>c.contratante===session&&c.titulo).forEach(c=>{ const k=c.titulo.estado; const m={recebido:['validar','Validar título'],validacao:['validar','Concluir validação'],aprovado:['liberar','Liberar para programação'],liberado:['agendar','Agendar pagamento'],agendado:['confirmar','Confirmar liquidação']}[k];
+    if(m&&pode(m[0])&&(k!=='agendado'||diasAte(c.titulo.agendadoPara||c.vencimento)<=0)) it.push(`<div class="todo"><span class="ic ${['recebido','validacao'].includes(k)?'warn':'info'}">${ic('cal')}</span><div class="t"><strong>${m[1]}: ${esc(nome(c.prestador))}</strong><small>${esc(c.id)} · ${brl(c.valor)} · vence ${fmtData(c.vencimento)}</small></div><button class="btn sm" data-titb="${c.id}">Abrir</button></div>`); });
+  const [ck,cl]=confEmp(session); if(ck==='danger'||ck==='warn') it.push(`<div class="todo"><span class="ic warn">${ic('shield')}</span><div class="t"><strong>Conformidade: ${cl}</strong><small>Há documento ${ck==='danger'?'vencido':'perto de vencer'}</small></div><button class="btn sec sm" data-go="conformidade">Ver</button></div>`); };
+const __bind9=bind9;
+bind9=function(){ __bind9(); document.querySelectorAll('[data-titb]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); dlgTitulo(db.cobrancas.find(x=>x.id===b.dataset.titb)); }); };
+(function(){ const at=t=>TOUR.findIndex(x=>x.t===t);
+  const io=at('Oportunidades e propostas'); if(io>=0) TOUR.splice(io+1,0,{u:'u-logdemo',tab:'oportunidades',sel:'main',who:'Profissional de logística',t:'Matching por especialidade',d:'A demanda de 1.000 toneladas chega só para quem tem a especialidade de logística e documentos válidos. O cartão diz por que a pessoa recebeu. O profissional de elétrica não recebe essa demanda.'});
+  const ie=at('O MEI envia a nota'); if(ie>=0) TOUR.splice(ie,0,{u:'u-joao',tab:'aprendizado',sel:'main',who:'João · MEI',t:'Aprendizado: "Quero aprender"',d:'O João é de elétrica, mas autorizou convites de cursos, então recebeu o convite do curso de empilhadeira ligado à demanda de logística. A inscrição não é contratação e não autoriza executar o serviço. Quem não autorizou não recebe o convite.'},{u:'u-joao',tab:'privacidade',sel:'main .card',who:'João · MEI',t:'Consentimentos e privacidade',d:'Cada autorização é separada e fica registrada com data, hora e versão do termo. Cursos e ofertas vêm desligados por padrão, e recusar não tira acesso ao serviço.'});
+  const ip=at('Cobranças, notas e pagamento em lote'); if(ip>=0) TOUR.splice(ip+1,0,{u:'u-marina',tab:'titulos',sel:'main .grid-main',who:'Contratante A · administradora',t:'Contas a pagar: o título passo a passo',d:'O título nasce quando a nota chega e passa por validação tripla (contrato, aceite e nota), aprovação, liberação, agendamento, liquidação conciliada e baixa. Agendado não é pago. O calendário mostra os próximos vencimentos.'});
+  const ic4=at('Os profissionais da Intermediária C'); if(ic4>=0) TOUR.splice(ic4,0,{u:'u-fernanda',tab:'conformidade',sel:'main .hero',who:'Prestadora B',t:'Conformidade',d:'Situação do CNPJ, certidões e documentos com estado Regular, Atenção, Pendente, Bloqueado ou Em revisão. Documento vencido bloqueia novas contratações até a revisão da equipe Conectwork.'});
+  const iz=at('Conta e benefícios'); if(iz>=0) TOUR.splice(iz,0,{u:'u-joao',tab:'ofertas',sel:'main .catg',who:'João · MEI',t:'Clube de ofertas',d:'Área opcional e separada da contratação. Cada cartão mostra parceiro, público, condição, validade e restrições, identificado como publicidade. Antes de enviar dados ao parceiro, a pessoa vê o que será enviado e autoriza.'});
+})();
+
+load(); try{ uid=localStorage.getItem(KEY+':u')||null; }catch(e){ uid=null; } { const u=usr(); session=u?u.empresa:null; } render(); bannerPriv(); netState();
 </script>
 </body>
 </html>

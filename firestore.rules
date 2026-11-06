@@ -33,11 +33,12 @@ service cloud.firestore {
     match /empresas/{emp} {
       allow read: if master() || membro(emp) || fundador(emp)
         || (logado() && resource.data.status == 'aprovado');
-      // cadastro novo sempre entra em análise, sem módulos nem taxa
+      // cadastro novo sempre entra em análise, sem módulos nem plano (o plano e os módulos quem define é a equipe master)
       allow create: if logado()
         && request.resource.data.status == 'analise'
         && request.resource.data.criadoPor == request.auth.uid
         && !('modulos' in request.resource.data)
+        && !('plano' in request.resource.data)
         && !('taxa' in request.resource.data);
       // equipe master decide; a empresa só reenvia o cadastro quando foi pedido ajuste
       allow update: if master()
