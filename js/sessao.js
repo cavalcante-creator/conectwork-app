@@ -30,8 +30,8 @@
   /* ---------- telas de entrada (antes do app) ---------- */
   function moldura(conteudo) {
     const { ic, LOGO, CURVES } = U();
-    app().innerHTML = `<div class="login">
-      <section class="brandpanel">${CURVES}
+    app().innerHTML = `<div class="login">${CURVES}
+      <section class="brandpanel">
         <div class="bp-topo">${LOGO(120)}<div><h1>Conect<span>work</span></h1><div class="slogan">PLATAFORMA MAIS COMPLETA EM OUTSOURCING</div></div></div>
         <p class="tagline">Toda papelada e burocracia em um só lugar, na palma da sua mão.</p>
         <ul class="beneficios">
@@ -261,7 +261,20 @@
     await CW.fb.auth().signOut();
   }
 
+  /* o Firebase vem da internet (nunca fica guardado no aparelho): sem ele, explica e tenta de novo sozinho */
+  function telaSemConexao() {
+    const { ic } = U(), off = navigator.onLine === false;
+    moldura(`<div class="logincard card"><div class="card-b"><div class="lform" id="sem-conexao">
+      <h3>${off ? 'Sem conexão com a internet' : 'Não foi possível carregar o Conectwork'}</h3>
+      <p class="sub">${off ? 'O Conectwork precisa da internet para entrar e mostrar seus dados. Quando a conexão voltar, esta tela carrega sozinha.'
+        : 'Uma parte do app não chegou. Confira sua internet e tente de novo.'}</p>
+      <button class="btn" id="sc-tentar">${ic('arrow')}Tentar de novo</button></div></div></div>`);
+    document.getElementById('sc-tentar').onclick = () => location.reload();
+    window.addEventListener('online', () => location.reload(), { once: true });
+  }
+
   function iniciar() {
+    if (!window.firebase) { telaSemConexao(); return; }
     if (!CW.fb.iniciar()) { telaConfig(); return; }
     CW.fb.auth().onAuthStateChanged(aoMudarLogin);
   }

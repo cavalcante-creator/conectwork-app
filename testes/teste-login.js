@@ -41,6 +41,18 @@ const { ok, fim } = H.placar('login');
   });
   ok('L1d cartão centralizado na vertical e botões lado a lado', Math.abs(l1d.cima - l1d.baixo) <= 4 && l1d.lado, JSON.stringify(l1d));
 
+  // L1h fundo azul na tela inteira (sem lado claro) e cartão branco flutuando
+  const l1h = await page.evaluate(() => {
+    const g = s => getComputedStyle(document.querySelector(s)), L = document.querySelector('.login').getBoundingClientRect(), c = document.getElementById('lg');
+    return { fundo: g('.login').backgroundColor, ladoDir: g('.loginside').backgroundColor, painel: g('.brandpanel').backgroundColor,
+      cheia: Math.round(L.width) === innerWidth && L.height >= innerHeight, curvas: !!document.querySelector('.login > .curves'),
+      cartao: getComputedStyle(c).backgroundColor, raio: getComputedStyle(c).borderRadius, larg: Math.round(c.getBoundingClientRect().width), sombra: getComputedStyle(c).boxShadow !== 'none' };
+  });
+  const transp = v => v === 'rgba(0, 0, 0, 0)' || v === 'transparent';
+  ok('L1h fundo azul e curvas na tela inteira, sem divisão; cartão branco de 440px, cantos de 16px e sombra',
+    l1h.fundo === 'rgb(8, 22, 56)' && transp(l1h.ladoDir) && transp(l1h.painel) && l1h.cheia && l1h.curvas
+    && l1h.cartao === 'rgb(255, 255, 255)' && l1h.raio === '16px' && l1h.larg === 440 && l1h.sombra, JSON.stringify(l1h));
+
   // L1e "Cadastrar empresa" e "Tenho um convite" avisam que chegam na próxima etapa (sem entrar)
   const toast = () => page.evaluate(() => document.getElementById('toast').classList.contains('show') ? document.getElementById('toast').innerText : '');
   await page.click('#lg-cadastrar'); await H.dorme(150); const t1 = await toast();
@@ -52,17 +64,20 @@ const { ok, fim } = H.placar('login');
   const l1f = await page.evaluate(() => {
     const bp = document.querySelector('.brandpanel').getBoundingClientRect(), c = document.getElementById('lg').getBoundingClientRect();
     const vis = s => { const e = document.querySelector(s); return !!e && getComputedStyle(e).display !== 'none'; };
-    return { alt: Math.round(bp.height), abaixo: c.top >= bp.bottom - 1 && c.top - bp.bottom < 60, slogan: vis('.brandpanel .slogan'), escondidos: !vis('.beneficios') && !vis('.selos') && !vis('.brandpanel .tagline'),
+    return { alt: Math.round(bp.height), abaixo: c.top >= bp.bottom - 1 && c.top - bp.bottom < 40, frase: vis('.brandpanel .tagline') && vis('.brandpanel h1'), escondidos: !vis('.beneficios') && !vis('.selos'),
+      margens: [Math.round(c.left), Math.round(innerWidth - c.right)], fundo: getComputedStyle(document.querySelector('.login')).backgroundColor,
       rolagem: document.documentElement.scrollWidth > window.innerWidth };
   });
-  ok('L1f celular: cabeçalho compacto (logo e slogan), cartão logo abaixo, sem rolagem para o lado', l1f.alt < 130 && l1f.abaixo && l1f.slogan && l1f.escondidos && !l1f.rolagem, JSON.stringify(l1f));
+  ok('L1f celular: cabeçalho azul compacto (logo, nome e frase), cartão logo abaixo com margens de 16px, sem rolagem para o lado',
+    l1f.alt < 150 && l1f.abaixo && l1f.frase && l1f.escondidos && l1f.margens[0] === 16 && l1f.margens[1] === 16 && l1f.fundo === 'rgb(8, 22, 56)' && !l1f.rolagem, JSON.stringify(l1f));
   await page.setViewportSize({ width: 1280, height: 900 });
 
-  // L1g modo escuro: o cartão segue o tema
-  const cor = () => page.evaluate(() => getComputedStyle(document.getElementById('lg')).backgroundColor);
-  const claro = await cor(); await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark')); const escuro = await cor();
-  await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'));
-  ok('L1g modo claro e escuro mudam o cartão', claro !== escuro && /rgb\(255, 255, 255\)/.test(claro), claro + ' / ' + escuro);
+  // L1g modo escuro do sistema: cartão azul-escuro um tom acima do fundo (não preto), campos com borda visível
+  const cor = () => page.evaluate(() => ({ c: getComputedStyle(document.getElementById('lg')).backgroundColor, b: getComputedStyle(document.getElementById('lg-email')).borderColor }));
+  const claro = await cor(); await page.emulateMedia({ colorScheme: 'dark' }); const escuro = await cor(); await page.emulateMedia({ colorScheme: 'light' });
+  const rgb = v => (v.match(/\d+/g) || []).slice(0, 3).map(Number), soma = v => rgb(v).reduce((a, b) => a + b, 0);
+  ok('L1g modo escuro do sistema: cartão azul-escuro mais claro que o fundo (não preto) e campos com borda visível',
+    claro.c === 'rgb(255, 255, 255)' && soma(escuro.c) > soma('rgb(8, 22, 56)') + 30 && rgb(escuro.c)[2] > rgb(escuro.c)[0] && soma(escuro.b) > soma(escuro.c) + 40, JSON.stringify({ claro, escuro }));
 
   // L2 campos vazios
   await page.click('#lg-entrar'); let e = await erro();

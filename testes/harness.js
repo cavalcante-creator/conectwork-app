@@ -10,7 +10,8 @@ const TIPOS = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/htm
 async function abrir(op) {
   op = op || {};
   const browser = await chromium.launch(process.env.CHROME ? { executablePath: process.env.CHROME } : {});
-  const ctx = await browser.newContext({ viewport: op.viewport || { width: 1280, height: 900 } });
+  /* service worker bloqueado aqui: os arquivos vêm do endereço falso; o teste-pwa.js testa o service worker num servidor de verdade */
+  const ctx = await browser.newContext({ viewport: op.viewport || { width: 1280, height: 900 }, serviceWorkers: 'block' });
   await ctx.route('**/*', route => {
     const u = route.request().url();
     if (u.includes('gstatic.com/firebasejs/')) return route.fulfill({ contentType: 'text/javascript', body: u.includes('app-compat') ? MOCK : '' });

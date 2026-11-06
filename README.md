@@ -17,6 +17,7 @@ Este repositório começa com o **kit de partida**: regras do projeto, requisito
 | `config.example.js` | Modelo do `config.js` com a configuração do Firebase. |
 | `docs/prototipo-referencia.html` | O protótipo, como referência de telas, textos e visual. Abra no navegador. |
 | `index.html`, `css/`, `js/`, `modulos/` | O app (JavaScript puro, sem etapa de build). Estrutura no `CLAUDE.md`. |
+| `manifest.webmanifest`, `sw.js`, `icons/`, `js/pwa.js` | App instalável (PWA): nome, ícones, abrir sem internet e faixa de offline. |
 | `firebase.json` | Configuração dos emuladores do Firebase, usada só nos testes. |
 | `testes/` | Testes automatizados (regras do Firestore e telas). |
 
@@ -43,6 +44,17 @@ Este repositório começa com o **kit de partida**: regras do projeto, requisito
 GitHub Pages: Settings › Pages › Deploy from a branch › `main` › `/ (root)`. O app fica em `https://cavalcante-creator.github.io/conectwork-app/`.
 O protótipo continua separado, no repositório `conectwork`.
 
+**A cada publicação, troque a `VERSAO` no começo do `sw.js`** (ex.: `conectwork-v1` → `conectwork-v2`). É assim que os aparelhos percebem que há versão nova: o navegador instala a nova e apaga os arquivos guardados da anterior. Se esquecer, quem já usa o app continua recebendo os arquivos novos quando estiver com internet (o app busca na rede primeiro), mas o cache antigo não é limpo.
+Se criar um arquivo novo em `js/` ou `modulos/`, acrescente também na lista `ARQUIVOS` do `sw.js`, para ele abrir sem internet.
+
+## Instalar no celular e no computador
+O Conectwork pode ser instalado como app, com ícone próprio e sem a barra do navegador. Abra o endereço do app e:
+- **Android (Chrome):** menu ⋮ › **Instalar app** (ou "Adicionar à tela inicial").
+- **iPhone (Safari):** botão **Compartilhar** › **Adicionar à Tela de Início**.
+- **Computador (Chrome ou Edge):** clique no **ícone de instalar** na barra de endereço, à direita.
+
+Sem internet, o app abre com o visual completo e avisa que precisa da conexão para entrar. Enquanto a conexão estiver caída aparece a faixa "Você está offline. Nada é enviado ao servidor até a conexão voltar.". Login e dados (Firebase) nunca ficam guardados no aparelho pelo app.
+
 ## Testes
 Os testes ficam em `testes/` e não vão para o site (o GitHub Pages só serve os arquivos; `node_modules` fica fora do repositório).
 
@@ -60,7 +72,7 @@ npx playwright install chromium
 **Rodar:**
 | Comando (dentro de `testes/`) | O que testa |
 |---|---|
-| `npm run telas` | Telas com o Firebase simulado (sem internet): componentes (`teste-ui.js`), login (`teste-login.js`) e sessão, menu e permissões (`teste-sessao.js`). |
+| `npm run telas` | Telas com o Firebase simulado (sem internet): componentes (`teste-ui.js`), login (`teste-login.js`) sessão, menu e permissões (`teste-sessao.js`) e app instalável (`teste-pwa.js`: manifest, service worker, abrir sem internet, faixa de offline e troca de `VERSAO`; este usa um servidor local, porque o service worker só roda em `localhost` ou https). |
 | `npm run regras` | Regras do `firestore.rules` no emulador do Firestore (`teste-regras.js`). Liga o emulador, roda e desliga sozinho. |
 | `npm test` | Os dois acima. |
 

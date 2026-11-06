@@ -4,7 +4,7 @@
   "description": "Testes do Conectwork: regras do Firestore no emulador e testes de tela com Firebase simulado.",
   "scripts": {
     "regras": "firebase emulators:exec --only firestore --project demo-conectwork \"node teste-regras.js\"",
-    "telas": "node teste-ui.js && node teste-login.js && node teste-sessao.js",
+    "telas": "node teste-ui.js && node teste-login.js && node teste-sessao.js && node teste-pwa.js",
     "test": "npm run telas && npm run regras"
   },
   "devDependencies": {

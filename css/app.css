@@ -34,24 +34,34 @@ h1,h2,h3{letter-spacing:-.015em}
 @keyframes giro{to{transform:rotate(360deg)}}
 
 /* ---------- Login e telas de entrada ---------- */
-.login{display:grid;grid-template-columns:minmax(380px,42%) 1fr;min-height:100%}
-.brandpanel{position:relative;overflow:hidden;background:var(--navy);color:#fff;padding:48px 52px;display:flex;flex-direction:column}
+/* Fundo azul-marinho e curvas na tela inteira, como uma peça só; o cartão de acesso flutua por cima. */
+.login{position:relative;overflow:hidden;width:100%;min-height:100vh;min-height:100dvh;display:grid;
+  grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);background:var(--navy);color:#fff;isolation:isolate}
+.login>.curves{z-index:-1}
 .curves{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.brandpanel{position:relative;color:#fff;padding:clamp(32px,5.5vh,72px) clamp(28px,4.2vw,88px);display:flex;flex-direction:column;min-width:0}
 .bp-topo{position:relative}
-.brandpanel h1{font-size:44px;font-weight:600;letter-spacing:-.03em;line-height:1.05;margin:26px 0 12px}
+.bp-topo>svg{width:clamp(92px,7.6vw,150px);height:auto}
+.brandpanel h1{font-size:clamp(36px,3.1vw,60px);font-weight:600;letter-spacing:-.03em;line-height:1.05;margin:clamp(16px,2.6vh,30px) 0 clamp(8px,1.2vh,14px)}
 .brandpanel h1 span,.logo b{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
-.brandpanel .slogan{letter-spacing:.3em;font-size:11.5px;color:#9DB1E0;font-weight:500}
-.brandpanel .tagline{position:relative;font-size:24px;line-height:1.35;color:#fff;font-weight:500;margin:30px 0 0;max-width:24ch}
-.beneficios{position:relative;list-style:none;margin:32px 0 0;padding:0;display:flex;flex-direction:column;gap:16px}
-.beneficios li{display:flex;gap:12px;align-items:center;font-size:15px;color:#C5D3F2}
-.beneficios svg.i{flex:none;width:36px;height:36px;padding:8px;border-radius:10px;background:rgba(24,197,240,.12);color:var(--cyan)}
-.selos{position:relative;display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;padding-top:40px}
-.selos span{border:1px solid rgba(157,177,224,.35);border-radius:999px;padding:6px 12px;font-size:12.5px;color:#C5D3F2;background:rgba(255,255,255,.04)}
-.loginside{padding:48px clamp(16px,5vw,64px);display:flex;flex-direction:column;gap:28px;justify-content:center;align-items:center}
+.brandpanel .slogan{letter-spacing:.3em;font-size:clamp(10.5px,.78vw,14px);color:#9DB1E0;font-weight:500}
+.brandpanel .tagline{position:relative;font-size:clamp(20px,1.75vw,34px);line-height:1.35;color:#fff;font-weight:500;margin:clamp(20px,3.4vh,40px) 0 0;max-width:24ch}
+.beneficios{position:relative;list-style:none;margin:clamp(20px,3.6vh,44px) 0 0;padding:0;display:flex;flex-direction:column;gap:clamp(10px,1.8vh,20px)}
+.beneficios li{display:flex;gap:12px;align-items:center;font-size:clamp(14px,1.02vw,18px);color:#C5D3F2}
+.beneficios svg.i{flex:none;width:clamp(34px,2.4vw,44px);height:clamp(34px,2.4vw,44px);padding:clamp(8px,.6vw,10px);border-radius:10px;background:rgba(24,197,240,.12);color:var(--cyan)}
+.selos{position:relative;display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;padding-top:clamp(24px,4vh,48px)}
+.selos span{border:1px solid rgba(157,177,224,.35);border-radius:999px;padding:6px 12px;font-size:clamp(12px,.82vw,14px);color:#C5D3F2;background:rgba(255,255,255,.05)}
+.loginside{position:relative;min-width:0;padding:clamp(24px,5vh,72px) clamp(16px,4.2vw,88px);display:flex;flex-direction:column;gap:24px;justify-content:center;align-items:center}
 .loginside>*{width:100%;max-width:620px}
-.loginside>.logincard{max-width:440px}
+.loginside>.escolhas{max-width:620px}
+/* fora do cartão: tudo claro sobre o azul (telas sem acesso, escolher empresa e erros) */
 .loginside h2{font-size:24px;margin:0 0 4px;font-weight:600}
-.logincard .card-b{padding:32px 28px}
+.loginside>div:not(.card) .sub{color:#B8C7EA}
+.loginside>div>.linkbtn,.loginside>div:not(.card) .linkbtn{color:#8FD9F5}
+/* o cartão: branco, sombra suave, cantos de 16px, até 440px */
+.loginside>.logincard{max-width:440px;border:0;border-radius:16px;color:var(--ink);
+  box-shadow:0 1px 2px rgba(3,10,30,.25),0 28px 60px -24px rgba(3,10,30,.65)}
+.logincard .card-b{padding:clamp(24px,3.4vh,36px) clamp(20px,2vw,32px)}
 .lg-cab{margin-bottom:4px}
 .divisoria{display:flex;align-items:center;gap:12px;margin:22px 0 14px;color:var(--muted);font-size:13px}
 .divisoria::before,.divisoria::after{content:"";flex:1;height:1px;background:var(--line)}
@@ -67,10 +77,24 @@ h1,h2,h3{letter-spacing:-.015em}
 .signup{display:flex;align-items:center;gap:18px;background:var(--surface);border:1px dashed var(--blue);border-radius:16px;padding:20px 22px;max-width:620px}
 .signup .t{flex:1}
 .signup strong{display:block;font-size:15px;font-weight:600}
-@media (max-width:860px){.login{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr}.brandpanel{padding:20px 16px}
-  .bp-topo{display:flex;align-items:center;gap:14px}.bp-topo>svg{width:52px;height:40px}.brandpanel h1{font-size:26px;margin:0 0 4px}.brandpanel .slogan{font-size:10px;letter-spacing:.2em}
-  .brandpanel .tagline,.beneficios,.selos{display:none}
-  .loginside{padding:24px 16px 32px;justify-content:flex-start}.logincard .card-b{padding:24px 18px}.signup{flex-direction:column;align-items:flex-start}}
+/* modo escuro: o cartão fica azul-escuro um tom acima do fundo (não preto), com campos e bordas bem visíveis */
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .login .logincard{
+  --surface:#13285A;--surface2:#0E2049;--line:#35508C;--muted:#AFBDDC;--faint:#8797BD;--ink:#EEF3FF;
+  background:#13285A;box-shadow:0 0 0 1px #2A4378,0 28px 60px -24px rgba(0,0,0,.7)}
+  :root:not([data-theme="light"]) .login .logincard label.f input{background:#0B1C42;border-color:#3E5A98}
+  :root:not([data-theme="light"]) .login .logincard .linkbtn{color:#8CB8FF}}
+:root[data-theme="dark"] .login .logincard{
+  --surface:#13285A;--surface2:#0E2049;--line:#35508C;--muted:#AFBDDC;--faint:#8797BD;--ink:#EEF3FF;
+  background:#13285A;box-shadow:0 0 0 1px #2A4378,0 28px 60px -24px rgba(0,0,0,.7)}
+:root[data-theme="dark"] .login .logincard label.f input{background:#0B1C42;border-color:#3E5A98}
+:root[data-theme="dark"] .login .logincard .linkbtn{color:#8CB8FF}
+/* celular: cabeçalho azul compacto (logo, nome e frase) e o cartão logo abaixo, margens de 16px */
+@media (max-width:860px){.login{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr;align-content:start}
+  .brandpanel{padding:20px 16px 4px}
+  .bp-topo{display:flex;align-items:center;gap:12px}.bp-topo>svg{width:48px;height:auto}
+  .brandpanel h1{font-size:26px;margin:0}.brandpanel .slogan,.beneficios,.selos{display:none}
+  .brandpanel .tagline{font-size:16px;margin-top:12px;max-width:none;color:#DCE6FB}
+  .loginside{padding:16px 16px 32px;justify-content:flex-start}.logincard .card-b{padding:24px 18px}.signup{flex-direction:column;align-items:flex-start}}
 @media (max-width:380px){.lg-novos{grid-template-columns:1fr}}
 
 /* ---------- Casca ---------- */
@@ -226,3 +250,8 @@ dialog.drawer::backdrop{background:rgba(5,13,36,.35);backdrop-filter:none}
 .toast.erro svg.i{color:#FF8C82}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- Sem conexão ---------- */
+.offline{position:fixed;left:0;right:0;top:env(safe-area-inset-top,0px);z-index:60;background:var(--warnbg);color:var(--warn);
+  text-align:center;font-size:13.5px;font-weight:500;padding:9px 16px;box-shadow:0 6px 18px -10px rgba(8,22,56,.5)}
+html.sem-rede body{padding-top:40px}
