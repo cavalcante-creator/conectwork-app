@@ -1,0 +1,126 @@
+rules_version = '2';
+// Conectwork · regras de segurança · etapas 0 e 1 (base e acesso)
+// Princípio: cada empresa só lê e grava o que é dela. Tudo o que não está liberado aqui é negado.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function logado() { return request.auth != null; }
+    function meuEmail() { return request.auth.token.email.lower(); }
+    function caminho(col, id) { return /databases/$(database)/documents/$(col)/$(id); }
+    function master() { return logado() && exists(caminho('master', request.auth.uid)); }
+
+    function acessoDoc(emp) { return caminho('acessos', emp + '_' + request.auth.uid); }
+    function membro(emp) { return logado() && exists(acessoDoc(emp)) && get(acessoDoc(emp)).data.ativo == true; }
+    function admin(emp) { return membro(emp) && get(acessoDoc(emp)).data.cargo == 'admin'; }
+    function fundador(emp) { return logado() && exists(caminho('empresas', emp)) && get(caminho('empresas', emp)).data.criadoPor == request.auth.uid; }
+
+    // ---------- Equipe Conectwork ----------
+    match /master/{uid} {
+      allow read: if logado() && (request.auth.uid == uid || master());
+      allow write: if false;                       // criado à mão no console
+    }
+
+    // ---------- Perfil da pessoa ----------
+    match /usuarios/{uid} {
+      allow read: if logado() && (request.auth.uid == uid || master());
+      allow create, update: if logado() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['nome','email','tel','zap','criadoEm','atualizadoEm'])
+        && request.resource.data.email == meuEmail();
+      allow delete: if false;
+    }
+
+    // ---------- Empresas ----------
+    match /empresas/{emp} {
+      allow read: if master() || membro(emp) || fundador(emp)
+        || (logado() && resource.data.status == 'aprovado');
+      // cadastro novo sempre entra em análise, sem módulos nem taxa
+      allow create: if logado()
+        && request.resource.data.status == 'analise'
+        && request.resource.data.criadoPor == request.auth.uid
+        && !('modulos' in request.resource.data)
+        && !('taxa' in request.resource.data);
+      // equipe master decide; a empresa só reenvia o cadastro quando foi pedido ajuste
+      allow update: if master()
+        || ((admin(emp) || fundador(emp))
+            && resource.data.status == 'pendencia'
+            && request.resource.data.status == 'analise'
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['status','nome','razao','cnpj','cidade','uf','tipo','enviadoEm']));
+      allow delete: if false;
+
+      match /privado/{doc} {
+        allow read: if master() || membro(emp) || fundador(emp);
+        allow create: if fundador(emp) && !('taxa' in request.resource.data) && !('conferidos' in request.resource.data);
+        allow update: if master()
+          || ((admin(emp) || fundador(emp))
+              && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['taxa','conferidos']));
+        allow delete: if false;
+      }
+    }
+
+    // ---------- Acessos (pessoa x empresa) · id = empresaId_uid ----------
+    function aceitaConvite(id) {
+      let d = request.resource.data;
+      let c = get(caminho('convites', d.convite)).data;
+      return logado()
+        && id == d.empresaId + '_' + request.auth.uid
+        && d.uid == request.auth.uid
+        && c.usado == false
+        && c.email == meuEmail()
+        && c.empresaId == d.empresaId
+        && c.cargo == d.cargo
+        && d.ativo == true;
+    }
+    function fundadorVirandoAdmin(id) {
+      let d = request.resource.data;
+      return logado()
+        && id == d.empresaId + '_' + request.auth.uid
+        && d.uid == request.auth.uid
+        && fundador(d.empresaId)
+        && d.cargo == 'admin'
+        && d.ativo == true;
+    }
+    match /acessos/{id} {
+      allow read: if logado() && (resource.data.uid == request.auth.uid || admin(resource.data.empresaId) || master());
+      allow create: if master()
+        || ('convite' in request.resource.data && aceitaConvite(id))
+        || fundadorVirandoAdmin(id);
+      allow update: if master()
+        || (admin(resource.data.empresaId)
+            && resource.data.uid != request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cargo','extras','sem','ativo','atualizadoEm']));
+      allow delete: if false;
+    }
+
+    // ---------- Convites ----------
+    match /convites/{token} {
+      allow get: if logado() && (resource.data.email == meuEmail() || admin(resource.data.empresaId) || master());
+      allow list: if logado() && (admin(resource.data.empresaId) || master());
+      allow create: if master()
+        || (admin(request.resource.data.empresaId)
+            && request.resource.data.usado == false
+            && request.resource.data.criadoPor == request.auth.uid
+            && request.resource.data.email == request.resource.data.email.lower());
+      allow update: if master() || admin(resource.data.empresaId)
+        || (logado() && resource.data.email == meuEmail() && resource.data.usado == false
+            && request.resource.data.usado == true
+            && request.resource.data.usadoPor == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usado','usadoEm','usadoPor']));
+      allow delete: if master() || admin(resource.data.empresaId);
+    }
+
+    // ---------- Histórico de alterações ----------
+    match /log/{id} {
+      allow create: if logado()
+        && request.resource.data.uid == request.auth.uid
+        && (master() || membro(request.resource.data.empresaId) || fundador(request.resource.data.empresaId));
+      allow read: if master() || (logado() && admin(resource.data.empresaId));
+      allow update, delete: if false;
+    }
+
+    // ---------- Todo o resto: negado ----------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
