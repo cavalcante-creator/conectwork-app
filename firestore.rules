@@ -113,6 +113,7 @@ service cloud.firestore {
     match /log/{id} {
       allow create: if logado()
         && request.resource.data.uid == request.auth.uid
+        && request.resource.data.em == request.time      // hora do servidor (serverTimestamp), ninguém escolhe a data
         && (master() || membro(request.resource.data.empresaId) || fundador(request.resource.data.empresaId));
       allow read: if master() || (logado() && admin(resource.data.empresaId));
       allow update, delete: if false;

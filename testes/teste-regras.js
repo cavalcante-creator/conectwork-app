@@ -89,6 +89,8 @@ async function deve(nome, permitido, op) {
   /* ---------- histórico (log) ---------- */
   const reg = (k, extra) => Object.assign({ em: serverTimestamp(), uid: P[k], quem: k, empresaId: 'alfa', acao: 'teste', texto: 'Teste.', ref: '' }, extra || {});
   await deve('Membro grava no histórico da própria empresa', true, () => addDoc(collection(db('bruno'), 'log'), reg('bruno')));
+  await deve('Histórico NÃO aceita data escolhida pelo aparelho (só a hora do servidor)', false, () => addDoc(collection(db('bruno'), 'log'), reg('bruno', { em: new Date('2020-01-01T10:00:00Z') })));
+  await deve('Histórico NÃO aceita registro sem data', false, () => { const r = reg('bruno'); delete r.em; return addDoc(collection(db('bruno'), 'log'), r); });
   await deve('Histórico NÃO aceita registro em nome de outra pessoa', false, () => addDoc(collection(db('bruno'), 'log'), reg('bruno', { uid: P.ana })));
   await deve('Pessoa sem acesso NÃO grava no histórico de outra empresa', false, () => addDoc(collection(db('carla'), 'log'), reg('carla')));
   await deve('Log NÃO pode ser editado (nem pelo admin)', false, () => updateDoc(doc(db('ana'), 'log', 'l1'), { texto: 'Alterado.' }));
