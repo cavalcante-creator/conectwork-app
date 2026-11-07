@@ -246,6 +246,47 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // ---------- Espelho da nota · id = id da medição (uma medição, um espelho) ----------
+    // Prepara e corrige: admin ou financeiro do tomador, só com a medição aprovada e enquanto a nota não chegou.
+    // Valor = o da medição; vencimento = o do contrato (não muda no espelho); líquido = valor − retenções. A prestadora lê. Nada se apaga.
+    function camposEspelho() { return ['medicaoId','contratoId','tomadorId','prestadorId','partes','tomadorNome','prestadorNome','prestadorCnpj','tomador',
+      'periodo','competencia','descricao','valorCentavos','retencoes','liquidoCentavos','vencimentoDias','obs','status','versao',
+      'criadoPor','criadoPorNome','criadoEm','atualizadoPor','atualizadoPorNome','atualizadoEm']; }
+    function centavos(v) { return v is int && v >= 0; }
+    function espelhoValores(d) {
+      let r = d.retencoes;
+      return r.keys().hasOnly(['iss','inss','ir','pcc']) && r.keys().hasAll(['iss','inss','ir','pcc'])
+        && centavos(r.iss) && centavos(r.inss) && centavos(r.ir) && centavos(r.pcc)
+        && d.liquidoCentavos is int && d.liquidoCentavos > 0 && d.liquidoCentavos == d.valorCentavos - r.iss - r.inss - r.ir - r.pcc
+        && d.descricao is string && d.descricao.size() >= 10 && d.descricao.size() <= 1000
+        && d.obs is string && d.obs.size() <= 300;
+    }
+    function espelhoCriar(id, d) {
+      let m = get(caminho('medicoes', id)).data;
+      let c = get(caminho('contratos', m.contratoId)).data;
+      return cargoEm(m.tomadorId, ['admin','financeiro'])
+        && d.keys().hasOnly(camposEspelho())
+        && d.medicaoId == id && m.status == 'aprovada'
+        && d.tomadorId == m.tomadorId && d.prestadorId == m.prestadorId && d.contratoId == m.contratoId && d.partes == [m.tomadorId, m.prestadorId]
+        && d.periodo == m.periodo && d.competencia == m.periodo[0:7] && d.valorCentavos == m.valorCentavos
+        && d.vencimentoDias == c.vencimentoDias && espelhoValores(d)
+        && d.tomador.cnpj is string && d.tomador.razao is string
+        && d.status == 'aguardando_nota' && d.versao == 1
+        && d.criadoPor == request.auth.uid && d.criadoEm == request.time && d.atualizadoPor == request.auth.uid;
+    }
+    function espelhoCorrigir(r, d) {
+      return cargoEm(r.tomadorId, ['admin','financeiro']) && r.status == 'aguardando_nota' && d.status == 'aguardando_nota'
+        && mudou().hasOnly(['descricao','retencoes','liquidoCentavos','obs','versao','atualizadoPor','atualizadoPorNome','atualizadoEm'])
+        && d.versao == r.versao + 1 && d.atualizadoPor == request.auth.uid && espelhoValores(d);
+    }
+    match /espelhos/{id} {
+      allow get: if logado() && (resource == null || master() || membro(resource.data.tomadorId) || membro(resource.data.prestadorId));
+      allow list: if master() || membro(resource.data.tomadorId) || membro(resource.data.prestadorId);
+      allow create: if espelhoCriar(id, request.resource.data);
+      allow update: if request.resource.data.keys().hasOnly(camposEspelho()) && espelhoCorrigir(resource.data, request.resource.data);
+      allow delete: if false;
+    }
+
     // ---------- CNPJ reservado (impede cadastro repetido) · id = só os 14 números ----------
     // Qualquer pessoa logada consulta se o CNPJ já tem cadastro (o CNPJ é dado público).
     // Só nasce junto com a empresa, por quem a está cadastrando; nunca muda nem some pelo app.

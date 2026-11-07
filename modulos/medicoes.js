@@ -184,9 +184,10 @@
             ${passo(!!m.confirmacao, st === 'enviada' || st === 'divergencia', 'Conferida pela prestadora', m.confirmacao ? formatarDataHora(m.confirmacao.em) + ' · ' + m.confirmacao.nome : st === 'divergencia' ? 'divergência apontada' : 'esperando')}
             ${passo(!!m.aprovacao, st === 'confirmada_prestadora', 'Aprovada pelo aprovador técnico', m.aprovacao ? formatarDataHora(m.aprovacao.em) + ' · ' + m.aprovacao.nome : 'esperando')}</ul>
           ${acoes ? `<div style="display:flex;gap:8px;flex-wrap:wrap" id="md-acoes">${acoes}</div>` : ''}
-          ${st === 'aprovada' ? `<p class="hint" style="margin:0;font-size:12.5px">Próximo passo: o espelho da nota fiscal, com os dados para a prestadora emitir (próxima parte do Conectwork).</p>` : ''}
+          ${st === 'aprovada' ? `<div id="md-espelho"><p class="hint" style="margin:0;font-size:12.5px">Próximo passo: o espelho da nota fiscal, com os dados para a prestadora emitir.</p></div>` : ''}
         </div></section></div></div>`;
     ligarDetalhe(el, ctx, m);
+    if (st === 'aprovada' && CW.espelhos) CW.espelhos.blocoMedicao(document.getElementById('md-espelho'), ctx, m);
   }
 
   function ligarDetalhe(el, ctx, m) {
@@ -212,7 +213,7 @@
     if (ca) ca.onclick = async () => { if (!(await U().confirmar('Cancelar a medição?', `A medição de ${pt} (${m.prestadorNome}) deixa de valer. Fica no histórico.`, 'Cancelar medição'))) return;
       grava(b => { b.update(ref, { status: 'cancelada', atualizadoEm: agora() }); log(b, ctx, 'medicao.cancelar', `Medição de ${pt} (${m.prestadorNome}) cancelada.`, m._id); }, 'Medição cancelada.'); };
     const ap = $('md-aprovar');
-    if (ap) ap.onclick = async () => { if (!(await U().confirmar('Aprovar a medição?', `${pt} · ${m.prestadorNome}: ${brl(m.valorCentavos)}. Depois de aprovada, segue para o espelho da nota.`, 'Aprovar'))) return;
+    if (ap) ap.onclick = async () => { if (!(await U().confirmar('Aprovar a medição?', `${pt} · ${m.prestadorNome}: ${brl(m.valorCentavos)}. Depois de aprovada, o financeiro prepara o espelho da nota.`, 'Aprovar'))) return;
       grava(b => { b.update(ref, { status: 'aprovada', aprovacao: assinatura(), atualizadoEm: agora() }); log(b, ctx, 'medicao.aprovar', `Medição de ${pt} (${m.prestadorNome}) aprovada: ${brl(m.valorCentavos)}.`, m._id); }, 'Medição aprovada.'); };
   }
 

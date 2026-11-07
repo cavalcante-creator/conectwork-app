@@ -66,6 +66,9 @@ Proposta: `prestadorId`, `valorCentavos`, `prazo`, `condicoes`, `status` (`envia
 ### `medicoes/{id}` (equipe contínua)
 `contratoId`, `periodo` (AAAA-MM-Q1/Q2 ou AAAA-MM), `valorCentavos`, `memoria` (como foi calculado), `origem` (`manual` | `integracao`), `tipo` (`periodo` | `encerramento`), `status` (`enviada` | `confirmada_prestadora` | `aprovada` | `divergencia`).
 
+
+### `espelhos/{id}` (espelho da nota · id = id da medição)
+`medicaoId`, `contratoId`, `tomadorId`, `prestadorId`, `partes`, `tomadorNome`, `prestadorNome`, `prestadorCnpj`, `tomador` (razão social, CNPJ, inscrição municipal, endereço, cidade, UF: cópia do cadastro do tomador, porque a prestadora não lê a área privada dele), `periodo`, `competencia` (AAAA-MM), `descricao` (sugerida, editável), `valorCentavos` (= o da medição aprovada), `retencoes` {`iss`,`inss`,`ir`,`pcc`} em centavos (informadas à mão pelo financeiro), `liquidoCentavos` (= valor − retenções), `vencimentoDias` (= o do contrato, não muda no espelho), `obs`, `status` (`aguardando_nota`; as próximas partes acrescentam a nota e a conferência), `versao` (sobe a cada correção), `criadoPor/Nome/Em`, `atualizadoPor/Nome/Em`. Prepara e corrige: admin ou financeiro do tomador; a prestadora lê; ninguém apaga.
 ### `titulos/{id}` (contas a pagar e receber)
 `contratoId`, `origemId` (aceite ou medição), `tomadorId`, `prestadorId`, `partes`, `espelho` (dados para a nota), `nota` (chave, número, série, emitente, valor lido, XML), `chaveUnica` (para impedir duplicidade), `valorBrutoCentavos`, `retencoes`, `valorLiquidoCentavos`, `vencimento`, `estado` (`recebido` | `em_validacao` | `pendente_correcao` | `aprovado` | `liberado` | `agendado` | `liquidado` | `baixado`), `sinais` (`vencido`, `disputa`, `substituido`, `cancelado`), `aprovacoes` (técnica, fiscal, financeira com uid e data), `comprovante`, `historico`.
 

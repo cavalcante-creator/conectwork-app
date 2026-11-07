@@ -63,7 +63,7 @@ Divergência bloqueia o título e explica o motivo; a Colafix pode recusar a not
 1. Contratos contínuos (cadastro, assinatura simples das duas partes).
 2. Medições: lançar à mão, importar pelo link, confirmar, apontar divergência e aprovar.
 3. Botão "Enviar ao Conectwork" no painel da Colafix (pull request no repositório do painel).
-4. Espelho de faturamento com retenções digitadas.
+4. Espelho de faturamento com retenções digitadas. **Feito (07/11):** módulo "Espelhos da nota" (`espelhos/{id da medição}`).
 5. Envio e conferência da nota (XML), duplicidade, recusa com motivo.
 6. Títulos com estados, funções separadas, calendário de vencimentos e comprovante.
 7. Avaliação do serviço da prestadora (depois do pagamento).

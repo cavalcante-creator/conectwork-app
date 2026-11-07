@@ -250,6 +250,31 @@ async function deve(nome, permitido, op) {
   await deve('Medição: aprovada NÃO é cancelada', false, () => updateDoc(doc(db('rita'), 'medicoes', 'cm_2026-11-1'), { status: 'cancelada', atualizadoEm: serverTimestamp() }));
   await deve('Medição: ninguém apaga', false, () => deleteDoc(doc(db('ana'), 'medicoes', 'cm_2026-11-1')));
 
+  /* ---------- espelho da nota ---------- */
+  await env.withSecurityRulesDisabled(async c => { await setDoc(doc(c.firestore(), 'medicoes', 'cm_2026-10-2'), med('rita', { periodo: '2026-10-2' })); });
+  const esp = (k, extra) => Object.assign({ medicaoId: 'cm_2026-11-1', contratoId: 'cm', tomadorId: 'alfa', prestadorId: 'beta', partes: ['alfa', 'beta'], tomadorNome: 'Alfa', prestadorNome: 'Beta', prestadorCnpj: '',
+    tomador: { razao: 'Alfa Serviços Ltda', cnpj: '11.222.333/0001-81', im: '', endereco: 'Rua A, 1', cidade: 'Gravataí', uf: 'RS' }, periodo: '2026-11-1', competencia: '2026-11',
+    descricao: 'Prestação de serviços de manutenção.', valorCentavos: 550000, retencoes: { iss: 27500, inss: 0, ir: 8250, pcc: 0 }, liquidoCentavos: 514250, vencimentoDias: 1, obs: '',
+    status: 'aguardando_nota', versao: 1, criadoPor: P[k], criadoPorNome: k, criadoEm: serverTimestamp(), atualizadoPor: P[k], atualizadoPorNome: k, atualizadoEm: serverTimestamp() }, extra || {});
+  await deve('Espelho: o RH do tomador NÃO prepara (é o financeiro)', false, () => setDoc(doc(db('rita'), 'espelhos', 'cm_2026-11-1'), esp('rita')));
+  await deve('Espelho: a prestadora NÃO prepara', false, () => setDoc(doc(db('beto'), 'espelhos', 'cm_2026-11-1'), esp('beto')));
+  await deve('Espelho: NÃO com medição ainda não aprovada', false, () => setDoc(doc(db('bruno'), 'espelhos', 'cm_2026-10-2'), esp('bruno', { medicaoId: 'cm_2026-10-2', periodo: '2026-10-2', competencia: '2026-10' })));
+  await deve('Espelho: NÃO com valor diferente da medição aprovada', false, () => setDoc(doc(db('bruno'), 'espelhos', 'cm_2026-11-1'), esp('bruno', { valorCentavos: 600000, liquidoCentavos: 564250 })));
+  await deve('Espelho: NÃO com vencimento diferente do contrato', false, () => setDoc(doc(db('bruno'), 'espelhos', 'cm_2026-11-1'), esp('bruno', { vencimentoDias: 30 })));
+  await deve('Espelho: NÃO com líquido que não fecha com as retenções', false, () => setDoc(doc(db('bruno'), 'espelhos', 'cm_2026-11-1'), esp('bruno', { liquidoCentavos: 550000 })));
+  await deve('Espelho: NÃO com retenção negativa', false, () => setDoc(doc(db('bruno'), 'espelhos', 'cm_2026-11-1'), esp('bruno', { retencoes: { iss: -100, inss: 0, ir: 0, pcc: 0 }, liquidoCentavos: 550100 })));
+  await deve('Espelho: o financeiro do tomador prepara com a medição aprovada', true, () => setDoc(doc(db('bruno'), 'espelhos', 'cm_2026-11-1'), esp('bruno')));
+  await deve('Espelho: NÃO prepara duas vezes a mesma medição', false, () => setDoc(doc(db('ana'), 'espelhos', 'cm_2026-11-1'), esp('ana')));
+  await deve('Espelho: a prestadora lê', true, () => getDoc(doc(db('beto'), 'espelhos', 'cm_2026-11-1')));
+  await deve('Espelho: a prestadora lista os seus (prestadorId)', true, () => getDocs(query(collection(db('beto'), 'espelhos'), where('prestadorId', '==', 'beta'))));
+  await deve('Espelho: quem não é das duas empresas NÃO lê', false, () => getDoc(doc(db('carla'), 'espelhos', 'cm_2026-11-1')));
+  await deve('Espelho: a prestadora NÃO muda as retenções', false, () => updateDoc(doc(db('beto'), 'espelhos', 'cm_2026-11-1'), { retencoes: { iss: 0, inss: 0, ir: 0, pcc: 0 }, liquidoCentavos: 550000, versao: 2, atualizadoPor: P.beto, atualizadoEm: serverTimestamp() }));
+  await deve('Espelho: o financeiro NÃO muda o vencimento', false, () => updateDoc(doc(db('bruno'), 'espelhos', 'cm_2026-11-1'), { vencimentoDias: 30, versao: 2, atualizadoPor: P.bruno, atualizadoEm: serverTimestamp() }));
+  await deve('Espelho: o financeiro NÃO muda o valor aprovado', false, () => updateDoc(doc(db('bruno'), 'espelhos', 'cm_2026-11-1'), { valorCentavos: 600000, liquidoCentavos: 564250, versao: 2, atualizadoPor: P.bruno, atualizadoEm: serverTimestamp() }));
+  await deve('Espelho: o financeiro corrige as retenções (versão nova)', true, () => updateDoc(doc(db('bruno'), 'espelhos', 'cm_2026-11-1'), { retencoes: { iss: 27500, inss: 0, ir: 0, pcc: 0 }, liquidoCentavos: 522500, versao: 2, atualizadoPor: P.bruno, atualizadoPorNome: 'Bruno', atualizadoEm: serverTimestamp() }));
+  await deve('Espelho: NÃO corrige sem subir a versão', false, () => updateDoc(doc(db('bruno'), 'espelhos', 'cm_2026-11-1'), { obs: 'Outra observação.', versao: 2, atualizadoPor: P.bruno, atualizadoEm: serverTimestamp() }));
+  await deve('Espelho: ninguém apaga', false, () => deleteDoc(doc(db('ana'), 'espelhos', 'cm_2026-11-1')));
+
   /* ---------- master e perfil ---------- */
   await deve('Pessoa lê o próprio master/{uid} (para saber se é equipe)', true, () => getDoc(doc(db('master'), 'master', P.master)));
   await deve('Pessoa consulta master/{uid} próprio mesmo sem ser master (documento não existe)', true, () => getDoc(doc(db('carla'), 'master', P.carla)));
