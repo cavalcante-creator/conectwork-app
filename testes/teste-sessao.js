@@ -7,7 +7,7 @@ const { ok, fim } = H.placar('sessao');
 const MODS_TESTE = () => {
   if (CW.app.modulos().some(x => x.id === 'pagar')) { CW.app.montar(); return; }   /* já registrados nesta página */
   const t = id => ({ [id]: { nome: id, render: (el, ctx) => { el.innerHTML = `<p id="tela-${id}">${id}|${ctx.tela}|${ctx.params.join(',')}</p>`; } } });
-  [['pagar', 'cobrancas'], ['receber', 'cobrancas'], ['relatorios'], ['conta', 'conta'], ['usuarios'], ['historico'], ['profissionais']].forEach(([id, contrato], i) =>
+  [['pagar', 'cobrancas'], ['receber', 'cobrancas'], ['relatorios'], ['conta', 'conta'], ['equipeteste'], ['historico'], ['profissionais']].forEach(([id, contrato], i) =>
     CW.registrarModulo({ id, nome: 'Mod ' + id, icone: 'list', ordem: 10 + i, contrato, telas: Object.assign(t(id), id === 'pagar' ? { detalhe: { nome: 'Detalhe', render: (el, ctx) => { el.innerHTML = `<p id="tela-detalhe">${ctx.params.join(',')}</p>`; } } } : {}) }));
   CW.app.montar();
 };
@@ -53,7 +53,7 @@ const MODS_TESTE = () => {
   ok('S-fundo dentro do app a página volta ao fundo normal (só as telas de entrada são azuis)', !fx.cls && fx.body !== 'rgb(8, 22, 56)', JSON.stringify(fx));
   await page.evaluate(MODS_TESTE); await H.dorme(200);
   let m = await menu();
-  ok('S8 admin vê tudo o que a empresa contratou (não vê "conta", que a Alfa não contratou)', JSON.stringify(m) === JSON.stringify(['inicio', 'pagar', 'receber', 'relatorios', 'usuarios', 'historico', 'profissionais']), m.join(','));
+  ok('S8 admin vê tudo o que a empresa contratou (não vê "conta", que a Alfa não contratou)', JSON.stringify(m) === JSON.stringify(['inicio', 'pagar', 'receber', 'relatorios', 'equipeteste', 'historico', 'profissionais']), m.join(','));
 
   // S9 rota por hash com tela e parâmetros
   await page.evaluate(() => { location.hash = '#pagar/detalhe/C-1001/x'; }); await page.waitForSelector('#tela-detalhe');

@@ -37,7 +37,8 @@ O vínculo de uma pessoa com uma empresa (uma pessoa pode ter vários, é assim 
 - Alterado por: admin da empresa (não pode alterar o próprio) ou equipe master.
 
 ### `convites/{token}`
-`token` = ID aleatório do documento, vai no link. `email`, `empresaId`, `cargo`, `nome`, `criadoPor`, `criadoEm`, `usado` (bool), `usadoEm`, `usadoPor`.
+`token` = ID aleatório do documento, vai no link (`#convite/<token>`). `email` (minúsculas), `nome`, `tel` (WhatsApp, opcional, só para mandar o link), `empresaId`, `empresaNome` (quem foi convidado ainda não lê a empresa), `cargo`, `criadoPor`, `criadoPorNome`, `criadoEm`, `reenviadoEm`, `usado` (bool), `usadoEm`, `usadoPor`.
+- Admin cria (só da própria empresa, cargo da lista), lista os da empresa, marca o reenvio e cancela (apaga). Não muda e-mail nem cargo depois de criado.
 O link é enviado pelo próprio admin por WhatsApp ou e-mail (botão que abre o WhatsApp com a mensagem pronta). Sem servidor na etapa 1.
 
 ### `log/{id}`

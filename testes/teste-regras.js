@@ -138,6 +138,21 @@ async function deve(nome, permitido, op) {
   await semear();
   await deve('Admin cria convite da própria empresa', true, () => setDoc(doc(db('ana'), 'convites', 'tokNovo'), { email: 'nova@alfa.com.br', empresaId: 'alfa', cargo: 'rh', nome: 'Nova', criadoPor: P.ana, usado: false }));
   await deve('Financeiro NÃO cria convite', false, () => setDoc(doc(db('bruno'), 'convites', 'tokX'), { email: 'x@alfa.com.br', empresaId: 'alfa', cargo: 'admin', nome: 'X', criadoPor: P.bruno, usado: false }));
+  await deve('Convite NÃO aceita cargo inventado', false, () => setDoc(doc(db('ana'), 'convites', 'tokC'), { email: 'c@alfa.com.br', empresaId: 'alfa', cargo: 'dono', nome: 'C', criadoPor: P.ana, usado: false }));
+  await deve('Convite NÃO aceita campo fora do modelo', false, () => setDoc(doc(db('ana'), 'convites', 'tokD'), { email: 'd@alfa.com.br', empresaId: 'alfa', cargo: 'rh', nome: 'D', criadoPor: P.ana, usado: false, ativo: true }));
+  await deve('Admin NÃO cria convite para outra empresa', false, () => setDoc(doc(db('ana'), 'convites', 'tokE'), { email: 'e@beta.com.br', empresaId: 'beta', cargo: 'admin', nome: 'E', criadoPor: P.ana, usado: false }));
+  await deve('Admin lista os convites da própria empresa', true, () => getDocs(query(collection(db('ana'), 'convites'), where('empresaId', '==', 'alfa'), where('usado', '==', false))));
+  await deve('Financeiro NÃO lista os convites', false, () => getDocs(query(collection(db('bruno'), 'convites'), where('empresaId', '==', 'alfa'))));
+  await deve('Admin marca o reenvio do convite', true, () => updateDoc(doc(db('ana'), 'convites', 'tokNovo'), { reenviadoEm: serverTimestamp() }));
+  await deve('Admin NÃO marca o convite como usado nem troca o e-mail', false, () => updateDoc(doc(db('ana'), 'convites', 'tokNovo'), { email: 'outra@alfa.com.br' }));
+  await deve('Admin cancela convite (apaga)', true, () => deleteDoc(doc(db('ana'), 'convites', 'tokNovo')));
+  await deve('Admin lista os acessos da própria empresa', true, () => getDocs(query(collection(db('ana'), 'acessos'), where('empresaId', '==', 'alfa'))));
+  await deve('Admin NÃO lista os acessos de outra empresa', false, () => getDocs(query(collection(db('ana'), 'acessos'), where('empresaId', '==', 'beta'))));
+  await deve('Admin NÃO põe cargo inventado', false, () => updateDoc(doc(db('ana'), 'acessos', 'alfa_' + P.bruno), { cargo: 'dono' }));
+  await deve('Admin bloqueia outra pessoa', true, () => updateDoc(doc(db('ana'), 'acessos', 'alfa_' + P.bruno), { ativo: false, atualizadoEm: serverTimestamp() }));
+  await deve('Admin NÃO se bloqueia (nem se desbloqueia)', false, () => updateDoc(doc(db('ana'), 'acessos', 'alfa_' + P.ana), { ativo: false }));
+  await deve('Admin ajusta o acesso de outra pessoa (extras e sem)', true, () => updateDoc(doc(db('ana'), 'acessos', 'alfa_' + P.bruno), { extras: ['usuarios'], sem: ['pagar'], atualizadoEm: serverTimestamp() }));
+  await semear();
 
   /* ---------- histórico (log) ---------- */
   const reg = (k, extra) => Object.assign({ em: serverTimestamp(), uid: P[k], quem: k, empresaId: 'alfa', acao: 'teste', texto: 'Teste.', ref: '' }, extra || {});

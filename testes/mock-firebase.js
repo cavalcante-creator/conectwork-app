@@ -48,7 +48,7 @@
   }
   const FS = { useEmulator: (h, p) => window.__mockLog.push(['fsEmulador', h, p]), settings() {},
     doc: p => Ref(p), collection: p => Query(p, [], 0),
-    batch: () => { const pend = []; const b = { set: (r, d, o) => { pend.push([r.path, a => (o && o.merge) ? Object.assign({}, a, clone(d)) : clone(d)]); return b; }, update: (r, d) => { pend.push([r.path, a => { if (a === undefined) throw err('not-found'); return Object.assign({}, a, d); }]); return b; }, commit: async () => { for (const [p, f] of pend) await gravar(p, f); } }; return b; },
+    batch: () => { const pend = []; const b = { set: (r, d, o) => { pend.push([r.path, a => (o && o.merge) ? Object.assign({}, a, clone(d)) : clone(d)]); return b; }, update: (r, d) => { pend.push([r.path, a => { if (a === undefined) throw err('not-found'); return Object.assign({}, a, d); }]); return b; }, delete: r => { pend.push([r.path, () => undefined]); return b; }, commit: async () => { for (const [p, f] of pend) await gravar(p, f); } }; return b; },
     /* transação simples: lê na hora, grava tudo no fim (sem disputa entre aparelhos, que aqui não existe) */
     runTransaction: async fn => { await espera(); if (ctl().offline) throw err('unavailable'); const pend = [];
       const tx = { get: r => ler(r.path), set: (r, d, o) => { pend.push([r.path, a => (o && o.merge) ? Object.assign({}, a, clone(d)) : clone(d)]); return tx; },

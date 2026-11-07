@@ -67,6 +67,7 @@ service cloud.firestore {
     }
 
     // ---------- Acessos (pessoa x empresa) · id = empresaId_uid ----------
+    function cargos() { return ['admin','solicitante','aprovador','financeiro','tesouraria','rh','operacional','contador','consulta']; }
     function aceitaConvite(id) {
       let d = request.resource.data;
       let c = get(caminho('convites', d.convite)).data;
@@ -93,10 +94,14 @@ service cloud.firestore {
       allow create: if master()
         || ('convite' in request.resource.data && aceitaConvite(id))
         || fundadorVirandoAdmin(id);
+      // admin muda cargo, ajuste (extras/sem) e bloqueio de OUTRA pessoa; nunca o próprio
       allow update: if master()
         || (admin(resource.data.empresaId)
             && resource.data.uid != request.auth.uid
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cargo','extras','sem','ativo','atualizadoEm']));
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cargo','extras','sem','ativo','atualizadoEm'])
+            && request.resource.data.cargo in cargos()
+            && request.resource.data.extras is list && request.resource.data.sem is list
+            && request.resource.data.ativo is bool);
       allow delete: if false;
     }
 
@@ -106,10 +111,16 @@ service cloud.firestore {
       allow list: if logado() && (admin(resource.data.empresaId) || master());
       allow create: if master()
         || (admin(request.resource.data.empresaId)
+            && request.resource.data.keys().hasOnly(['email','nome','tel','empresaId','empresaNome','cargo','criadoPor','criadoPorNome','criadoEm','usado'])
             && request.resource.data.usado == false
             && request.resource.data.criadoPor == request.auth.uid
+            && request.resource.data.cargo in cargos()
+            && request.resource.data.email is string
             && request.resource.data.email == request.resource.data.email.lower());
-      allow update: if master() || admin(resource.data.empresaId)
+      // admin só marca o reenvio (o link é o mesmo); quem foi convidado marca como usado ao aceitar
+      allow update: if master()
+        || (admin(resource.data.empresaId) && resource.data.usado == false
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reenviadoEm']))
         || (logado() && resource.data.email == meuEmail() && resource.data.usado == false
             && request.resource.data.usado == true
             && request.resource.data.usadoPor == request.auth.uid
