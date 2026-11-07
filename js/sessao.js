@@ -30,6 +30,7 @@
   /* ---------- telas de entrada (antes do app) ---------- */
   function moldura(conteudo) {
     const { ic, LOGO, CURVES } = U();
+    document.documentElement.classList.remove('wizpg');
     document.documentElement.classList.add('entrada');
     app().innerHTML = `<div class="login">${CURVES}
       <section class="brandpanel">
@@ -251,7 +252,11 @@
     catch (e) { if (minha !== geracao) return; st = vazio(); st.usuario = { uid: u.uid, email: u.email }; telaErro(CW.fb.mensagemErro(e)); return; }
     if (minha !== geracao) return;
     st = s;
-    if (!st.opcoes.length) { telaSemAcesso(); return; }
+    if (!st.opcoes.length) {
+      /* estava no meio do cadastro da empresa (acabou de criar a conta, ou recarregou a página): continua nele */
+      if (CW.entrada.continuarCadastro && CW.entrada.cadastroAberto && CW.entrada.cadastroAberto()) { CW.entrada.continuarCadastro(); return; }
+      telaSemAcesso(); return;
+    }
     if (st.opcoes.length === 1) { entrarEm(st.opcoes[0].chave); return; }
     let guardada = null; try { guardada = sessionStorage.getItem(chaveGuardada()); } catch (e) { /* sem armazenamento */ }
     if (guardada && st.opcoes.some(o => o.chave === guardada)) { entrarEm(guardada); return; }   /* F5 não pergunta de novo */
@@ -293,8 +298,11 @@
     CW.fb.auth().onAuthStateChanged(aoMudarLogin);
   }
 
+  /* volta para a entrada certa conforme o login atual (login, sem acesso, escolher empresa ou o app) */
+  const recarregar = () => aoMudarLogin(CW.fb.auth().currentUser);
+
   CW.sessao = {
-    iniciar, sair, trocar, entrarEm,
+    iniciar, sair, trocar, entrarEm, recarregar,
     estado: () => st,
     contexto: () => st.contexto,
     podeTrocar: () => st.opcoes.length > 1,

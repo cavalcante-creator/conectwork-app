@@ -33,7 +33,8 @@
        para:          ['empresa'] (padrão), ['master'] ou ['empresa','master']
        livre:         true = qualquer cargo vê (ex.: Início)
        semAprovacao:  true = aparece mesmo com a empresa ainda em análise
-       contrato:      id do módulo contratado exigido em empresas/{id}.modulos (ex.: 'contratos') */
+       contrato:      id do módulo contratado exigido em empresas/{id}.modulos (ex.: 'contratos')
+       mostrar(ctx):  condição extra (ex.: "Meu cadastro" só enquanto a empresa não foi aprovada) */
   function podeVer(mod, ctx) {
     if (!mod || !ctx) return false;
     const para = mod.para || ['empresa'];
@@ -43,6 +44,7 @@
     if (ac.ativo !== true) return false;
     if (emp.status !== 'aprovado' && !mod.semAprovacao) return false;
     if (mod.contrato && !(emp.modulos || []).includes(mod.contrato)) return false;
+    if (typeof mod.mostrar === 'function' && !mod.mostrar(ctx)) return false;
     if (mod.livre) return true;
     if ((ac.sem || []).includes(mod.id)) return false;
     const c = cargo(ac.cargo); if (!c) return (ac.extras || []).includes(mod.id);

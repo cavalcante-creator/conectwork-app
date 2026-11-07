@@ -53,11 +53,12 @@ const { ok, fim } = H.placar('login');
     l1h.fundo === 'rgb(8, 22, 56)' && transp(l1h.ladoDir) && transp(l1h.painel) && l1h.cheia && l1h.curvas
     && l1h.cartao === 'rgb(255, 255, 255)' && l1h.raio === '16px' && l1h.larg === 440 && l1h.sombra, JSON.stringify(l1h));
 
-  // L1e "Cadastrar empresa" e "Tenho um convite" avisam que chegam na próxima etapa (sem entrar)
+  // L1e "Tenho um convite" avisa que chega na próxima parte; "Cadastrar empresa" abre o cadastro (testado em teste-cadastro.js)
   const toast = () => page.evaluate(() => document.getElementById('toast').classList.contains('show') ? document.getElementById('toast').innerText : '');
-  await page.click('#lg-cadastrar'); await H.dorme(150); const t1 = await toast();
   await page.click('#lg-convite'); await H.dorme(150); const t2 = await toast();
-  ok('L1e "Cadastrar empresa" e "Tenho um convite" avisam que a opção chega na próxima etapa', /próxima etapa/.test(t1) && /próxima etapa/.test(t2) && !(await log()).some(x => x[0] === 'signIn'), t1 + ' · ' + t2);
+  await page.click('#lg-cadastrar'); await page.waitForSelector('#cad-titulo', { timeout: 5000 }); const t1 = await page.$eval('#cad-titulo', e => e.innerText);
+  await page.click('#cad-login'); await page.waitForSelector('#lg-email', { timeout: 5000 });
+  ok('L1e "Cadastrar empresa" abre "Crie seu acesso" (e volta ao login); "Tenho um convite" avisa que vem na próxima parte', t1 === 'Crie seu acesso' && /próxima etapa/.test(t2) && !(await log()).some(x => x[0] === 'signIn'), t1 + ' · ' + t2);
 
   // L1f celular: painel vira cabeçalho compacto e o cartão vem logo abaixo
   await page.setViewportSize({ width: 390, height: 800 }); await H.dorme(250);

@@ -48,13 +48,19 @@
   }
   const FS = { useEmulator: (h, p) => window.__mockLog.push(['fsEmulador', h, p]), settings() {},
     doc: p => Ref(p), collection: p => Query(p, [], 0),
-    batch: () => { const pend = []; const b = { set: (r, d) => { pend.push([r.path, () => clone(d)]); return b; }, update: (r, d) => { pend.push([r.path, a => Object.assign({}, a, d)]); return b; }, commit: async () => { for (const [p, f] of pend) await gravar(p, f); } }; return b; } };
+    batch: () => { const pend = []; const b = { set: (r, d, o) => { pend.push([r.path, a => (o && o.merge) ? Object.assign({}, a, clone(d)) : clone(d)]); return b; }, update: (r, d) => { pend.push([r.path, a => { if (a === undefined) throw err('not-found'); return Object.assign({}, a, d); }]); return b; }, commit: async () => { for (const [p, f] of pend) await gravar(p, f); } }; return b; },
+    /* transação simples: lê na hora, grava tudo no fim (sem disputa entre aparelhos, que aqui não existe) */
+    runTransaction: async fn => { await espera(); if (ctl().offline) throw err('unavailable'); const pend = [];
+      const tx = { get: r => ler(r.path), set: (r, d, o) => { pend.push([r.path, a => (o && o.merge) ? Object.assign({}, a, clone(d)) : clone(d)]); return tx; },
+        update: (r, d) => { pend.push([r.path, a => { if (a === undefined) throw err('not-found'); return Object.assign({}, a, d); }]); return tx; } };
+      const res = await fn(tx); for (const [p, f] of pend) await gravar(p, f); window.__mockLog.push(['transacao', pend.map(x => x[0])]); return res; } };
 
   /* ---------- Auth ---------- */
   const KEY = '__sess';
   const cbs = [];
   let atual = L.get(KEY, null);
-  const User = r => r ? { uid: r.uid, email: r.email } : null;
+  const User = r => r ? { uid: r.uid, email: r.email, emailVerified: !!r.verificado,
+    sendEmailVerification: async op => { window.__mockLog.push(['verificacao', r.email, op || null]); } } : null;
   const muda = r => { atual = r; if (r) L.set(KEY, r); else localStorage.removeItem(KEY); cbs.forEach(cb => setTimeout(() => cb(User(r)), 0)); };
   const auth = {
     languageCode: null,
@@ -62,6 +68,13 @@
     useEmulator: u => window.__mockLog.push(['authEmulador', u]),
     onAuthStateChanged: cb => { cbs.push(cb); window.__mockLog.push(['onAuthStateChanged']); setTimeout(() => cb(User(atual)), ctl().authMs || 20); return () => {}; },
     setPersistence: async t => { window.__mockLog.push(['persist', t]); },
+    createUserWithEmailAndPassword: async (em, p) => { await espera(); const c = ctl(); window.__mockLog.push(['criaConta', em]);
+      if (c.offline) throw err('auth/network-request-failed');
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) throw err('auth/invalid-email');
+      if (String(p || '').length < 6) throw err('auth/weak-password');
+      const sv = srv(); if (sv.users[em]) throw err('auth/email-already-in-use');
+      const uid = 'u' + Math.random().toString(36).slice(2, 10).toUpperCase(); sv.users[em] = { uid, pass: p }; salva(sv);
+      muda({ uid, email: em }); return { user: User(atual) }; },
     signInWithEmailAndPassword: async (em, p) => { await espera(); const c = ctl(); window.__mockLog.push(['signIn', em]);
       if (c.offline) throw err('auth/network-request-failed');
       if (c.tooMany) throw err('auth/too-many-requests');

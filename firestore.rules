@@ -13,6 +13,8 @@ service cloud.firestore {
     function membro(emp) { return logado() && exists(acessoDoc(emp)) && get(acessoDoc(emp)).data.ativo == true; }
     function admin(emp) { return membro(emp) && get(acessoDoc(emp)).data.cargo == 'admin'; }
     function fundador(emp) { return logado() && exists(caminho('empresas', emp)) && get(caminho('empresas', emp)).data.criadoPor == request.auth.uid; }
+    // na gravação: vale o estado DEPOIS da operação (o cadastro grava empresa, área privada, acesso e histórico juntos)
+    function fundadorApos(emp) { return logado() && existsAfter(caminho('empresas', emp)) && getAfter(caminho('empresas', emp)).data.criadoPor == request.auth.uid; }
 
     // ---------- Equipe Conectwork ----------
     match /master/{uid} {
@@ -33,25 +35,30 @@ service cloud.firestore {
     match /empresas/{emp} {
       allow read: if master() || membro(emp) || fundador(emp)
         || (logado() && resource.data.status == 'aprovado');
-      // cadastro novo sempre entra em análise, sem módulos nem plano (o plano e os módulos quem define é a equipe master)
+      // cadastro novo sempre entra em análise, sem módulos nem plano (o plano e os módulos quem define é a equipe master).
+      // O CNPJ é reservado em cnpjs/{número} na mesma operação: CNPJ repetido não entra.
       allow create: if logado()
+        && request.resource.data.keys().hasOnly(['tipo','status','nome','razao','cnpj','cnpjNum','cidade','uf','protocolo','criadoPor','criadoEm','enviadoEm'])
         && request.resource.data.status == 'analise'
         && request.resource.data.criadoPor == request.auth.uid
-        && !('modulos' in request.resource.data)
-        && !('plano' in request.resource.data)
-        && !('taxa' in request.resource.data);
+        && request.resource.data.tipo in ['contratante','ambos','prestador']
+        && request.resource.data.cnpjNum is string && request.resource.data.cnpjNum.matches('[0-9]{14}')
+        && request.resource.data.protocolo is string && request.resource.data.protocolo.matches('CW-[0-9]{4}-[0-9]{4,}')
+        && request.resource.data.criadoEm == request.time
+        && existsAfter(caminho('cnpjs', request.resource.data.cnpjNum))
+        && getAfter(caminho('cnpjs', request.resource.data.cnpjNum)).data.empresaId == emp;
       // equipe master decide; a empresa só reenvia o cadastro quando foi pedido ajuste
       allow update: if master()
         || ((admin(emp) || fundador(emp))
             && resource.data.status == 'pendencia'
             && request.resource.data.status == 'analise'
             && request.resource.data.diff(resource.data).affectedKeys()
-                 .hasOnly(['status','nome','razao','cnpj','cidade','uf','tipo','enviadoEm']));
+                 .hasOnly(['status','nome','razao','cidade','uf','tipo','enviadoEm']));   // o CNPJ não muda na correção
       allow delete: if false;
 
       match /privado/{doc} {
         allow read: if master() || membro(emp) || fundador(emp);
-        allow create: if fundador(emp) && !('taxa' in request.resource.data) && !('conferidos' in request.resource.data);
+        allow create: if fundadorApos(emp) && !('taxa' in request.resource.data) && !('conferidos' in request.resource.data);
         allow update: if master()
           || ((admin(emp) || fundador(emp))
               && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['taxa','conferidos']));
@@ -77,7 +84,7 @@ service cloud.firestore {
       return logado()
         && id == d.empresaId + '_' + request.auth.uid
         && d.uid == request.auth.uid
-        && fundador(d.empresaId)
+        && fundadorApos(d.empresaId)
         && d.cargo == 'admin'
         && d.ativo == true;
     }
@@ -110,12 +117,58 @@ service cloud.firestore {
       allow delete: if master() || admin(resource.data.empresaId);
     }
 
+    // ---------- CNPJ reservado (impede cadastro repetido) · id = só os 14 números ----------
+    // Qualquer pessoa logada consulta se o CNPJ já tem cadastro (o CNPJ é dado público).
+    // Só nasce junto com a empresa, por quem a está cadastrando; nunca muda nem some pelo app.
+    match /cnpjs/{num} {
+      allow get: if logado();
+      allow list: if false;
+      allow create: if logado()
+        && num.matches('[0-9]{14}')
+        && request.resource.data.keys().hasOnly(['empresaId','criadoEm'])
+        && request.resource.data.criadoEm == request.time
+        && existsAfter(caminho('empresas', request.resource.data.empresaId))
+        && getAfter(caminho('empresas', request.resource.data.empresaId)).data.criadoPor == request.auth.uid
+        && getAfter(caminho('empresas', request.resource.data.empresaId)).data.cnpjNum == num;
+      allow update, delete: if false;
+    }
+
+    // ---------- Contador do protocolo (CW-AAAA-0000): só anda de 1 em 1 e recomeça no ano novo ----------
+    match /contadores/protocolo {
+      allow get: if logado();
+      allow create: if logado() && request.resource.data.keys().hasOnly(['ano','n'])
+        && request.resource.data.n == 1 && request.resource.data.ano is int;
+      allow update: if logado() && request.resource.data.keys().hasOnly(['ano','n'])
+        && ((request.resource.data.ano == resource.data.ano && request.resource.data.n == resource.data.n + 1)
+            || (request.resource.data.ano > resource.data.ano && request.resource.data.n == 1));
+      allow delete: if false;
+    }
+
+    // ---------- Autorizações (consentimentos) · id = uid_finalidade; histórico em consentimentos_log ----------
+    function consentOk(d) {
+      return d.keys().hasOnly(['uid','finalidade','aceite','texto','textoVersao','canal','em','revogadoEm'])
+        && d.uid == request.auth.uid
+        && d.finalidade in ['operacional','contrato','cobranca','cursos','ofertas','whatsapp','email','push']
+        && d.aceite is bool && d.texto is string && d.textoVersao is string && d.canal is string
+        && d.em == request.time;
+    }
+    match /consentimentos/{id} {
+      allow read: if logado() && (resource.data.uid == request.auth.uid || master());
+      allow create, update: if logado() && id == request.auth.uid + '_' + request.resource.data.finalidade && consentOk(request.resource.data);
+      allow delete: if false;
+    }
+    match /consentimentos_log/{id} {
+      allow read: if logado() && (resource.data.uid == request.auth.uid || master());
+      allow create: if logado() && consentOk(request.resource.data);
+      allow update, delete: if false;
+    }
+
     // ---------- Histórico de alterações ----------
     match /log/{id} {
       allow create: if logado()
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.em == request.time      // hora do servidor (serverTimestamp), ninguém escolhe a data
-        && (master() || membro(request.resource.data.empresaId) || fundador(request.resource.data.empresaId));
+        && (master() || membro(request.resource.data.empresaId) || fundadorApos(request.resource.data.empresaId));
       allow read: if master() || (logado() && admin(resource.data.empresaId));
       allow update, delete: if false;
     }

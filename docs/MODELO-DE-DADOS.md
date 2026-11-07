@@ -13,12 +13,21 @@ Só a própria pessoa grava. A própria pessoa e a equipe master leem.
 
 ### `empresas/{empresaId}`
 Dados públicos dentro da rede (outras empresas aprovadas podem ler).
-`tipo` (`contratante` | `ambos` | `prestador`), `status` (`analise` | `pendencia` | `aprovado` | `recusado`), `nome` (fantasia), `razao`, `cnpj`, `cidade`, `uf`, `protocolo`, `modulos` (lista), `criadoPor` (uid), `criadoEm`, `motivo` (texto do ajuste ou recusa).
+`tipo` (`contratante` | `ambos` | `prestador`), `status` (`analise` | `pendencia` | `aprovado` | `recusado`), `nome` (fantasia), `razao`, `cnpj` (com máscara), `cnpjNum` (só os 14 números), `cidade`, `uf`, `protocolo` (CW-AAAA-0000), `modulos` (lista), `plano`, `criadoPor` (uid), `criadoEm`, `enviadoEm` (último envio para análise), `motivo` (texto do ajuste ou recusa).
+- Criada pelo cadastro numa operação só, junto com `cnpjs/{cnpjNum}`, a área privada, o acesso admin do fundador, as autorizações e o histórico.
+- Na correção (status `pendencia` → `analise`) o CNPJ não muda.
 - `modulos`, `status` e `taxa` só a equipe master altera.
 
 ### `empresas/{empresaId}/privado/cadastro`
-Dados sensíveis do cadastro: `dados` (porte, regime, CNAE, IE, IM, abertura), `end`, `resp` (nome, CPF, cargo, e-mail, celular), `banco`, `docs` (nome e tamanho dos arquivos; o arquivo em si vai para o Storage numa etapa futura), `taxa`, `conferidos`, `historico`.
+Dados sensíveis do cadastro: `dados` (abertura, porte, regime, CNAE, IM, IE), `end` (cep, logradouro, numero, compl, bairro, cidade, uf), `resp` (nome, CPF, cargo, e-mail, e-mail financeiro, celular), `banco` (banco, tipo de conta, agência, conta, tipo e chave Pix), `docs` (nome e tamanho dos arquivos; o arquivo em si vai para o Storage numa etapa futura), `aceites` (declarações: verdade, termos, versão do texto), `reenviadoEm`, `conferidos` (equipe master).
+Certificado digital não fica aqui (segredo só no servidor, etapa futura).
 Leem: membros da empresa, quem criou o cadastro e a equipe master.
+
+### `cnpjs/{cnpj só números}`
+Reserva do CNPJ para não haver cadastro repetido: `empresaId`, `criadoEm`. Qualquer pessoa logada consulta se existe (o CNPJ é público). Nasce junto com a empresa; ninguém altera nem apaga pelo app.
+
+### `contadores/protocolo`
+`ano`, `n`: sequência do protocolo CW-AAAA-0000. Só anda de 1 em 1 e recomeça em 1 no ano novo (atualizado na mesma transação do cadastro).
 
 ### `acessos/{empresaId}_{uid}`
 O vínculo de uma pessoa com uma empresa (uma pessoa pode ter vários, é assim que funciona a troca de empresa).
@@ -64,7 +73,8 @@ Proposta: `prestadorId`, `valorCentavos`, `prazo`, `condicoes`, `status` (`envia
 `tipo` (`federal` | `fgts` | `trabalhista`), `validade`, `arquivo`, `situacao`.
 
 ### `consentimentos/{uid}_{finalidade}` e `consentimentos_log/{id}`
-Estado atual por finalidade (`operacional`, `contrato`, `cobranca`, `cursos`, `ofertas`, `whatsapp`, `email`, `push`) e histórico imutável: `uid`, `finalidade`, `aceite`, `textoVersao`, `canal`, `em` (hora do servidor), `revogadoEm`.
+Estado atual por finalidade (`operacional`, `contrato`, `cobranca`, `cursos`, `ofertas`, `whatsapp`, `email`, `push`) e histórico imutável: `uid`, `finalidade`, `aceite`, `texto` (a frase que a pessoa marcou), `textoVersao`, `canal` (ex.: `cadastro`), `em` (hora do servidor), `revogadoEm`.
+Gravados a partir da Etapa 1 (cadastro). Só a própria pessoa grava; a própria pessoa e a equipe master leem; o histórico não muda.
 
 ### `cursos/{id}` e `cursos/{id}/inscricoes/{uid}`
 `titulo`, `emissor`, `carga`, `modalidade`, `validade`, `certificado`, `area`, `demandaId` (opcional). Inscrição não cria vínculo nem contratação.

@@ -3,7 +3,7 @@
    Precisa de Java 11+ instalado (o emulador do Firestore roda em Java). */
 const fs = require('fs'), path = require('path');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
-const { doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, collection, query, where, getDocs, serverTimestamp, setLogLevel } = require('firebase/firestore');
+const { doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, collection, query, where, getDocs, serverTimestamp, setLogLevel, writeBatch } = require('firebase/firestore');
 setLogLevel('silent');   /* as negações esperadas não poluem a saída */
 
 const res = [];
@@ -53,13 +53,52 @@ async function deve(nome, permitido, op) {
   await deve('Membro lê a própria empresa (mesmo em análise)', true, () => getDoc(doc(db('bruno'), 'empresas', 'alfa')));
   await deve('Membro lê a área privada da própria empresa', true, () => getDoc(doc(db('bruno'), 'empresas', 'alfa', 'privado', 'cadastro')));
   await deve('Membro bloqueado (ativo=false) NÃO lê a empresa em análise', false, () => getDoc(doc(db('duda'), 'empresas', 'alfa')));
-  /* cadastro novo: entra em análise; plano e módulos só a equipe master define (receita é mensalidade, sem taxa) */
-  const nova = extra => Object.assign({ nome: 'Nova', status: 'analise', tipo: 'contratante', criadoPor: P.carla }, extra || {});
-  await deve('Cadastro novo entra em análise', true, () => setDoc(doc(db('carla'), 'empresas', 'nova1'), nova()));
-  await deve('Cadastro novo NÃO escolhe o próprio plano', false, () => setDoc(doc(db('carla'), 'empresas', 'nova2'), nova({ plano: 'rede' })));
-  await deve('Cadastro novo NÃO liga módulos', false, () => setDoc(doc(db('carla'), 'empresas', 'nova3'), nova({ modulos: ['contratos'] })));
-  await deve('Cadastro novo NÃO nasce aprovado', false, () => setDoc(doc(db('carla'), 'empresas', 'nova4'), nova({ status: 'aprovado' })));
-  await deve('Cadastro NÃO é criado em nome de outra pessoa', false, () => setDoc(doc(db('carla'), 'empresas', 'nova5'), nova({ criadoPor: P.ana })));
+  /* cadastro novo (como o app grava, tudo numa operação só): empresa em análise + CNPJ reservado + área privada +
+     acesso admin do fundador + autorizações + histórico. Plano e módulos só a equipe master define. */
+  const CN = { a: '11444777000161', b: '04252011000110' };
+  const cadastro = (k, emp, extra, op) => {
+    op = op || {};
+    const d = db(k), b = writeBatch(d), num = op.num || CN.a;
+    b.set(doc(d, 'empresas', emp), Object.assign({ tipo: 'contratante', status: 'analise', nome: 'Nova', razao: 'Nova Ltda', cnpj: num, cnpjNum: num, cidade: 'Gravataí', uf: 'RS', protocolo: 'CW-2026-0001', criadoPor: P[k], criadoEm: serverTimestamp(), enviadoEm: serverTimestamp() }, extra || {}));
+    if (!op.semCnpj) b.set(doc(d, 'cnpjs', num), { empresaId: op.cnpjPara || emp, criadoEm: serverTimestamp() });
+    b.set(doc(d, 'empresas', emp, 'privado', 'cadastro'), { resp: { nome: 'Carla' }, banco: { banco: '001' } });
+    b.set(doc(d, 'acessos', emp + '_' + P[k]), { uid: P[k], empresaId: emp, nome: 'Carla', email: EM[k], cargo: 'admin', extras: [], sem: [], ativo: true, criadoEm: serverTimestamp() });
+    b.set(doc(d, 'consentimentos', P[k] + '_operacional'), { uid: P[k], finalidade: 'operacional', aceite: true, texto: 'Usar os dados.', textoVersao: 'v1', canal: 'cadastro', em: serverTimestamp() });
+    b.set(doc(collection(d, 'log')), { em: serverTimestamp(), uid: P[k], quem: 'Carla', empresaId: emp, acao: 'empresa.cadastrar', texto: 'Cadastro enviado.', ref: emp });
+    return b.commit();
+  };
+  await deve('Cadastro completo: empresa em análise, CNPJ reservado, área privada, acesso admin, autorização e histórico juntos', true, () => cadastro('carla', 'nova1'));
+  await deve('CNPJ repetido NÃO entra (outra empresa com o mesmo CNPJ)', false, () => cadastro('edu', 'nova2'));
+  await deve('Cadastro NÃO entra sem reservar o CNPJ', false, () => cadastro('edu', 'nova3', null, { num: CN.b, semCnpj: true }));
+  await deve('Reserva de CNPJ NÃO aponta para empresa de outra pessoa', false, () => setDoc(doc(db('edu'), 'cnpjs', CN.b), { empresaId: 'alfa', criadoEm: serverTimestamp() }));
+  await deve('CNPJ reservado NÃO pode ser apagado nem trocado', false, () => updateDoc(doc(db('carla'), 'cnpjs', CN.a), { empresaId: 'outra' }));
+  await deve('Pessoa logada consulta se um CNPJ já tem cadastro', true, () => getDoc(doc(db('edu'), 'cnpjs', CN.a)));
+  await deve('Cadastro novo NÃO escolhe o próprio plano', false, () => cadastro('edu', 'nova4', { plano: 'rede' }, { num: CN.b }));
+  await deve('Cadastro novo NÃO liga módulos', false, () => cadastro('edu', 'nova5', { modulos: ['contratos'] }, { num: CN.b }));
+  await deve('Cadastro novo NÃO nasce aprovado', false, () => cadastro('edu', 'nova6', { status: 'aprovado' }, { num: CN.b }));
+  await deve('Cadastro NÃO é criado em nome de outra pessoa', false, () => cadastro('edu', 'nova7', { criadoPor: P.ana }, { num: CN.b }));
+  await deve('Cadastro NÃO aceita data escolhida pelo aparelho', false, () => cadastro('edu', 'nova8', { criadoEm: new Date('2020-01-01') }, { num: CN.b }));
+  await deve('Fundador NÃO cria acesso admin em empresa que não cadastrou', false, () => setDoc(doc(db('edu'), 'acessos', 'beta_' + P.edu), { uid: P.edu, empresaId: 'beta', cargo: 'admin', ativo: true }));
+  /* contador do protocolo */
+  await deve('Contador do protocolo começa em 1', true, () => setDoc(doc(db('carla'), 'contadores', 'protocolo'), { ano: 2026, n: 1 }));
+  await deve('Contador do protocolo anda de 1 em 1', true, () => updateDoc(doc(db('carla'), 'contadores', 'protocolo'), { n: 2 }));
+  await deve('Contador do protocolo NÃO pula números', false, () => updateDoc(doc(db('carla'), 'contadores', 'protocolo'), { n: 10 }));
+  await deve('Contador do protocolo NÃO volta', false, () => updateDoc(doc(db('carla'), 'contadores', 'protocolo'), { n: 1 }));
+  await deve('Contador do protocolo recomeça em 1 no ano novo', true, () => setDoc(doc(db('carla'), 'contadores', 'protocolo'), { ano: 2027, n: 1 }));
+  /* autorizações */
+  const cons = (k, extra) => Object.assign({ uid: P[k], finalidade: 'cursos', aceite: false, texto: 'Cursos.', textoVersao: 'v1', canal: 'cadastro', em: serverTimestamp() }, extra || {});
+  await deve('Pessoa registra a própria autorização', true, () => setDoc(doc(db('edu'), 'consentimentos', P.edu + '_cursos'), cons('edu')));
+  await deve('Autorização NÃO é registrada em nome de outra pessoa', false, () => setDoc(doc(db('edu'), 'consentimentos', P.ana + '_cursos'), cons('edu', { uid: P.ana })));
+  await deve('Autorização NÃO aceita finalidade inventada', false, () => setDoc(doc(db('edu'), 'consentimentos', P.edu + '_venda'), cons('edu', { finalidade: 'venda' })));
+  await deve('Autorização NÃO aceita data escolhida pelo aparelho', false, () => setDoc(doc(db('edu'), 'consentimentos', P.edu + '_cursos'), cons('edu', { em: new Date('2020-01-01') })));
+  await deve('Histórico de autorizações grava', true, () => addDoc(collection(db('edu'), 'consentimentos_log'), cons('edu')));
+  await deve('Pessoa NÃO lê autorizações de outra', false, () => getDoc(doc(db('carla'), 'consentimentos', P.edu + '_cursos')));
+  /* correção do cadastro (ajuste pedido) */
+  await env.withSecurityRulesDisabled(c => updateDoc(doc(c.firestore(), 'empresas', 'nova1'), { status: 'pendencia', motivo: 'Comprovante de endereço ilegível.' }));
+  await deve('Fundador reenvia o cadastro corrigido quando foi pedido ajuste', true, () => updateDoc(doc(db('carla'), 'empresas', 'nova1'), { status: 'analise', razao: 'Nova Serviços Ltda', enviadoEm: serverTimestamp() }));
+  await env.withSecurityRulesDisabled(c => updateDoc(doc(c.firestore(), 'empresas', 'nova1'), { status: 'pendencia' }));
+  await deve('Na correção o CNPJ NÃO muda', false, () => updateDoc(doc(db('carla'), 'empresas', 'nova1'), { status: 'analise', cnpj: '04252011000110' }));
+  await deve('Na correção a empresa NÃO se aprova sozinha', false, () => updateDoc(doc(db('carla'), 'empresas', 'nova1'), { status: 'aprovado' }));
   await deve('Admin NÃO aprova a própria empresa (status só a equipe master muda)', false, () => updateDoc(doc(db('ana'), 'empresas', 'alfa'), { status: 'aprovado' }));
   await deve('Equipe master aprova empresa', true, () => updateDoc(doc(db('master'), 'empresas', 'alfa'), { status: 'aprovado' }));
   await semear();

@@ -28,11 +28,11 @@ const MODS_TESTE = () => {
     consultas: window.__mockLog.filter(x => x[0] === 'consulta' || x[0] === 'le').map(x => x[0] === 'consulta' ? x[1] + ' where ' + JSON.stringify(x[2]) : x[1]) }));
   ok('S1 sem acesso: "Você ainda não tem acesso a nenhuma empresa" com "Cadastrar minha empresa" e "Tenho um convite"', s1.t === 'Você ainda não tem acesso a nenhuma empresa' && /^Cadastrar minha empresa/.test(s1.cad) && /^Tenho um convite/.test(s1.conv) && !s1.shell, s1.t);
   ok('S2 depois do login carrega usuarios/{uid}, acessos where uid == meu uid e master/{uid}', s1.consultas.includes('usuarios/uCARLA') && s1.consultas.includes('master/uCARLA') && s1.consultas.includes('acessos where [["uid","==","uCARLA"]]'), s1.consultas.join(' · '));
-  await page.click('#sa-cadastrar'); await H.dorme(100);
-  ok('S3 sem a Etapa 1, os botões avisam que a opção chega na próxima etapa', /próxima etapa/.test(await toast()), await toast());
+  await page.click('#sa-convite'); await H.dorme(100);
+  ok('S3 "Tenho um convite" avisa que a opção chega na próxima parte da Etapa 1', /próxima etapa/.test(await toast()), await toast());
   await page.evaluate(() => { window.__chamou = []; CW.entrada.cadastrarEmpresa = () => __chamou.push('cad'); CW.entrada.abrirConvite = () => __chamou.push('conv'); });
   await page.click('#sa-cadastrar'); await page.click('#sa-convite');
-  ok('S4 os botões chamam os ganchos que a Etapa 1 vai preencher', JSON.stringify(await page.evaluate(() => __chamou)) === '["cad","conv"]');
+  ok('S4 os botões chamam os ganchos da Etapa 1 (cadastro e convite)', JSON.stringify(await page.evaluate(() => __chamou)) === '["cad","conv"]');
   await page.click('#sa-sair'); await page.waitForSelector('#lg-email', { timeout: 8000 });
 
   // S5 bloqueada
@@ -120,7 +120,7 @@ const MODS_TESTE = () => {
   // S24 empresa em análise
   await H.entrar(page, 'gil@gama.com.br', 'senha123'); await page.waitForSelector('#ini-nome', { timeout: 8000 });
   q = await quem(); await page.evaluate(MODS_TESTE); await H.dorme(200); m = await menu();
-  ok('S24 empresa em análise: entra, vê o aviso e só as telas liberadas antes da aprovação', q.analise && q.empresa === 'Gama Logística' && JSON.stringify(m) === '["inicio"]', JSON.stringify(q) + ' menu=' + m);
+  ok('S24 empresa em análise: entra, vê o aviso e só as telas liberadas antes da aprovação (Início e Meu cadastro)', q.analise && q.empresa === 'Gama Logística' && JSON.stringify(m) === '["inicio","meucadastro"]', JSON.stringify(q) + ' menu=' + m);
   await sair();
 
   // S25 falha ao carregar os acessos → tela de erro com "Tentar de novo"
