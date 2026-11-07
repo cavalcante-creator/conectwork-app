@@ -251,7 +251,7 @@ service cloud.firestore {
     // Valor = o da medição; vencimento = o do contrato (não muda no espelho); líquido = valor − retenções. A prestadora lê. Nada se apaga.
     function camposEspelho() { return ['medicaoId','contratoId','tomadorId','prestadorId','partes','tomadorNome','prestadorNome','prestadorCnpj','tomador',
       'periodo','competencia','descricao','valorCentavos','retencoes','liquidoCentavos','vencimentoDias','obs','status','versao',
-      'criadoPor','criadoPorNome','criadoEm','atualizadoPor','atualizadoPorNome','atualizadoEm']; }
+      'criadoPor','criadoPorNome','criadoEm','atualizadoPor','atualizadoPorNome','atualizadoEm','emissao','nota','recusadas','conferenciaNota']; }
     function centavos(v) { return v is int && v >= 0; }
     function espelhoValores(d) {
       let r = d.retencoes;
@@ -279,12 +279,68 @@ service cloud.firestore {
         && mudou().hasOnly(['descricao','retencoes','liquidoCentavos','obs','versao','atualizadoPor','atualizadoPorNome','atualizadoEm'])
         && d.versao == r.versao + 1 && d.atualizadoPor == request.auth.uid && espelhoValores(d);
     }
+    // A prestadora (admin, financeiro ou operacional) registra que abriu o emissor e envia a nota.
+    // A nota precisa reservar a chave (notaschave) e ter o arquivo guardado na mesma operação; XML só entra se bater com o espelho.
+    function espelhoEmissao(r, d) {
+      return cargoEm(r.prestadorId, ['admin','financeiro','operacional']) && r.status == 'aguardando_nota' && d.status == 'aguardando_nota'
+        && mudou().hasOnly(['emissao','atualizadoEm']) && d.emissao.uid == request.auth.uid;
+    }
+    function espelhoNota(id, r, d) {
+      let n = d.nota;
+      return cargoEm(r.prestadorId, ['admin','financeiro','operacional']) && r.status == 'aguardando_nota' && d.status == 'nota_enviada'
+        && mudou().hasOnly(['status','nota','atualizadoEm'])
+        && n.enviadoPor == request.auth.uid && n.chaveUnica is string && n.chaveUnica.size() >= 10 && n.chaveUnica.size() <= 80
+        && n.tipo in ['pdf','xml'] && n.partes is int && n.partes >= 1 && n.partes <= 6 && n.conferencia.ok is bool
+        && (n.tipo == 'pdf' || (n.conferencia.ok == true && n.valorCentavos == r.valorCentavos))
+        && existsAfter(/databases/$(database)/documents/espelhos/$(id)/arquivos/$(n.envio + '-' + string(n.partes - 1)))
+        && existsAfter(caminho('notaschave', n.chaveUnica)) && getAfter(caminho('notaschave', n.chaveUnica)).data.espelhoId == id;
+    }
+    // Quem contrata (admin ou financeiro) confere a nota ou recusa com motivo; a recusa fica na lista "recusadas" (nada se apaga).
+    function espelhoConferirNota(r, d) {
+      return cargoEm(r.tomadorId, ['admin','financeiro']) && r.status == 'nota_enviada' && d.status == 'nota_ok'
+        && mudou().hasOnly(['status','conferenciaNota','atualizadoEm']) && d.conferenciaNota.uid == request.auth.uid;
+    }
+    function espelhoRecusarNota(r, d) {
+      let antes = 'recusadas' in r ? r.recusadas.size() : 0;
+      return cargoEm(r.tomadorId, ['admin','financeiro']) && r.status == 'nota_enviada' && d.status == 'aguardando_nota' && d.nota == null
+        && mudou().hasOnly(['status','nota','emissao','recusadas','atualizadoEm'])
+        && d.recusadas.size() == antes + 1 && (antes == 0 || d.recusadas[0:antes] == r.recusadas)
+        && d.recusadas[antes].uid == request.auth.uid && d.recusadas[antes].motivo is string && d.recusadas[antes].motivo.size() >= 10
+        && d.recusadas[antes].chaveUnica == r.nota.chaveUnica;
+    }
     match /espelhos/{id} {
       allow get: if logado() && (resource == null || master() || membro(resource.data.tomadorId) || membro(resource.data.prestadorId));
       allow list: if master() || membro(resource.data.tomadorId) || membro(resource.data.prestadorId);
       allow create: if espelhoCriar(id, request.resource.data);
-      allow update: if request.resource.data.keys().hasOnly(camposEspelho()) && espelhoCorrigir(resource.data, request.resource.data);
+      allow update: if request.resource.data.keys().hasOnly(camposEspelho())
+        && (espelhoCorrigir(resource.data, request.resource.data) || espelhoEmissao(resource.data, request.resource.data)
+            || espelhoNota(id, resource.data, request.resource.data) || espelhoConferirNota(resource.data, request.resource.data)
+            || espelhoRecusarNota(resource.data, request.resource.data));
       allow delete: if false;
+
+      // arquivo da nota (PDF ou XML) em pedaços: só a prestadora grava, enquanto espera a nota; nunca muda nem some
+      match /arquivos/{arq} {
+        allow get: if master() || membro(get(caminho('espelhos', id)).data.tomadorId) || membro(get(caminho('espelhos', id)).data.prestadorId);
+        allow list: if false;
+        allow create: if cargoEm(get(caminho('espelhos', id)).data.prestadorId, ['admin','financeiro','operacional'])
+          && get(caminho('espelhos', id)).data.status == 'aguardando_nota'
+          && request.resource.data.keys().hasOnly(['d','k','envio','em'])
+          && request.resource.data.d is string && request.resource.data.d.size() <= 750000
+          && request.resource.data.k is int && request.resource.data.k >= 0 && request.resource.data.k < 6
+          && arq == request.resource.data.envio + '-' + string(request.resource.data.k);
+        allow update, delete: if false;
+      }
+    }
+
+    // ---------- Nota já usada · id = chave de acesso (ou CNPJ do emitente_número): uma nota não serve para dois espelhos ----------
+    match /notaschave/{chave} {
+      allow get: if logado();
+      allow list: if false;
+      allow create: if request.resource.data.keys().hasOnly(['espelhoId','prestadorId','tomadorId','em'])
+        && cargoEm(request.resource.data.prestadorId, ['admin','financeiro','operacional'])
+        && getAfter(caminho('espelhos', request.resource.data.espelhoId)).data.prestadorId == request.resource.data.prestadorId
+        && getAfter(caminho('espelhos', request.resource.data.espelhoId)).data.nota.chaveUnica == chave;
+      allow update, delete: if false;
     }
 
     // ---------- CNPJ reservado (impede cadastro repetido) · id = só os 14 números ----------

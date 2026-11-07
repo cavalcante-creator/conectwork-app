@@ -275,6 +275,35 @@ async function deve(nome, permitido, op) {
   await deve('Espelho: NÃO corrige sem subir a versão', false, () => updateDoc(doc(db('bruno'), 'espelhos', 'cm_2026-11-1'), { obs: 'Outra observação.', versao: 2, atualizadoPor: P.bruno, atualizadoEm: serverTimestamp() }));
   await deve('Espelho: ninguém apaga', false, () => deleteDoc(doc(db('ana'), 'espelhos', 'cm_2026-11-1')));
 
+  /* ---------- nota fiscal no espelho ---------- */
+  await env.withSecurityRulesDisabled(async c => { await setDoc(doc(c.firestore(), 'espelhos', 'e2'), esp('bruno', { medicaoId: 'e2' })); });
+  const nota = (k, extra) => Object.assign({ tipo: 'pdf', nomeArquivo: 'nota.pdf', tam: 1000, envio: 'ab12', partes: 1, chaveUnica: '1'.repeat(50), chave: '1'.repeat(50), numero: '7',
+    emitenteCnpj: '', valorCentavos: null, competencia: '2026-11', emissao: '', conferencia: { ok: true, manual: false, itens: [] }, enviadoPor: P[k], enviadoPorNome: k, enviadoEm: serverTimestamp() }, extra || {});
+  const enviaNota = (k, espId, n, semArq, semChave) => { const f = db(k), b = writeBatch(f);
+    if (!semArq) b.set(doc(f, 'espelhos', espId, 'arquivos', n.envio + '-0'), { d: 'JVBERi0x', k: 0, envio: n.envio, em: serverTimestamp() });
+    if (!semChave) b.set(doc(f, 'notaschave', n.chaveUnica), { espelhoId: espId, prestadorId: 'beta', tomadorId: 'alfa', em: serverTimestamp() });
+    b.update(doc(f, 'espelhos', espId), { status: 'nota_enviada', nota: n, atualizadoEm: serverTimestamp() }); return b.commit(); };
+  await deve('Nota: a prestadora registra que abriu o emissor', true, () => updateDoc(doc(db('beto'), 'espelhos', 'cm_2026-11-1'), { emissao: { uid: P.beto, nome: 'Beto', em: serverTimestamp() }, atualizadoEm: serverTimestamp() }));
+  await deve('Nota: o tomador NÃO registra emissão no lugar da prestadora', false, () => updateDoc(doc(db('bruno'), 'espelhos', 'cm_2026-11-1'), { emissao: { uid: P.bruno }, atualizadoEm: serverTimestamp() }));
+  await deve('Nota: NÃO é enviada sem o arquivo', false, () => enviaNota('beto', 'cm_2026-11-1', nota('beto'), true));
+  await deve('Nota: NÃO é enviada sem reservar a chave', false, () => enviaNota('beto', 'cm_2026-11-1', nota('beto'), false, true));
+  await deve('Nota: XML com valor diferente do espelho NÃO entra', false, () => enviaNota('beto', 'cm_2026-11-1', nota('beto', { tipo: 'xml', valorCentavos: 1, envio: 'x1' })));
+  await deve('Nota: o tomador NÃO envia a nota', false, () => enviaNota('bruno', 'cm_2026-11-1', nota('bruno', { envio: 'x2' })));
+  await deve('Nota: a prestadora envia o PDF (arquivo + chave + espelho juntos)', true, () => enviaNota('beto', 'cm_2026-11-1', nota('beto')));
+  await deve('Nota: a mesma nota NÃO serve para outro espelho', false, () => enviaNota('beto', 'e2', nota('beto', { envio: 'x3' })));
+  await deve('Nota: o tomador abre o arquivo', true, () => getDoc(doc(db('bruno'), 'espelhos', 'cm_2026-11-1', 'arquivos', 'ab12-0')));
+  await deve('Nota: quem não é das duas empresas NÃO abre o arquivo', false, () => getDoc(doc(db('carla'), 'espelhos', 'cm_2026-11-1', 'arquivos', 'ab12-0')));
+  await deve('Nota: o arquivo NÃO é apagado', false, () => deleteDoc(doc(db('beto'), 'espelhos', 'cm_2026-11-1', 'arquivos', 'ab12-0')));
+  await deve('Nota: arquivo NÃO entra depois que a nota foi enviada', false, () => setDoc(doc(db('beto'), 'espelhos', 'cm_2026-11-1', 'arquivos', 'zz-0'), { d: 'x', k: 0, envio: 'zz', em: serverTimestamp() }));
+  await deve('Nota: a prestadora NÃO confere a própria nota', false, () => updateDoc(doc(db('beto'), 'espelhos', 'cm_2026-11-1'), { status: 'nota_ok', conferenciaNota: { uid: P.beto }, atualizadoEm: serverTimestamp() }));
+  await deve('Nota: o RH do tomador NÃO recusa', false, () => updateDoc(doc(db('rita'), 'espelhos', 'cm_2026-11-1'), { status: 'aguardando_nota', nota: null, emissao: null, recusadas: [{ uid: P.rita, motivo: 'Competência errada na nota.', chaveUnica: '1'.repeat(50) }], atualizadoEm: serverTimestamp() }));
+  await deve('Nota: o financeiro NÃO recusa sem motivo', false, () => updateDoc(doc(db('bruno'), 'espelhos', 'cm_2026-11-1'), { status: 'aguardando_nota', nota: null, emissao: null, recusadas: [{ uid: P.bruno, motivo: 'não', chaveUnica: '1'.repeat(50) }], atualizadoEm: serverTimestamp() }));
+  await deve('Nota: o financeiro recusa com motivo (fica na lista de recusadas)', true, () => updateDoc(doc(db('bruno'), 'espelhos', 'cm_2026-11-1'), { status: 'aguardando_nota', nota: null, emissao: null, recusadas: [{ uid: P.bruno, nome: 'Bruno', motivo: 'Competência errada na nota.', chaveUnica: '1'.repeat(50) }], atualizadoEm: serverTimestamp() }));
+  await deve('Nota: a nota recusada NÃO é enviada de novo', false, () => enviaNota('beto', 'cm_2026-11-1', nota('beto', { envio: 'x4' })));
+  await deve('Nota: a prestadora envia outra nota', true, () => enviaNota('beto', 'cm_2026-11-1', nota('beto', { envio: 'x5', chaveUnica: '2'.repeat(50), chave: '2'.repeat(50) })));
+  await deve('Nota: o financeiro marca a nota conferida', true, () => updateDoc(doc(db('bruno'), 'espelhos', 'cm_2026-11-1'), { status: 'nota_ok', conferenciaNota: { uid: P.bruno, nome: 'Bruno', em: serverTimestamp(), manual: false }, atualizadoEm: serverTimestamp() }));
+  await deve('Nota: conferida, o espelho NÃO é mais corrigido', false, () => updateDoc(doc(db('bruno'), 'espelhos', 'cm_2026-11-1'), { obs: 'x', versao: 3, atualizadoPor: P.bruno, atualizadoEm: serverTimestamp() }));
+
   /* ---------- master e perfil ---------- */
   await deve('Pessoa lê o próprio master/{uid} (para saber se é equipe)', true, () => getDoc(doc(db('master'), 'master', P.master)));
   await deve('Pessoa consulta master/{uid} próprio mesmo sem ser master (documento não existe)', true, () => getDoc(doc(db('carla'), 'master', P.carla)));

@@ -12,14 +12,20 @@
   const U = () => CW.ui;
   const PREPARA = ['admin', 'financeiro'];
   const RET = [['iss', 'ISS'], ['inss', 'INSS'], ['ir', 'IR'], ['pcc', 'PIS/COFINS/CSLL']];
-  const ST = { aguardando_nota: ['warn', 'Esperando a nota'] };
+  const ST = { aguardando_nota: ['warn', 'Esperando a nota'], nota_enviada: ['info', 'Nota para conferir'], nota_ok: ['ok', 'Nota conferida'] };
+  const ENVIA = ['admin', 'financeiro', 'operacional'];   /* quem da prestadora emite e envia a nota */
+  const EMISSOR = 'https://www.nfse.gov.br/EmissorNacional';
+  const MAX_ARQ = 3 * 1024 * 1024, PEDACO = 700000;
   const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 
-  let espT = [], espP = [], medsAprov = [], pronto = false;
+  let espT = [], espP = [], medsAprov = [], pronto = false, ultimoCtx = null;
   const brl = c => U().formatarDinheiro(c);
   const pill = s => { const x = ST[s] || ['info', s]; return `<span class="pill ${x[0]}">${U().esc(x[1])}</span>`; };
   const cargo = ctx => ctx.contexto.acesso && ctx.contexto.acesso.cargo;
   const pode = ctx => !ctx.soLeitura && PREPARA.includes(cargo(ctx));
+  const podeEnviar = ctx => !ctx.soLeitura && ENVIA.includes(cargo(ctx));
+  const emissorDe = ctx => { try { return localStorage.getItem('cw.emissor.' + ctx.contexto.empresaId) || EMISSOR; } catch (e) { return EMISSOR; } };
+  const tamTxt = b => b >= 1048576 ? (b / 1048576).toFixed(1).replace('.', ',') + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB';
   const quem = ctx => (ctx.sessao.perfil && ctx.sessao.perfil.nome) || ctx.sessao.usuario.email;
   const lado = (x, ctx) => x.tomadorId === ctx.contexto.empresaId ? 'tomador' : 'prestador';
   const periodoTxt = p => CW.medicoes ? CW.medicoes.periodoTxt(p) : p;
@@ -47,6 +53,7 @@
     const comEsp = new Set(espT.map(x => x._id));
     const preparar = pode(ctx) ? medsAprov.filter(m => !comEsp.has(m._id)) : [];
     const emitir = espP.filter(x => x.status === 'aguardando_nota');
+    const conferir = pode(ctx) ? espT.filter(x => x.status === 'nota_enviada') : [];
     const outro = x => lado(x, ctx) === 'tomador' ? x.prestadorNome : x.tomadorNome;
     const linhaEsp = x => `<tr class="click" data-abrir="${esc(x._id)}" tabindex="0"><td class="m-full"><div class="cell">${avatar(outro(x))}<div style="min-width:0"><strong>${esc(periodoTxt(x.periodo))}</strong><small>${esc(outro(x))} · ${lado(x, ctx) === 'tomador' ? 'você paga' : 'você emite a nota'}</small></div></div></td>
       <td class="r"><b>${esc(brl(x.valorCentavos))}</b><br><small class="hint">líquido ${esc(brl(x.liquidoCentavos))}</small></td><td>${pill(x.status)}</td></tr>`;
@@ -57,8 +64,9 @@
         ${preparar.map(m => `<tr><td class="m-full"><div class="cell">${avatar(m.prestadorNome)}<div style="min-width:0"><strong>${esc(periodoTxt(m.periodo))}</strong><small>${esc(m.prestadorNome)} · aprovada${m.aprovacao && m.aprovacao.nome ? ' por ' + esc(m.aprovacao.nome) : ''}</small></div></div></td>
           <td class="r"><b>${esc(brl(m.valorCentavos))}</b></td><td class="r"><button class="btn sm" data-preparar="${esc(m._id)}">${ic('edit')}Preparar espelho</button></td></tr>`).join('')}
         </tbody></table></div></section>` : ''}
+      ${conferir.length ? `<section class="card" id="es-conferir" style="margin-bottom:22px"><div class="card-h"><span class="ic">${ic('alert')}</span><h3>Notas para conferir</h3><span class="count">${conferir.length}</span></div>${tab(conferir, 'es-tab-conferir')}</section>` : ''}
       ${emitir.length ? `<section class="card" id="es-emitir" style="margin-bottom:22px"><div class="card-h"><span class="ic">${ic('receipt')}</span><h3>Notas a emitir</h3><span class="count">${emitir.length}</span></div>
-        <div class="card-b" style="padding-bottom:0"><div class="banner ok">${ic('check')}<span><strong>Serviço aprovado: confira os dados e envie sua nota fiscal</strong>Abra o espelho, copie os dados e emita a NFS-e no Emissor Nacional (gov.br) ou na prefeitura.</span></div></div>
+        <div class="card-b" style="padding-bottom:0"><div class="banner ok">${ic('check')}<span><strong>Serviço aprovado: confira os dados e envie sua nota fiscal</strong>Abra o espelho: o botão leva ao emissor da nota e, quando você voltar, o Conectwork pede o PDF da nota.</span></div></div>
         ${tab(emitir, 'es-tab-emitir')}</section>` : ''}
       <section class="card" id="es-lista"><div class="card-h"><span class="ic">${ic('receipt')}</span><h3>Espelhos da nota</h3><span class="count">${todos.length}</span></div>
         ${todos.length ? tab(todos, 'es-tab') : `<div class="empty"><div class="ic">${ic('receipt')}</div><strong>Nenhum espelho ainda.</strong><span>Quando uma medição for aprovada, o financeiro de quem contrata prepara o espelho com os dados da nota.</span></div>`}</section>`;
@@ -157,8 +165,7 @@
     RET.forEach(([k]) => { copias['r_' + k] = formatarDinheiro((x.retencoes || {})[k] || 0, false); });
     const temRet = somaRet(x.retencoes) > 0;
     el.innerHTML = `<div style="margin-bottom:14px"><button class="linkbtn" id="es-voltar">${ic('back')}Voltar para os espelhos</button></div>
-      ${l === 'prestador' && x.status === 'aguardando_nota' ? `<div class="banner ok" id="es-aviso">${ic('check')}<span><strong>Serviço aprovado: confira os dados e envie sua nota fiscal</strong>Emita a NFS-e no Emissor Nacional (gov.br) ou no site da prefeitura com os dados abaixo. Use os botões para copiar. O envio do arquivo da nota (XML) pelo Conectwork entra na próxima parte.</span></div>` : ''}
-      ${l === 'tomador' && x.status === 'aguardando_nota' ? `<div class="banner info" id="es-aviso">${ic('clock')}<span><strong>Esperando a nota da ${esc(x.prestadorNome)}</strong>A prestadora já vê o espelho. A nota é conferida com o contrato, a medição e este espelho.</span></div>` : ''}
+      ${avisos(x, ctx)}
       <div class="grid-main"><div class="stack">
         <section class="card" id="es-tom"><div class="card-h"><span class="ic">${ic('building')}</span><h3>Tomador do serviço</h3><span style="margin-left:auto">${pill(x.status)}</span></div><div class="card-b"><dl class="dl">
           ${cp('Razão social', t.razao, 'razao', 1)}${cp('CNPJ', t.cnpj, 'cnpj')}${cp('Inscrição municipal', t.im, 'im')}${cp('Endereço', copias.end, 'end', 1)}</dl></div></section>
@@ -168,6 +175,7 @@
           ${cp('Descrição do serviço', x.descricao, 'desc', 1)}
           ${cp('Valor do serviço', brl(x.valorCentavos), 'valor')}<div><dt>Período da medição</dt><dd>${esc(periodoTxt(x.periodo))}</dd></div>
           ${x.obs ? `<div class="full"><dt>Observação</dt><dd>${esc(x.obs)}</dd></div>` : ''}</dl></div></section>
+        ${x.nota ? cartaoNota(x, ctx) : ''}
       </div><div class="stack">
         <section class="card" id="es-valores"><div class="card-h"><span class="ic">${ic('wallet')}</span><h3>Valores</h3></div><div class="card-b stack" style="gap:12px">
           <div class="scroll"><table><tbody><tr><td>Valor aprovado</td><td class="r"><b>${esc(brl(x.valorCentavos))}</b></td></tr>
@@ -180,14 +188,194 @@
         <section class="card" id="es-andamento"><div class="card-h"><span class="ic">${ic('clock')}</span><h3>Andamento</h3></div><div class="card-b stack" style="gap:14px">
           <ul class="tl"><li class="done"><span class="dot">${ic('check')}</span>Medição aprovada<small><a href="#medicoes/ver/${esc(x.medicaoId)}" class="linkbtn" style="font-size:12px">ver a medição</a></small></li>
             <li class="done"><span class="dot">${ic('check')}</span>Espelho preparado${x.versao > 1 ? ` (versão ${x.versao})` : ''}<small>${esc(formatarDataHora(x.criadoEm))} · ${esc(x.criadoPorNome || '')}${x.versao > 1 ? ` · corrigido ${esc(formatarDataHora(x.atualizadoEm))} por ${esc(x.atualizadoPorNome || '')}` : ''}</small></li>
-            <li class="${x.status === 'aguardando_nota' ? 'now' : ''}"><span class="dot"></span>Nota fiscal enviada pela prestadora<small>esperando</small></li>
-            <li><span class="dot"></span>Conferência: contrato + medição + nota<small></small></li></ul>
+            <li class="${x.nota ? 'done' : x.status === 'aguardando_nota' ? 'now' : ''}"><span class="dot">${x.nota ? ic('check') : ''}</span>Nota fiscal enviada pela prestadora<small>${x.nota ? esc(formatarDataHora(x.nota.enviadoEm) + ' · ' + (x.nota.enviadoPorNome || '')) : x.emissao ? 'emissor aberto ' + esc(formatarDataHora(x.emissao.em)) : 'esperando'}</small></li>
+            <li class="${x.status === 'nota_ok' ? 'done' : x.status === 'nota_enviada' ? 'now' : ''}"><span class="dot">${x.status === 'nota_ok' ? ic('check') : ''}</span>Conferência: contrato + medição + nota<small>${x.conferenciaNota ? esc(formatarDataHora(x.conferenciaNota.em) + ' · ' + x.conferenciaNota.nome) : ''}</small></li></ul>
           ${l === 'tomador' && x.status === 'aguardando_nota' && pode(ctx) ? `<div><button class="btn sec" id="es-corrigir">${ic('edit')}Corrigir o espelho</button></div>` : ''}
         </div></section></div></div>`;
     document.getElementById('es-voltar').onclick = () => CW.ir('espelhos');
     el.querySelectorAll('[data-copiar]').forEach(b => b.onclick = () => copiar(copias[b.dataset.copiar] || ''));
     const co = document.getElementById('es-corrigir'); if (co) co.onclick = () => CW.ir('espelhos/preparar/' + x._id);
+    ultimoCtx = ctx; ligarNota(el, ctx, x);
   }
+
+  /* ---------- nota fiscal: emitir fora, voltar e anexar (PDF ou XML), conferir ---------- */
+  function avisos(x, ctx) {
+    const { esc, ic, formatarDataHora } = U(), l = lado(x, ctx), rec = (x.recusadas || [])[(x.recusadas || []).length - 1];
+    const recTxt = rec ? `<div class="banner danger" id="es-recusa">${ic('alert')}<span><strong>${l === 'prestador' ? 'A ' + esc(x.tomadorNome) + ' recusou a nota' : 'Nota recusada'}${rec.numero ? ' nº ' + esc(rec.numero) : ''}</strong>${esc(rec.motivo)}${l === 'prestador' && x.status === 'aguardando_nota' ? ' · Cancele essa nota no emissor, emita outra e anexe aqui.' : ''}</span></div>` : '';
+    if (l === 'prestador' && x.status === 'aguardando_nota') {
+      const outro = emissorDe(ctx) !== EMISSOR;
+      return recTxt + `<div class="banner ok" id="es-aviso">${ic('check')}<span><strong>Serviço aprovado: confira os dados e envie sua nota fiscal</strong>1. Toque em "Emitir a nota" e preencha com os dados abaixo (use os botões de copiar). 2. Volte para o Conectwork e anexe o PDF da nota (ou o XML).</span></div>
+        ${podeEnviar(ctx) ? `<section class="card" id="es-passos" style="margin:14px 0 22px"><div class="card-b stack" style="gap:12px">
+          ${x.emissao ? `<p style="margin:0;font-size:13.5px" id="es-voltou">${ic('clock')} Emissor aberto ${esc(formatarDataHora(x.emissao.em))} por ${esc(x.emissao.nome)}. <b>Já emitiu? Anexe a nota.</b></p>` : ''}
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ${x.emissao ? 'sec' : ''}" id="es-emitir-bt">${ic('send')}Emitir a nota ${outro ? 'no site da prefeitura' : 'no Emissor Nacional'}</button>
+            <button class="btn ${x.emissao ? '' : 'sec'}" id="es-anexar">${ic('upload')}Anexar a nota (PDF ou XML)</button></div>
+          <button class="linkbtn" id="es-outro-site" style="align-self:flex-start;font-size:12.5px">${outro ? 'Usar o Emissor Nacional (gov.br)' : 'Minha cidade usa outro site para emitir'}</button></div></section>` : ''}`;
+    }
+    if (l === 'tomador' && x.status === 'aguardando_nota') return recTxt + `<div class="banner info" id="es-aviso">${ic('clock')}<span><strong>Esperando a nota da ${esc(x.prestadorNome)}</strong>${x.emissao ? 'A prestadora abriu o emissor em ' + esc(formatarDataHora(x.emissao.em)) + '. ' : 'A prestadora já vê o espelho. '}A nota é conferida com o contrato, a medição e este espelho.</span></div>`;
+    if (x.status === 'nota_enviada') return `<div class="banner ${l === 'tomador' ? 'warn' : 'info'}" id="es-aviso">${ic(l === 'tomador' ? 'alert' : 'clock')}<span><strong>${l === 'tomador' ? 'Nota chegou: confira' : 'Nota enviada'}</strong>${l === 'tomador' ? 'Veja a conferência abaixo, abra o arquivo se precisar e marque "Nota conferida" ou recuse com o motivo.' : 'A ' + esc(x.tomadorNome) + ' confere a nota com o contrato, a medição e o espelho.'}</span></div>`;
+    if (x.status === 'nota_ok') return `<div class="banner ok" id="es-aviso">${ic('check')}<span><strong>Nota conferida</strong>Contrato, medição e nota batem. O próximo passo é o título em contas a pagar e receber (próxima parte do Conectwork).</span></div>`;
+    return '';
+  }
+
+  function cartaoNota(x, ctx) {
+    const { esc, ic, formatarDataHora } = U(), n = x.nota, cf = n.conferencia || {}, N = CW.nfse;
+    const itens = (cf.itens || []).map(i => `<li class="${i.ok ? 'ok' : 'no'}">${ic(i.ok ? 'check' : 'alert')}<span>${esc(i.txt)}</span></li>`).join('');
+    const pr = N ? N.fmtCnpj(x.prestadorCnpj) : x.prestadorCnpj;
+    const tripla = `<ul class="es-cf" id="es-tripla"><li class="ok">${ic('check')}<span>Contrato ativo com ${esc(x.prestadorNome)} (${esc(pr)})</span></li><li class="ok">${ic('check')}<span>Medição aprovada: ${esc(brl(x.valorCentavos))}</span></li>
+      <li class="${cf.ok ? 'ok' : 'no'}">${ic(cf.ok ? 'check' : 'alert')}<span>${cf.ok ? 'A nota bate com o espelho' : cf.manual ? 'Nota para conferir à mão' : 'A nota tem diferenças'}</span></li></ul>`;
+    const botoes = lado(x, ctx) === 'tomador' && x.status === 'nota_enviada' && pode(ctx)
+      ? `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ok" id="es-nf-ok">${ic('check')}Nota conferida</button><button class="btn dangerous" id="es-nf-recusar">${ic('x')}Recusar a nota</button></div>` : '';
+    return `<section class="card" id="es-nf"><div class="card-h"><span class="ic">${ic('file')}</span><h3>Nota fiscal${n.numero ? ' nº ' + esc(n.numero) : ''}</h3><span style="margin-left:auto">${pill(x.status)}</span></div><div class="card-b stack" style="gap:14px">
+      ${tripla}
+      <dl class="dl"><div><dt>Arquivo</dt><dd>${esc(n.nomeArquivo)} · ${esc(n.tipo.toUpperCase())} · ${esc(tamTxt(n.tam || 0))}</dd></div><div><dt>Enviada</dt><dd>${esc(formatarDataHora(n.enviadoEm))} · ${esc(n.enviadoPorNome || '')}</dd></div>
+        ${n.chave ? `<div class="full"><dt>Chave de acesso</dt><dd style="font-size:12.5px">${esc(n.chave)}</dd></div>` : ''}${n.emissao ? `<div><dt>Emitida em</dt><dd>${esc(U().formatarData(n.emissao))}</dd></div>` : ''}</dl>
+      ${itens ? `<div><p style="margin:0 0 6px;font-size:13px;font-weight:500">O que o Conectwork conferiu</p><ul class="es-cf" id="es-cf">${itens}</ul></div>` : ''}
+      ${cf.manual && lado(x, ctx) === 'tomador' ? `<p class="hint" style="margin:0;font-size:12.5px;color:var(--warn)">Não deu para conferir tudo pelo arquivo: abra a nota e confira o CNPJ de quem emitiu, o CNPJ da sua empresa, o valor e a competência.</p>` : ''}
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sec" id="es-nf-baixar">${ic('file')}Abrir o arquivo da nota</button></div>
+      ${botoes}</div></section>`;
+  }
+
+  function ligarNota(el, ctx, x) {
+    const $ = id => document.getElementById(id), db = CW.fb.db(), ref = db.doc('espelhos/' + x._id), agora = CW.fb.agora;
+    const grava = async (fn, msg) => { const b = db.batch(); fn(b); try { await b.commit(); if (msg) U().toast(msg); } catch (e) { U().toast(CW.fb.mensagemErro(e), 'erro'); } desenharVer(el, ctx, x._id); };
+    const em = $('es-emitir-bt');
+    if (em) em.onclick = () => {
+      const url = emissorDe(ctx);
+      try { window.open(url, '_blank', 'noopener'); } catch (e) {}
+      try { sessionStorage.setItem('cw.emissao', JSON.stringify({ id: x._id, em: Date.now() })); } catch (e) {}
+      const b = db.batch(); b.update(ref, { emissao: { uid: ctx.sessao.usuario.uid, nome: quem(ctx), em: agora() }, atualizadoEm: agora() });
+      log(b, ctx, 'espelho.emissao', `Emissor da nota aberto para o espelho de ${periodoTxt(x.periodo)} (${x.tomadorNome}).`, x._id);
+      b.commit().then(() => desenharVer(el, ctx, x._id)).catch(() => {});
+    };
+    const os = $('es-outro-site');
+    if (os) os.onclick = async () => {
+      const k = 'cw.emissor.' + ctx.contexto.empresaId;
+      if (emissorDe(ctx) !== EMISSOR) { try { localStorage.removeItem(k); } catch (e) {} desenharVer(el, ctx, x._id); return; }
+      let url = null;
+      await U().dialogo({ titulo: 'Site para emitir a nota', sub: 'Algumas cidades ainda emitem a nota no site da prefeitura. Guardamos neste aparelho.',
+        corpo: `<label class="f"><span>Endereço do site da prefeitura</span><input id="eo-url" type="url" inputmode="url" placeholder="https://..." maxlength="300"></label><p class="err" id="eo-erro"></p>`,
+        botoes: [{ texto: 'Voltar', valor: null, classe: 'sec' }, { texto: 'Guardar', valor: 'ok', antes: d => { const v = d.querySelector('#eo-url').value.trim(); if (!/^https?:\/\/[^\s.]+\.[^\s]+$/i.test(v)) { d.querySelector('#eo-erro').textContent = 'Informe o endereço completo, começando com https://'; return false; } url = v; return true; } }] });
+      if (url) { try { localStorage.setItem(k, url); } catch (e) {} desenharVer(el, ctx, x._id); }
+    };
+    const an = $('es-anexar'); if (an) an.onclick = () => anexar(el, ctx, x, false);
+    const bx = $('es-nf-baixar'); if (bx) bx.onclick = () => abrirArquivo(x);
+    const ok = $('es-nf-ok');
+    if (ok) ok.onclick = async () => {
+      const manual = !((x.nota.conferencia || {}).ok);
+      let sim = false;
+      await U().dialogo({ titulo: 'Nota conferida?', sub: `Nota${x.nota.numero ? ' nº ' + x.nota.numero : ''} da ${x.prestadorNome} · ${brl(x.valorCentavos)}`,
+        corpo: `<p style="margin:0 0 12px">Você confere que a nota bate com o contrato, a medição aprovada e o espelho. Depois disso, ela segue para contas a pagar.</p>
+          ${manual ? `<label class="check"><input type="checkbox" id="nc-chk"> <span>Abri o arquivo e conferi: CNPJ de quem emitiu, CNPJ da minha empresa, valor e competência.</span></label><p class="err" id="nc-erro"></p>` : ''}`,
+        botoes: [{ texto: 'Voltar', valor: null, classe: 'sec' }, { texto: 'Nota conferida', valor: 'ok', classe: 'ok', antes: d => { const c = d.querySelector('#nc-chk'); if (c && !c.checked) { d.querySelector('#nc-erro').textContent = 'Marque que conferiu o arquivo.'; return false; } sim = true; return true; } }] });
+      if (!sim) return;
+      grava(b => { b.update(ref, { status: 'nota_ok', conferenciaNota: { uid: ctx.sessao.usuario.uid, nome: quem(ctx), em: agora(), manual }, atualizadoEm: agora() });
+        log(b, ctx, 'nota.conferir', `Nota${x.nota.numero ? ' nº ' + x.nota.numero : ''} de ${x.prestadorNome} (${periodoTxt(x.periodo)}) conferida${manual ? ' à mão' : ''}: ${brl(x.valorCentavos)}.`, x._id); }, 'Nota conferida.');
+    };
+    const rc = $('es-nf-recusar');
+    if (rc) rc.onclick = async () => {
+      let mot = null;
+      await U().dialogo({ titulo: 'Recusar a nota', sub: `A ${x.prestadorNome} vê o motivo, cancela essa nota no emissor e envia outra.`,
+        corpo: `<label class="f"><span>Por que a nota não pode ser aceita?</span><textarea id="rn-mot" rows="4" maxlength="500" placeholder="Ex.: A nota saiu com a competência de setembro; o certo é outubro."></textarea></label><p class="err" id="rn-erro"></p>`,
+        botoes: [{ texto: 'Voltar', valor: null, classe: 'sec' }, { texto: 'Recusar a nota', valor: 'ok', classe: 'dangerous', antes: d => { const t = d.querySelector('#rn-mot').value.trim(); if (t.length < 10) { d.querySelector('#rn-erro').textContent = 'Explique o motivo (pelo menos 10 letras).'; return false; } mot = t; return true; } }] });
+      if (!mot) return;
+      const n = x.nota, item = { numero: n.numero || '', chaveUnica: n.chaveUnica, nomeArquivo: n.nomeArquivo, envio: n.envio, partes: n.partes, tipo: n.tipo, enviadoPorNome: n.enviadoPorNome || '', motivo: mot, uid: ctx.sessao.usuario.uid, nome: quem(ctx), em: new Date().toISOString() };
+      grava(b => { b.update(ref, { status: 'aguardando_nota', nota: null, emissao: null, recusadas: (x.recusadas || []).concat([item]), atualizadoEm: agora() });
+        log(b, ctx, 'nota.recusar', `Nota${n.numero ? ' nº ' + n.numero : ''} de ${x.prestadorNome} (${periodoTxt(x.periodo)}) recusada: ${mot}`, x._id); }, 'Nota recusada. A prestadora vê o motivo.');
+    };
+  }
+
+  /* abre o arquivo da nota (junta os pedaços guardados no banco) */
+  async function abrirArquivo(x) {
+    const n = x.nota; if (!n) return;
+    try {
+      const db = CW.fb.db(), ps = await Promise.all(Array.from({ length: n.partes }, (_, k) => db.doc(`espelhos/${x._id}/arquivos/${n.envio}-${k}`).get()));
+      const b64 = ps.map(p => (CW.fb.dados(p) || {}).d || '').join(''), bin = atob(b64), u8 = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+      const url = URL.createObjectURL(new Blob([u8], { type: n.tipo === 'pdf' ? 'application/pdf' : 'application/xml' }));
+      const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; if (n.tipo !== 'pdf') a.download = n.nomeArquivo || 'nota.xml';
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (e) { U().toast('Não foi possível abrir o arquivo: ' + CW.fb.mensagemErro(e), 'erro'); }
+  }
+
+  const lerComo = (f, modo) => new Promise((ok, erro) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = () => erro(r.error); r[modo](f); });
+
+  /* janela para anexar: lê o arquivo, mostra a conferência e envia */
+  async function anexar(el, ctx, x, voltou) {
+    const { esc, ic } = U(), N = CW.nfse;
+    let st = null, enviar = null;
+    const desenhaRes = d => {
+      const box = d.querySelector('#an-res'), num = d.querySelector('#an-num-l'), bt = d.querySelector('[data-dlg-b="1"]');
+      if (!st) { box.innerHTML = ''; num.hidden = true; return; }
+      if (st.lendo) { box.innerHTML = `<div class="empty" style="padding:14px"><div class="giro"></div><span>Lendo a nota…</span></div>`; return; }
+      const c = st.conf, bloqueia = st.bloqueia;
+      box.innerHTML = `<p style="margin:0 0 6px;font-size:13px;font-weight:500">${esc(st.nome)} · ${esc(tamTxt(st.tam))}</p>
+        <ul class="es-cf" id="an-cf">${c.itens.map(i => `<li class="${i.ok ? 'ok' : 'no'}">${ic(i.ok ? 'check' : 'alert')}<span>${esc(i.txt)}</span></li>`).join('')}</ul>
+        ${bloqueia ? `<div class="banner danger" style="margin-top:10px" id="an-bloq">${ic('alert')}<span><strong>Essa nota não bate com o espelho</strong>Cancele a nota no emissor, emita outra com os dados do espelho e anexe a nova.</span></div>`
+          : c.ok ? `<p class="hint" style="margin:8px 0 0;color:var(--ok)" id="an-okmsg">Tudo certo. Toque em "Enviar a nota".</p>`
+          : `<p class="hint" style="margin:8px 0 0;color:var(--warn)" id="an-manual">Nem tudo pôde ser conferido pelo arquivo. Dá para enviar: a ${esc(x.tomadorNome)} confere à mão e pode recusar.</p>`}`;
+      num.hidden = bloqueia || !!c.chaveUnica;
+      if (bt) bt.disabled = !!bloqueia;
+    };
+    const ler = async (f, d) => {
+      if (f.size > MAX_ARQ) { st = null; desenhaRes(d); d.querySelector('#an-erro').textContent = 'O arquivo passa de 3 MB. Baixe o PDF da nota de novo no emissor (o PDF da nota costuma ter menos de 200 KB).'; return; }
+      const xml = /\.xml$/i.test(f.name) || /xml/.test(f.type), pdf = /\.pdf$/i.test(f.name) || f.type === 'application/pdf';
+      if (!xml && !pdf) { st = null; desenhaRes(d); d.querySelector('#an-erro').textContent = 'Escolha o PDF ou o XML da nota.'; return; }
+      st = { lendo: true }; desenhaRes(d);
+      let r = null, aviso = '';
+      try {
+        if (xml) r = N.lerXml(await lerComo(f, 'readAsText'));
+        else r = N.lerTextoPdf(await N.textoPdf(await lerComo(f, 'readAsArrayBuffer')));
+      } catch (e) { r = null; aviso = e && e.message; }
+      const conf = N.conferir(x, r);
+      if (aviso && conf.manual) conf.itens[0].txt = aviso + ' A empresa que contrata confere à mão.';
+      const b64 = String(await lerComo(f, 'readAsDataURL')).replace(/^data:[^,]*,/, '');
+      st = { nome: f.name.slice(0, 120), tam: f.size, tipo: xml ? 'xml' : 'pdf', r, conf, b64, bloqueia: xml && !!r && !conf.ok };
+      desenhaRes(d);
+    };
+    await U().dialogo({ titulo: 'Anexar a nota fiscal', sub: voltou ? 'Voltou do emissor? Se a nota já saiu, anexe o PDF (ou o XML) dela.' : `Espelho de ${periodoTxt(x.periodo)} · ${brl(x.valorCentavos)}`,
+      corpo: `<div class="stack" style="gap:12px">
+        <label class="up" style="cursor:pointer"><input type="file" id="an-arq" accept=".pdf,.xml,application/pdf,application/xml,text/xml" style="position:absolute;opacity:0;width:1px;height:1px">
+          <span class="ic">${ic('upload')}</span><span class="t"><strong>Escolher o PDF ou o XML da nota</strong><small>No Emissor Nacional: Notas emitidas › baixar PDF ou XML.</small></span></label>
+        <div id="an-res"></div>
+        <label class="f" id="an-num-l" hidden><span>Número da nota</span><input id="an-num" inputmode="numeric" maxlength="15" placeholder="Ex.: 123"><em class="hint">Não achamos a chave de acesso no arquivo: o número evita que a mesma nota seja usada duas vezes.</em></label>
+        <p class="err" id="an-erro" role="alert"></p></div>`,
+      botoes: [{ texto: 'Agora não', valor: null, classe: 'sec' }, { texto: 'Enviar a nota', valor: 'ok', icone: 'send', antes: d => {
+        const er = d.querySelector('#an-erro');
+        if (!st || st.lendo) { er.textContent = st ? 'Espere terminar de ler a nota.' : 'Escolha o arquivo da nota.'; return false; }
+        if (st.bloqueia) return false;
+        let chave = st.conf.chaveUnica, numero = (st.r && st.r.numero) || '';
+        if (!chave) { const nn = U().dig(d.querySelector('#an-num').value).replace(/^0+(?=\d)/, ''); if (!nn) { er.textContent = 'Informe o número da nota.'; d.querySelector('#an-num').focus(); return false; } numero = nn; chave = U().dig(x.prestadorCnpj) + '_' + nn; }
+        enviar = Object.assign({}, st, { chave, numero }); return true; } }],
+      aoAbrir: d => { const inp = d.querySelector('#an-arq'); inp.onchange = () => { d.querySelector('#an-erro').textContent = ''; if (inp.files[0]) ler(inp.files[0], d); }; }
+    });
+    if (!enviar) return;
+    const db = CW.fb.db(), agora = CW.fb.agora, e = enviar, r = e.r || {};
+    try {
+      const ja = await db.doc('notaschave/' + e.chave).get();
+      if (ja.exists) { U().toast('Esta nota já foi enviada no Conectwork. Cada nota vale para um espelho só.', 'erro'); return; }
+    } catch (err) { /* a gravação confere de novo */ }
+    const envio = Math.random().toString(36).slice(2, 10), partes = Math.max(1, Math.ceil(e.b64.length / PEDACO)), b = db.batch();
+    for (let k = 0; k < partes; k++) b.set(db.doc(`espelhos/${x._id}/arquivos/${envio}-${k}`), { d: e.b64.slice(k * PEDACO, (k + 1) * PEDACO), k, envio, em: agora() });
+    b.set(db.doc('notaschave/' + e.chave), { espelhoId: x._id, prestadorId: x.prestadorId, tomadorId: x.tomadorId, em: agora() });
+    const nota = { tipo: e.tipo, nomeArquivo: e.nome, tam: e.tam, envio, partes, chaveUnica: e.chave, chave: r.chave || '', numero: e.numero || '',
+      emitenteCnpj: r.emitenteCnpj || '', valorCentavos: r.valorCentavos == null ? null : r.valorCentavos, competencia: r.competencia || '', emissao: r.emissao || '',
+      conferencia: { ok: !!e.conf.ok, manual: !e.conf.ok, itens: e.conf.itens }, enviadoPor: ctx.sessao.usuario.uid, enviadoPorNome: quem(ctx), enviadoEm: agora() };
+    b.update(db.doc('espelhos/' + x._id), { status: 'nota_enviada', nota, atualizadoEm: agora() });
+    log(b, ctx, 'nota.enviar', `Nota${nota.numero ? ' nº ' + nota.numero : ''} enviada para ${x.tomadorNome} (${periodoTxt(x.periodo)}, ${brl(x.valorCentavos)})${nota.conferencia.ok ? '' : ' para conferência à mão'}.`, x._id);
+    try { await b.commit(); try { sessionStorage.removeItem('cw.emissao'); } catch (er) {} U().toast('Nota enviada. Agora a ' + x.tomadorNome + ' confere.'); }
+    catch (err) { U().toast(/permission/i.test(String(err && (err.code || err.message))) ? 'Não foi possível enviar: a nota pode já ter sido usada em outro espelho, ou o espelho mudou. Atualize a tela.' : CW.fb.mensagemErro(err), 'erro'); }
+    desenharVer(el, ctx, x._id);
+  }
+
+  /* ao voltar do emissor (aba ou app de novo na frente), pede a nota */
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible' || !ultimoCtx) return;
+    let v = null; try { v = JSON.parse(sessionStorage.getItem('cw.emissao') || 'null'); } catch (e) {}
+    if (!v || Date.now() - v.em < 2000 || location.hash !== '#espelhos/ver/' + v.id) return;
+    if (document.querySelector('dialog[open]')) return;
+    try { sessionStorage.removeItem('cw.emissao'); } catch (e) {}
+    CW.fb.db().doc('espelhos/' + v.id).get().then(s => { const x = CW.fb.dados(s); if (x && x.status === 'aguardando_nota') { x._id = v.id; anexar(document.getElementById('view'), Object.assign({}, ultimoCtx, { sessao: CW.sessao.estado() }), x, true); } }).catch(() => {});
+  });
 
   /* bloco no detalhe da medição aprovada: "Preparar espelho" ou "Ver espelho" */
   async function blocoMedicao(box, ctx, m) {
