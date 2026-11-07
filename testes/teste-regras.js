@@ -312,7 +312,13 @@ async function deve(nome, permitido, op) {
   await deve('Nota: o financeiro recusa com motivo (fica na lista de recusadas)', true, () => updateDoc(doc(db('bruno'), 'espelhos', 'cm_2026-11-1'), { status: 'aguardando_nota', nota: null, emissao: null, recusadas: [{ uid: P.bruno, nome: 'Bruno', motivo: 'Competência errada na nota.', chaveUnica: '1'.repeat(50) }], atualizadoEm: serverTimestamp() }));
   await deve('Nota: a nota recusada NÃO é enviada de novo', false, () => enviaNota('beto', 'cm_2026-11-1', nota('beto', { envio: 'x4' })));
   await deve('Nota: a prestadora envia outra nota', true, () => enviaNota('beto', 'cm_2026-11-1', nota('beto', { envio: 'x5', chaveUnica: '2'.repeat(50), chave: '2'.repeat(50) })));
-  await deve('Nota: o financeiro marca a nota conferida', true, () => updateDoc(doc(db('bruno'), 'espelhos', 'cm_2026-11-1'), { status: 'nota_ok', conferenciaNota: { uid: P.bruno, nome: 'Bruno', em: serverTimestamp(), manual: false }, atualizadoEm: serverTimestamp() }));
+  await deve('Nota: NÃO fica conferida sem criar o título junto', false, () => updateDoc(doc(db('bruno'), 'espelhos', 'cm_2026-11-1'), { status: 'nota_ok', conferenciaNota: { uid: P.bruno, nome: 'Bruno', em: serverTimestamp(), manual: false }, atualizadoEm: serverTimestamp() }));
+  await deve('Nota: o financeiro marca a nota conferida (com o título junto)', true, () => { const f = db('bruno'), b = writeBatch(f);
+    b.update(doc(f, 'espelhos', 'cm_2026-11-1'), { status: 'nota_ok', conferenciaNota: { uid: P.bruno, nome: 'Bruno', em: serverTimestamp(), manual: false }, atualizadoEm: serverTimestamp() });
+    b.set(doc(f, 'titulos', 'cm_2026-11-1'), { espelhoId: 'cm_2026-11-1', medicaoId: 'cm_2026-11-1', contratoId: 'cm', tomadorId: 'alfa', prestadorId: 'beta', partes: ['alfa', 'beta'], tomadorNome: 'Alfa', prestadorNome: 'Beta', periodo: '2026-11-1', notaNumero: '7',
+      chaveUnica: '2'.repeat(50), valorCentavos: 550000, liquidoCentavos: 522500, retencoes: { iss: 27500, inss: 0, ir: 0, pcc: 0 }, vencimentoDias: 1, base: serverTimestamp(), status: 'aprovado', aprovacao: { uid: P.bruno, nome: 'Bruno', em: serverTimestamp() },
+      liberacao: null, agendamento: null, liquidacao: null, baixa: null, conta: { ok: false, revisao: false, versao: 0 }, criadoEm: serverTimestamp(), atualizadoEm: serverTimestamp() }); return b.commit(); });
+  await deve('Nota: quem não é das duas empresas NÃO consulta a chave da nota', false, () => getDoc(doc(db('carla'), 'notaschave', '2'.repeat(50))));
   await deve('Nota: conferida, o espelho NÃO é mais corrigido', false, () => updateDoc(doc(db('bruno'), 'espelhos', 'cm_2026-11-1'), { obs: 'x', versao: 3, atualizadoPor: P.bruno, atualizadoEm: serverTimestamp() }));
 
   /* ---------- títulos (contas a pagar e a receber) ---------- */
@@ -325,7 +331,7 @@ async function deve(nome, permitido, op) {
   const conferirCom = (k, t) => { const f = db(k), b = writeBatch(f); b.update(doc(f, 'espelhos', 'e2'), { status: 'nota_ok', conferenciaNota: { uid: P[k], nome: k, em: serverTimestamp(), manual: false }, atualizadoEm: serverTimestamp() }); b.set(doc(f, 'titulos', 'e2'), t); return b.commit(); };
   await deve('Título: NÃO nasce com líquido diferente do espelho', false, () => conferirCom('bruno', tit('bruno', { liquidoCentavos: 550000 })));
   await deve('Título: nasce junto com a nota conferida (financeiro do tomador)', true, () => conferirCom('bruno', tit('bruno')));
-  await deve('Título: quem não conferiu a nota NÃO cria título', false, () => setDoc(doc(db('ana'), 'titulos', 'cm_2026-11-1'), tit('ana', { espelhoId: 'cm_2026-11-1', chaveUnica: '2'.repeat(50), liquidoCentavos: 522500 })));
+  await deve('Título: quem não conferiu a nota NÃO cria título', false, () => setDoc(doc(db('ana'), 'titulos', 'e2'), tit('ana')));
   await deve('Título: a prestadora lê', true, () => getDoc(doc(db('beto'), 'titulos', 'e2')));
   await deve('Título: quem conferiu a nota NÃO libera (funções separadas)', false, () => updateDoc(doc(db('bruno'), 'titulos', 'e2'), { status: 'liberado', liberacao: { uid: P.bruno }, atualizadoEm: serverTimestamp() }));
   await deve('Título: a tesouraria NÃO libera', false, () => updateDoc(doc(db('tito'), 'titulos', 'e2'), { status: 'liberado', liberacao: { uid: P.tito }, atualizadoEm: serverTimestamp() }));

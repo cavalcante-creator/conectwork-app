@@ -267,9 +267,12 @@ service cloud.firestore {
       allow list: if master() || membro(resource.data.tomadorId) || membro(resource.data.prestadorId);
       allow create: if medicaoCriar(id, request.resource.data);
       allow update: if request.resource.data.keys().hasOnly(camposMedicao())
-        && (medicaoCorrigir(resource.data, request.resource.data) || medicaoConfirmar(resource.data, request.resource.data)
-            || medicaoDivergir(resource.data, request.resource.data) || medicaoAprovar(resource.data, request.resource.data)
-            || medicaoCancelar(resource.data, request.resource.data));
+        // cada situação nova vai direto à sua verificação (menos avaliação = longe do limite do Firestore)
+        && ((request.resource.data.status == 'enviada' && medicaoCorrigir(resource.data, request.resource.data))
+            || (request.resource.data.status == 'confirmada_prestadora' && medicaoConfirmar(resource.data, request.resource.data))
+            || (request.resource.data.status == 'divergencia' && medicaoDivergir(resource.data, request.resource.data))
+            || (request.resource.data.status == 'aprovada' && medicaoAprovar(resource.data, request.resource.data))
+            || (request.resource.data.status == 'cancelada' && medicaoCancelar(resource.data, request.resource.data)));
       allow delete: if false;
     }
 
@@ -323,9 +326,10 @@ service cloud.firestore {
         && existsAfter(caminho('notaschave', n.chaveUnica)) && getAfter(caminho('notaschave', n.chaveUnica)).data.espelhoId == id;
     }
     // Quem contrata (admin ou financeiro) confere a nota ou recusa com motivo; a recusa fica na lista "recusadas" (nada se apaga).
-    function espelhoConferirNota(r, d) {
+    function espelhoConferirNota(id, r, d) {
       return cargoEm(r.tomadorId, ['admin','financeiro']) && r.status == 'nota_enviada' && d.status == 'nota_ok'
-        && mudou().hasOnly(['status','conferenciaNota','atualizadoEm']) && d.conferenciaNota.uid == request.auth.uid;
+        && mudou().hasOnly(['status','conferenciaNota','atualizadoEm']) && d.conferenciaNota.uid == request.auth.uid
+        && existsAfter(caminho('titulos', id));
     }
     function espelhoRecusarNota(r, d) {
       let antes = 'recusadas' in r ? r.recusadas.size() : 0;
@@ -340,9 +344,11 @@ service cloud.firestore {
       allow list: if master() || membro(resource.data.tomadorId) || membro(resource.data.prestadorId);
       allow create: if espelhoCriar(id, request.resource.data);
       allow update: if request.resource.data.keys().hasOnly(camposEspelho())
-        && (espelhoCorrigir(resource.data, request.resource.data) || espelhoEmissao(resource.data, request.resource.data)
-            || espelhoNota(id, resource.data, request.resource.data) || espelhoConferirNota(resource.data, request.resource.data)
-            || espelhoRecusarNota(resource.data, request.resource.data));
+        && ((resource.data.status == 'aguardando_nota' && request.resource.data.status == 'aguardando_nota'
+              && (espelhoCorrigir(resource.data, request.resource.data) || espelhoEmissao(resource.data, request.resource.data)))
+            || (request.resource.data.status == 'nota_enviada' && espelhoNota(id, resource.data, request.resource.data))
+            || (request.resource.data.status == 'nota_ok' && espelhoConferirNota(id, resource.data, request.resource.data))
+            || (resource.data.status == 'nota_enviada' && request.resource.data.status == 'aguardando_nota' && espelhoRecusarNota(resource.data, request.resource.data)));
       allow delete: if false;
 
       // arquivo da nota (PDF ou XML) em pedaços: só a prestadora grava, enquanto espera a nota; nunca muda nem some
@@ -361,7 +367,7 @@ service cloud.firestore {
 
     // ---------- Nota já usada · id = chave de acesso (ou CNPJ do emitente_número): uma nota não serve para dois espelhos ----------
     match /notaschave/{chave} {
-      allow get: if logado();
+      allow get: if logado() && (resource == null || membro(resource.data.prestadorId) || membro(resource.data.tomadorId));
       allow list: if false;
       allow create: if request.resource.data.keys().hasOnly(['espelhoId','prestadorId','tomadorId','em'])
         && cargoEm(request.resource.data.prestadorId, ['admin','financeiro','operacional'])
@@ -424,9 +430,12 @@ service cloud.firestore {
       allow read: if master() || membro(resource.data.tomadorId) || membro(resource.data.prestadorId);
       allow create: if tituloCriar(id, request.resource.data);
       allow update: if request.resource.data.keys().hasOnly(camposTitulo())
-        && (tituloLiberar(resource.data, request.resource.data) || tituloAgendar(resource.data, request.resource.data)
-            || tituloLiquidar(id, resource.data, request.resource.data) || tituloBaixar(resource.data, request.resource.data)
-            || tituloConta(id, resource.data, request.resource.data) || tituloRevisarConta(resource.data, request.resource.data));
+        && ((request.resource.data.status == resource.data.status
+              && (tituloConta(id, resource.data, request.resource.data) || tituloRevisarConta(resource.data, request.resource.data)))
+            || (request.resource.data.status == 'liberado' && resource.data.status == 'aprovado' && tituloLiberar(resource.data, request.resource.data))
+            || (request.resource.data.status == 'agendado' && tituloAgendar(resource.data, request.resource.data))
+            || (request.resource.data.status == 'liquidado' && tituloLiquidar(id, resource.data, request.resource.data))
+            || (request.resource.data.status == 'baixado' && tituloBaixar(resource.data, request.resource.data)));
       allow delete: if false;
 
       // conta para receber: só quem cuida de dinheiro nas duas empresas lê (LGPD); só a prestadora escreve, junto com o título
