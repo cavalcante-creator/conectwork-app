@@ -636,3 +636,12 @@ html.wizpg{padding-top:0;padding-bottom:0}
 /* app instalado no iPhone: 100dvh pode vir sem a área da ilha e da barrinha. A página já está presa na tela inteira
    (body fixo), então a tela de entrar ocupa 100% dela: a altura certa do aparelho, com ou sem as barras. */
 html.entrada .login{height:100%;min-height:0}
+
+/* ---------- Histórico de alterações ---------- */
+.hs-filtros{flex-wrap:wrap;gap:12px;align-items:flex-end}
+.hs-filtros label.f{min-width:170px;flex:1 1 170px}
+.hs-filtros .hs-busca{flex:2 1 240px}
+.hs-filtros input,.hs-filtros select{width:100%}
+.hs-lista .hs-dia{display:block;padding:14px 0 4px;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.02em}
+.hs-lista .hs-dia::before{display:none}
+.hs-rodape{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;border-top:1px solid var(--line);flex-wrap:wrap}

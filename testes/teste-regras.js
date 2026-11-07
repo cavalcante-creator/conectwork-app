@@ -3,7 +3,7 @@
    Precisa de Java 11+ instalado (o emulador do Firestore roda em Java). */
 const fs = require('fs'), path = require('path');
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require('@firebase/rules-unit-testing');
-const { doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, collection, query, where, getDocs, serverTimestamp, setLogLevel, writeBatch } = require('firebase/firestore');
+const { doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, collection, query, where, getDocs, serverTimestamp, setLogLevel, writeBatch, orderBy, limit } = require('firebase/firestore');
 setLogLevel('silent');   /* as negações esperadas não poluem a saída */
 
 const res = [];
@@ -178,6 +178,11 @@ async function deve(nome, permitido, op) {
   await deve('Log NÃO pode ser apagado', false, () => deleteDoc(doc(db('master'), 'log', 'l1')));
   await deve('Admin lê o histórico da empresa', true, () => getDoc(doc(db('ana'), 'log', 'l1')));
   await deve('Financeiro NÃO lê o histórico', false, () => getDoc(doc(db('bruno'), 'log', 'l1')));
+  await deve('Admin lista o histórico da própria empresa (mais recente primeiro)', true, () => getDocs(query(collection(db('ana'), 'log'), where('empresaId', '==', 'alfa'), orderBy('em', 'desc'), limit(100))));
+  await deve('Admin NÃO lista o histórico de outra empresa', false, () => getDocs(query(collection(db('ana'), 'log'), where('empresaId', '==', 'beta'))));
+  await deve('Financeiro NÃO lista o histórico da empresa', false, () => getDocs(query(collection(db('bruno'), 'log'), where('empresaId', '==', 'alfa'))));
+  await deve('Equipe master lista o histórico de todas as empresas', true, () => getDocs(query(collection(db('master'), 'log'), orderBy('em', 'desc'), limit(100))));
+  await deve('Membro lê a área privada da própria empresa (Minha empresa)', true, () => getDoc(doc(db('ana'), 'empresas', 'alfa', 'privado', 'cadastro')));
   await deve('Equipe master grava no histórico como "master"', true, () => addDoc(collection(db('master'), 'log'), reg('master', { empresaId: 'master' })));
 
   /* ---------- master e perfil ---------- */

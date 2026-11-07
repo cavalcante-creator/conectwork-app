@@ -72,7 +72,7 @@ npx playwright install chromium
 **Rodar:**
 | Comando (dentro de `testes/`) | O que testa |
 |---|---|
-| `npm run telas` | Telas com o Firebase simulado (sem internet): componentes (`teste-ui.js`), login (`teste-login.js`) sessão, menu e permissões (`teste-sessao.js`), cadastro de empresa do começo ao fim (`teste-cadastro.js`), análise dos cadastros pela equipe Conectwork (`teste-analise.js`), usuários, acessos e convites (`teste-usuarios.js`), primeiro acesso pelo convite (`teste-convite.js`), login com Google e Microsoft (`teste-social.js`) e app instalável (`teste-pwa.js`: manifest, service worker, abrir sem internet, faixa de offline e troca de `VERSAO`; este usa um servidor local, porque o service worker só roda em `localhost` ou https). |
+| `npm run telas` | Telas com o Firebase simulado (sem internet): componentes (`teste-ui.js`), login (`teste-login.js`) sessão, menu e permissões (`teste-sessao.js`), cadastro de empresa do começo ao fim (`teste-cadastro.js`), análise dos cadastros pela equipe Conectwork (`teste-analise.js`), usuários, acessos e convites (`teste-usuarios.js`), primeiro acesso pelo convite (`teste-convite.js`), login com Google e Microsoft (`teste-social.js`), histórico e Minha empresa (`teste-historico.js`) e app instalável (`teste-pwa.js`: manifest, service worker, abrir sem internet, faixa de offline e troca de `VERSAO`; este usa um servidor local, porque o service worker só roda em `localhost` ou https). |
 | `npm run regras` | Regras do `firestore.rules` no emulador do Firestore (`teste-regras.js`). Liga o emulador, roda e desliga sozinho. |
 | `npm test` | Os dois acima. |
 
@@ -97,3 +97,8 @@ Os botões já aparecem no login, no cadastro e no convite. Enquanto o provedor 
 - **Google:** Firebase → Authentication → Método de login → Google → Ativar (escolha o e-mail de suporte) → Salvar.
 - **Microsoft:** 1) No portal do Azure (Microsoft Entra ID → Registros de aplicativo → Novo registro), tipo de conta "Contas em qualquer diretório organizacional e contas Microsoft pessoais"; em URI de redirecionamento (Web) cole o endereço que o Firebase mostra ao ativar a Microsoft (termina em `/__/auth/handler`). 2) Em "Certificados e segredos", crie um segredo do cliente. 3) No Firebase → Authentication → Método de login → Microsoft → Ativar, cole o "ID do aplicativo (cliente)" e o valor do segredo → Salvar. O segredo fica só no Firebase, nunca no código.
 - **Domínios autorizados** (Authentication → Configurações): o endereço do GitHub Pages precisa estar na lista.
+
+## Índice do histórico (Firestore)
+
+O histórico mostra o mais recente primeiro, por empresa. Para isso o Firestore precisa de um índice (log: `empresaId` + `em` decrescente), já descrito em `firestore.indexes.json`.
+No console: Firestore → Índices → Criar índice → coleção `log`, campos `empresaId` (crescente) e `em` (decrescente) → Criar. Enquanto não existir, o app avisa e ordena por conta própria os registros que encontrar.

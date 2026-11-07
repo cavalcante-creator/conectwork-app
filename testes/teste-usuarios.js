@@ -37,10 +37,13 @@ const { ok, fim } = H.placar('usuarios');
   const a3 = (await srv())['acessos/alfa_uBRUNO'], l3 = await logs('acesso.cargo');
   ok('U3 trocar o cargo grava e registra no histórico (com nome e e-mail, de/para)', a3.cargo === 'tesouraria' && l3.length === 1 && /Bruno Lima \(bruno@alfa\.com\.br\).*Financeiro para Tesouraria/.test(l3[0].texto), l3[0] && l3[0].texto);
 
-  // U4 ajustar acesso: sem telas da empresa no ar ainda, explica
+  // U4 ajustar acesso: lista as telas da empresa já no ar (Minha empresa, fora do cargo de Tesouraria); marcar dá a tela a mais
   await page.click('[data-ajustar="alfa_uBRUNO"]'); await page.waitForSelector('dialog[open] #aj-lista');
-  const u4 = await page.$eval('dialog[open]', e => e.innerText); await page.click('dialog[open] [data-dlg-b="0"]');
-  ok('U4 "Ajustar acesso" abre; sem telas de empresa no ar ainda, explica (Usuários e acessos é só do admin)', /Ajustar acesso/.test(u4) && /Ainda não há telas/.test(u4), u4.slice(0, 120));
+  const u4 = await page.$eval('dialog[open]', e => e.innerText);
+  await page.check('dialog[open] [data-aj="empresa"]'); await page.click('dialog[open] [data-dlg-b="1"]'); await H.dorme(400);
+  const a4 = (await srv())['acessos/alfa_uBRUNO'];
+  ok('U4 "Ajustar acesso": mostra Minha empresa como fora do cargo; marcar grava em extras e no histórico (Usuários e histórico não aparecem: são do admin)',
+    /Minha empresa/.test(u4) && /Fora do cargo/.test(u4) && !/Histórico/.test(u4) && JSON.stringify(a4.extras) === '["empresa"]' && (await logs('acesso.ajuste')).length === 1, JSON.stringify({ ex: a4.extras, u4: u4.slice(0, 160) }));
 
   // U5 bloquear (com confirmação) e liberar
   await page.click('[data-bloq="alfa_uBRUNO"]'); await page.waitForSelector('dialog[open]'); const dlg5 = await page.$eval('dialog[open]', e => e.innerText);
