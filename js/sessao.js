@@ -28,6 +28,23 @@
   }
 
   /* ---------- telas de entrada (antes do app) ---------- */
+  /* a tela de entrar tem que caber sem rolar: mede e, se não couber, compacta um nível por vez (css: .cmp1 a .cmp3) */
+  function encaixar() {
+    const L = app() && app().querySelector('.login'); if (!L) return;
+    L.classList.remove('cmp1', 'cmp2', 'cmp3');
+    for (const c of ['cmp1', 'cmp2', 'cmp3']) { if (L.scrollHeight <= L.clientHeight + 1) break; L.classList.add(c); }
+  }
+  let encaixeLigado = false;
+  function ligarEncaixe() {
+    requestAnimationFrame(encaixar);
+    if (encaixeLigado) return; encaixeLigado = true;
+    window.addEventListener('resize', () => requestAnimationFrame(encaixar));
+    window.addEventListener('orientationchange', () => setTimeout(encaixar, 300));
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => encaixar());   /* a letra Sora chega depois */
+    /* mensagem de erro, troca para "Esqueci minha senha" etc. mudam a altura: encaixa de novo */
+    let t = 0; new MutationObserver(() => { cancelAnimationFrame(t); t = requestAnimationFrame(encaixar); }).observe(app(), { childList: true, subtree: true, characterData: true });
+  }
+
   function moldura(conteudo) {
     const { ic, LOGO, CURVES } = U();
     document.documentElement.classList.remove('wizpg');
@@ -44,6 +61,7 @@
         <div class="selos"><span>Empresas que contratam</span><span>Prestadoras</span><span>Profissionais MEI</span></div>
       </section>
       <section class="loginside">${conteudo}</section></div>`;
+    ligarEncaixe();
   }
 
   /* "Cadastrar empresa" e "Tenho um convite": a Etapa 1 liga CW.entrada; até lá, um aviso */
@@ -370,7 +388,7 @@
   const preferir = chave => { try { sessionStorage.setItem(chaveGuardada(), chave); } catch (e) { /* sem armazenamento */ } };
 
   CW.sessao = {
-    iniciar, sair, trocar, entrarEm, recarregar, preferir, moldura, telaLogin, telaCarregando, limparRota, botoesSociais, ligarSociais,
+    iniciar, sair, trocar, entrarEm, recarregar, preferir, moldura, encaixar, telaLogin, telaCarregando, limparRota, botoesSociais, ligarSociais,
     estado: () => st,
     contexto: () => st.contexto,
     podeTrocar: () => st.opcoes.length > 1,

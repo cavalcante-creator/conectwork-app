@@ -5,6 +5,7 @@
   --bg:#F0F3F9;--surface:#FFFFFF;--surface2:#F6F8FC;--ink:#0A1838;--muted:#5E6A88;--faint:#8F9AB5;--line:#E1E7F1;
   --ok:#0A7B55;--okbg:#DEF5EA;--warn:#9A5B00;--warnbg:#FFF0D6;--info:#1450C0;--infobg:#E3ECFE;--danger:#B42D24;--dangerbg:#FCE8E6;
   --shadow:0 1px 2px rgba(8,22,56,.04),0 6px 20px -12px rgba(8,22,56,.14);
+  --sa-t:env(safe-area-inset-top,0px);--sa-b:env(safe-area-inset-bottom,0px);   /* áreas da ilha e da barrinha do iPhone (os testes simulam trocando estas variáveis) */
   color-scheme:light;box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
 }
@@ -20,7 +21,7 @@ html,body{height:100%}
 #app{min-height:100%;display:grid}             /* login e casca ocupam a altura toda */
 *,*::before,*::after{box-sizing:inherit}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"Sora",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
-body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--navy)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:var(--sa-t);z-index:30;background:var(--navy)}
 /* Telas de entrada (carregando, login, cadastro): página inteira em azul-marinho, inclusive atrás da barra
    do celular e no "puxar" da página — o Safari pinta essas áreas com o fundo do html/body. */
 html.entrada,html.entrada body{background:var(--navy);color-scheme:dark}
@@ -48,7 +49,7 @@ h1,h2,h3{letter-spacing:-.015em}
 /* ---------- Login e telas de entrada ---------- */
 /* Fundo azul-marinho e curvas na tela inteira, como uma peça só; o cartão de acesso flutua por cima. */
 .login{position:relative;overflow-x:hidden;overflow-y:auto;overscroll-behavior:none;width:100%;height:100vh;height:100dvh;display:grid;
-  padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);
+  padding:var(--sa-t) 0 var(--sa-b);
   grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);background:var(--navy);color:#fff;isolation:isolate}
 .login>.curves{z-index:-1}
 .curves{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
@@ -510,3 +511,35 @@ tr.click:hover td{background:var(--surface2)}
   #lg .lg-ou{margin:8px 0 6px}#lg .lg-rodape{margin-top:8px;padding-top:6px}#lg .lg-novo-t{display:none}
   #lg .lg-novos .linkbtn{min-height:30px;padding:2px}.lg-bloco{gap:6px}.lg-bloco>.lg-termos{font-size:10.5px;line-height:1.35}
 }
+
+/* ---------- Encaixe automático da tela de entrar (js/sessao.js → encaixar) ----------
+   Depois de desenhar, o app mede se tudo cabe. Se não couber (ilha e barrinha do iPhone, letra maior, tela baixa),
+   aplica um nível de compactação por vez até caber: cmp1 → cmp2 → cmp3. */
+.login.cmp1 .brandpanel .tagline,.login.cmp1 #lg .lg-cab .sub{display:none}
+.login.cmp1 .brandpanel{padding-top:12px}
+.login.cmp1 .loginside{padding-top:12px;padding-bottom:10px}
+.login.cmp2 #lg .card-b{padding:18px 18px}
+.login.cmp2 #lg .lform{gap:10px}
+.login.cmp2 #lg label.f{gap:5px}
+.login.cmp2 #lg label.f input{height:44px}
+.login.cmp2 #lg .lg-principal{height:48px}
+.login.cmp2 #lg .lg-social .btn{height:42px}
+.login.cmp2 #lg .lg-ou{margin:10px 0 8px}
+.login.cmp2 #lg .lg-rodape{margin-top:12px;padding-top:10px}
+.login.cmp2 #lg .lg-novo-t{margin-bottom:0}
+.login.cmp2 #lg .lg-novos .linkbtn{min-height:32px;padding:4px 2px}
+.login.cmp2 .lg-bloco{gap:8px}
+.login.cmp3 #lg .card-b{padding:14px 16px}
+.login.cmp3 #lg .lform{gap:8px}
+.login.cmp3 #lg .lg-cab h2{font-size:21px;margin:0}
+.login.cmp3 #lg label.f{gap:4px}
+.login.cmp3 #lg label.f input{height:40px}
+.login.cmp3 #lg .lg-principal{height:44px}
+.login.cmp3 #lg .lg-social .btn{height:38px}
+.login.cmp3 #lg .lg-ou{margin:8px 0 6px}
+.login.cmp3 #lg .lg-rodape{margin-top:8px;padding-top:6px}
+.login.cmp3 #lg .lg-novo-t{display:none}
+.login.cmp3 .lg-bloco{gap:6px}
+.login.cmp3 .lg-bloco>.lg-termos{font-size:10.5px;line-height:1.35}
+.login.cmp3 .bp-topo>svg{width:36px}
+.login.cmp3 .brandpanel h1{font-size:22px}

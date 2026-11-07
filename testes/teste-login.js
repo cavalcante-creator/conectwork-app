@@ -77,12 +77,15 @@ const { ok, fim } = H.placar('login');
   ok('L1i celular: fundo azul-marinho atrás da barra de cima e página presa na tela (sem o "elástico" do iPhone)', l1i.cls && l1i.preso && l1i.html === 'rgb(8, 22, 56)' && l1i.body === 'rgb(8, 22, 56)', JSON.stringify(l1i));
   // L1j a tela de entrada cabe inteira na tela do celular, sem rolar (iPhone grande, Safari com as barras, iPhone SE)
   const l1j = [];
-  for (const [w, h] of [[430, 932], [390, 844], [390, 664], [375, 667], [375, 553], [360, 640]]) {
-    await page.setViewportSize({ width: w, height: h }); await H.dorme(150);
-    l1j.push(await page.evaluate(() => ({ t: innerWidth + 'x' + innerHeight, pag: document.documentElement.scrollHeight - innerHeight, lg: document.querySelector('.login').scrollHeight - innerHeight,
-      fim: Math.round(innerHeight - document.getElementById('lg').getBoundingClientRect().bottom) })));
+  /* [largura, altura, ilha em cima, barrinha embaixo]: as 4 primeiras = app instalado no iPhone (tela inteira) */
+  for (const [w, h, st, sb] of [[430, 932, 59, 34], [393, 852, 59, 34], [390, 844, 47, 34], [375, 812, 47, 34], [430, 932, 0, 0], [390, 844, 0, 0], [390, 664, 0, 0], [375, 667, 0, 0], [375, 553, 0, 0], [360, 640, 0, 0]]) {
+    await page.setViewportSize({ width: w, height: h });
+    await page.evaluate(([a, b]) => { const r = document.documentElement.style; r.setProperty('--sa-t', a + 'px'); r.setProperty('--sa-b', b + 'px'); CW.sessao.encaixar(); }, [st, sb]); await H.dorme(150);
+    l1j.push(await page.evaluate(() => ({ t: innerWidth + 'x' + innerHeight + (getComputedStyle(document.documentElement).getPropertyValue('--sa-t').trim() !== '0px' ? ' ilha' : ''), pag: document.documentElement.scrollHeight - innerHeight, lg: document.querySelector('.login').scrollHeight - innerHeight,
+      fim: Math.round(innerHeight - document.getElementById('lg-termos').getBoundingClientRect().bottom), logo: document.querySelector('.brandpanel h1').getBoundingClientRect().top >= 0 })));
   }
-  ok('L1j celular: login cabe na tela sem rolar (6 tamanhos, do iPhone SE ao Pro Max)', l1j.every(x => x.pag <= 0 && x.lg <= 0 && x.fim >= 0), JSON.stringify(l1j));
+    await page.evaluate(() => { document.documentElement.style.removeProperty('--sa-t'); document.documentElement.style.removeProperty('--sa-b'); });
+  ok('L1j celular: login cabe inteiro sem rolar (logo em cima, aviso de privacidade embaixo) em 10 telas, inclusive o app instalado no iPhone com a ilha e a barrinha', l1j.every(x => x.pag <= 0 && x.lg <= 0 && x.fim >= 0 && x.logo), JSON.stringify(l1j));
   await page.setViewportSize({ width: 1280, height: 900 });
 
   // L1k2 hierarquia: título maior que os campos; "Entrar" o botão mais alto; campos com letra 16px (sem zoom no iPhone); termos fora do cartão
