@@ -21,6 +21,17 @@
 <script>/* tema: escuro por padrão; a pessoa pode escolher claro ou automático (segue o aparelho). Aplicado antes de desenhar a tela */
 (function () { var t = null; try { t = localStorage.getItem('cw.tema'); } catch (e) {}
   if (t === 'light') document.documentElement.dataset.theme = 'light'; else if (t !== 'auto') document.documentElement.dataset.theme = 'dark'; })();</script>
+<script>/* iPhone, app instalado (iOS 26): a área útil pode vir mais curta que a tela e sobrava um espaço vazio embaixo da barra
+   de navegação. Mede a diferença (tela − área útil) e estica a página até o fim da tela (--cw-gap). Teclado aberto não conta. */
+(function () { var el = document.documentElement;
+  function sozinho() { return navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches); }
+  function medir() { var g = 0;
+    if (sozinho() && innerHeight > innerWidth) { var d = (screen.height || 0) - innerHeight; if (d > 0 && d < 140) g = d; }
+    var a = document.activeElement; if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
+    el.style.setProperty('--cw-gap', g + 'px'); }
+  medir(); addEventListener('resize', medir); addEventListener('orientationchange', function () { setTimeout(medir, 300); }); addEventListener('pageshow', medir);
+  document.addEventListener('focusout', function () { setTimeout(medir, 400); });
+})();</script>
 </head>
 <body>
 <!-- abertura: o símbolo se desenha, a folha entra e o nome aparece (só na primeira abertura da sessão; respeita "reduzir movimento") -->

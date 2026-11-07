@@ -18,6 +18,7 @@
   --ok:#63D8A6;--okbg:#0B3326;--warn:#F4BC66;--warnbg:#38290C;--info:#8DB8FF;--infobg:#132C64;--danger:#FF8C82;--dangerbg:#3C1511;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px -14px rgba(0,0,0,.6);color-scheme:dark}
 html,body{height:100%}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}   /* iPhone: não aumentar a letra sozinho dentro das áreas que rolam */
 #app{min-height:100%;display:grid}             /* login e casca ocupam a altura toda */
 *,*::before,*::after{box-sizing:inherit}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"Sora",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
@@ -31,7 +32,7 @@ html.entrada .carregando{color:#B8C7EA}
 html.entrada{padding:0;height:100%;overflow:hidden;overscroll-behavior:none}
 /* iPhone: mesmo sem nada para rolar, o Safari deixa "puxar" a página (efeito elástico). Com o body preso na tela,
    a página não se mexe; se um dia o conteúdo não couber (celular deitado), só o .login rola por dentro. */
-html.entrada body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none}
+html.entrada body{position:fixed;inset:0;bottom:calc(-1 * var(--cw-gap,0px));width:100%;height:auto;overflow:hidden;overscroll-behavior:none}
 html.entrada #app{height:100%;min-height:0}
 #lg-erro:empty{display:none}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -209,7 +210,8 @@ main{padding:22px clamp(16px,3.5vw,40px) 48px;display:flex;flex-direction:column
      área da ilha e da barrinha e sobrava um espaço vazio embaixo da barra de navegação */
   html.casca,html.casca body{background:var(--navy);height:100%;overflow:hidden;overscroll-behavior:none}
   html.casca{padding:0}
-  html.casca body{position:fixed;inset:0;width:100%;padding-top:var(--sa-t)}
+  html.casca body{position:fixed;inset:0;bottom:calc(-1 * var(--cw-gap,0px));width:100%;height:auto;padding-top:var(--sa-t)}
+  .bnav{bottom:calc(-1 * var(--cw-gap,0px))!important}
   html.casca #app{height:100%;min-height:0;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;background:var(--bg)}
   /* barra de cima do celular: uma linha só com logo, nome, tema, autorizações e sair; fica no alto e o conteúdo rola por baixo */
   html.casca .side{position:sticky;top:0;z-index:20;padding:8px 8px 8px 14px}
