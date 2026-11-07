@@ -33,7 +33,7 @@
        para:          ['empresa'] (padrão), ['master'] ou ['empresa','master']
        livre:         true = qualquer cargo vê (ex.: Início)
        semAprovacao:  true = aparece mesmo com a empresa ainda em análise
-       contrato:      id do módulo contratado exigido em empresas/{id}.modulos (ex.: 'contratos')
+       contrato:      id (ou lista de ids) do módulo contratado exigido em empresas/{id}.modulos; com lista, basta um
        soAdmin:       true = só o cargo admin vê (não entra no ajuste por pessoa)
        mostrar(ctx):  condição extra (ex.: "Meu cadastro" só enquanto a empresa não foi aprovada) */
   function podeVer(mod, ctx) {
@@ -44,7 +44,7 @@
     const emp = ctx.empresa || {}, ac = ctx.acesso || {};
     if (ac.ativo !== true) return false;
     if (emp.status !== 'aprovado' && !mod.semAprovacao) return false;
-    if (mod.contrato && !(emp.modulos || []).includes(mod.contrato)) return false;
+    if (mod.contrato && ![].concat(mod.contrato).some(c => (emp.modulos || []).includes(c))) return false;   /* um ou vários: basta ter um */
     if (typeof mod.mostrar === 'function' && !mod.mostrar(ctx)) return false;
     if (mod.soAdmin) return ac.cargo === 'admin';   /* ex.: Usuários e acessos (as regras do banco também exigem admin) */
     if (mod.livre) return true;

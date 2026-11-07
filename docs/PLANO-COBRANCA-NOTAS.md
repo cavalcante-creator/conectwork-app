@@ -65,7 +65,10 @@ Divergência bloqueia o título e explica o motivo; a Colafix pode recusar a not
 - **Parecer jurídico sobre a modalidade equipe contínua** (o `PEDIDOS-CLAUDE-CODE.md` pede antes do Pedido 3). O app organiza e registra; não substitui a análise jurídica e contábil.
 - **Regras de retenção com o contador** (até lá, digitadas à mão).
 
-## Perguntas em aberto
-1. **Responsável fiscal:** o CLAUDE.md fala em "responsável fiscal" nas funções separadas, mas a tabela de cargos não tem esse cargo. Criar o cargo `fiscal` ou dar essa função ao `financeiro`?
-2. **Vencimento padrão** nos contratos da Zenith e da Nexus (quantos dias depois da nota válida?).
-3. **Memória da medição para a prestadora:** mostrar nome, horas e valor de cada PJ (a prestadora precisa para conferir) — confirmar que pode.
+## Respostas (07/11/2026)
+1. **Responsável fiscal = cargo Financeiro** (digita as retenções e aprova a nota). Não há cargo novo.
+2. **Vencimento padrão: 1 dia depois da nota válida**, definido no contrato (`vencimentoDias`). Pode mudar, mas **nunca por um lado só**: uma empresa propõe o novo prazo e só vale quando a outra aceita (fica no histórico).
+3. **A prestadora vê a memória da medição** (nome, horas e valor de cada PJ; sem CPF).
+
+## Pendente
+- **Triagem** (Lei 6.019, arts. 5º-C e 5º-D): o CLAUDE.md diz que toda contratação passa por ela; nos requisitos ela está na Etapa 4. Os contratos contínuos desta etapa nascem sem a triagem; ela entra antes de o piloto usar de verdade (com o parecer jurídico).

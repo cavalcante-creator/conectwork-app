@@ -185,6 +185,39 @@ async function deve(nome, permitido, op) {
   await deve('Membro lê a área privada da própria empresa (Minha empresa)', true, () => getDoc(doc(db('ana'), 'empresas', 'alfa', 'privado', 'cadastro')));
   await deve('Equipe master grava no histórico como "master"', true, () => addDoc(collection(db('master'), 'log'), reg('master', { empresaId: 'master' })));
 
+  /* ---------- contratos (equipe contínua) ---------- */
+  await semear();
+  P.beto = 'uBETO'; EM.beto = 'beto@beta.com.br';
+  await env.withSecurityRulesDisabled(async c => { const d = c.firestore();
+    await setDoc(doc(d, 'acessos', 'beta_' + P.beto), { uid: P.beto, empresaId: 'beta', nome: 'Beto', email: EM.beto, cargo: 'admin', extras: [], sem: [], ativo: true });
+    await setDoc(doc(d, 'empresas', 'alfa'), { nome: 'Alfa', status: 'aprovado', tipo: 'contratante', criadoPor: P.ana, cnpj: '11.222.333/0001-81' });
+    await setDoc(doc(d, 'empresas', 'gama'), { nome: 'Gama', status: 'analise', tipo: 'prestador', criadoPor: 'uG' }); });
+  const ct = (extra) => Object.assign({ modalidade: 'continua', tomadorId: 'alfa', prestadorId: 'beta', partes: ['alfa', 'beta'], tomadorNome: 'Alfa', tomadorCnpj: '', prestadorNome: 'Beta', prestadorCnpj: '',
+    objeto: 'Equipe de manutenção.', periodicidade: 'quinzena', vencimentoDias: 1, inicio: '2026-11-01', fim: '', status: 'assinatura', assinaturas: {}, interlocutor: null, proposta: null,
+    criadoPor: P.ana, criadoPorNome: 'Ana', criadoEm: serverTimestamp(), atualizadoEm: serverTimestamp() }, extra || {});
+  await deve('Contrato: admin do tomador cria com prestadora aprovada', true, () => setDoc(doc(db('ana'), 'contratos', 'c1'), ct()));
+  await deve('Contrato: financeiro NÃO cria', false, () => setDoc(doc(db('bruno'), 'contratos', 'c2'), ct({ criadoPor: P.bruno })));
+  await deve('Contrato: NÃO com prestadora ainda em análise', false, () => setDoc(doc(db('ana'), 'contratos', 'c3'), ct({ prestadorId: 'gama', partes: ['alfa', 'gama'] })));
+  await deve('Contrato: NÃO nasce assinado nem ativo', false, () => setDoc(doc(db('ana'), 'contratos', 'c4'), ct({ status: 'ativo', assinaturas: { tomador: { uid: P.ana } } })));
+  await deve('Contrato: NÃO em nome de outra empresa (tomador que não é a minha)', false, () => setDoc(doc(db('ana'), 'contratos', 'c5'), ct({ tomadorId: 'beta', prestadorId: 'alfa', partes: ['beta', 'alfa'] })));
+  await deve('Contrato: a prestadora lê', true, () => getDoc(doc(db('beto'), 'contratos', 'c1')));
+  await deve('Contrato: a prestadora lista os seus (prestadorId)', true, () => getDocs(query(collection(db('beto'), 'contratos'), where('prestadorId', '==', 'beta'))));
+  await deve('Contrato: quem não é das duas empresas NÃO lê', false, () => getDoc(doc(db('carla'), 'contratos', 'c1')));
+  const assina = (k, lado, extra) => updateDoc(doc(db(k), 'contratos', 'c1'), Object.assign({ ['assinaturas.' + lado]: { uid: P[k], nome: k, em: serverTimestamp() }, atualizadoEm: serverTimestamp() }, extra || {}));
+  await deve('Contrato: o tomador NÃO assina pela prestadora', false, () => assina('ana', 'prestador'));
+  await deve('Contrato: o tomador assina o seu lado', true, () => assina('ana', 'tomador'));
+  await deve('Contrato: a prestadora NÃO assina deixando "esperando" quando o outro lado já assinou', false, () => assina('beto', 'prestador'));
+  await deve('Contrato: a prestadora assina com o interlocutor e o contrato fica ativo', true, () => assina('beto', 'prestador', { status: 'ativo', ativadoEm: serverTimestamp(), interlocutor: { nome: 'Beto Alves', email: EM.beto, cel: '' } }));
+  await deve('Contrato: depois de ativo, o tomador NÃO corrige o objeto', false, () => updateDoc(doc(db('ana'), 'contratos', 'c1'), { objeto: 'Outro objeto qualquer.', atualizadoEm: serverTimestamp() }));
+  await deve('Contrato: vencimento NÃO muda por um lado só', false, () => updateDoc(doc(db('ana'), 'contratos', 'c1'), { vencimentoDias: 30, atualizadoEm: serverTimestamp() }));
+  await deve('Contrato: o tomador propõe outro vencimento', true, () => updateDoc(doc(db('ana'), 'contratos', 'c1'), { proposta: { vencimentoDias: 5, motivo: '', lado: 'tomador', uid: P.ana, nome: 'Ana', em: serverTimestamp() }, atualizadoEm: serverTimestamp() }));
+  await deve('Contrato: quem propôs NÃO aceita a própria proposta', false, () => updateDoc(doc(db('ana'), 'contratos', 'c1'), { vencimentoDias: 5, proposta: null, atualizadoEm: serverTimestamp() }));
+  await deve('Contrato: a outra empresa NÃO aceita com um prazo diferente do proposto', false, () => updateDoc(doc(db('beto'), 'contratos', 'c1'), { vencimentoDias: 60, proposta: null, atualizadoEm: serverTimestamp() }));
+  await deve('Contrato: a outra empresa aceita a proposta (vale o novo vencimento)', true, () => updateDoc(doc(db('beto'), 'contratos', 'c1'), { vencimentoDias: 5, proposta: null, atualizadoEm: serverTimestamp() }));
+  await deve('Contrato: a prestadora encerra o serviço com motivo', true, () => updateDoc(doc(db('beto'), 'contratos', 'c1'), { status: 'encerrado', encerramento: { data: '2026-12-31', motivo: 'Fim do projeto.', lado: 'prestador', uid: P.beto, nome: 'Beto', em: serverTimestamp() }, proposta: null, atualizadoEm: serverTimestamp() }));
+  await deve('Contrato: ninguém apaga', false, () => deleteDoc(doc(db('ana'), 'contratos', 'c1')));
+  await deve('Contrato: o tomador cancela antes de assinar', true, async () => { await setDoc(doc(db('ana'), 'contratos', 'c6'), ct()); return updateDoc(doc(db('ana'), 'contratos', 'c6'), { status: 'cancelado', atualizadoEm: serverTimestamp() }); });
+
   /* ---------- master e perfil ---------- */
   await deve('Pessoa lê o próprio master/{uid} (para saber se é equipe)', true, () => getDoc(doc(db('master'), 'master', P.master)));
   await deve('Pessoa consulta master/{uid} próprio mesmo sem ser master (documento não existe)', true, () => getDoc(doc(db('carla'), 'master', P.carla)));

@@ -645,3 +645,6 @@ html.entrada .login{height:100%;min-height:0}
 .hs-lista .hs-dia{display:block;padding:14px 0 4px;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.02em}
 .hs-lista .hs-dia::before{display:none}
 .hs-rodape{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;border-top:1px solid var(--line);flex-wrap:wrap}
+/* contratos: na lista de assinaturas, "assinou em … · nome" vai para a linha de baixo (cabe no celular) */
+#ct-assinaturas .tl li{flex-wrap:wrap;row-gap:2px}
+#ct-assinaturas .tl small{white-space:normal;margin-left:34px;width:calc(100% - 34px)}

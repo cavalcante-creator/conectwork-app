@@ -135,6 +135,65 @@ service cloud.firestore {
       allow delete: if master() || admin(resource.data.empresaId);
     }
 
+    // ---------- Contratos (equipe contínua) · docs/PLANO-COBRANCA-NOTAS.md ----------
+    // Lê quem é das duas empresas (e a equipe master). Muda só o administrador de cada lado, e só do jeito previsto:
+    // corrigir/cancelar (tomador, antes de assinado), assinar (cada lado o seu), propor e responder mudança de vencimento
+    // (nunca por um lado só) e encerrar o serviço. Nada se apaga.
+    function camposContrato() { return ['modalidade','tomadorId','prestadorId','partes','tomadorNome','tomadorCnpj','prestadorNome','prestadorCnpj',
+      'objeto','periodicidade','vencimentoDias','inicio','fim','status','assinaturas','interlocutor','proposta','criadoPor','criadoPorNome',
+      'criadoEm','atualizadoEm','ativadoEm','encerramento']; }
+    function meuLado(c) { return admin(c.tomadorId) ? 'tomador' : (admin(c.prestadorId) ? 'prestador' : ''); }
+    function vencOk(n) { return n is int && n >= 0 && n <= 90; }
+    function mudou() { return request.resource.data.diff(resource.data).affectedKeys(); }
+    function contratoCorrigir(r, d) {
+      return admin(r.tomadorId) && r.status == 'assinatura' && d.status == 'assinatura' && d.assinaturas == {}
+        && mudou().hasOnly(['objeto','periodicidade','vencimentoDias','inicio','fim','assinaturas','atualizadoEm'])
+        && d.periodicidade in ['quinzena','mes'] && vencOk(d.vencimentoDias);
+    }
+    function contratoAssinar(r, d) {
+      let lado = meuLado(r);
+      let outro = lado == 'tomador' ? 'prestador' : 'tomador';
+      return lado != '' && r.status == 'assinatura' && !(lado in r.assinaturas)
+        && mudou().hasOnly(['assinaturas','status','ativadoEm','interlocutor','atualizadoEm'])
+        && d.assinaturas.diff(r.assinaturas).affectedKeys().hasOnly([lado])
+        && d.assinaturas[lado].uid == request.auth.uid
+        && (lado == 'prestador' || !mudou().hasAny(['interlocutor']))
+        && ((outro in r.assinaturas && d.status == 'ativo') || (!(outro in r.assinaturas) && d.status == 'assinatura'));
+    }
+    function contratoCancelar(r, d) { return admin(r.tomadorId) && r.status == 'assinatura' && d.status == 'cancelado' && mudou().hasOnly(['status','atualizadoEm']); }
+    function contratoPropor(r, d) {
+      return meuLado(r) != '' && r.status == 'ativo' && r.proposta == null && mudou().hasOnly(['proposta','atualizadoEm'])
+        && d.proposta.lado == meuLado(r) && d.proposta.uid == request.auth.uid && vencOk(d.proposta.vencimentoDias);
+    }
+    function contratoResponder(r, d) {
+      return meuLado(r) != '' && r.status == 'ativo' && r.proposta != null && r.proposta.lado != meuLado(r) && d.proposta == null
+        && mudou().hasOnly(['proposta','vencimentoDias','atualizadoEm'])
+        && (d.vencimentoDias == r.vencimentoDias || d.vencimentoDias == r.proposta.vencimentoDias);
+    }
+    function contratoEncerrar(r, d) {
+      return meuLado(r) != '' && r.status == 'ativo' && d.status == 'encerrado' && mudou().hasOnly(['status','encerramento','proposta','atualizadoEm'])
+        && d.encerramento.lado == meuLado(r) && d.encerramento.uid == request.auth.uid;
+    }
+    match /contratos/{id} {
+      allow read: if master() || membro(resource.data.tomadorId) || membro(resource.data.prestadorId);
+      allow create: if admin(request.resource.data.tomadorId)
+        && request.resource.data.keys().hasOnly(camposContrato())
+        && request.resource.data.modalidade == 'continua'
+        && request.resource.data.status == 'assinatura'
+        && request.resource.data.assinaturas == {} && request.resource.data.proposta == null && request.resource.data.interlocutor == null
+        && request.resource.data.tomadorId != request.resource.data.prestadorId
+        && request.resource.data.partes == [request.resource.data.tomadorId, request.resource.data.prestadorId]
+        && get(caminho('empresas', request.resource.data.prestadorId)).data.status == 'aprovado'
+        && request.resource.data.periodicidade in ['quinzena','mes'] && vencOk(request.resource.data.vencimentoDias)
+        && request.resource.data.criadoPor == request.auth.uid && request.resource.data.criadoEm == request.time;
+      allow update: if request.resource.data.keys().hasOnly(camposContrato())
+        && !mudou().hasAny(['modalidade','tomadorId','prestadorId','partes','tomadorNome','tomadorCnpj','prestadorNome','prestadorCnpj','criadoPor','criadoEm'])
+        && (contratoCorrigir(resource.data, request.resource.data) || contratoAssinar(resource.data, request.resource.data)
+            || contratoCancelar(resource.data, request.resource.data) || contratoPropor(resource.data, request.resource.data)
+            || contratoResponder(resource.data, request.resource.data) || contratoEncerrar(resource.data, request.resource.data));
+      allow delete: if false;
+    }
+
     // ---------- CNPJ reservado (impede cadastro repetido) · id = só os 14 números ----------
     // Qualquer pessoa logada consulta se o CNPJ já tem cadastro (o CNPJ é dado público).
     // Só nasce junto com a empresa, por quem a está cadastrando; nunca muda nem some pelo app.

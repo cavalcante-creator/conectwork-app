@@ -23,11 +23,13 @@
   async function ler(path) { await espera(); const c = ctl(); if (c.offline) throw err('unavailable'); if (negado(path)) throw err('permission-denied'); window.__mockLog.push(['le', path]); return Snap(path, clone(srv().docs[path])); }
   async function gravar(path, f) { await espera(); if (ctl().offline) throw err('unavailable'); if (negado(path)) throw err('permission-denied');
     const s = srv(); const n = f(s.docs[path]); if (n === undefined) delete s.docs[path]; else s.docs[path] = resolve(n); salva(s); window.__mockLog.push(['grava', path]); notifica(); }
+  /* update com campos "a.b" (como o Firestore): grava dentro do mapa */
+  const aplica = (a, d) => { const o = clone(a) || {}; Object.keys(d).forEach(k => { const ks = k.split('.'); let x = o; ks.slice(0, -1).forEach(p => { if (!x[p] || typeof x[p] !== 'object') x[p] = {}; x = x[p]; }); x[ks[ks.length - 1]] = d[k]; }); return o; };
   function Ref(path) {
     return { id: path.split('/').pop(), path,
       get: () => ler(path),
       set: (d, o) => gravar(path, a => (o && o.merge) ? Object.assign({}, a, d) : clone(d)),
-      update: d => gravar(path, a => { if (a === undefined) throw err('not-found'); return Object.assign({}, a, d); }),
+      update: d => gravar(path, a => { if (a === undefined) throw err('not-found'); return aplica(a, d); }),
       delete: () => gravar(path, () => undefined),
       onSnapshot: (ok, er) => { let vivo = true; const f = () => vivo && ler(path).then(ok, er); ouvintes.add(f); f(); return () => { vivo = false; ouvintes.delete(f); }; } };
   }
@@ -48,11 +50,11 @@
   }
   const FS = { useEmulator: (h, p) => window.__mockLog.push(['fsEmulador', h, p]), settings() {},
     doc: p => Ref(p), collection: p => Query(p, [], 0),
-    batch: () => { const pend = []; const b = { set: (r, d, o) => { pend.push([r.path, a => (o && o.merge) ? Object.assign({}, a, clone(d)) : clone(d)]); return b; }, update: (r, d) => { pend.push([r.path, a => { if (a === undefined) throw err('not-found'); return Object.assign({}, a, d); }]); return b; }, delete: r => { pend.push([r.path, () => undefined]); return b; }, commit: async () => { for (const [p, f] of pend) await gravar(p, f); } }; return b; },
+    batch: () => { const pend = []; const b = { set: (r, d, o) => { pend.push([r.path, a => (o && o.merge) ? Object.assign({}, a, clone(d)) : clone(d)]); return b; }, update: (r, d) => { pend.push([r.path, a => { if (a === undefined) throw err('not-found'); return aplica(a, d); }]); return b; }, delete: r => { pend.push([r.path, () => undefined]); return b; }, commit: async () => { for (const [p, f] of pend) await gravar(p, f); } }; return b; },
     /* transação simples: lê na hora, grava tudo no fim (sem disputa entre aparelhos, que aqui não existe) */
     runTransaction: async fn => { await espera(); if (ctl().offline) throw err('unavailable'); const pend = [];
       const tx = { get: r => ler(r.path), set: (r, d, o) => { pend.push([r.path, a => (o && o.merge) ? Object.assign({}, a, clone(d)) : clone(d)]); return tx; },
-        update: (r, d) => { pend.push([r.path, a => { if (a === undefined) throw err('not-found'); return Object.assign({}, a, d); }]); return tx; } };
+        update: (r, d) => { pend.push([r.path, a => { if (a === undefined) throw err('not-found'); return aplica(a, d); }]); return tx; } };
       const res = await fn(tx); for (const [p, f] of pend) await gravar(p, f); window.__mockLog.push(['transacao', pend.map(x => x[0])]); return res; } };
 
   /* ---------- Auth ---------- */

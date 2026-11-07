@@ -18,7 +18,7 @@
   /* telas que dá para ajustar por pessoa: módulos de empresa já no ar, contratados por esta empresa, que dependem do cargo */
   function telasAjustaveis(ctx) {
     const emp = ctx.contexto.empresa || {};
-    return CW.app.modulos().filter(m => (m.para || ['empresa']).includes('empresa') && !m.livre && !m.soAdmin && (!m.contrato || (emp.modulos || []).includes(m.contrato)));
+    return CW.app.modulos().filter(m => (m.para || ['empresa']).includes('empresa') && !m.livre && !m.soAdmin && (!m.contrato || [].concat(m.contrato).some(c => (emp.modulos || []).includes(c))));
   }
   const peloCargo = (cargo, id) => { const c = P().cargo(cargo); return !!c && (c.telas === '*' || c.telas.includes(id)); };
 
