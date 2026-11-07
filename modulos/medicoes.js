@@ -65,7 +65,7 @@
 
   /* ---------- lançar / corrigir (formulário com a memória) ---------- */
   async function contratosAtivos(ctx) {
-    return CW.fb.lista(await CW.fb.db().collection('contratos').where('tomadorId', '==', ctx.contexto.empresaId).get()).filter(c => c.status === 'ativo');
+    return CW.fb.lista(await CW.fb.db().collection('contratos').where('tomadorId', '==', ctx.contexto.empresaId).get()).filter(c => c.status === 'ativo' && (c.modalidade || 'continua') === 'continua');
   }
   /* m = medição a corrigir; pre = dados vindos do painel (importação) */
   async function formulario(ctx, m, pre) {

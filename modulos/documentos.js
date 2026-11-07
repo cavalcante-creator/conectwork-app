@@ -33,12 +33,16 @@
     ['outro', 'Outro documento', 'outro', false, false]
   ];
   const GRUPOS = { cadastro: 'Documentos do cadastro', certidao: 'Certidões', seguranca: 'Segurança do trabalho', outro: 'Outros' };
-  const OBRIG_PRESTA = ['cnd_federal', 'crf_fgts', 'cndt', 'cnd_municipal', 'pgr', 'pcmso'];
+  const CERTS = ['cnd_federal', 'crf_fgts', 'cndt', 'cnd_municipal'];
+  const OBRIG_PRESTA = CERTS.concat(['pgr', 'pcmso']);   /* equipe contínua: certidões e segurança do trabalho */
+  /* serviço por entrega: só as certidões (o MEI sem empregado é dispensado de PGR e PCMSO, NR-1 item 1.8.4) */
+  const obrigContrato = c => (c && c.modalidade === 'os') ? CERTS : OBRIG_PRESTA;
+  let meuPorte = '';
   const OBRIG_TODOS = ['contrato', 'cartao', 'endereco', 'identidade'];
   const tipoDe = k => TIPOS.find(t => t[0] === k) || ['outro', 'Outro documento', 'outro', false, false];
   const presta = emp => ['prestador', 'ambos'].includes((emp || {}).tipo);
   /* os do cadastro são cobrados enquanto a empresa está em análise (a equipe Conectwork confere); depois ficam como registro */
-  const obrigatorios = emp => ((emp || {}).status === 'aprovado' ? [] : OBRIG_TODOS).concat(presta(emp) ? OBRIG_PRESTA : []);
+  const obrigatorios = emp => ((emp || {}).status === 'aprovado' ? [] : OBRIG_TODOS).concat(presta(emp) ? (String(meuPorte).startsWith('MEI') ? CERTS : OBRIG_PRESTA) : []);
   const cargo = ctx => ctx.contexto.acesso && ctx.contexto.acesso.cargo;
   const podeEnviar = ctx => !ctx.soLeitura && ENVIA.includes(cargo(ctx));
   const quem = ctx => (ctx.sessao.perfil && ctx.sessao.perfil.nome) || ctx.sessao.usuario.email;
@@ -164,17 +168,17 @@
     const { esc, ic } = U(), souPrest = c.prestadorId === ctx.contexto.empresaId;
     let docs;
     try { docs = await docsDe(c.prestadorId, souPrest); } catch (e) { box.innerHTML = ''; return; }
-    const S = situacao(docs, OBRIG_PRESTA), ruins = S.filter(s => s.st !== 'ok');
+    const S = situacao(docs, obrigContrato(c)), ruins = S.filter(s => s.st !== 'ok');
     box.innerHTML = `<section class="card" id="dc-prest"><div class="card-h"><span class="ic">${ic('shield')}</span><h3>Documentos da prestadora</h3><span style="margin-left:auto" class="pill ${ruins.some(s => s.st !== 'vence') ? 'danger' : ruins.length ? 'warn' : 'ok'}">${ruins.length ? ruins.length + ' para resolver' : 'Em dia'}</span></div>
       ${S.map(s => `<div class="docrow ${s.st === 'ok' ? 'ok' : ''}"><span class="ic">${ic(s.st === 'ok' ? 'check' : 'alert')}</span><div class="t"><strong>${esc(s.nome)}</strong><small>${esc(s.txt)}</small></div><div class="dc-bt">${pill(s)}${s.doc ? `<button class="btn ghost sm" data-abrir-doc="${esc(s.doc._id)}">Abrir</button>` : ''}</div></div>`).join('')}
       <p class="hint" style="margin:0;padding:10px 20px;font-size:12px;border-top:1px solid var(--line)">${souPrest ? 'Mantenha em dia em "Documentos e certidões". Quem contrata vê esta situação.' : 'A prestadora mantém os documentos no Conectwork. Certidão vencida aparece como alerta na medição e no pagamento.'}</p></section>`;
     box.querySelectorAll('[data-abrir-doc]').forEach(b => b.onclick = () => abrirArquivo(docs.find(d => d._id === b.dataset.abrirDoc)));
   }
   /* alerta curto (medição e pagamento): só quando há algo vencido ou faltando */
-  async function alerta(box, prestadorId, prestadorNome) {
+  async function alerta(box, prestadorId, prestadorNome, contratoId) {
     if (!box) return;
-    let docs; try { docs = await docsDe(prestadorId, false); } catch (e) { return; }
-    const ruins = situacao(docs, OBRIG_PRESTA).filter(s => s.st === 'vencido' || s.st === 'falta');
+    let docs, c = null; try { docs = await docsDe(prestadorId, false); if (contratoId) c = CW.fb.dados(await CW.fb.db().doc('contratos/' + contratoId).get()); } catch (e) { return; }
+    const ruins = situacao(docs, obrigContrato(c)).filter(s => s.st === 'vencido' || s.st === 'falta');
     if (!ruins.length) { box.innerHTML = ''; return; }
     box.innerHTML = `<div class="banner warn" style="margin-bottom:14px" id="dc-alerta">${U().ic('shield')}<span><strong>Documentos da ${U().esc(prestadorNome)} com pendência</strong>${ruins.map(s => U().esc(s.nome.split(' (')[0].split(' · ')[0] + ': ' + s.txt.toLowerCase())).join(' · ')}. Confira antes de seguir (veja no contrato).</span></div>`;
   }
@@ -193,15 +197,16 @@
     id: 'documentos', nome: 'Documentos e certidões', nomeCurto: 'Documentos', icone: 'shield', ordem: 65,
     para: ['empresa'], semAprovacao: true,
     iniciar(ctx) {
-      meus = null; parceiros = {};
+      meus = null; parceiros = {}; meuPorte = '';
       const db = CW.fb.db(), emp = ctx.contexto.empresaId;
+      db.doc('empresas/' + emp + '/privado/cadastro').get().then(sn => { meuPorte = ((CW.fb.dados(sn) || {}).dados || {}).porte || ''; CW.app.pendenciasMudaram(); const el = document.getElementById('view'), at = CW.app.atual(); if (el && at && at.modulo === 'documentos' && meus) desenhar(el, Object.assign({}, ctx, { sessao: CW.sessao.estado() })); }).catch(() => {});
       const redesenha = () => { const el = document.getElementById('view'), at = CW.app.atual(); if (el && at && at.modulo === 'documentos') desenhar(el, Object.assign({}, ctx, { sessao: CW.sessao.estado() })); CW.app.pendenciasMudaram(); };
       CW.inscrever('documentos', () => db.collection('documentos').where('empresaId', '==', emp), s => { meus = CW.fb.lista(s); redesenha(); }, () => { meus = []; redesenha(); });
       /* quem contrata (admin ou financeiro): situação das prestadoras com contrato ativo */
       if (!ctx.soLeitura && ['admin', 'financeiro'].includes(cargo(ctx)) && (ctx.contexto.empresa || {}).status === 'aprovado') {
         CW.inscrever('documentos-ct', () => db.collection('contratos').where('tomadorId', '==', emp), async s => {
           const ativos = CW.fb.lista(s).filter(c => c.status === 'ativo'), novo = {};
-          await Promise.all(ativos.map(async c => { try { novo[c.prestadorId] = { nome: c.prestadorNome, contratoId: c._id, docs: await docsDe(c.prestadorId, false) }; } catch (e) { /* sem acesso */ } }));
+          await Promise.all(ativos.map(async c => { try { novo[c.prestadorId] = { nome: c.prestadorNome, contratoId: c._id, obrig: novo[c.prestadorId] && novo[c.prestadorId].obrig.length > obrigContrato(c).length ? novo[c.prestadorId].obrig : obrigContrato(c), docs: await docsDe(c.prestadorId, false) }; } catch (e) { /* sem acesso */ } }));
           parceiros = novo; CW.app.pendenciasMudaram();
         }, () => {});
       }
@@ -211,11 +216,11 @@
       const out = [];
       if (meus && podeEnviar(ctx)) situacao(meus, obrigatorios(ctx.contexto.empresa)).filter(s => s.st !== 'ok')
         .forEach(s => out.push({ txt: s.st === 'falta' ? 'Enviar: ' + s.nome : s.st === 'vencido' ? 'Renovar (vencido): ' + s.nome : 'Renovar (vence logo): ' + s.nome, sub: s.txt, rota: 'documentos' }));
-      Object.entries(parceiros).forEach(([, p]) => { const r = situacao(p.docs, OBRIG_PRESTA).filter(s => s.st === 'vencido' || s.st === 'falta');
+      Object.entries(parceiros).forEach(([, p]) => { const r = situacao(p.docs, p.obrig || OBRIG_PRESTA).filter(s => s.st === 'vencido' || s.st === 'falta');
         if (r.length) out.push({ txt: `Documentos da ${p.nome} com pendência`, sub: r.map(s => s.nome.split(' (')[0].split(' · ')[0] + ': ' + s.txt.toLowerCase()).join(' · '), rota: 'contratos/ver/' + p.contratoId }); });
       return out;
     },
     telas: { lista: { nome: 'Documentos e certidões', sub: 'Documentos do cadastro, certidões e segurança do trabalho, com o vencimento de cada um.', render: (el, ctx) => desenhar(el, ctx) } }
   });
-  CW.documentos = { situacao, blocoContrato, alerta, blocoMaster, abrirArquivo, OBRIG_PRESTA, TIPOS };
+  CW.documentos = { situacao, blocoContrato, alerta, blocoMaster, abrirArquivo, OBRIG_PRESTA, CERTS, obrigContrato, TIPOS };
 })();

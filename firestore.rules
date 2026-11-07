@@ -145,10 +145,12 @@ service cloud.firestore {
     function meuLado(c) { return admin(c.tomadorId) ? 'tomador' : (admin(c.prestadorId) ? 'prestador' : ''); }
     function vencOk(n) { return n is int && n >= 0 && n <= 90; }
     function mudou() { return request.resource.data.diff(resource.data).affectedKeys(); }
+    // equipe contínua mede por quinzena ou mês; serviço por entrega (OS) não tem medição do período
+    function modalOk(d) { return (d.modalidade == 'continua' && d.periodicidade in ['quinzena','mes']) || (d.modalidade == 'os' && d.periodicidade == ''); }
     function contratoCorrigir(r, d) {
       return admin(r.tomadorId) && r.status == 'assinatura' && d.status == 'assinatura' && d.assinaturas == {}
         && mudou().hasOnly(['objeto','periodicidade','vencimentoDias','inicio','fim','assinaturas','atualizadoEm'])
-        && d.periodicidade in ['quinzena','mes'] && vencOk(d.vencimentoDias);
+        && modalOk(d) && vencOk(d.vencimentoDias);
     }
     // Triagem (Lei 6.019, arts. 5º-C e 5º-D): o resultado é recalculado aqui a partir das respostas; o tomador só assina com
     // "compatível" ou "requer análise jurídica" com parecer favorável registrado.
@@ -204,13 +206,13 @@ service cloud.firestore {
       allow create: if admin(request.resource.data.tomadorId)
         && (!('triagem' in request.resource.data) || request.resource.data.triagem == null)
         && request.resource.data.keys().hasOnly(camposContrato())
-        && request.resource.data.modalidade == 'continua'
+        && modalOk(request.resource.data)
         && request.resource.data.status == 'assinatura'
         && request.resource.data.assinaturas == {} && request.resource.data.proposta == null && request.resource.data.interlocutor == null
         && request.resource.data.tomadorId != request.resource.data.prestadorId
         && request.resource.data.partes == [request.resource.data.tomadorId, request.resource.data.prestadorId]
         && get(caminho('empresas', request.resource.data.prestadorId)).data.status == 'aprovado'
-        && request.resource.data.periodicidade in ['quinzena','mes'] && vencOk(request.resource.data.vencimentoDias)
+        && vencOk(request.resource.data.vencimentoDias)
         && request.resource.data.criadoPor == request.auth.uid && request.resource.data.criadoEm == request.time;
       allow update: if request.resource.data.keys().hasOnly(camposContrato())
         && !mudou().hasAny(['modalidade','tomadorId','prestadorId','partes','tomadorNome','tomadorCnpj','prestadorNome','prestadorCnpj','criadoPor','criadoEm'])
@@ -281,7 +283,7 @@ service cloud.firestore {
     // Valor = o da medição; vencimento = o do contrato (não muda no espelho); líquido = valor − retenções. A prestadora lê. Nada se apaga.
     function camposEspelho() { return ['medicaoId','contratoId','tomadorId','prestadorId','partes','tomadorNome','prestadorNome','prestadorCnpj','tomador',
       'periodo','competencia','descricao','valorCentavos','retencoes','liquidoCentavos','vencimentoDias','obs','status','versao',
-      'criadoPor','criadoPorNome','criadoEm','atualizadoPor','atualizadoPorNome','atualizadoEm','emissao','nota','recusadas','conferenciaNota']; }
+      'criadoPor','criadoPorNome','criadoEm','atualizadoPor','atualizadoPorNome','atualizadoEm','emissao','nota','recusadas','conferenciaNota','origem','osNumero']; }
     function centavos(v) { return v is int && v >= 0; }
     function espelhoValores(d) {
       let r = d.retencoes;
@@ -292,6 +294,23 @@ service cloud.firestore {
         && d.obs is string && d.obs.size() <= 300;
     }
     function espelhoCriar(id, d) {
+      return (('origem' in d && d.origem == 'os') && espelhoCriarOs(id, d)) || (!('origem' in d && d.origem == 'os') && espelhoCriarMed(id, d));
+    }
+    // ordem de serviço aceita: valor = valor aceito; competência = mês do aceite (período AAAA-MM)
+    function espelhoCriarOs(id, d) {
+      let o = get(caminho('ordens', id)).data;
+      let c = get(caminho('contratos', o.contratoId)).data;
+      return cargoEm(o.tomadorId, ['admin','financeiro'])
+        && d.keys().hasOnly(camposEspelho())
+        && d.medicaoId == id && o.status in ['aceita_total','aceita_parcial']
+        && d.tomadorId == o.tomadorId && d.prestadorId == o.prestadorId && d.contratoId == o.contratoId && d.partes == [o.tomadorId, o.prestadorId]
+        && d.periodo is string && d.periodo.matches('[0-9]{4}-(0[1-9]|1[0-2])') && d.competencia == d.periodo
+        && d.valorCentavos == o.aceite.valorAceito && d.vencimentoDias == c.vencimentoDias && espelhoValores(d)
+        && d.tomador.cnpj is string && d.tomador.razao is string
+        && d.status == 'aguardando_nota' && d.versao == 1
+        && d.criadoPor == request.auth.uid && d.criadoEm == request.time && d.atualizadoPor == request.auth.uid;
+    }
+    function espelhoCriarMed(id, d) {
       let m = get(caminho('medicoes', id)).data;
       let c = get(caminho('contratos', m.contratoId)).data;
       return cargoEm(m.tomadorId, ['admin','financeiro'])
@@ -536,6 +555,69 @@ service cloud.firestore {
     match /config/emissores {
       allow read: if logado();
       allow write: if master() && request.resource.data.keys().hasOnly(['cidades','em','por']) && request.resource.data.cidades is map;
+    }
+
+    // ---------- Ordens de serviço (contrato de serviço por entrega) ----------
+    // Quem contrata (admin ou solicitante) propõe a OS com escopo, prazo e valor da entrega (nunca por hora). O profissional
+    // ou a prestadora (admin, financeiro ou operacional) aceita ou recusa: recusar não tem punição. Entrega com descrição
+    // (e arquivo, se quiser). Quem contrata (admin ou aprovador, nunca quem pediu a OS) aceita total, parcial (com motivo) ou
+    // aponta divergência. Nada se apaga.
+    function camposOs() { return ['contratoId','tomadorId','prestadorId','partes','tomadorNome','prestadorNome','numero','titulo','escopo','prazo','valorCentavos',
+      'status','aceiteProf','recusa','entrega','entregas','divergencia','aceite','cancelamento','criadoPor','criadoPorNome','criadoEm','atualizadoEm']; }
+    function osCriar(d) {
+      let c = get(caminho('contratos', d.contratoId)).data;
+      return cargoEm(d.tomadorId, ['admin','solicitante']) && d.keys().hasOnly(camposOs())
+        && c.modalidade == 'os' && c.status == 'ativo' && c.tomadorId == d.tomadorId && c.prestadorId == d.prestadorId && d.partes == [d.tomadorId, d.prestadorId]
+        && d.numero is int && d.titulo is string && d.titulo.size() >= 5 && d.titulo.size() <= 120 && d.escopo is string && d.escopo.size() >= 10 && d.escopo.size() <= 2000
+        && d.prazo is string && d.prazo.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}') && d.valorCentavos is int && d.valorCentavos > 0
+        && d.status == 'proposta' && d.aceiteProf == null && d.recusa == null && d.entrega == null && d.aceite == null && d.entregas == [] && d.divergencia == null && d.cancelamento == null
+        && d.criadoPor == request.auth.uid && d.criadoEm == request.time;
+    }
+    function osResponder(r, d) {
+      return cargoEm(r.prestadorId, ['admin','financeiro','operacional']) && r.status == 'proposta'
+        && ((d.status == 'aceita' && d.aceiteProf.uid == request.auth.uid && mudou().hasOnly(['status','aceiteProf','atualizadoEm']))
+            || (d.status == 'recusada' && d.recusa.uid == request.auth.uid && d.recusa.motivo is string && d.recusa.motivo.size() <= 300 && mudou().hasOnly(['status','recusa','atualizadoEm'])));
+    }
+    function osEntregar(id, r, d) {
+      return cargoEm(r.prestadorId, ['admin','financeiro','operacional']) && r.status in ['aceita','divergencia'] && d.status == 'entregue'
+        && d.entrega.uid == request.auth.uid && d.entrega.descricao is string && d.entrega.descricao.size() >= 10 && d.entrega.descricao.size() <= 2000
+        && d.entregas.size() == r.entregas.size() + 1 && mudou().hasOnly(['status','entrega','entregas','atualizadoEm'])
+        && (d.entrega.arquivo == null || existsAfter(/databases/$(database)/documents/ordens/$(id)/arquivos/$(d.entrega.arquivo.envio + '-' + string(d.entrega.arquivo.partes - 1))));
+    }
+    function osAceitar(r, d) {
+      return cargoEm(r.tomadorId, ['admin','aprovador']) && request.auth.uid != r.criadoPor && r.status == 'entregue'
+        && mudou().hasOnly(['status','aceite','atualizadoEm']) && d.aceite.uid == request.auth.uid
+        && ((d.status == 'aceita_total' && d.aceite.valorAceito == r.valorCentavos)
+            || (d.status == 'aceita_parcial' && d.aceite.valorAceito is int && d.aceite.valorAceito > 0 && d.aceite.valorAceito < r.valorCentavos && d.aceite.motivo is string && d.aceite.motivo.size() >= 10));
+    }
+    function osDivergir(r, d) {
+      return cargoEm(r.tomadorId, ['admin','aprovador']) && r.status == 'entregue' && d.status == 'divergencia'
+        && d.divergencia.uid == request.auth.uid && d.divergencia.motivo is string && d.divergencia.motivo.size() >= 10 && mudou().hasOnly(['status','divergencia','atualizadoEm']);
+    }
+    function osCancelar(r, d) {
+      return cargoEm(r.tomadorId, ['admin','solicitante']) && r.status in ['proposta','aceita'] && d.status == 'cancelada'
+        && d.cancelamento.uid == request.auth.uid && d.cancelamento.motivo is string && d.cancelamento.motivo.size() >= 5 && mudou().hasOnly(['status','cancelamento','atualizadoEm']);
+    }
+    match /ordens/{id} {
+      allow read: if master() || membro(resource.data.tomadorId) || membro(resource.data.prestadorId);
+      allow create: if osCriar(request.resource.data);
+      allow update: if request.resource.data.keys().hasOnly(camposOs())
+        && ((request.resource.data.status in ['aceita','recusada'] && osResponder(resource.data, request.resource.data))
+            || (request.resource.data.status == 'entregue' && osEntregar(id, resource.data, request.resource.data))
+            || (request.resource.data.status in ['aceita_total','aceita_parcial'] && osAceitar(resource.data, request.resource.data))
+            || (request.resource.data.status == 'divergencia' && osDivergir(resource.data, request.resource.data))
+            || (request.resource.data.status == 'cancelada' && osCancelar(resource.data, request.resource.data)));
+      allow delete: if false;
+      match /arquivos/{arq} {
+        allow get: if master() || membro(get(caminho('ordens', id)).data.tomadorId) || membro(get(caminho('ordens', id)).data.prestadorId);
+        allow create: if cargoEm(get(caminho('ordens', id)).data.prestadorId, ['admin','financeiro','operacional'])
+          && get(caminho('ordens', id)).data.status in ['aceita','divergencia']
+          && request.resource.data.keys().hasOnly(['d','k','envio','em'])
+          && request.resource.data.d is string && request.resource.data.d.size() <= 750000
+          && request.resource.data.k is int && request.resource.data.k >= 0 && request.resource.data.k < 10
+          && arq == request.resource.data.envio + '-' + string(request.resource.data.k);
+        allow update, delete: if false;
+      }
     }
 
     // ---------- CNPJ reservado (impede cadastro repetido) · id = só os 14 números ----------

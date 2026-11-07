@@ -72,9 +72,9 @@
       const emDia = pagos.filter(x => x.liquidacao.data <= venc(x)).length;
       ok.push(`${pagos.length} pagamento(s) da nota feito(s) direto à prestadora, ${comComp.length} com comprovante; ${emDia} no vencimento do contrato.`);
     }
-    const S = CW.documentos ? CW.documentos.situacao(docs, CW.documentos.OBRIG_PRESTA) : [];
+    const S = CW.documentos ? CW.documentos.situacao(docs, CW.documentos.obrigContrato(c)) : [];
     const ruins = S.filter(s => s.st === 'vencido' || s.st === 'falta');
-    if (S.length && !ruins.length) ok.push('Certidões da prestadora (federal, FGTS, trabalhista, municipal), PGR e PCMSO em dia.');
+    if (S.length && !ruins.length) ok.push(c.modalidade === 'os' ? 'Certidões do profissional (federal, FGTS, trabalhista, municipal) em dia.' : 'Certidões da prestadora (federal, FGTS, trabalhista, municipal), PGR e PCMSO em dia.');
     else if (ruins.length) at.push('Documentos da prestadora com pendência: ' + ruins.map(s => s.nome.split(' (')[0].split(' · ')[0] + ' (' + s.txt.toLowerCase() + ')').join('; ') + '.');
     if (c.status === 'encerrado' && c.encerramento) ok.push(`Serviço encerrado em ${dia(c.encerramento.data)} por ${c.encerramento.lado === 'tomador' ? c.tomadorNome : c.prestadorNome}: ${c.encerramento.motivo}`);
     return { ok, at, docs: S };
@@ -118,8 +118,8 @@
   function linhas(D) {
     const { c, med, esp, tit, avs, hist } = D, t = c.triagem, R = CW.triagem;
     return {
-      triagem: t && R ? R.PERG.map(([k, q]) => [q, t.r[k] === 'sim' ? 'Sim' : 'Não']) : [],
-      docs: (CW.documentos ? CW.documentos.situacao(D.docs, CW.documentos.OBRIG_PRESTA) : []).map(s => [s.nome, s.txt]),
+      triagem: t && R ? R.pergDe(c).map(([k, q]) => [q, t.r[k] === 'sim' ? 'Sim' : 'Não']) : [],
+      docs: (CW.documentos ? CW.documentos.situacao(D.docs, CW.documentos.obrigContrato(c)) : []).map(s => [s.nome, s.txt]),
       med: med.map(m => [per(m.periodo), brl(m.valorCentavos), String((m.memoria || []).length), m.confirmacao ? dt(m.confirmacao.em) + ' · ' + m.confirmacao.nome : '—', m.aprovacao ? dt(m.aprovacao.em) + ' · ' + m.aprovacao.nome : '—', ST_MED[m.status] || m.status]),
       notas: esp.filter(e => e.nota || (e.recusadas || []).length).map(e => [per(e.periodo), (e.nota && e.nota.numero) || '—', brl(e.valorCentavos), e.nota ? dt(e.nota.enviadoEm) : '—', e.status === 'nota_ok' ? 'Conferida' : e.nota ? 'Para conferir' : 'Recusada: ' + e.recusadas[e.recusadas.length - 1].motivo]),
       pag: tit.map(x => [per(x.periodo), brl(x.liquidoCentavos), dia(venc(x)), x.liquidacao ? dia(x.liquidacao.data) : '—', x.liquidacao && x.liquidacao.comprovante ? 'Sim' : '—', ST_TIT[x.status] || x.status]),

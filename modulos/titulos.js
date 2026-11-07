@@ -141,7 +141,7 @@
         </div></section></div></div>`;
     ligar(el, ctx, t, conta);
     if (CW.avisar) CW.avisar.ligar(el);
-    if (CW.documentos && l === 'tomador' && ['aprovado', 'liberado', 'agendado'].includes(st)) CW.documentos.alerta(document.getElementById('tt-docs'), t.prestadorId, t.prestadorNome);
+    if (CW.documentos && l === 'tomador' && ['aprovado', 'liberado', 'agendado'].includes(st)) CW.documentos.alerta(document.getElementById('tt-docs'), t.prestadorId, t.prestadorNome, t.contratoId);
   }
 
   function zapTit(t, ctx) {

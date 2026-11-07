@@ -726,3 +726,8 @@ html.entrada .login{height:100%;min-height:0}
 .tr-b{min-width:84px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-weight:600;cursor:pointer}
 .tr-b.on{background:var(--blue);border-color:var(--blue);color:#fff}
 .tr-q{padding-bottom:12px;border-bottom:1px solid var(--line)}
+.ct-mods{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:560px){.ct-mods{grid-template-columns:1fr}}
+.ct-mod{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:12px;cursor:pointer}
+.ct-mod:has(input:checked){border-color:var(--blue);background:var(--infobg)}
+.ct-mod b{display:block;font-size:13.5px}.ct-mod small{display:block;color:var(--muted);font-size:12px;margin-top:2px}

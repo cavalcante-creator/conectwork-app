@@ -18,7 +18,15 @@
   const MAX_ARQ = 3 * 1024 * 1024, PEDACO = 700000;
   const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 
-  let espT = [], espP = [], medsAprov = [], pronto = false, ultimoCtx = null;
+  let espT = [], espP = [], medsAprov = [], osAprov = [], pronto = false, ultimoCtx = null;
+  /* ordem de serviço aceita vira a "medição" do espelho: valor aceito, competência = mês do aceite */
+  const msDe = v => !v ? 0 : typeof v.toMillis === 'function' ? v.toMillis() : v.seconds ? v.seconds * 1000 : (Date.parse(v) || 0);
+  function deOs(o, id) {
+    const d = new Date(msDe(o.aceite && o.aceite.em) || Date.now()), per = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    return { _id: id || o._id, origem: 'os', numero: o.numero, titulo: o.titulo, contratoId: o.contratoId, tomadorId: o.tomadorId, prestadorId: o.prestadorId, tomadorNome: o.tomadorNome, prestadorNome: o.prestadorNome,
+      periodo: per, valorCentavos: (o.aceite || {}).valorAceito || 0, status: ['aceita_total', 'aceita_parcial'].includes(o.status) ? 'aprovada' : o.status, aprovacao: o.aceite || null,
+      memoria: [{ nome: `OS ${o.numero} · ${o.titulo}`, valorCentavos: (o.aceite || {}).valorAceito || 0 }] };
+  }
   const brl = c => U().formatarDinheiro(c);
   const pill = s => { const x = ST[s] || ['info', s]; return `<span class="pill ${x[0]}">${U().esc(x[1])}</span>`; };
   const cargo = ctx => ctx.contexto.acesso && ctx.contexto.acesso.cargo;
@@ -53,7 +61,7 @@
   const somaRet = r => RET.reduce((s, [k]) => s + ((r || {})[k] || 0), 0);
   const log = (b, ctx, acao, texto, ref) => b.set(CW.fb.db().collection('log').doc(), { em: CW.fb.agora(), uid: ctx.sessao.usuario.uid, quem: quem(ctx), empresaId: ctx.contexto.empresaId, acao, texto, ref: ref || '' });
   const endTxt = en => { en = en || {}; return [[en.logradouro, en.numero].filter(Boolean).join(', ') + (en.compl ? ' · ' + en.compl : ''), en.bairro, en.cep ? 'CEP ' + en.cep : ''].filter(Boolean).join(' · '); };
-  const sugestao = (c, m) => `Prestação de serviços: ${String((c && c.objeto) || '').replace(/\.\s*$/, '')}. Período: ${periodoTxt(m.periodo)}. Conforme contrato de equipe contínua e medição aprovada.`;
+  const sugestao = (c, m) => m.origem === 'os' ? `Prestação de serviços: ordem de serviço nº ${m.numero} · ${m.titulo}. Conforme contrato de serviço por entrega e entrega aceita em ${periodoTxt(m.periodo)}.` : `Prestação de serviços: ${String((c && c.objeto) || '').replace(/\.\s*$/, '')}. Período: ${periodoTxt(m.periodo)}. Conforme contrato de equipe contínua e medição aprovada.`;
 
   /* copiar para a área de transferência (com reserva para navegadores sem a API) */
   async function copiar(txt) {
@@ -69,7 +77,7 @@
     if (!pronto) { el.innerHTML = `<div class="card"><div class="empty"><div class="giro"></div><span>Carregando os espelhos…</span></div></div>`; return; }
     const todos = espT.concat(espP).sort((a, b) => String(b.periodo).localeCompare(String(a.periodo)));
     const comEsp = new Set(espT.map(x => x._id));
-    const preparar = pode(ctx) ? medsAprov.filter(m => !comEsp.has(m._id)) : [];
+    const preparar = pode(ctx) ? medsAprov.concat(osAprov).filter(m => !comEsp.has(m._id)) : [];
     const emitir = espP.filter(x => x.status === 'aguardando_nota');
     const conferir = pode(ctx) ? espT.filter(x => x.status === 'nota_enviada') : [];
     const outro = x => lado(x, ctx) === 'tomador' ? x.prestadorNome : x.tomadorNome;
@@ -79,7 +87,7 @@
     el.innerHTML = `
       ${preparar.length ? `<section class="card" id="es-preparar" style="margin-bottom:22px"><div class="card-h"><span class="ic">${ic('alert')}</span><h3>Espelhos para preparar</h3><span class="count">${preparar.length}</span></div>
         <div class="scroll"><table class="resp" id="es-tab-preparar"><thead><tr><th>Medição aprovada</th><th class="r">Valor</th><th></th></tr></thead><tbody>
-        ${preparar.map(m => `<tr><td class="m-full"><div class="cell">${avatar(m.prestadorNome, '', m.prestadorId)}<div style="min-width:0"><strong>${esc(periodoTxt(m.periodo))}</strong><small>${esc(m.prestadorNome)} · aprovada${m.aprovacao && m.aprovacao.nome ? ' por ' + esc(m.aprovacao.nome) : ''}</small></div></div></td>
+        ${preparar.map(m => `<tr><td class="m-full"><div class="cell">${avatar(m.prestadorNome, '', m.prestadorId)}<div style="min-width:0"><strong>${esc(m.origem === 'os' ? 'OS ' + m.numero + ' · ' + m.titulo : periodoTxt(m.periodo))}</strong><small>${esc(m.prestadorNome)} · ${m.origem === 'os' ? 'entrega aceita' : 'aprovada'}${m.aprovacao && m.aprovacao.nome ? ' por ' + esc(m.aprovacao.nome) : ''}</small></div></div></td>
           <td class="r"><b>${esc(brl(m.valorCentavos))}</b></td><td class="r"><button class="btn sm" data-preparar="${esc(m._id)}">${ic('edit')}Preparar espelho</button></td></tr>`).join('')}
         </tbody></table></div></section>` : ''}
       ${conferir.length ? `<section class="card" id="es-conferir" style="margin-bottom:22px"><div class="card-h"><span class="ic">${ic('alert')}</span><h3>Notas para conferir</h3><span class="count">${conferir.length}</span></div>${tab(conferir, 'es-tab-conferir')}</section>` : ''}
@@ -100,11 +108,12 @@
     el.innerHTML = `<div class="card"><div class="empty"><div class="giro"></div><span>Carregando a medição…</span></div></div>`;
     let m, e, ja, c, emp, pv;
     try {
-      const [a, b] = await Promise.all([db.doc('medicoes/' + id).get(), db.doc('espelhos/' + id).get()]);
-      m = CW.fb.dados(a); e = CW.fb.dados(b);
-      if (!m) return fim('danger', 'Medição não encontrada', 'Ela pode ter sido aberta por um link antigo.');
+      const [a, b] = await Promise.all([db.doc('medicoes/' + id).get().catch(() => null), db.doc('espelhos/' + id).get()]);
+      m = a ? CW.fb.dados(a) : null; e = CW.fb.dados(b);
+      if (!m) { const o = CW.fb.dados(await db.doc('ordens/' + id).get().catch(() => null) || { exists: false, data: () => null }); if (o) { m = deOs(o, id); if (e) m.periodo = e.periodo; } }
+      if (!m) return fim('danger', 'Medição ou ordem de serviço não encontrada', 'Ela pode ter sido aberta por um link antigo.');
       if (m.tomadorId !== ctx.contexto.empresaId) return fim('warn', 'Esta medição não é para a sua empresa pagar', 'Só quem contrata prepara o espelho.');
-      if (!e && m.status !== 'aprovada') return fim('warn', 'A medição ainda não foi aprovada', 'O espelho só é preparado depois que o aprovador técnico aprova a medição.');
+      if (!e && m.status !== 'aprovada') return fim('warn', m.origem === 'os' ? 'A entrega ainda não foi aceita' : 'A medição ainda não foi aprovada', m.origem === 'os' ? 'O espelho só é preparado depois que quem contrata aceita a entrega da OS.' : 'O espelho só é preparado depois que o aprovador técnico aprova a medição.');
       if (e && e.status !== 'aguardando_nota') return fim('warn', 'Este espelho não pode mais ser corrigido', 'A nota já foi enviada.');
       const [cc, ee, pp] = await Promise.all([db.doc('contratos/' + m.contratoId).get(), db.doc('empresas/' + m.tomadorId).get(), db.doc('empresas/' + m.tomadorId + '/privado/cadastro').get()]);
       c = CW.fb.dados(cc) || {}; emp = CW.fb.dados(ee) || ctx.contexto.empresa || {}; pv = CW.fb.dados(pp) || {};
@@ -136,7 +145,7 @@
           <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="submit" class="btn" id="es-salvar">${ic('send')}${ja ? 'Salvar correção' : 'Enviar para a prestadora'}</button></div>
         </form></div></section>
       </div><div class="stack">
-        <section class="card"><div class="card-h"><span class="ic">${ic('users')}</span><h3>Memória da medição</h3><span class="count">${(m.memoria || []).length}</span></div>
+        <section class="card"><div class="card-h"><span class="ic">${ic('users')}</span><h3>${m.origem === 'os' ? 'Ordem de serviço' : 'Memória da medição'}</h3><span class="count">${(m.memoria || []).length}</span></div>
           <div class="scroll"><table><tbody>${(m.memoria || []).map(x => `<tr><td>${esc(x.nome)}</td><td class="r">${esc(brl(x.valorCentavos))}</td></tr>`).join('')}</tbody></table></div></section>
       </div></div>`;
     U().aplicarMascaras(el);
@@ -158,7 +167,7 @@
       } else {
         b.set(ref, { medicaoId: id, contratoId: m.contratoId, tomadorId: m.tomadorId, prestadorId: m.prestadorId, partes: [m.tomadorId, m.prestadorId],
           tomadorNome: m.tomadorNome, prestadorNome: m.prestadorNome, prestadorCnpj: c.prestadorCnpj || '', tomador: tom,
-          periodo: m.periodo, competencia: competencia(m.periodo), descricao: desc, valorCentavos: m.valorCentavos, retencoes: ret, liquidoCentavos: liq,
+          periodo: m.periodo, competencia: competencia(m.periodo), descricao: desc, origem: m.origem === 'os' ? 'os' : 'medicao', osNumero: m.origem === 'os' ? m.numero : null, valorCentavos: m.valorCentavos, retencoes: ret, liquidoCentavos: liq,
           vencimentoDias: venc, obs, status: 'aguardando_nota', versao: 1,
           criadoPor: ctx.sessao.usuario.uid, criadoPorNome: quem(ctx), criadoEm: agora(), atualizadoPor: ctx.sessao.usuario.uid, atualizadoPorNome: quem(ctx), atualizadoEm: agora() });
         log(b, ctx, 'espelho.preparar', `Espelho de ${periodoTxt(m.periodo)} preparado para ${m.prestadorNome}: ${brl(m.valorCentavos)}, ${retTxt}; líquido ${brl(liq)}.`, id);
@@ -206,7 +215,7 @@
           <p class="hint" style="margin:0;font-size:12.5px">Vem do contrato. O dinheiro sai de quem contrata direto para a prestadora; não passa pelo Conectwork.</p>
         </div></section>
         <section class="card" id="es-andamento"><div class="card-h"><span class="ic">${ic('clock')}</span><h3>Andamento</h3></div><div class="card-b stack" style="gap:14px">
-          <ul class="tl"><li class="done"><span class="dot">${ic('check')}</span>Medição aprovada<small><a href="#medicoes/ver/${esc(x.medicaoId)}" class="linkbtn" style="font-size:12px">ver a medição</a></small></li>
+          <ul class="tl"><li class="done"><span class="dot">${ic('check')}</span>${x.origem === 'os' ? 'Entrega aceita (OS ' + esc(x.osNumero) + ')' : 'Medição aprovada'}<small><a href="#${x.origem === 'os' ? 'ordens' : 'medicoes'}/ver/${esc(x.medicaoId)}" class="linkbtn" style="font-size:12px">${x.origem === 'os' ? 'ver a OS' : 'ver a medição'}</a></small></li>
             <li class="done"><span class="dot">${ic('check')}</span>Espelho preparado${x.versao > 1 ? ` (versão ${x.versao})` : ''}<small>${esc(formatarDataHora(x.criadoEm))} · ${esc(x.criadoPorNome || '')}${x.versao > 1 ? ` · corrigido ${esc(formatarDataHora(x.atualizadoEm))} por ${esc(x.atualizadoPorNome || '')}` : ''}</small></li>
             <li class="${x.nota ? 'done' : x.status === 'aguardando_nota' ? 'now' : ''}"><span class="dot">${x.nota ? ic('check') : ''}</span>Nota fiscal enviada pela prestadora<small>${x.nota ? esc(formatarDataHora(x.nota.enviadoEm) + ' · ' + (x.nota.enviadoPorNome || '')) : x.emissao ? 'emissor aberto ' + esc(formatarDataHora(x.emissao.em)) : 'esperando'}</small></li>
             <li class="${x.status === 'nota_ok' ? 'done' : x.status === 'nota_enviada' ? 'now' : ''}"><span class="dot">${x.status === 'nota_ok' ? ic('check') : ''}</span>Conferência: contrato + medição + nota<small>${x.conferenciaNota ? esc(formatarDataHora(x.conferenciaNota.em) + ' · ' + x.conferenciaNota.nome) : ''}</small></li></ul>
@@ -433,7 +442,7 @@
     id: 'espelhos', nome: 'Espelhos da nota', nomeCurto: 'Espelhos', icone: 'receipt', ordem: 27,
     para: ['empresa'], contrato: ['contratos', 'cobrancas'],
     iniciar(ctx) {
-      espT = []; espP = []; medsAprov = []; pronto = false; emissorCache = null;
+      espT = []; espP = []; medsAprov = []; osAprov = []; pronto = false; emissorCache = null;
       const db = CW.fb.db(), emp = ctx.contexto.empresaId, ok = { t: false, p: false, m: false };
       const redesenha = () => {
         if (!(ok.t && ok.p && ok.m)) return; pronto = true;
@@ -443,6 +452,7 @@
       };
       CW.inscrever('espelhos-t', () => db.collection('espelhos').where('tomadorId', '==', emp), s => { espT = CW.fb.lista(s); ok.t = true; redesenha(); });
       CW.inscrever('espelhos-p', () => db.collection('espelhos').where('prestadorId', '==', emp), s => { espP = CW.fb.lista(s); ok.p = true; redesenha(); });
+      if (pode(ctx)) CW.inscrever('espelhos-os', () => db.collection('ordens').where('tomadorId', '==', emp), s => { osAprov = CW.fb.lista(s).filter(o => ['aceita_total', 'aceita_parcial'].includes(o.status)).map(o => deOs(o)); redesenha(); }, () => {});
       if (pode(ctx)) CW.inscrever('espelhos-m', () => db.collection('medicoes').where('tomadorId', '==', emp), s => { medsAprov = CW.fb.lista(s).filter(m => m.status === 'aprovada'); ok.m = true; redesenha(); });
       else ok.m = true;
       return () => { pronto = false; };
@@ -450,7 +460,7 @@
     pendencias(ctx) {
       if (!pronto) return [];
       const comEsp = new Set(espT.map(x => x._id)), out = [];
-      if (pode(ctx)) medsAprov.filter(m => !comEsp.has(m._id)).forEach(m => out.push({ txt: 'Preparar o espelho da nota', sub: `${m.prestadorNome} · ${periodoTxt(m.periodo)} · ${brl(m.valorCentavos)}`, rota: 'espelhos/preparar/' + m._id }));
+      if (pode(ctx)) medsAprov.concat(osAprov).filter(m => !comEsp.has(m._id)).forEach(m => out.push({ txt: 'Preparar o espelho da nota', sub: `${m.prestadorNome} · ${periodoTxt(m.periodo)} · ${brl(m.valorCentavos)}`, rota: 'espelhos/preparar/' + m._id }));
       if (podeEnviar(ctx)) espP.filter(x => x.status === 'aguardando_nota').forEach(x => out.push({ txt: (x.recusadas || []).length ? 'Enviar outra nota (a anterior foi recusada)' : 'Emitir e enviar a nota fiscal', sub: `${x.tomadorNome} · ${periodoTxt(x.periodo)} · ${brl(x.valorCentavos)}`, rota: 'espelhos/ver/' + x._id }));
       if (pode(ctx)) espT.filter(x => x.status === 'nota_enviada').forEach(x => out.push({ txt: 'Conferir a nota fiscal', sub: `${x.prestadorNome} · ${periodoTxt(x.periodo)} · ${brl(x.valorCentavos)}`, rota: 'espelhos/ver/' + x._id }));
       return out;

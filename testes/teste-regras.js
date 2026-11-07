@@ -384,6 +384,37 @@ async function deve(nome, permitido, op) {
   await deve('Emissores: o admin define o site da própria empresa (área privada)', true, () => updateDoc(doc(db('ana'), 'empresas', 'alfa', 'privado', 'cadastro'), { emissor: { url: 'https://exemplo.gov.br', nome: 'site da prefeitura' } }));
   await deve('Emissores: o financeiro NÃO muda a área privada', false, () => updateDoc(doc(db('bruno'), 'empresas', 'alfa', 'privado', 'cadastro'), { emissor: null }));
 
+  /* ---------- serviço por entrega: contrato "os" e ordens de serviço ---------- */
+  P.sol = 'uSOL'; EM.sol = 'sol@alfa.com.br';
+  await env.withSecurityRulesDisabled(async c => { const d = c.firestore();
+    await setDoc(doc(d, 'acessos', 'alfa_' + P.sol), { uid: P.sol, empresaId: 'alfa', nome: 'Sol', email: EM.sol, cargo: 'solicitante', extras: [], sem: [], ativo: true });
+    await setDoc(doc(d, 'contratos', 'co'), ct({ modalidade: 'os', periodicidade: '', status: 'ativo', assinaturas: { tomador: { uid: P.ana }, prestador: { uid: P.beto } } })); });
+  await deve('OS: contrato por entrega NÃO tem medição por período', false, () => setDoc(doc(db('ana'), 'contratos', 'co2'), ct({ modalidade: 'os', periodicidade: 'quinzena' })));
+  await deve('OS: o admin cria contrato de serviço por entrega', true, () => setDoc(doc(db('ana'), 'contratos', 'co2'), ct({ modalidade: 'os', periodicidade: '' })));
+  const os = (k, extra) => Object.assign({ contratoId: 'co', tomadorId: 'alfa', prestadorId: 'beta', partes: ['alfa', 'beta'], tomadorNome: 'Alfa', prestadorNome: 'Beta', numero: 1, titulo: 'Revisão do quadro elétrico', escopo: 'Trocar disjuntores e entregar relatório.',
+    prazo: '2026-12-10', valorCentavos: 300000, status: 'proposta', aceiteProf: null, recusa: null, entrega: null, entregas: [], divergencia: null, aceite: null, cancelamento: null, criadoPor: P[k], criadoPorNome: k, criadoEm: serverTimestamp(), atualizadoEm: serverTimestamp() }, extra || {});
+  await deve('OS: o financeiro NÃO cria OS', false, () => setDoc(doc(db('bruno'), 'ordens', 'o0'), os('bruno')));
+  await deve('OS: NÃO cria OS em contrato de equipe contínua', false, () => setDoc(doc(db('sol'), 'ordens', 'o0'), os('sol', { contratoId: 'cm' })));
+  await deve('OS: o solicitante cria a OS (escopo, prazo e valor da entrega)', true, () => setDoc(doc(db('sol'), 'ordens', 'o1'), os('sol')));
+  await deve('OS: o tomador NÃO aceita a OS no lugar do profissional', false, () => updateDoc(doc(db('ana'), 'ordens', 'o1'), { status: 'aceita', aceiteProf: { uid: P.ana }, atualizadoEm: serverTimestamp() }));
+  await deve('OS: o profissional recusa sem motivo (sem punição)', true, async () => { await setDoc(doc(db('sol'), 'ordens', 'o2'), os('sol', { numero: 2 })); return updateDoc(doc(db('beto'), 'ordens', 'o2'), { status: 'recusada', recusa: { uid: P.beto, nome: 'Beto', motivo: '', em: serverTimestamp() }, atualizadoEm: serverTimestamp() }); });
+  await deve('OS: o profissional aceita', true, () => updateDoc(doc(db('beto'), 'ordens', 'o1'), { status: 'aceita', aceiteProf: { uid: P.beto, nome: 'Beto', em: serverTimestamp() }, atualizadoEm: serverTimestamp() }));
+  await deve('OS: entrega sem descrição NÃO vale', false, () => updateDoc(doc(db('beto'), 'ordens', 'o1'), { status: 'entregue', entrega: { uid: P.beto, descricao: 'ok', arquivo: null }, entregas: [{ d: 1 }], atualizadoEm: serverTimestamp() }));
+  await deve('OS: o profissional registra a entrega', true, () => updateDoc(doc(db('beto'), 'ordens', 'o1'), { status: 'entregue', entrega: { uid: P.beto, nome: 'Beto', descricao: 'Disjuntores trocados e relatório entregue.', arquivo: null, em: serverTimestamp() }, entregas: [{ d: 1 }], atualizadoEm: serverTimestamp() }));
+  await deve('OS: quem pediu a OS NÃO aceita a entrega sozinho', false, () => updateDoc(doc(db('sol'), 'ordens', 'o1'), { status: 'aceita_total', aceite: { uid: P.sol, tipo: 'total', valorAceito: 300000 }, atualizadoEm: serverTimestamp() }));
+  await deve('OS: aceite total NÃO pode mudar o valor', false, () => updateDoc(doc(db('aldo'), 'ordens', 'o1'), { status: 'aceita_total', aceite: { uid: P.aldo, tipo: 'total', valorAceito: 1 }, atualizadoEm: serverTimestamp() }));
+  await deve('OS: aceite parcial sem motivo NÃO vale', false, () => updateDoc(doc(db('aldo'), 'ordens', 'o1'), { status: 'aceita_parcial', aceite: { uid: P.aldo, tipo: 'parcial', valorAceito: 200000, motivo: '' }, atualizadoEm: serverTimestamp() }));
+  await deve('OS: o aprovador aponta divergência', true, () => updateDoc(doc(db('aldo'), 'ordens', 'o1'), { status: 'divergencia', divergencia: { uid: P.aldo, nome: 'Aldo', motivo: 'Faltou o relatório com fotos.', em: serverTimestamp() }, atualizadoEm: serverTimestamp() }));
+  await deve('OS: o profissional entrega de novo', true, () => updateDoc(doc(db('beto'), 'ordens', 'o1'), { status: 'entregue', entrega: { uid: P.beto, nome: 'Beto', descricao: 'Relatório com fotos anexado.', arquivo: null, em: serverTimestamp() }, entregas: [{ d: 1 }, { d: 2 }], atualizadoEm: serverTimestamp() }));
+  await deve('OS: o aprovador aceita em parte com motivo', true, () => updateDoc(doc(db('aldo'), 'ordens', 'o1'), { status: 'aceita_parcial', aceite: { uid: P.aldo, nome: 'Aldo', tipo: 'parcial', valorAceito: 250000, motivo: 'Um disjuntor ficou para a próxima OS.', em: serverTimestamp() }, atualizadoEm: serverTimestamp() }));
+  const espOs = (extra) => Object.assign({ medicaoId: 'o1', origem: 'os', osNumero: 1, contratoId: 'co', tomadorId: 'alfa', prestadorId: 'beta', partes: ['alfa', 'beta'], tomadorNome: 'Alfa', prestadorNome: 'Beta', prestadorCnpj: '',
+    tomador: { razao: 'Alfa Serviços Ltda', cnpj: '11.222.333/0001-81', im: '', endereco: '', cidade: '', uf: '' }, periodo: '2026-11', competencia: '2026-11', descricao: 'Prestação de serviços: OS 1.', valorCentavos: 250000,
+    retencoes: { iss: 0, inss: 0, ir: 0, pcc: 0 }, liquidoCentavos: 250000, vencimentoDias: 1, obs: '', status: 'aguardando_nota', versao: 1, criadoPor: P.bruno, criadoPorNome: 'Bruno', criadoEm: serverTimestamp(), atualizadoPor: P.bruno, atualizadoPorNome: 'Bruno', atualizadoEm: serverTimestamp() }, extra || {});
+  await deve('OS: espelho da OS NÃO pode ter o valor combinado (vale o aceito)', false, () => setDoc(doc(db('bruno'), 'espelhos', 'o1'), espOs({ valorCentavos: 300000, liquidoCentavos: 300000 })));
+  await deve('OS: o financeiro prepara o espelho com o valor aceito', true, () => setDoc(doc(db('bruno'), 'espelhos', 'o1'), espOs()));
+  await deve('OS: NÃO cancela OS já entregue e aceita', false, () => updateDoc(doc(db('sol'), 'ordens', 'o1'), { status: 'cancelada', cancelamento: { uid: P.sol, motivo: 'Não precisa mais.' }, atualizadoEm: serverTimestamp() }));
+  await deve('OS: ninguém apaga', false, () => deleteDoc(doc(db('ana'), 'ordens', 'o1')));
+
   /* ---------- documentos e certidões ---------- */
   const docE = (k, extra) => Object.assign({ empresaId: 'alfa', tipo: 'cndt', grupo: 'certidao', nome: 'CNDT', validade: '2027-01-31', compartilhar: true, status: 'vigente',
     arquivo: { envio: 'e1', partes: 1, nome: 'cndt.pdf', tipo: 'application/pdf', tam: 9 }, enviadoPor: P[k], enviadoPorNome: k, criadoEm: serverTimestamp() }, extra || {});

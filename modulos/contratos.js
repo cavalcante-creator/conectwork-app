@@ -34,10 +34,10 @@
     const pode = admin(ctx);
     document.getElementById('acoes').innerHTML = pode ? `<button class="btn" id="ct-novo">${ic('plus')}Novo contrato</button>` : '';
     const linhas = lista.map(c => { const l = ladoDe(c, ctx), falta = c.status === 'assinatura' && !(c.assinaturas || {})[l];
-      return `<tr class="click" data-abrir="${esc(c._id)}" tabindex="0"><td class="m-full"><div class="cell">${avatar(nomeOutro(c, ctx), '', l === 'tomador' ? c.prestadorId : c.tomadorId)}<div style="min-width:0"><strong>${esc(nomeOutro(c, ctx))}</strong><small>${esc(l === 'tomador' ? 'Você contrata' : 'Você presta o serviço')} · ${esc(c.objeto)}</small></div></div></td>
+      return `<tr class="click" data-abrir="${esc(c._id)}" tabindex="0"><td class="m-full"><div class="cell">${avatar(nomeOutro(c, ctx), '', l === 'tomador' ? c.prestadorId : c.tomadorId)}<div style="min-width:0"><strong>${esc(nomeOutro(c, ctx))}</strong><small>${esc(MODAL[c.modalidade] || 'Equipe contínua')} · ${esc(l === 'tomador' ? 'Você contrata' : 'Você presta o serviço')} · ${esc(c.objeto)}</small></div></div></td>
         <td class="m-hide">${esc(PER_CURTO[c.periodicidade] || '')}</td><td class="m-hide">${esc(venc(c.vencimentoDias))}</td><td class="m-hide">${esc(formatarData(c.inicio))}</td>
         <td>${pill(c.status)}${falta ? '<br><small class="hint" style="color:var(--warn)">falta a sua assinatura</small>' : c.proposta && c.proposta.lado !== l ? '<br><small class="hint" style="color:var(--warn)">proposta de vencimento</small>' : ''}</td></tr>`; }).join('');
-    el.innerHTML = `<section class="card" id="ct-lista"><div class="card-h"><span class="ic">${ic('file')}</span><h3>Contratos de equipe contínua</h3><span class="count">${lista.length}</span></div>
+    el.innerHTML = `<section class="card" id="ct-lista"><div class="card-h"><span class="ic">${ic('file')}</span><h3>Contratos</h3><span class="count">${lista.length}</span></div>
       ${lista.length ? `<div class="scroll"><table class="resp"><thead><tr><th>Com quem</th><th>Medição</th><th>Vencimento</th><th>Início</th><th>Situação</th></tr></thead><tbody>${linhas}</tbody></table></div>`
         : `<div class="empty"><div class="ic">${ic('file')}</div><strong>Nenhum contrato ainda.</strong><span>${pode ? 'Use "Novo contrato" para contratar uma prestadora aprovada no Conectwork.' : 'Quando a sua empresa tiver um contrato, ele aparece aqui.'}</span></div>`}</section>
       <p class="hint" style="margin:14px 0 0;font-size:12px">${esc(AVISO)}</p>`;
@@ -46,19 +46,23 @@
   }
 
   /* ---------- criar e corrigir ---------- */
+  const MODAL = { continua: 'Equipe contínua', os: 'Serviço por entrega' };
   async function formulario(ctx, c) {
     const { esc, ic } = U(), db = CW.fb.db(), eu = ctx.contexto.empresaId;
     let prestadoras = [];
     try { prestadoras = CW.fb.lista(await db.collection('empresas').where('status', '==', 'aprovado').get()).filter(e => e._id !== eu && ['prestador', 'ambos'].includes(e.tipo)).sort((a, b) => String(a.nome).localeCompare(String(b.nome), 'pt-BR')); }
     catch (e) { U().toast(CW.fb.mensagemErro(e), 'erro'); return; }
     let dados = null;
-    const v = c || { prestadorId: '', objeto: '', periodicidade: 'quinzena', vencimentoDias: 1, inicio: '', fim: '' };
-    await U().dialogo({ titulo: c ? 'Corrigir contrato' : 'Novo contrato · equipe contínua', sub: c ? 'As assinaturas recomeçam: as duas empresas assinam de novo.' : 'A prestadora recebe o contrato para assinar. Com as duas assinaturas, ele fica ativo.',
+    const v = c || { modalidade: 'continua', prestadorId: '', objeto: '', periodicidade: 'quinzena', vencimentoDias: 1, inicio: '', fim: '' };
+    await U().dialogo({ titulo: c ? 'Corrigir contrato' : 'Novo contrato', sub: c ? 'As assinaturas recomeçam: as duas empresas assinam de novo.' : 'A prestadora recebe o contrato para assinar. Com as duas assinaturas, ele fica ativo.',
       corpo: `<form class="fgrid" id="ct-form" novalidate>
-        <label class="f c12"><span>Prestadora</span>${c ? `<input value="${esc(c.prestadorNome)} · ${esc(c.prestadorCnpj || '')}" disabled>` : `<select id="ct-prest"><option value="">Escolha a prestadora</option>${prestadoras.map(e => `<option value="${esc(e._id)}">${esc(e.nome || e.razao)} · ${esc(e.cnpj || '')}</option>`).join('')}</select>
+        ${c ? '' : `<div class="c12"><p style="margin:0 0 8px;font-size:13px;font-weight:500">Tipo de contrato</p><div class="ct-mods">
+          <label class="ct-mod"><input type="radio" name="ct-mod" value="continua" checked><span><b>Equipe contínua</b><small>Prestadora com equipe e supervisor próprios; paga por medição do período.</small></span></label>
+          <label class="ct-mod"><input type="radio" name="ct-mod" value="os"><span><b>Serviço por entrega</b><small>Profissional PJ/MEI ou prestadora; cada trabalho é uma ordem de serviço com escopo, prazo e valor da entrega.</small></span></label></div></div>`}
+        <label class="f c12"><span id="ct-prest-rot">Prestadora</span>${c ? `<input value="${esc(c.prestadorNome)} · ${esc(c.prestadorCnpj || '')}" disabled>` : `<select id="ct-prest"><option value="">Escolha a prestadora</option>${prestadoras.map(e => `<option value="${esc(e._id)}">${esc(e.nome || e.razao)} · ${esc(e.cnpj || '')}</option>`).join('')}</select>
           <em class="hint">${prestadoras.length ? 'Só aparecem empresas aprovadas no Conectwork que prestam serviços.' : 'Nenhuma prestadora aprovada ainda. Ela precisa se cadastrar e ser aprovada pela equipe Conectwork.'}</em>`}</label>
         <label class="f c12"><span>Objeto do contrato</span><textarea id="ct-obj" rows="3" maxlength="500" placeholder="Ex.: Equipe de manutenção industrial com supervisor próprio da prestadora.">${esc(v.objeto)}</textarea></label>
-        <label class="f c6"><span>Medição</span><select id="ct-per">${Object.entries(PER).map(([k, n]) => `<option value="${k}" ${v.periodicidade === k ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
+        <label class="f c6" id="ct-per-l" ${v.modalidade === 'os' ? 'hidden' : ''}><span>Medição</span><select id="ct-per">${Object.entries(PER).map(([k, n]) => `<option value="${k}" ${v.periodicidade === k ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
         <label class="f c6"><span>Vencimento (dias depois da nota válida)</span><input id="ct-venc" type="number" inputmode="numeric" min="0" max="90" value="${esc(String(v.vencimentoDias))}"><em class="hint">Padrão: 1 dia. Depois de assinado, só muda com o aceite das duas empresas.</em></label>
         <label class="f c6"><span>Início</span><input id="ct-ini" type="date" value="${esc(v.inicio || '')}"></label>
         <label class="f c6"><span>Fim <i>(opcional)</i></span><input id="ct-fim" type="date" value="${esc(v.fim || '')}"><em class="hint">Em branco: sem data para terminar.</em></label>
@@ -66,28 +70,33 @@
         <p class="err c12" id="ct-erro" role="alert"></p></form>`,
       botoes: [{ texto: 'Voltar', valor: null, classe: 'sec' }, { texto: c ? 'Salvar correção' : 'Criar e mandar para assinar', valor: 'ok', antes: d => {
         const g = id => d.querySelector('#' + id), er = g('ct-erro');
-        const prest = c ? c.prestadorId : g('ct-prest').value, obj = g('ct-obj').value.trim().replace(/\s+/g, ' '), per = g('ct-per').value;
+        const mod = c ? (c.modalidade || 'continua') : ((d.querySelector('[name="ct-mod"]:checked') || {}).value || 'continua');
+        const prest = c ? c.prestadorId : g('ct-prest').value, obj = g('ct-obj').value.trim().replace(/\s+/g, ' '), per = mod === 'os' ? '' : g('ct-per').value;
         const vd = Number(g('ct-venc').value), ini = g('ct-ini').value, fim = g('ct-fim').value;
-        if (!prest) { er.textContent = 'Escolha a prestadora.'; return false; }
+        if (!prest) { er.textContent = mod === 'os' ? 'Escolha o profissional ou a prestadora.' : 'Escolha a prestadora.'; return false; }
         if (obj.length < 10) { er.textContent = 'Descreva o objeto do contrato (pelo menos 10 letras).'; g('ct-obj').focus(); return false; }
         if (!Number.isInteger(vd) || vd < 0 || vd > 90) { er.textContent = 'O vencimento vai de 0 a 90 dias depois da nota válida.'; g('ct-venc').focus(); return false; }
         if (!U().validarData(ini)) { er.textContent = 'Informe a data de início.'; g('ct-ini').focus(); return false; }
         if (fim && (!U().validarData(fim) || fim < ini)) { er.textContent = 'A data de fim precisa ser depois do início.'; g('ct-fim').focus(); return false; }
-        dados = { prestadorId: prest, objeto: obj, periodicidade: per, vencimentoDias: vd, inicio: ini, fim: fim || '' }; return true; } }],
-      aoAbrir: d => { const s = d.querySelector('#ct-prest') || d.querySelector('#ct-obj'); s.focus(); d.querySelectorAll('input,select,textarea').forEach(i => i.addEventListener('input', () => { d.querySelector('#ct-erro').textContent = ''; })); }
+        dados = { modalidade: mod, prestadorId: prest, objeto: obj, periodicidade: per, vencimentoDias: vd, inicio: ini, fim: fim || '' }; return true; } }],
+      aoAbrir: d => { const s = d.querySelector('#ct-prest') || d.querySelector('#ct-obj'); s.focus();
+        d.querySelectorAll('[name="ct-mod"]').forEach(r => r.onchange = () => { const os = r.value === 'os' && r.checked; if (!r.checked) return; d.querySelector('#ct-per-l').hidden = os;
+          d.querySelector('#ct-prest-rot').textContent = os ? 'Profissional (PJ/MEI) ou prestadora' : 'Prestadora';
+          d.querySelector('#ct-obj').placeholder = os ? 'Ex.: Manutenção elétrica sob demanda, por ordem de serviço com entrega definida.' : 'Ex.: Equipe de manutenção industrial com supervisor próprio da prestadora.'; }); d.querySelectorAll('input,select,textarea').forEach(i => i.addEventListener('input', () => { d.querySelector('#ct-erro').textContent = ''; })); }
     });
     if (!dados) return;
     const agora = CW.fb.agora, b = db.batch();
     try {
       if (c) {
-        b.update(db.doc('contratos/' + c._id), Object.assign({}, dados, { prestadorId: c.prestadorId, assinaturas: {}, atualizadoEm: agora() }));
+        const corr = Object.assign({}, dados, { prestadorId: c.prestadorId, assinaturas: {}, atualizadoEm: agora() }); delete corr.modalidade;
+        b.update(db.doc('contratos/' + c._id), corr);
         log(b, ctx, 'contrato.corrigir', `Contrato com ${c.prestadorNome} corrigido; as assinaturas recomeçam.`, c._id);
         await b.commit(); U().toast('Contrato corrigido. As duas empresas assinam de novo.'); desenharDetalhe(document.getElementById('view'), ctx, c._id); return;
       }
       const p = prestadoras.find(e => e._id === dados.prestadorId), t = ctx.contexto.empresa, ref = db.collection('contratos').doc();
-      b.set(ref, Object.assign({ modalidade: 'continua', tomadorId: eu, partes: [eu, p._id], tomadorNome: t.nome || t.razao || '', tomadorCnpj: t.cnpj || '', prestadorNome: p.nome || p.razao || '', prestadorCnpj: p.cnpj || '',
+      b.set(ref, Object.assign({ tomadorId: eu, partes: [eu, p._id], tomadorNome: t.nome || t.razao || '', tomadorCnpj: t.cnpj || '', prestadorNome: p.nome || p.razao || '', prestadorCnpj: p.cnpj || '',
         status: 'assinatura', assinaturas: {}, interlocutor: null, proposta: null, criadoPor: ctx.sessao.usuario.uid, criadoPorNome: quem(ctx), criadoEm: agora(), atualizadoEm: agora() }, dados));
-      log(b, ctx, 'contrato.criar', `Contrato de equipe contínua com ${p.nome || p.razao} criado e mandado para assinatura.`, ref.id);
+      log(b, ctx, 'contrato.criar', `Contrato (${MODAL[dados.modalidade].toLowerCase()}) com ${p.nome || p.razao} criado e mandado para assinatura.`, ref.id);
       await b.commit(); U().toast('Contrato criado. Agora as duas empresas assinam.'); CW.ir('contratos/ver/' + ref.id);
     } catch (e) { U().toast(CW.fb.mensagemErro(e), 'erro'); }
   }
@@ -108,7 +117,7 @@
     const semTriagem = l === 'tomador' && CW.triagem && !CW.triagem.libera(c);
     if (pode && c.status === 'assinatura' && !as[l] && semTriagem) acoes += `<div class="banner warn" id="ct-sem-triagem">${ic('shield')}<span><strong>Antes de assinar: triagem</strong>${c.triagem && c.triagem.resultado === 'nao_publicar' ? 'A triagem indica que este serviço não deve ser contratado neste modelo.' : c.triagem ? 'Registre o parecer jurídico favorável para liberar a assinatura.' : 'Faça a triagem do contrato (7 perguntas) para liberar a assinatura.'}</span></div>`;
     if (pode && c.status === 'assinatura' && !as[l] && !semTriagem) acoes += `<div class="stack" style="gap:10px" id="ct-assinar-box">
-        ${l === 'prestador' ? `<p style="margin:0;font-size:13px;font-weight:500">Interlocutor da prestadora (quem responde pelo serviço)</p>
+        ${l === 'prestador' ? `<p style="margin:0;font-size:13px;font-weight:500">${c.modalidade === 'os' ? 'Contato para as ordens de serviço <span class="hint" style="font-weight:400">(opcional)</span>' : 'Interlocutor da prestadora (quem responde pelo serviço)'}</p>
           <div class="fgrid"><label class="f c12"><span>Nome</span><input id="ct-int-nome" maxlength="120"></label><label class="f c6"><span>E-mail</span><input id="ct-int-email" type="email" maxlength="120"></label><label class="f c6"><span>Celular</span><input id="ct-int-cel" data-mascara="celular" inputmode="tel"></label></div>` : ''}
         <label class="check"><input type="checkbox" id="ct-li"><span>Li e concordo com este contrato em nome da ${esc(l === 'tomador' ? c.tomadorNome : c.prestadorNome)}.</span></label>
         <p class="err" id="ct-erro2" role="alert"></p>
@@ -123,7 +132,7 @@
     const enc = c.encerramento;
     el.innerHTML = `<div style="margin-bottom:14px"><button class="linkbtn" id="ct-voltar">${ic('back')}Voltar para os contratos</button></div>
       <div class="grid-main"><div class="stack">
-        <section class="card" id="ct-dados"><div class="card-h"><span class="ic">${ic('file')}</span><h3>Contrato de equipe contínua</h3><span style="margin-left:auto">${pill(c.status)}</span></div><div class="card-b"><dl class="dl">
+        <section class="card" id="ct-dados"><div class="card-h"><span class="ic">${ic('file')}</span><h3>${c.modalidade === 'os' ? 'Contrato de serviço por entrega' : 'Contrato de equipe contínua'}</h3><span style="margin-left:auto">${pill(c.status)}</span></div><div class="card-b"><dl class="dl">
           <div class="full"><dt>Objeto</dt><dd id="ct-objeto">${esc(c.objeto)}</dd></div>
           <div><dt>Quem contrata</dt><dd>${esc(c.tomadorNome)}<br><span class="hint">${esc(c.tomadorCnpj || '')}</span></dd></div>
           <div><dt>Quem presta o serviço</dt><dd>${esc(c.prestadorNome)}<br><span class="hint">${esc(c.prestadorCnpj || '')}</span></dd></div>
@@ -133,6 +142,7 @@
           ${c.interlocutor ? `<div class="full"><dt>Interlocutor da prestadora</dt><dd>${esc(c.interlocutor.nome)} · ${esc(c.interlocutor.email)}${c.interlocutor.cel ? ' · ' + esc(c.interlocutor.cel) : ''}</dd></div>` : ''}
           ${enc ? `<div class="full"><dt>Encerramento do serviço</dt><dd>${esc(formatarData(enc.data))} · por ${esc(enc.nome)} (${esc(enc.lado === 'tomador' ? c.tomadorNome : c.prestadorNome)}): ${esc(enc.motivo)}</dd></div>` : ''}
         </dl></div></section>
+        <div id="ct-ordens"></div>
         <div id="ct-avaliacoes"></div>
         <p class="hint" style="margin:0;font-size:12px">${esc(AVISO)} A assinatura aqui é um registro simples (quem e quando); a assinatura eletrônica com validade jurídica entra numa etapa futura.</p>
       </div><div class="stack">
@@ -145,7 +155,8 @@
     U().aplicarMascaras(el);
     ligarDetalhe(el, ctx, c, l, o);
     if (CW.triagem) CW.triagem.bloco(document.getElementById('ct-triagem'), ctx, c, () => desenharDetalhe(el, ctx, id));
-    if (CW.avaliacoes) CW.avaliacoes.bloco(document.getElementById('ct-avaliacoes'), ctx, c);
+    if (CW.ordens && c.modalidade === 'os') CW.ordens.blocoContrato(document.getElementById('ct-ordens'), ctx, c);
+    if (CW.avaliacoes && c.modalidade !== 'os') CW.avaliacoes.bloco(document.getElementById('ct-avaliacoes'), ctx, c);
     if (CW.documentos) CW.documentos.blocoContrato(document.getElementById('ct-docs'), ctx, c);
   }
 
@@ -159,7 +170,7 @@
     if (as) as.onclick = () => {
       const er = $('ct-erro2'); er.textContent = '';
       let inter = null;
-      if (l === 'prestador') {
+      if (l === 'prestador' && !(c.modalidade === 'os' && !$('ct-int-nome').value.trim())) {
         inter = { nome: $('ct-int-nome').value.trim().replace(/\s+/g, ' '), email: $('ct-int-email').value.trim().toLowerCase(), cel: $('ct-int-cel').value.trim() };
         if (inter.nome.split(' ').length < 2) { er.textContent = 'Informe nome e sobrenome do interlocutor.'; return; }
         if (!U().validarEmail(inter.email)) { er.textContent = 'E-mail do interlocutor inválido.'; return; }
@@ -248,11 +259,11 @@
         else if (adm && l === 'tomador' && c.status === 'assinatura' && tri && c.triagem.resultado === 'analise_juridica') out.push({ txt: 'Registrar o parecer jurídico do contrato', sub: nomeOutro(c, ctx), rota: 'contratos/ver/' + c._id });
         if (adm && c.status === 'assinatura' && !(c.assinaturas || {})[l] && !tri) out.push({ txt: 'Assinar o contrato', sub: `${nomeOutro(c, ctx)} · ${c.objeto}`, rota: 'contratos/ver/' + c._id });
         if (adm && c.status === 'ativo' && c.proposta && c.proposta.lado !== l) out.push({ txt: 'Responder a proposta de vencimento', sub: `${nomeOutro(c, ctx)} · para ${venc(c.proposta.vencimentoDias).toLowerCase()}`, rota: 'contratos/ver/' + c._id }); });
-      if (avFeitas) titPagos.filter(t => !avFeitas.has(t._id)).forEach(t => out.push({ txt: 'Avaliar o serviço do período', sub: `${t.prestadorNome} · ${CW.medicoes ? CW.medicoes.periodoTxt(t.periodo) : t.periodo} (já pago)`, rota: 'contratos/ver/' + t.contratoId }));
+      if (avFeitas) titPagos.filter(t => !avFeitas.has(t._id) && lista.some(c => c._id === t.contratoId && (c.modalidade || 'continua') === 'continua')).forEach(t => out.push({ txt: 'Avaliar o serviço do período', sub: `${t.prestadorNome} · ${CW.medicoes ? CW.medicoes.periodoTxt(t.periodo) : t.periodo} (já pago)`, rota: 'contratos/ver/' + t.contratoId }));
       return out;
     },
     telas: {
-      lista: { nome: 'Contratos', sub: 'Contratos de equipe contínua entre a sua empresa e quem contrata ou presta o serviço.', render: (el, ctx) => desenharLista(el, ctx) },
+      lista: { nome: 'Contratos', sub: 'Contratos de equipe contínua e de serviço por entrega entre a sua empresa e quem contrata ou presta o serviço.', render: (el, ctx) => desenharLista(el, ctx) },
       ver: { nome: 'Contrato', sub: 'Dados, assinaturas e vencimento. O vencimento só muda com o aceite das duas empresas.', render: (el, ctx) => desenharDetalhe(el, ctx, ctx.params[0]) },
       dossie: { nome: 'Dossiê da relação', sub: 'Os registros que mostram como a relação entre as empresas funciona na prática, num PDF para o jurídico.', render: (el, ctx) => CW.dossie.render(el, ctx, ctx.params[0]) }
     }

@@ -17,6 +17,17 @@
     ['exempregado', 'Alguém da equipe foi demitido da sua empresa há menos de 18 meses?', 'Art. 5º-D: quem foi demitido não pode voltar como empregado da prestadora antes de 18 meses.', 'sim', 'bloqueio'],
     ['socio', 'Algum sócio da prestadora trabalhou para a sua empresa (com ou sem carteira) nos últimos 18 meses?', 'Art. 5º-C: a prestadora não pode ter como sócio quem trabalhou para a contratante nos últimos 18 meses (exceto aposentado).', 'sim', 'bloqueio']
   ];
+  /* mesmas chaves (as regras do banco recalculam igual), perguntas próprias do serviço por entrega com profissional PJ/MEI */
+  const PERG_OS = [
+    ['entrega', 'Cada trabalho será uma entrega definida (resultado), combinada por ordem de serviço com escopo, prazo e valor?', 'Pagar por entrega, não por hora ou por mês fixo.', 'nao', 'risco'],
+    ['supervisor', 'O profissional decide como, quando e onde faz o trabalho, com as próprias ferramentas?', 'Autonomia é o que diferencia o profissional de um empregado.', 'nao', 'risco'],
+    ['ordens', 'Alguém da sua empresa vai dar ordens diretas, cobrar presença ou aplicar advertências ao profissional?', 'Ajustes do trabalho entram na ordem de serviço ou na divergência da entrega.', 'sim', 'risco'],
+    ['jornada', 'Vai existir horário fixo, controle de ponto ou registro de entrada e saída do profissional?', 'O Conectwork não faz controle de ponto de profissional.', 'sim', 'risco'],
+    ['exclusiv', 'O profissional fica impedido de atender outros clientes ou de mandar outra pessoa fazer a entrega?', 'Ele pode ter outros clientes e se fazer substituir.', 'sim', 'risco'],
+    ['exempregado', 'O profissional foi empregado (com carteira) da sua empresa nos últimos 18 meses?', 'Contratar como PJ quem foi empregado há menos de 18 meses é o sinal mais forte de pejotização (Lei 6.019, arts. 5º-C e 5º-D).', 'sim', 'bloqueio'],
+    ['socio', 'A contratação substitui um empregado que vai ser (ou foi) desligado para voltar como PJ?', 'Trocar a carteira por PJ para o mesmo trabalho não é terceirização: é vínculo de emprego.', 'sim', 'bloqueio']
+  ];
+  const pergDe = c => (c && c.modalidade === 'os') ? PERG_OS : PERG;
   const RES = { compativel: ['ok', 'Compatível'], analise_juridica: ['warn', 'Requer análise jurídica'], nao_publicar: ['danger', 'Não publicar neste modelo'] };
   function calcular(r) {
     const marca = t => PERG.some(([k, , , risco, tipo]) => tipo === t && r[k] === risco);
@@ -35,8 +46,8 @@
     box.innerHTML = `<section class="card" id="tr-card"><div class="card-h"><span class="ic">${ic('shield')}</span><h3>Triagem do contrato</h3>${r ? `<span style="margin-left:auto" class="pill ${r[0]}" id="tr-res">${esc(r[1])}</span>` : ''}</div><div class="card-b stack" style="gap:12px">
       ${!t ? `<p style="margin:0;font-size:13.5px">${souTom ? 'Antes de assinar, responda 7 perguntas rápidas sobre como o serviço vai funcionar (Lei 6.019).' : 'A empresa que contrata faz a triagem antes de assinar.'}</p>`
         : `<p style="margin:0;font-size:13px" class="hint">Feita por ${esc(t.nome)} em ${esc(formatarDataHora(t.em))}.</p>
-          ${t.resultado === 'analise_juridica' ? (t.parecer && t.parecer.ok ? `<div class="banner ok">${ic('check')}<span><strong>Parecer jurídico registrado</strong>${esc(t.parecer.obs)} · ${esc(t.parecer.nome)}</span></div>` : `<div class="banner warn" id="tr-aviso">${ic('alert')}<span><strong>Precisa de análise jurídica antes de assinar</strong>${PERG.filter(([k, , , risco, tp]) => tp === 'risco' && t.r[k] === risco).map(p => esc(p[2])).join(' ')}</span></div>`) : ''}
-          ${t.resultado === 'nao_publicar' ? `<div class="banner danger" id="tr-aviso">${ic('alert')}<span><strong>Este serviço não deve ser contratado neste modelo</strong>${PERG.filter(([k, , , risco, tp]) => tp === 'bloqueio' && t.r[k] === risco).map(p => esc(p[2])).join(' ')}${c.status === 'ativo' ? ' O contrato já está ativo: converse com o jurídico sobre encerrar o serviço.' : ''}</span></div>` : ''}`}
+          ${t.resultado === 'analise_juridica' ? (t.parecer && t.parecer.ok ? `<div class="banner ok">${ic('check')}<span><strong>Parecer jurídico registrado</strong>${esc(t.parecer.obs)} · ${esc(t.parecer.nome)}</span></div>` : `<div class="banner warn" id="tr-aviso">${ic('alert')}<span><strong>Precisa de análise jurídica antes de assinar</strong>${pergDe(c).filter(([k, , , risco, tp]) => tp === 'risco' && t.r[k] === risco).map(p => esc(p[2])).join(' ')}</span></div>`) : ''}
+          ${t.resultado === 'nao_publicar' ? `<div class="banner danger" id="tr-aviso">${ic('alert')}<span><strong>Este serviço não deve ser contratado neste modelo</strong>${pergDe(c).filter(([k, , , risco, tp]) => tp === 'bloqueio' && t.r[k] === risco).map(p => esc(p[2])).join(' ')}${c.status === 'ativo' ? ' O contrato já está ativo: converse com o jurídico sobre encerrar o serviço.' : ''}</span></div>` : ''}`}
       ${pode ? `<div style="display:flex;gap:8px;flex-wrap:wrap">${!t || c.status === 'assinatura' || c.status === 'ativo' ? `<button class="btn ${t ? 'sec' : ''}" id="tr-fazer">${ic('shield')}${t ? 'Refazer a triagem' : 'Fazer a triagem'}</button>` : ''}
         ${t && t.resultado === 'analise_juridica' && !(t.parecer && t.parecer.ok) ? `<button class="btn" id="tr-parecer">${ic('check')}Registrar o parecer jurídico</button>` : ''}</div>` : ''}
       <p class="hint" style="margin:0;font-size:12px">${esc(AVISO)}</p></div></section>`;
@@ -47,15 +58,15 @@
   const log = (b, ctx, acao, texto, ref) => b.set(CW.fb.db().collection('log').doc(), { em: CW.fb.agora(), uid: ctx.sessao.usuario.uid, quem: quem(ctx), empresaId: ctx.contexto.empresaId, acao, texto, ref: ref || '' });
 
   async function fazer(ctx, c, refazer) {
-    const { esc } = U(), ant = (c.triagem && c.triagem.r) || {};
+    const { esc } = U(), ant = (c.triagem && c.triagem.r) || {}, PQ = pergDe(c);
     let r = null;
     await U().dialogo({ titulo: 'Triagem do contrato', sub: `${c.prestadorNome} · responda como o serviço vai funcionar na prática.`,
-      corpo: `<div class="stack" style="gap:14px">${PERG.map(([k, q, ex], i) => `<div class="tr-q" data-k="${k}"><p style="margin:0 0 6px;font-size:13.5px;font-weight:500">${i + 1}. ${esc(q)}</p><p class="hint" style="margin:0 0 8px;font-size:12px">${esc(ex)}</p>
+      corpo: `<div class="stack" style="gap:14px">${PQ.map(([k, q, ex], i) => `<div class="tr-q" data-k="${k}"><p style="margin:0 0 6px;font-size:13.5px;font-weight:500">${i + 1}. ${esc(q)}</p><p class="hint" style="margin:0 0 8px;font-size:12px">${esc(ex)}</p>
           <div class="tr-op" role="radiogroup"><button type="button" class="tr-b ${ant[k] === 'sim' ? 'on' : ''}" data-v="sim">Sim</button><button type="button" class="tr-b ${ant[k] === 'nao' ? 'on' : ''}" data-v="nao">Não</button></div></div>`).join('')}
         <p class="err" id="tr-erro" role="alert"></p></div>`,
       botoes: [{ texto: 'Voltar', valor: null, classe: 'sec' }, { texto: 'Ver o resultado', valor: 'ok', antes: d => {
         const x = {}; let falta = 0;
-        PERG.forEach(([k], i) => { const b = d.querySelector(`.tr-q[data-k="${k}"] .tr-b.on`); if (b) x[k] = b.dataset.v; else if (!falta) falta = i + 1; });
+        PQ.forEach(([k], i) => { const b = d.querySelector(`.tr-q[data-k="${k}"] .tr-b.on`); if (b) x[k] = b.dataset.v; else if (!falta) falta = i + 1; });
         if (falta) { d.querySelector('#tr-erro').textContent = `Responda a pergunta ${falta}.`; return false; }
         r = x; return true; } }],
       aoAbrir: d => d.querySelectorAll('.tr-op').forEach(g => g.querySelectorAll('.tr-b').forEach(b => b.onclick = () => { g.querySelectorAll('.tr-b').forEach(x => x.classList.toggle('on', x === b)); d.querySelector('#tr-erro').textContent = ''; })) });
@@ -83,5 +94,5 @@
     refazer();
   }
 
-  CW.triagem = { PERG, RES, calcular, libera, bloco };
+  CW.triagem = { PERG, PERG_OS, pergDe, RES, calcular, libera, bloco };
 })();
