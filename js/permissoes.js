@@ -10,16 +10,16 @@
      Os ids das telas das próximas etapas já ficam aqui para o menu nascer certo:
      pagar (contas a pagar / fechamentos), receber (a receber / notas a emitir), integracao, relatorios,
      conta, empresa (dados da empresa), catalogo, profissionais, usuarios, historico,
-     demandas, contratos (com aceite e medição), titulos (contas a pagar e receber), notificacoes.
+     demandas, contratos, medicoes (medição do período da equipe contínua), titulos (contas a pagar e receber), notificacoes.
      Funções separadas no tomador: quem pede (solicitante) não aprova (aprovador) nem paga (tesouraria).
      A ordem abaixo é a ordem em que os cargos aparecem nas telas. */
   const CARGOS = {
     admin:       { nome: 'Administrador', telas: '*', desc: 'Vê tudo da empresa, convida pessoas, define cargos e ajusta acessos.' },
     solicitante: { nome: 'Solicitante', telas: ['demandas', 'contratos', 'notificacoes'], desc: 'Abre demandas e acompanha contratos; não aprova pagamento.' },
-    aprovador:   { nome: 'Aprovador técnico', telas: ['contratos', 'demandas', 'notificacoes'], desc: 'Aprova entregas e medições; não libera pagamento.' },
-    financeiro:  { nome: 'Financeiro', telas: ['pagar', 'receber', 'relatorios', 'conta', 'empresa'], desc: 'Pagar, receber, relatórios, conta e dados da empresa.' },
+    aprovador:   { nome: 'Aprovador técnico', telas: ['contratos', 'medicoes', 'demandas', 'notificacoes'], desc: 'Aprova entregas e medições; não libera pagamento.' },
+    financeiro:  { nome: 'Financeiro', telas: ['pagar', 'receber', 'medicoes', 'relatorios', 'conta', 'empresa'], desc: 'Pagar, receber, relatórios, conta e dados da empresa.' },
     tesouraria:  { nome: 'Tesouraria', telas: ['titulos', 'pagar', 'notificacoes'], desc: 'Agenda pagamentos liberados e confirma a liquidação.' },
-    rh:          { nome: 'RH', telas: ['pagar', 'integracao', 'relatorios', 'catalogo'], desc: 'Fechamentos, integração, relatórios e catálogo.' },
+    rh:          { nome: 'RH', telas: ['pagar', 'medicoes', 'integracao', 'relatorios', 'catalogo'], desc: 'Fechamentos, integração, relatórios e catálogo.' },
     operacional: { nome: 'Operacional', telas: ['receber', 'profissionais', 'catalogo'], desc: 'Notas a emitir, profissionais e catálogo.' },
     contador:    { nome: 'Contador (só leitura)', telas: ['pagar', 'receber', 'relatorios'], soLeitura: true, desc: 'Só leitura: cobranças e relatórios.' },
     consulta:    { nome: 'Só consulta', telas: ['pagar', 'receber', 'relatorios', 'empresa'], soLeitura: true, desc: 'Só leitura das telas liberadas.' }

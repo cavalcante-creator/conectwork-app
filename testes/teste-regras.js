@@ -218,6 +218,38 @@ async function deve(nome, permitido, op) {
   await deve('Contrato: ninguém apaga', false, () => deleteDoc(doc(db('ana'), 'contratos', 'c1')));
   await deve('Contrato: o tomador cancela antes de assinar', true, async () => { await setDoc(doc(db('ana'), 'contratos', 'c6'), ct()); return updateDoc(doc(db('ana'), 'contratos', 'c6'), { status: 'cancelado', atualizadoEm: serverTimestamp() }); });
 
+  /* ---------- medições do período ---------- */
+  P.rita = 'uRITA'; EM.rita = 'rita@alfa.com.br'; P.aldo = 'uALDO'; EM.aldo = 'aldo@alfa.com.br';
+  await env.withSecurityRulesDisabled(async c => { const d = c.firestore();
+    await setDoc(doc(d, 'acessos', 'alfa_' + P.rita), { uid: P.rita, empresaId: 'alfa', nome: 'Rita', email: EM.rita, cargo: 'rh', extras: [], sem: [], ativo: true });
+    await setDoc(doc(d, 'acessos', 'alfa_' + P.aldo), { uid: P.aldo, empresaId: 'alfa', nome: 'Aldo', email: EM.aldo, cargo: 'aprovador', extras: [], sem: [], ativo: true });
+    await setDoc(doc(d, 'contratos', 'cm'), ct({ status: 'ativo', assinaturas: { tomador: { uid: P.ana }, prestador: { uid: P.beto } } }));
+    await setDoc(doc(d, 'contratos', 'cx'), ct({ status: 'assinatura' })); });
+  const med = (k, extra) => Object.assign({ contratoId: 'cm', tomadorId: 'alfa', prestadorId: 'beta', partes: ['alfa', 'beta'], tomadorNome: 'Alfa', prestadorNome: 'Beta', periodicidade: 'quinzena',
+    periodo: '2026-11-1', valorCentavos: 500000, memoria: [{ nome: 'Pedro Lima', horas: 80, valorCentavos: 500000 }], obs: '', origem: 'manual', ref: '', status: 'enviada',
+    divergencia: null, confirmacao: null, aprovacao: null, criadoPor: P[k], criadoPorNome: k, criadoEm: serverTimestamp(), atualizadoEm: serverTimestamp() }, extra || {});
+  await deve('Medição: o RH do tomador lança com contrato ativo', true, () => setDoc(doc(db('rita'), 'medicoes', 'cm_2026-11-1'), med('rita')));
+  await deve('Medição: o financeiro do tomador NÃO lança', false, () => setDoc(doc(db('bruno'), 'medicoes', 'cm_2026-11-2'), med('bruno', { periodo: '2026-11-2' })));
+  await deve('Medição: NÃO com contrato que ainda espera assinatura', false, () => setDoc(doc(db('rita'), 'medicoes', 'cx_2026-11-1'), med('rita', { contratoId: 'cx' })));
+  await deve('Medição: o id é contrato_período (NÃO aceita outro)', false, () => setDoc(doc(db('rita'), 'medicoes', 'qualquer'), med('rita', { periodo: '2026-10-2' })));
+  await deve('Medição: período mensal NÃO entra em contrato por quinzena', false, () => setDoc(doc(db('rita'), 'medicoes', 'cm_2026-10'), med('rita', { periodo: '2026-10' })));
+  await deve('Medição: o mesmo período NÃO entra duas vezes', false, () => setDoc(doc(db('ana'), 'medicoes', 'cm_2026-11-1'), med('ana')));
+  await deve('Medição: NÃO nasce aprovada', false, () => setDoc(doc(db('rita'), 'medicoes', 'cm_2026-09-1'), med('rita', { periodo: '2026-09-1', status: 'aprovada' })));
+  await deve('Medição: quem lança consulta se o período já existe', true, () => getDoc(doc(db('rita'), 'medicoes', 'cm_2026-12-1')));
+  await deve('Medição: a prestadora lê', true, () => getDoc(doc(db('beto'), 'medicoes', 'cm_2026-11-1')));
+  await deve('Medição: quem não é das duas empresas NÃO lê', false, () => getDoc(doc(db('carla'), 'medicoes', 'cm_2026-11-1')));
+  await deve('Medição: o aprovador NÃO aprova antes de a prestadora conferir', false, () => updateDoc(doc(db('aldo'), 'medicoes', 'cm_2026-11-1'), { status: 'aprovada', aprovacao: { uid: P.aldo }, atualizadoEm: serverTimestamp() }));
+  await deve('Medição: o tomador NÃO confirma no lugar da prestadora', false, () => updateDoc(doc(db('ana'), 'medicoes', 'cm_2026-11-1'), { status: 'confirmada_prestadora', confirmacao: { uid: P.ana }, atualizadoEm: serverTimestamp() }));
+  await deve('Medição: a prestadora NÃO aponta divergência sem motivo', false, () => updateDoc(doc(db('beto'), 'medicoes', 'cm_2026-11-1'), { status: 'divergencia', divergencia: { uid: P.beto, motivo: 'errado' }, atualizadoEm: serverTimestamp() }));
+  await deve('Medição: a prestadora aponta divergência com motivo', true, () => updateDoc(doc(db('beto'), 'medicoes', 'cm_2026-11-1'), { status: 'divergencia', divergencia: { uid: P.beto, nome: 'Beto', motivo: 'As horas do Pedro somam 88, não 80.', em: serverTimestamp() }, atualizadoEm: serverTimestamp() }));
+  await deve('Medição: o RH corrige e reenvia', true, () => updateDoc(doc(db('rita'), 'medicoes', 'cm_2026-11-1'), { memoria: [{ nome: 'Pedro Lima', horas: 88, valorCentavos: 550000 }], valorCentavos: 550000, status: 'enviada', divergencia: null, confirmacao: null, atualizadoEm: serverTimestamp() }));
+  await deve('Medição: a prestadora confirma', true, () => updateDoc(doc(db('beto'), 'medicoes', 'cm_2026-11-1'), { status: 'confirmada_prestadora', confirmacao: { uid: P.beto, nome: 'Beto', em: serverTimestamp() }, atualizadoEm: serverTimestamp() }));
+  await deve('Medição: o RH (quem lançou) NÃO aprova', false, () => updateDoc(doc(db('rita'), 'medicoes', 'cm_2026-11-1'), { status: 'aprovada', aprovacao: { uid: P.rita }, atualizadoEm: serverTimestamp() }));
+  await deve('Medição: o aprovador NÃO muda o valor ao aprovar', false, () => updateDoc(doc(db('aldo'), 'medicoes', 'cm_2026-11-1'), { status: 'aprovada', valorCentavos: 1, aprovacao: { uid: P.aldo }, atualizadoEm: serverTimestamp() }));
+  await deve('Medição: o aprovador técnico aprova', true, () => updateDoc(doc(db('aldo'), 'medicoes', 'cm_2026-11-1'), { status: 'aprovada', aprovacao: { uid: P.aldo, nome: 'Aldo', em: serverTimestamp() }, atualizadoEm: serverTimestamp() }));
+  await deve('Medição: aprovada NÃO é cancelada', false, () => updateDoc(doc(db('rita'), 'medicoes', 'cm_2026-11-1'), { status: 'cancelada', atualizadoEm: serverTimestamp() }));
+  await deve('Medição: ninguém apaga', false, () => deleteDoc(doc(db('ana'), 'medicoes', 'cm_2026-11-1')));
+
   /* ---------- master e perfil ---------- */
   await deve('Pessoa lê o próprio master/{uid} (para saber se é equipe)', true, () => getDoc(doc(db('master'), 'master', P.master)));
   await deve('Pessoa consulta master/{uid} próprio mesmo sem ser master (documento não existe)', true, () => getDoc(doc(db('carla'), 'master', P.carla)));

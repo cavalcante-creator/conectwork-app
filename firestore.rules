@@ -194,6 +194,58 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // ---------- Medição do período (equipe contínua) · id = contratoId_período ----------
+    // Lança: admin ou RH do tomador, com contrato ativo. Confere: admin ou financeiro da prestadora.
+    // Aprova: admin ou aprovador técnico do tomador, e nunca quem lançou (funções separadas). Nada se apaga.
+    function cargoEm(emp, lista) { return membro(emp) && get(acessoDoc(emp)).data.cargo in lista; }
+    function camposMedicao() { return ['contratoId','tomadorId','prestadorId','partes','tomadorNome','prestadorNome','periodicidade','periodo',
+      'valorCentavos','memoria','obs','origem','ref','status','divergencia','confirmacao','aprovacao','criadoPor','criadoPorNome','criadoEm','atualizadoEm']; }
+    function periodoOk(p, per) { return per == 'quinzena' ? p.matches('[0-9]{4}-(0[1-9]|1[0-2])-[12]') : p.matches('[0-9]{4}-(0[1-9]|1[0-2])'); }
+    function medicaoCriar(id, d) {
+      let c = get(caminho('contratos', d.contratoId)).data;
+      return cargoEm(d.tomadorId, ['admin','rh'])
+        && d.keys().hasOnly(camposMedicao())
+        && id == d.contratoId + '_' + d.periodo
+        && c.status == 'ativo' && c.tomadorId == d.tomadorId && c.prestadorId == d.prestadorId
+        && d.partes == [d.tomadorId, d.prestadorId] && d.periodicidade == c.periodicidade && periodoOk(d.periodo, c.periodicidade)
+        && d.valorCentavos is int && d.valorCentavos > 0 && d.memoria is list && d.memoria.size() > 0 && d.memoria.size() <= 300
+        && d.status == 'enviada' && d.divergencia == null && d.confirmacao == null && d.aprovacao == null
+        && d.origem in ['manual','integracao'] && d.criadoPor == request.auth.uid && d.criadoEm == request.time;
+    }
+    function medicaoCorrigir(r, d) {
+      return cargoEm(r.tomadorId, ['admin','rh']) && r.status in ['enviada','divergencia'] && d.status == 'enviada'
+        && d.divergencia == null && d.confirmacao == null && d.valorCentavos is int && d.valorCentavos > 0 && d.memoria is list && d.memoria.size() > 0
+        && mudou().hasOnly(['memoria','valorCentavos','obs','status','divergencia','confirmacao','atualizadoEm']);
+    }
+    function medicaoConfirmar(r, d) {
+      return cargoEm(r.prestadorId, ['admin','financeiro']) && r.status == 'enviada' && d.status == 'confirmada_prestadora'
+        && d.confirmacao.uid == request.auth.uid && mudou().hasOnly(['status','confirmacao','atualizadoEm']);
+    }
+    function medicaoDivergir(r, d) {
+      return cargoEm(r.prestadorId, ['admin','financeiro']) && r.status == 'enviada' && d.status == 'divergencia'
+        && d.divergencia.uid == request.auth.uid && d.divergencia.motivo is string && d.divergencia.motivo.size() >= 10
+        && mudou().hasOnly(['status','divergencia','atualizadoEm']);
+    }
+    function medicaoAprovar(r, d) {
+      return cargoEm(r.tomadorId, ['admin','aprovador']) && r.status == 'confirmada_prestadora' && d.status == 'aprovada'
+        && d.aprovacao.uid == request.auth.uid && request.auth.uid != r.criadoPor && mudou().hasOnly(['status','aprovacao','atualizadoEm']);
+    }
+    function medicaoCancelar(r, d) {
+      return cargoEm(r.tomadorId, ['admin','rh']) && r.status in ['enviada','divergencia','confirmada_prestadora'] && d.status == 'cancelada'
+        && mudou().hasOnly(['status','atualizadoEm']);
+    }
+    match /medicoes/{id} {
+      // quem lança confere antes se o período já tem medição (documento que não existe pode ser consultado)
+      allow get: if logado() && (resource == null || master() || membro(resource.data.tomadorId) || membro(resource.data.prestadorId));
+      allow list: if master() || membro(resource.data.tomadorId) || membro(resource.data.prestadorId);
+      allow create: if medicaoCriar(id, request.resource.data);
+      allow update: if request.resource.data.keys().hasOnly(camposMedicao())
+        && (medicaoCorrigir(resource.data, request.resource.data) || medicaoConfirmar(resource.data, request.resource.data)
+            || medicaoDivergir(resource.data, request.resource.data) || medicaoAprovar(resource.data, request.resource.data)
+            || medicaoCancelar(resource.data, request.resource.data));
+      allow delete: if false;
+    }
+
     // ---------- CNPJ reservado (impede cadastro repetido) · id = só os 14 números ----------
     // Qualquer pessoa logada consulta se o CNPJ já tem cadastro (o CNPJ é dado público).
     // Só nasce junto com a empresa, por quem a está cadastrando; nunca muda nem some pelo app.

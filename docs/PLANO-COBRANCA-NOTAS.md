@@ -36,6 +36,15 @@ fecha a quinzena da Zenith  ──botão──▶  1. Medição recebida (Colafi
 - Segurança: um link sozinho não grava nada; quem confirma é uma pessoa logada e com permissão, que confere os valores (equivale a digitar). Mandar o mesmo período duas vezes não duplica (id da medição).
 - A mudança no painel é pequena (um botão no módulo `rh-pjpag.js`), mas segue o combinado do painel: pull request e testes.
 
+### Formato do link (pronto no Conectwork desde a parte 2)
+`<endereço do app>#medicoes/importar/<resumo>`, onde `<resumo>` é o JSON abaixo em UTF-8 codificado em **base64url** (sem `=` no fim):
+```json
+{ "v": 1, "origem": "painel-colafix", "periodo": "2026-11-1", "cnpj": "04252011000110", "nome": "ZENITH",
+  "ref": "2026-11-1:ZENITH", "total": 712050,
+  "itens": [ { "n": "Nome do PJ", "h": 96.8, "v": 352000 } ] }
+```
+`periodo` no formato do painel (`AAAA-MM-1`, `AAAA-MM-2` ou `AAAA-MM`); `cnpj` da prestadora só com números; valores em **centavos**; `h` = horas decimais (opcional); **sem CPF**. O Conectwork confere: link inteiro, quem abre pode lançar (admin ou RH), contrato ativo com esse CNPJ, período compatível com o contrato e soma das linhas = `total`.
+
 ### 4. Espelho de faturamento
 Gerado quando a medição é aprovada: razão social, CNPJ e endereço do tomador; contrato; competência; descrição sugerida da nota; valor aprovado; **retenções informadas pelo responsável fiscal** (ISS, INSS, IR, PIS/COFINS/CSLL, cada uma com valor); líquido; vencimento previsto. A prestadora recebe "Serviço aprovado: confira os dados e envie sua nota fiscal".
 
