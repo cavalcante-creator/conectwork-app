@@ -543,3 +543,12 @@ tr.click:hover td{background:var(--surface2)}
 .login.cmp3 .lg-bloco>.lg-termos{font-size:10.5px;line-height:1.35}
 .login.cmp3 .bp-topo>svg{width:36px}
 .login.cmp3 .brandpanel h1{font-size:22px}
+/* margem azul dos lados do cartão no celular (o cartão "flutua" mais) */
+@media (max-width:860px){
+  .loginside{padding-left:24px!important;padding-right:24px!important}
+  .brandpanel{padding-left:26px!important;padding-right:26px!important}
+}
+@media (max-width:380px){
+  .loginside{padding-left:20px!important;padding-right:20px!important}
+  .brandpanel{padding-left:22px!important;padding-right:22px!important}
+}

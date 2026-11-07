@@ -69,8 +69,8 @@ const { ok, fim } = H.placar('login');
       margens: [Math.round(c.left), Math.round(innerWidth - c.right)], fundo: getComputedStyle(document.querySelector('.login')).backgroundColor,
       rolagem: document.documentElement.scrollWidth > window.innerWidth };
   });
-  ok('L1f celular: cabeçalho azul compacto (logo, nome e frase), cartão logo abaixo com margens de 16px, sem rolagem para o lado',
-    l1f.alt < 150 && l1f.abaixo && l1f.frase && l1f.escondidos && l1f.margens[0] === 16 && l1f.margens[1] === 16 && l1f.fundo === 'rgb(8, 22, 56)' && !l1f.rolagem, JSON.stringify(l1f));
+  ok('L1f celular: cabeçalho azul compacto (logo, nome e frase), cartão logo abaixo com margens azuis de 24px dos lados, sem rolagem para o lado',
+    l1f.alt < 150 && l1f.abaixo && l1f.frase && l1f.escondidos && l1f.margens[0] === 24 && l1f.margens[1] === 24 && l1f.fundo === 'rgb(8, 22, 56)' && !l1f.rolagem, JSON.stringify(l1f));
   // L1i fundo da página (html e body) também azul: é o que o Safari do iPhone pinta atrás da barra de cima e no "puxar"
   const l1i = await page.evaluate(() => ({ html: getComputedStyle(document.documentElement).backgroundColor, body: getComputedStyle(document.body).backgroundColor, cls: document.documentElement.classList.contains('entrada'),
     preso: getComputedStyle(document.body).position === 'fixed' && getComputedStyle(document.documentElement).overscrollBehaviorY === 'none' }));
