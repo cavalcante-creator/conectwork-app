@@ -195,6 +195,7 @@
           ${cp('Valor do serviço', brl(x.valorCentavos), 'valor')}<div><dt>Período da medição</dt><dd>${esc(periodoTxt(x.periodo))}</dd></div>
           ${x.obs ? `<div class="full"><dt>Observação</dt><dd>${esc(x.obs)}</dd></div>` : ''}</dl></div></section>
         ${x.nota ? cartaoNota(x, ctx) : ''}
+        ${zapEsp(x, ctx)}
       </div><div class="stack">
         <section class="card" id="es-valores"><div class="card-h"><span class="ic">${ic('wallet')}</span><h3>Valores</h3></div><div class="card-b stack" style="gap:12px">
           <div class="scroll"><table><tbody><tr><td>Valor aprovado</td><td class="r"><b>${esc(brl(x.valorCentavos))}</b></td></tr>
@@ -214,7 +215,7 @@
     document.getElementById('es-voltar').onclick = () => CW.ir('espelhos');
     el.querySelectorAll('[data-copiar]').forEach(b => b.onclick = () => copiar(copias[b.dataset.copiar] || ''));
     const co = document.getElementById('es-corrigir'); if (co) co.onclick = () => CW.ir('espelhos/preparar/' + x._id);
-    ultimoCtx = ctx; ligarNota(el, ctx, x);
+    ultimoCtx = ctx; ligarNota(el, ctx, x); if (CW.avisar) CW.avisar.ligar(el);
   }
 
   /* ---------- nota fiscal: emitir fora, voltar e anexar (PDF ou XML), conferir ---------- */
@@ -235,6 +236,14 @@
     if (x.status === 'nota_enviada') return `<div class="banner ${l === 'tomador' ? 'warn' : 'info'}" id="es-aviso">${ic(l === 'tomador' ? 'alert' : 'clock')}<span><strong>${l === 'tomador' ? 'Nota chegou: confira' : 'Nota enviada'}</strong>${l === 'tomador' ? 'Veja a conferência abaixo, abra o arquivo se precisar e marque "Nota conferida" ou recuse com o motivo.' : 'A ' + esc(x.tomadorNome) + ' confere a nota com o contrato, a medição e o espelho.'}</span></div>`;
     if (x.status === 'nota_ok') return `<div class="banner ok" id="es-aviso">${ic('check')}<span><strong>Nota conferida</strong>Contrato, medição e nota batem. O título foi para Pagar e receber. <a href="#titulos/ver/${esc(x._id)}" class="linkbtn" id="es-titulo">Ver o título</a></span></div>`;
     return '';
+  }
+
+  function zapEsp(x, ctx) {
+    const A = CW.avisar, l = lado(x, ctx); if (!A || ctx.soLeitura) return '';
+    const fr = `${periodoTxt(x.periodo)} (${brl(x.valorCentavos)})`, rota = 'espelhos/ver/' + x._id;
+    const b = l === 'tomador' && x.status === 'aguardando_nota' && pode(ctx) ? A.botao(ctx, { frase: (x.recusadas || []).length ? `recusamos a nota de ${fr}; o motivo está no Conectwork. Pode enviar outra?` : `o espelho da nota de ${fr} está pronto. Emita a nota e anexe no Conectwork.`, rota, contratoId: x.contratoId, para: 'prestador' })
+      : l === 'prestador' && x.status === 'nota_enviada' && podeEnviar(ctx) ? A.botao(ctx, { frase: `enviamos a nota fiscal de ${fr}. Falta a conferência de vocês.`, rota }) : '';
+    return b ? `<div id="es-zap">${b}</div>` : '';
   }
 
   function cartaoNota(x, ctx) {
@@ -430,12 +439,21 @@
         if (!(ok.t && ok.p && ok.m)) return; pronto = true;
         const el = document.getElementById('view'), at = CW.app.atual();
         if (el && at && at.modulo === 'espelhos' && at.tela === 'lista') desenharLista(el, Object.assign({}, ctx, { sessao: CW.sessao.estado() }));
+        CW.app.pendenciasMudaram();
       };
       CW.inscrever('espelhos-t', () => db.collection('espelhos').where('tomadorId', '==', emp), s => { espT = CW.fb.lista(s); ok.t = true; redesenha(); });
       CW.inscrever('espelhos-p', () => db.collection('espelhos').where('prestadorId', '==', emp), s => { espP = CW.fb.lista(s); ok.p = true; redesenha(); });
       if (pode(ctx)) CW.inscrever('espelhos-m', () => db.collection('medicoes').where('tomadorId', '==', emp), s => { medsAprov = CW.fb.lista(s).filter(m => m.status === 'aprovada'); ok.m = true; redesenha(); });
       else ok.m = true;
       return () => { pronto = false; };
+    },
+    pendencias(ctx) {
+      if (!pronto) return [];
+      const comEsp = new Set(espT.map(x => x._id)), out = [];
+      if (pode(ctx)) medsAprov.filter(m => !comEsp.has(m._id)).forEach(m => out.push({ txt: 'Preparar o espelho da nota', sub: `${m.prestadorNome} · ${periodoTxt(m.periodo)} · ${brl(m.valorCentavos)}`, rota: 'espelhos/preparar/' + m._id }));
+      if (podeEnviar(ctx)) espP.filter(x => x.status === 'aguardando_nota').forEach(x => out.push({ txt: (x.recusadas || []).length ? 'Enviar outra nota (a anterior foi recusada)' : 'Emitir e enviar a nota fiscal', sub: `${x.tomadorNome} · ${periodoTxt(x.periodo)} · ${brl(x.valorCentavos)}`, rota: 'espelhos/ver/' + x._id }));
+      if (pode(ctx)) espT.filter(x => x.status === 'nota_enviada').forEach(x => out.push({ txt: 'Conferir a nota fiscal', sub: `${x.prestadorNome} · ${periodoTxt(x.periodo)} · ${brl(x.valorCentavos)}`, rota: 'espelhos/ver/' + x._id }));
+      return out;
     },
     telas: {
       lista: { nome: 'Espelhos da nota', sub: 'Dados da nota fiscal de cada medição aprovada: quem contrata prepara, a prestadora emite.', render: (el, ctx) => desenharLista(el, ctx) },

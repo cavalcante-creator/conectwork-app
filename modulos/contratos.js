@@ -17,6 +17,7 @@
   const AVISO = 'O Conectwork organiza a contratação e a gestão documental. A validade da relação depende da operação real, da legislação aplicável e da análise jurídica e contábil adequada.';
 
   let lista = null, porTomador = [], porPrestador = [];
+  let titPagos = [], avFeitas = null;
   const pill = s => { const x = ST[s] || ['info', s]; return `<span class="pill ${x[0]}">${U().esc(x[1])}</span>`; };
   const venc = n => n === 0 ? 'No mesmo dia da nota válida' : `${n} dia${n === 1 ? '' : 's'} depois da nota válida`;
   const ladoDe = (c, ctx) => c.tomadorId === ctx.contexto.empresaId ? 'tomador' : 'prestador';
@@ -217,11 +218,28 @@
         lista = Array.from(m.values()).sort((a, b) => (ordem[a.status] ?? 9) - (ordem[b.status] ?? 9) || String(b.inicio).localeCompare(String(a.inicio)));
         const el = document.getElementById('view'), at = CW.app.atual();
         if (el && at && at.modulo === 'contratos' && at.tela === 'lista') desenharLista(el, Object.assign({}, ctx, { sessao: CW.sessao.estado() }));
+        CW.app.pendenciasMudaram();
       };
       let a = false, b = false;
       CW.inscrever('contratos-t', () => db.collection('contratos').where('tomadorId', '==', emp), s => { porTomador = CW.fb.lista(s); a = true; if (b) junta(); });
       CW.inscrever('contratos-p', () => db.collection('contratos').where('prestadorId', '==', emp), s => { porPrestador = CW.fb.lista(s); b = true; if (a) junta(); });
+      /* avaliações que faltam (quem contrata: admin ou aprovador técnico) */
+      titPagos = []; avFeitas = null;
+      const cg = ctx.contexto.acesso && ctx.contexto.acesso.cargo;
+      if (!ctx.soLeitura && ['admin', 'aprovador'].includes(cg)) {
+        CW.inscrever('contratos-tit', () => db.collection('titulos').where('tomadorId', '==', emp), s => { titPagos = CW.fb.lista(s).filter(t => ['liquidado', 'baixado'].includes(t.status)); CW.app.pendenciasMudaram(); }, () => {});
+        CW.inscrever('contratos-av', () => db.collection('avaliacoes').where('tomadorId', '==', emp), s => { avFeitas = new Set(CW.fb.lista(s).map(x => x._id)); CW.app.pendenciasMudaram(); }, () => {});
+      }
       return () => { lista = null; };
+    },
+    pendencias(ctx) {
+      if (!lista) return [];
+      const out = [], adm = admin(ctx);
+      lista.forEach(c => { const l = ladoDe(c, ctx);
+        if (adm && c.status === 'assinatura' && !(c.assinaturas || {})[l]) out.push({ txt: 'Assinar o contrato', sub: `${nomeOutro(c, ctx)} · ${c.objeto}`, rota: 'contratos/ver/' + c._id });
+        if (adm && c.status === 'ativo' && c.proposta && c.proposta.lado !== l) out.push({ txt: 'Responder a proposta de vencimento', sub: `${nomeOutro(c, ctx)} · para ${venc(c.proposta.vencimentoDias).toLowerCase()}`, rota: 'contratos/ver/' + c._id }); });
+      if (avFeitas) titPagos.filter(t => !avFeitas.has(t._id)).forEach(t => out.push({ txt: 'Avaliar o serviço do período', sub: `${t.prestadorNome} · ${CW.medicoes ? CW.medicoes.periodoTxt(t.periodo) : t.periodo} (já pago)`, rota: 'contratos/ver/' + t.contratoId }));
+      return out;
     },
     telas: {
       lista: { nome: 'Contratos', sub: 'Contratos de equipe contínua entre a sua empresa e quem contrata ou presta o serviço.', render: (el, ctx) => desenharLista(el, ctx) },

@@ -166,6 +166,10 @@
       ? `<div class="banner info">${ic('shield')}<span><strong>Outra pessoa aprova</strong>Você lançou esta medição. Funções separadas: quem lança não aprova sozinho. Peça ao aprovador técnico.</span></div>`
       : `<button class="btn ok" id="md-aprovar">${ic('check')}Aprovar a medição</button>`;
     const temHoras = (m.memoria || []).some(x => x.horas != null);
+    const fr = `${periodoTxt(m.periodo)} (${brl(m.valorCentavos)})`, A = CW.avisar;
+    const zap = !A || ctx.soLeitura ? '' : l === 'tomador' && st === 'enviada' ? A.botao(ctx, { frase: `a medição de ${fr} está esperando a sua conferência.`, rota: 'medicoes/ver/' + id, contratoId: m.contratoId, para: 'prestador' })
+      : l === 'prestador' && st === 'divergencia' ? A.botao(ctx, { frase: `apontamos uma divergência na medição de ${fr}. Pode conferir e corrigir?`, rota: 'medicoes/ver/' + id })
+      : l === 'prestador' && st === 'confirmada_prestadora' ? A.botao(ctx, { frase: `confirmamos a medição de ${fr}. Falta a aprovação do aprovador técnico.`, rota: 'medicoes/ver/' + id }) : '';
     el.innerHTML = `<div style="margin-bottom:14px"><button class="linkbtn" id="md-voltar">${ic('back')}Voltar para as medições</button></div>
       ${st === 'divergencia' && m.divergencia ? `<div class="banner danger" id="md-div">${ic('alert')}<span><strong>Divergência apontada pela ${esc(m.prestadorNome)}</strong>${esc(m.divergencia.motivo)}</span></div>` : ''}
       <div class="grid-main"><div class="stack">
@@ -184,9 +188,11 @@
             ${passo(!!m.confirmacao, st === 'enviada' || st === 'divergencia', 'Conferida pela prestadora', m.confirmacao ? formatarDataHora(m.confirmacao.em) + ' · ' + m.confirmacao.nome : st === 'divergencia' ? 'divergência apontada' : 'esperando')}
             ${passo(!!m.aprovacao, st === 'confirmada_prestadora', 'Aprovada pelo aprovador técnico', m.aprovacao ? formatarDataHora(m.aprovacao.em) + ' · ' + m.aprovacao.nome : 'esperando')}</ul>
           ${acoes ? `<div style="display:flex;gap:8px;flex-wrap:wrap" id="md-acoes">${acoes}</div>` : ''}
+          ${zap ? `<div id="md-zap">${zap}</div>` : ''}
           ${st === 'aprovada' ? `<div id="md-espelho"><p class="hint" style="margin:0;font-size:12.5px">Próximo passo: o espelho da nota fiscal, com os dados para a prestadora emitir.</p></div>` : ''}
         </div></section></div></div>`;
     ligarDetalhe(el, ctx, m);
+    if (CW.avisar) CW.avisar.ligar(el);
     if (st === 'aprovada' && CW.espelhos) CW.espelhos.blocoMedicao(document.getElementById('md-espelho'), ctx, m);
   }
 
@@ -261,10 +267,15 @@
         lista = Array.from(mp.values()).sort((x, y) => String(y.periodo).localeCompare(String(x.periodo)) || String(x.prestadorNome).localeCompare(String(y.prestadorNome)));
         const el = document.getElementById('view'), at = CW.app.atual();
         if (el && at && at.modulo === 'medicoes' && at.tela === 'lista') desenharLista(el, Object.assign({}, ctx, { sessao: CW.sessao.estado() }));
+        CW.app.pendenciasMudaram();
       };
       CW.inscrever('medicoes-t', () => db.collection('medicoes').where('tomadorId', '==', emp), s => { porT = CW.fb.lista(s); a = true; if (b) junta(); });
       CW.inscrever('medicoes-p', () => db.collection('medicoes').where('prestadorId', '==', emp), s => { porP = CW.fb.lista(s); b = true; if (a) junta(); });
       return () => { lista = null; };
+    },
+    pendencias(ctx) {
+      return (lista || []).filter(m => precisaDeMim(m, ctx)).map(m => ({ rota: 'medicoes/ver/' + m._id, sub: `${outraParte(m, ctx)} · ${periodoTxt(m.periodo)} · ${brl(m.valorCentavos)}`,
+        txt: lado(m, ctx) === 'prestador' ? 'Conferir a medição' : m.status === 'divergencia' ? 'Corrigir a medição (divergência)' : 'Aprovar a medição' }));
     },
     telas: {
       lista: { nome: 'Medições', sub: 'Medição do período da equipe contínua: a prestadora confere e o aprovador técnico aprova.', render: (el, ctx) => desenharLista(el, ctx) },

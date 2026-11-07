@@ -135,9 +135,20 @@
             ${passo(i >= 4, st === 'liquidado', 'Recebido pela prestadora', ass(t.baixa))}</ul>
           ${t.liquidacao ? `<div><button class="btn sec" id="tt-comp">${ic('file')}Abrir o comprovante</button></div>` : ''}
           ${acoes ? `<div style="display:flex;gap:8px;flex-wrap:wrap" id="tt-acoes">${acoes}</div>` : ''}
+          ${zapTit(t, ctx)}
           <p class="hint" style="margin:0;font-size:12.5px">"Agendado" não é "pago": o título só fica pago com o comprovante. O dinheiro não passa pelo Conectwork.</p>
         </div></section></div></div>`;
     ligar(el, ctx, t, conta);
+    if (CW.avisar) CW.avisar.ligar(el);
+  }
+
+  function zapTit(t, ctx) {
+    const A = CW.avisar, l = lado(t, ctx); if (!A || ctx.soLeitura) return '';
+    const fr = `${periodoTxt(t.periodo)} (${brl(t.liquidoCentavos)})`, rota = 'titulos/ver/' + t._id;
+    const b = l === 'tomador' && t.status === 'liquidado' ? A.botao(ctx, { frase: `o pagamento de ${fr} foi feito. O comprovante está no Conectwork; confirme quando o dinheiro chegar.`, rota, contratoId: t.contratoId, para: 'prestador' })
+      : l === 'tomador' && ['aprovado', 'liberado'].includes(t.status) && !(t.conta || {}).ok ? A.botao(ctx, { frase: `o pagamento de ${fr} está aprovado. Falta vocês informarem a conta para receber.`, rota, contratoId: t.contratoId, para: 'prestador' })
+      : l === 'prestador' && (t.conta || {}).ok && ['aprovado', 'liberado'].includes(t.status) ? A.botao(ctx, { frase: `a conta para receber o pagamento de ${fr} já está informada.`, rota }) : '';
+    return b ? `<div id="tt-zap">${b}</div>` : '';
   }
 
   const lerComo = (f, modo) => new Promise((ok, erro) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = () => erro(r.error); r[modo](f); });
@@ -269,10 +280,16 @@
       const db = CW.fb.db(), emp = ctx.contexto.empresaId, ok = { t: false, p: false };
       const redesenha = () => { if (!(ok.t && ok.p)) return; pronto = true;
         const el = document.getElementById('view'), at = CW.app.atual();
-        if (el && at && at.modulo === 'titulos' && at.tela === 'lista') desenharLista(el, Object.assign({}, ctx, { sessao: CW.sessao.estado() })); };
+        if (el && at && at.modulo === 'titulos' && at.tela === 'lista') desenharLista(el, Object.assign({}, ctx, { sessao: CW.sessao.estado() }));
+        CW.app.pendenciasMudaram(); };
       CW.inscrever('titulos-t', () => db.collection('titulos').where('tomadorId', '==', emp), s => { tT = CW.fb.lista(s); ok.t = true; redesenha(); });
       CW.inscrever('titulos-p', () => db.collection('titulos').where('prestadorId', '==', emp), s => { tP = CW.fb.lista(s); ok.p = true; redesenha(); });
       return () => { pronto = false; };
+    },
+    pendencias(ctx) {
+      if (!pronto) return [];
+      return tT.concat(tP).map(t => ({ t, v: minhaVez(t, ctx) })).filter(x => x.v).map(({ t, v }) => ({ txt: v, rota: 'titulos/ver/' + t._id,
+        sub: `${lado(t, ctx) === 'tomador' ? t.prestadorNome : t.tomadorNome} · ${brl(t.liquidoCentavos)} · vence ${dataTxt(vencimento(t))}${vencido(t) ? ' (vencido)' : ''}` }));
     },
     telas: {
       lista: { nome: 'Pagar e receber', sub: 'Contas a pagar e a receber das notas conferidas, com o calendário de vencimentos.', render: (el, ctx) => desenharLista(el, ctx) },

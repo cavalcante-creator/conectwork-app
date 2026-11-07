@@ -6,14 +6,17 @@
      id: 'usuarios', nome: 'Usuários e acessos', icone: 'users', ordem: 50,
      para: ['empresa'], livre: false, semAprovacao: false, contrato: 'equipe',   // ver js/permissoes.js
      telas: { lista: { nome: 'Usuários e acessos', sub: 'texto abaixo do título', render(el, ctx) { … } } },
-     iniciar(ctx) { … ; return () => { // limpeza ao sair ou trocar de empresa } }
+     iniciar(ctx) { … ; return () => { // limpeza ao sair ou trocar de empresa } },
+     pendencias(ctx) { return [{ txt: 'O que fazer', sub: 'detalhe', rota: 'modulo/tela/id' }] }   // opcional: "Precisa de você"
    });
+   Quando os dados de um módulo mudam, ele chama CW.app.pendenciasMudaram(): o app recalcula o "Precisa de você" do Início,
+   os contadores do menu e o número no ícone do app instalado.
    ctx = { modulo, tela, params, contexto (empresa ou master atual), sessao (estado), soLeitura } */
 (function () {
   const CW = window.CW = window.CW || {};
   const U = () => CW.ui;
   const MODULOS = [];
-  let montado = false, limpezas = [], ouvintes = {}, atual = null;
+  let montado = false, limpezas = [], ouvintes = {}, atual = null, pendTimer = null;
 
   function registrarModulo(m) {
     if (!m || !m.id || !m.nome || !m.telas || !Object.keys(m.telas).length) { console.error('registrarModulo: informe id, nome e telas', m); return; }
@@ -80,6 +83,35 @@
     Object.values(ouvintes).forEach(f => { try { f(); } catch (e) { /* já desligado */ } }); ouvintes = {};
     document.querySelectorAll('dialog[open]').forEach(d => d.close());
     montado = false; atual = null;
+    try { if ('clearAppBadge' in navigator) navigator.clearAppBadge(); } catch (e) {}
+  }
+
+  /* ---------- "Precisa de você": junta as pendências de todos os módulos visíveis ---------- */
+  function pendencias() {
+    if (!montado) return [];
+    const c = baseCtx(), out = [];
+    visiveis().forEach(m => {
+      if (typeof m.pendencias !== 'function') return;
+      try { (m.pendencias(Object.assign({ modulo: m.id }, c)) || []).forEach(p => out.push(Object.assign({ mod: m.id, modNome: m.nome, icone: m.icone }, p))); }
+      catch (e) { console.error('pendencias ' + m.id, e); }
+    });
+    return out;
+  }
+  function pendenciasMudaram() {
+    clearTimeout(pendTimer);
+    pendTimer = setTimeout(() => {
+      if (!montado) return;
+      const ps = pendencias(), por = {};
+      ps.forEach(p => { por[p.mod] = (por[p.mod] || 0) + 1; });
+      const marca = (b, n) => { let s = b.querySelector('.badge'); if (!n) { if (s) s.remove(); return; } if (!s) { s = document.createElement('span'); s.className = 'badge'; b.appendChild(s); } s.textContent = n > 99 ? '99+' : String(n); s.setAttribute('aria-label', n + (n === 1 ? ' pendência' : ' pendências')); };
+      document.querySelectorAll('#menu [data-mod], #bnav [data-mod]').forEach(b => marca(b, por[b.dataset.mod] || 0));
+      const mb = document.getElementById('bnav-mais');
+      if (mb) { const vis = Array.from(document.querySelectorAll('#bnav [data-mod]')).map(b => b.dataset.mod); marca(mb, ps.filter(p => !vis.includes(p.mod)).length); }
+      try { if ('setAppBadge' in navigator) { if (ps.length) navigator.setAppBadge(ps.length); else navigator.clearAppBadge(); } } catch (e) { /* sem número no ícone */ }
+      document.title = document.title.replace(/^\(\d+\+?\) /, '');
+      if (ps.length) document.title = `(${ps.length}) ` + document.title;
+      window.dispatchEvent(new CustomEvent('cw:pendencias', { detail: ps }));
+    }, 60);
   }
 
   function baseCtx() { const s = CW.sessao.estado(); return { contexto: s.contexto, sessao: s, soLeitura: CW.permissoes.soLeitura(s.contexto) }; }
@@ -121,6 +153,7 @@
     document.getElementById('acoes').innerHTML = '';
     const view = document.getElementById('view'); view.innerHTML = '';
     document.title = (tela.nome || m.nome) + ' · Conectwork';
+    pendenciasMudaram();
     try { await tela.render(view, Object.assign({ modulo: m.id, tela: telaId, params: r.params }, baseCtx())); U().aplicarMascaras(view); }
     catch (e) { console.error(e); view.innerHTML = `<div class="banner danger">${ic('alert')}<span><strong>Não foi possível abrir esta tela.</strong>${esc(CW.fb.mensagemErro(e))}</span></div>`; }
   }
@@ -132,5 +165,5 @@
   CW.inscrever = inscrever;
   CW.ir = ir;
   CW.iniciar = iniciar;
-  CW.app = { montar, desmontar, desenhar, modulos: () => MODULOS.slice(), visiveis, atual: () => atual };
+  CW.app = { montar, desmontar, desenhar, modulos: () => MODULOS.slice(), visiveis, atual: () => atual, pendencias, pendenciasMudaram };
 })();
