@@ -101,7 +101,7 @@
     c._id = id;
     const l = ladoDe(c, ctx), o = outro(l), pode = admin(ctx), as = c.assinaturas || {};
     document.getElementById('titulo').textContent = 'Contrato com ' + nomeOutro(c, ctx);
-    document.getElementById('acoes').innerHTML = '';
+    document.getElementById('acoes').innerHTML = c.status !== 'cancelado' && CW.dossie ? `<button class="btn sec" id="ct-dossie">${ic('shield')}Dossiê da relação</button>` : '';
     const ass = lado => { const a = as[lado], n = lado === 'tomador' ? c.tomadorNome : c.prestadorNome;
       return `<li class="${a ? 'done' : 'now'}"><span class="dot">${a ? ic('check') : ''}</span>${esc(n)} <span class="hint">(${lado === 'tomador' ? 'contrata' : 'presta o serviço'})</span><small>${a ? 'assinou ' + esc(formatarDataHora(a.em)) + ' · ' + esc(a.nome) : 'falta assinar'}</small></li>`; };
     let acoes = '';
@@ -154,6 +154,7 @@
     const refazer = () => desenharDetalhe(el, ctx, c._id);
     const grava = async (fn, msg) => { const b = db.batch(); fn(b); try { await b.commit(); if (msg) U().toast(msg); } catch (e) { U().toast(CW.fb.mensagemErro(e), 'erro'); } refazer(); };
     $('ct-voltar').onclick = () => CW.ir('contratos');
+    const ds = $('ct-dossie'); if (ds) ds.onclick = () => CW.ir('contratos/dossie/' + c._id);
     const as = $('ct-assinar');
     if (as) as.onclick = () => {
       const er = $('ct-erro2'); er.textContent = '';
@@ -252,7 +253,8 @@
     },
     telas: {
       lista: { nome: 'Contratos', sub: 'Contratos de equipe contínua entre a sua empresa e quem contrata ou presta o serviço.', render: (el, ctx) => desenharLista(el, ctx) },
-      ver: { nome: 'Contrato', sub: 'Dados, assinaturas e vencimento. O vencimento só muda com o aceite das duas empresas.', render: (el, ctx) => desenharDetalhe(el, ctx, ctx.params[0]) }
+      ver: { nome: 'Contrato', sub: 'Dados, assinaturas e vencimento. O vencimento só muda com o aceite das duas empresas.', render: (el, ctx) => desenharDetalhe(el, ctx, ctx.params[0]) },
+      dossie: { nome: 'Dossiê da relação', sub: 'Os registros que mostram como a relação entre as empresas funciona na prática, num PDF para o jurídico.', render: (el, ctx) => CW.dossie.render(el, ctx, ctx.params[0]) }
     }
   });
 })();
