@@ -552,10 +552,10 @@ tr.click:hover td{background:var(--surface2)}
   .loginside{padding-left:20px!important;padding-right:20px!important}
   .brandpanel{padding-left:22px!important;padding-right:22px!important}
 }
-/* cartão levemente transparente (vidro): o azul aparece suave por trás; campos e botões continuam brancos */
-#lg.logincard{background:rgba(255,255,255,.84);-webkit-backdrop-filter:blur(14px) saturate(140%);backdrop-filter:blur(14px) saturate(140%)}
-:root[data-theme="dark"] #lg.logincard{background:rgba(19,40,90,.82)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #lg.logincard{background:rgba(19,40,90,.82)}}
+/* cartão branco sólido (o transparente foi testado e não ficou bom) */
+#lg.logincard{background:#fff}
+:root[data-theme="dark"] #lg.logincard{background:#13285A}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #lg.logincard{background:#13285A}}
 #lg .lg-ou{color:var(--muted)}
 /* celular: logo mais longe do topo; o cartão fica no meio do espaço que sobra embaixo do logo */
 @media (max-width:860px){
