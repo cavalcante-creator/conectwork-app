@@ -72,8 +72,9 @@ const { ok, fim } = H.placar('login');
   ok('L1f celular: cabeçalho azul compacto (logo, nome e frase), cartão logo abaixo com margens de 16px, sem rolagem para o lado',
     l1f.alt < 150 && l1f.abaixo && l1f.frase && l1f.escondidos && l1f.margens[0] === 16 && l1f.margens[1] === 16 && l1f.fundo === 'rgb(8, 22, 56)' && !l1f.rolagem, JSON.stringify(l1f));
   // L1i fundo da página (html e body) também azul: é o que o Safari do iPhone pinta atrás da barra de cima e no "puxar"
-  const l1i = await page.evaluate(() => ({ html: getComputedStyle(document.documentElement).backgroundColor, body: getComputedStyle(document.body).backgroundColor, cls: document.documentElement.classList.contains('entrada') }));
-  ok('L1i celular: fundo da página azul-marinho atrás da barra de cima (não fica esbranquiçado)', l1i.cls && l1i.html === 'rgb(8, 22, 56)' && l1i.body === 'rgb(8, 22, 56)', JSON.stringify(l1i));
+  const l1i = await page.evaluate(() => ({ html: getComputedStyle(document.documentElement).backgroundColor, body: getComputedStyle(document.body).backgroundColor, cls: document.documentElement.classList.contains('entrada'),
+    preso: getComputedStyle(document.body).position === 'fixed' && getComputedStyle(document.documentElement).overscrollBehaviorY === 'none' }));
+  ok('L1i celular: fundo azul-marinho atrás da barra de cima e página presa na tela (sem o "elástico" do iPhone)', l1i.cls && l1i.preso && l1i.html === 'rgb(8, 22, 56)' && l1i.body === 'rgb(8, 22, 56)', JSON.stringify(l1i));
   // L1j a tela de entrada cabe inteira na tela do celular, sem rolar (iPhone grande, Safari com as barras, iPhone SE)
   const l1j = [];
   for (const [w, h] of [[430, 932], [390, 844], [390, 664], [375, 667], [375, 553], [360, 640]]) {

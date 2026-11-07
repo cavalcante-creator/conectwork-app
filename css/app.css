@@ -27,8 +27,10 @@ html.entrada,html.entrada body{background:var(--navy);color-scheme:dark}
 html.entrada .carregando{color:#B8C7EA}
 /* a tela de entrada ocupa exatamente a tela: a página não rola nem "estica" (o próprio .login rola só se não couber,
    ex.: celular deitado ou muito pequeno). A margem da barra do celular fica dentro do .login. */
-html.entrada{padding:0;height:100%;overflow:hidden}
-html.entrada body{height:100%;overflow:hidden;overscroll-behavior:none}
+html.entrada{padding:0;height:100%;overflow:hidden;overscroll-behavior:none}
+/* iPhone: mesmo sem nada para rolar, o Safari deixa "puxar" a página (efeito elástico). Com o body preso na tela,
+   a página não se mexe; se um dia o conteúdo não couber (celular deitado), só o .login rola por dentro. */
+html.entrada body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none}
 html.entrada #app{height:100%;min-height:0}
 #lg-erro:empty{display:none}
 button,input,select,textarea{font:inherit;color:inherit}
