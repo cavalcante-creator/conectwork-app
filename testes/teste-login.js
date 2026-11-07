@@ -35,11 +35,11 @@ const { ok, fim } = H.placar('login');
 
   // L1d cartão centralizado na vertical; botões lado a lado
   const l1d = await page.evaluate(() => {
-    const c = document.getElementById('lg').getBoundingClientRect(), s = document.querySelector('.loginside').getBoundingClientRect();
+    const c = document.querySelector('.lg-bloco').getBoundingClientRect(), s = document.querySelector('.loginside').getBoundingClientRect();
     const [a, b] = Array.from(document.querySelectorAll('.lg-novos button')).map(x => x.getBoundingClientRect());
     return { cima: Math.round(c.top - s.top), baixo: Math.round(s.bottom - c.bottom), lado: Math.abs(a.top - b.top) < 2 && b.left > a.right };
   });
-  ok('L1d cartão centralizado na vertical e botões lado a lado', Math.abs(l1d.cima - l1d.baixo) <= 4 && l1d.lado, JSON.stringify(l1d));
+  ok('L1d cartão (com o aviso dos termos embaixo) centralizado na vertical; cadastro e convite lado a lado', Math.abs(l1d.cima - l1d.baixo) <= 4 && l1d.lado, JSON.stringify(l1d));
 
   // L1h fundo azul na tela inteira (sem lado claro) e cartão branco flutuando
   const l1h = await page.evaluate(() => {
@@ -49,9 +49,9 @@ const { ok, fim } = H.placar('login');
       cartao: getComputedStyle(c).backgroundColor, raio: getComputedStyle(c).borderRadius, larg: Math.round(c.getBoundingClientRect().width), sombra: getComputedStyle(c).boxShadow !== 'none' };
   });
   const transp = v => v === 'rgba(0, 0, 0, 0)' || v === 'transparent';
-  ok('L1h fundo azul e curvas na tela inteira, sem divisão; cartão branco de 440px, cantos de 16px e sombra',
+  ok('L1h fundo azul e curvas na tela inteira, sem divisão; cartão branco de 440px, cantos de 20px e sombra',
     l1h.fundo === 'rgb(8, 22, 56)' && transp(l1h.ladoDir) && transp(l1h.painel) && l1h.cheia && l1h.curvas
-    && l1h.cartao === 'rgb(255, 255, 255)' && l1h.raio === '16px' && l1h.larg === 440 && l1h.sombra, JSON.stringify(l1h));
+    && l1h.cartao === 'rgb(255, 255, 255)' && l1h.raio === '20px' && l1h.larg === 440 && l1h.sombra, JSON.stringify(l1h));
 
   // L1e "Tenho um convite" avisa que chega na próxima parte; "Cadastrar empresa" abre o cadastro (testado em teste-cadastro.js)
   const toast = () => page.evaluate(() => document.getElementById('toast').classList.contains('show') ? document.getElementById('toast').innerText : '');
@@ -83,6 +83,12 @@ const { ok, fim } = H.placar('login');
   }
   ok('L1j celular: login cabe na tela sem rolar (6 tamanhos, do iPhone SE ao Pro Max)', l1j.every(x => x.pag <= 0 && x.lg <= 0 && x.fim >= 0), JSON.stringify(l1j));
   await page.setViewportSize({ width: 1280, height: 900 });
+
+  // L1k2 hierarquia: título maior que os campos; "Entrar" o botão mais alto; campos com letra 16px (sem zoom no iPhone); termos fora do cartão
+  const hi = await page.evaluate(() => { const fs = s => parseFloat(getComputedStyle(document.querySelector(s)).fontSize), h = s => document.querySelector(s).getBoundingClientRect().height;
+    return { h2: fs('#lg h2'), campo: fs('#lg-email'), rot: fs('#lg label.f>span'), entrar: h('#lg-entrar'), google: h('#lg-google'), link: document.getElementById('lg-cadastrar').classList.contains('linkbtn'), termosFora: !document.getElementById('lg').contains(document.getElementById('lg-termos')) }; });
+  ok('L1k2 hierarquia: título grande, campos com letra 16px, "Entrar" mais alto que Google/Microsoft, cadastro e convite como links, termos fora do cartão',
+    hi.h2 >= 24 && hi.campo === 16 && hi.rot < hi.campo && hi.entrar > hi.google && hi.link && hi.termosFora, JSON.stringify(hi));
 
   // L1g modo escuro do sistema: cartão azul-escuro um tom acima do fundo (não preto), campos com borda visível
   const cor = () => page.evaluate(() => ({ c: getComputedStyle(document.getElementById('lg')).backgroundColor, b: getComputedStyle(document.getElementById('lg-email')).borderColor }));

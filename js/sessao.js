@@ -81,17 +81,17 @@
         <div class="lg-linha"><label class="lg-manter"><input type="checkbox" id="lg-manter" ${manterConectado() ? 'checked' : ''}><span>Manter conectado</span></label>
           <button class="linkbtn" type="button" id="lg-esqueci" data-lg-modo="esqueci">Esqueci minha senha</button></div>
         <p class="err" id="lg-erro" role="alert">${esc(msg || '')}</p>
-        <button class="btn" id="lg-entrar" type="submit">${ic('lock')}Entrar</button>
+        <button class="btn lg-principal" id="lg-entrar" type="submit">${ic('lock')}Entrar</button>
 </form>
         ${botoesSociais('lg', 'Entrar')}
-        <div class="divisoria" id="lg-novo"><span>Ainda não usa o Conectwork?</span></div>
-        <div class="lg-novos">
-          <button class="btn sec" type="button" id="lg-cadastrar">${ic('building')}Cadastrar empresa</button>
-          <button class="btn sec" type="button" id="lg-convite">${ic('mail')}Tenho um convite</button>
-        </div>`;
+        <div class="lg-rodape"><p class="lg-novo-t" id="lg-novo">Ainda não usa o Conectwork?</p>
+          <div class="lg-novos">
+            <button class="linkbtn" type="button" id="lg-cadastrar">${ic('building')}Cadastrar empresa</button>
+            <button class="linkbtn" type="button" id="lg-convite">${ic('mail')}Tenho um convite</button>
+          </div></div>`;
     }
-    moldura(`<div class="logincard card" id="lg"><div class="card-b">${card}
-      <p class="lg-termos" id="lg-termos">Ao entrar, você concorda com os <b>Termos de uso</b> e a <b>Política de privacidade</b>.</p></div></div>`);
+    moldura(`<div class="lg-bloco"><div class="logincard card" id="lg"><div class="card-b">${card}</div></div>
+      <p class="lg-termos" id="lg-termos">Ao entrar, você concorda com os <b>Termos de uso</b> e a <b>Política de privacidade</b>.</p></div>`);
     const bc = document.getElementById('lg-cadastrar'); if (bc) bc.onclick = cadastrarEmpresa;
     const bv = document.getElementById('lg-convite'); if (bv) bv.onclick = abrirConvite;
     app().querySelectorAll('[data-lg-modo]').forEach(b => b.onclick = () => telaLogin(b.dataset.lgModo === 'esqueci' ? 'esqueci' : 'login'));

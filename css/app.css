@@ -442,3 +442,69 @@ tr.click:hover td{background:var(--surface2)}
 .sel{font:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);max-width:100%}
 .acts{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
 @media (max-width:760px){table.resp .acts{justify-content:flex-start}}
+
+/* ---------- Tela de entrar · hierarquia e respiro (nov/2026) ----------
+   Título grande; campos e "Entrar" altos (letra 16px nos campos: o iPhone não dá zoom ao tocar);
+   Google/Microsoft um nível abaixo; cadastro e convite como links no rodapé do cartão; termos fora do cartão.
+   Os espaços usam a altura da tela (vh): crescem no celular grande e encolhem no pequeno, sem rolar. */
+.lg-bloco{display:flex;flex-direction:column;align-items:center;gap:clamp(10px,1.8vh,18px);width:100%}
+.lg-bloco>.logincard{width:100%;max-width:440px;border:0;border-radius:20px;color:var(--ink);box-shadow:0 1px 2px rgba(3,10,30,.25),0 28px 60px -24px rgba(3,10,30,.65)}
+.loginside>.lg-bloco{max-width:440px}
+#lg .card-b{padding:clamp(22px,3.4vh,34px) clamp(20px,2vw,30px)}
+#lg .lform{gap:clamp(12px,1.9vh,18px)}
+#lg .lg-cab h2{font-size:clamp(24px,3vh,28px);font-weight:650;letter-spacing:-.02em;line-height:1.15;margin:0 0 4px}
+#lg .lg-cab .sub{font-size:14.5px}
+#lg label.f{gap:7px}
+#lg label.f>span{font-size:13px}
+#lg label.f input{font-size:16px;padding:0 14px;height:clamp(46px,6vh,50px);border-radius:12px}
+#lg .lg-pw input{padding-right:52px!important}
+#lg .lg-linha{font-size:13.5px}
+#lg .lg-principal{height:clamp(48px,6.4vh,54px);font-size:16px;font-weight:600;border-radius:12px;margin-top:2px}
+#lg .lg-principal svg.i{width:19px;height:19px}
+#lg .lg-ou{margin:clamp(14px,2.4vh,22px) 0 clamp(10px,1.6vh,14px);font-size:12.5px}
+#lg .lg-social{gap:10px}
+#lg .lg-social .btn{height:clamp(42px,5.4vh,46px);font-size:14.5px;font-weight:500;border-radius:12px;gap:9px}
+#lg .lg-social svg.mk{width:19px;height:19px}
+#lg .lg-rodape{margin-top:clamp(16px,2.8vh,26px);padding-top:clamp(12px,2vh,18px);border-top:1px solid var(--line);text-align:center}
+#lg .lg-novo-t{margin:0 0 6px;font-size:13px;color:var(--muted)}
+#lg .lg-novos{display:flex;justify-content:center;flex-wrap:wrap;gap:4px 18px}
+#lg .lg-novos .linkbtn{font-size:14px;font-weight:600;padding:6px 2px;min-height:36px}
+#lg .lg-novos .linkbtn svg.i{width:17px;height:17px}
+.lg-bloco>.lg-termos{margin:0;max-width:360px;font-size:11.5px;line-height:1.5;color:#8FA3D3;text-align:center}
+.lg-bloco>.lg-termos b{color:#C5D3F2;font-weight:500}
+@media (max-width:860px){
+  .brandpanel{padding:clamp(14px,3.2vh,36px) 18px 0}
+  .bp-topo>svg{width:44px}.brandpanel h1{font-size:27px}
+  .brandpanel .tagline{font-size:15px;margin-top:clamp(8px,1.4vh,14px);color:#C5D3F2}
+  .loginside{padding:clamp(14px,2.6vh,28px) 16px clamp(12px,2.4vh,28px);justify-content:center}
+}
+/* celular baixo: tira a frase e o subtítulo e encolhe as alturas */
+@media (max-width:860px) and (max-height:740px){
+  .brandpanel .tagline,#lg .lg-cab .sub{display:none}
+  #lg label.f input{height:44px}#lg .lg-principal{height:48px}#lg .lg-social .btn{height:42px}
+}
+@media (max-width:860px) and (max-height:620px){
+  #lg .card-b{padding:16px 16px}#lg .lform{gap:9px}#lg .lg-cab h2{font-size:22px}
+  #lg label.f input{height:40px}#lg .lg-principal{height:44px}#lg .lg-social .btn{height:38px}
+  #lg .lg-ou{margin:10px 0 8px}#lg .lg-rodape{margin-top:10px;padding-top:8px}#lg .lg-novos .linkbtn{min-height:30px;padding:2px}
+  .lg-bloco{gap:6px}.lg-bloco>.lg-termos{font-size:10.5px}
+}
+@media (max-width:380px){#lg .lg-novos{gap:2px 12px}#lg .lg-novos .linkbtn{font-size:13.5px}#lg .lg-social .btn{font-size:14px;padding-inline:8px}}
+:root[data-theme="dark"] #lg .lg-rodape{border-color:#2A4378}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #lg .lg-rodape{border-color:#2A4378}}
+/* dentro do cartão: cores normais (as regras de "fora do cartão" pintavam claro sobre o branco) */
+#lg .linkbtn{color:var(--blue)}#lg .sub{color:var(--muted)}
+:root[data-theme="dark"] #lg .linkbtn{color:#8CB8FF}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #lg .linkbtn{color:#8CB8FF}}
+#lg .lg-novos svg.i{display:none}
+#lg .lg-novos{flex-wrap:nowrap}
+@media (max-width:860px) and (max-height:740px){
+  #lg .lg-ou{margin:12px 0 8px}#lg .lg-rodape{margin-top:14px;padding-top:10px}#lg .lg-novo-t{margin-bottom:2px}
+  #lg .lg-novos .linkbtn{min-height:32px;padding:4px 2px}#lg .card-b{padding:20px 18px}#lg .lform{gap:11px}
+}
+@media (max-width:860px) and (max-height:620px){   /* repetido no fim para vencer o bloco de 740px */
+  #lg .card-b{padding:14px 16px}#lg .lform{gap:8px}#lg .lg-cab h2{font-size:21px;margin:0}
+  #lg label.f{gap:4px}#lg label.f input{height:40px}#lg .lg-principal{height:44px}#lg .lg-social .btn{height:38px}
+  #lg .lg-ou{margin:8px 0 6px}#lg .lg-rodape{margin-top:8px;padding-top:6px}#lg .lg-novo-t{display:none}
+  #lg .lg-novos .linkbtn{min-height:30px;padding:2px}.lg-bloco{gap:6px}.lg-bloco>.lg-termos{font-size:10.5px;line-height:1.35}
+}
