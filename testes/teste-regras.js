@@ -205,6 +205,17 @@ async function deve(nome, permitido, op) {
   await deve('Contrato: quem não é das duas empresas NÃO lê', false, () => getDoc(doc(db('carla'), 'contratos', 'c1')));
   const assina = (k, lado, extra) => updateDoc(doc(db(k), 'contratos', 'c1'), Object.assign({ ['assinaturas.' + lado]: { uid: P[k], nome: k, em: serverTimestamp() }, atualizadoEm: serverTimestamp() }, extra || {}));
   await deve('Contrato: o tomador NÃO assina pela prestadora', false, () => assina('ana', 'prestador'));
+  const tri = (r, res, extra) => Object.assign({ r: Object.assign({ entrega: 'sim', supervisor: 'sim', ordens: 'nao', jornada: 'nao', exclusiv: 'nao', exempregado: 'nao', socio: 'nao' }, r || {}), resultado: res, parecer: null, uid: P.ana, nome: 'Ana', em: serverTimestamp() }, extra || {});
+  const triagem = (k, t) => updateDoc(doc(db(k), 'contratos', 'c1'), { triagem: t, atualizadoEm: serverTimestamp() });
+  await deve('Triagem: o tomador NÃO assina sem a triagem', false, () => assina('ana', 'tomador'));
+  await deve('Triagem: NÃO aceita resultado escolhido à mão (respostas de risco com "compatível")', false, () => triagem('ana', tri({ jornada: 'sim' }, 'compativel')));
+  await deve('Triagem: a prestadora NÃO faz a triagem', false, () => triagem('beto', tri({}, 'compativel', { uid: P.beto })));
+  await deve('Triagem: ex-empregado há menos de 18 meses dá "não publicar"', true, () => triagem('ana', tri({ exempregado: 'sim' }, 'nao_publicar')));
+  await deve('Triagem: com "não publicar" o tomador NÃO assina', false, () => assina('ana', 'tomador'));
+  await deve('Triagem: NÃO registra parecer em "não publicar"', false, () => triagem('ana', tri({ exempregado: 'sim' }, 'nao_publicar', { parecer: { ok: true, obs: 'Parecer favorável do jurídico.', uid: P.ana } })));
+  await deve('Triagem: jornada controlada dá "requer análise jurídica"', true, () => triagem('ana', tri({ jornada: 'sim' }, 'analise_juridica')));
+  await deve('Triagem: com análise jurídica sem parecer o tomador NÃO assina', false, () => assina('ana', 'tomador'));
+  await deve('Triagem: registra o parecer jurídico favorável', true, () => triagem('ana', tri({ jornada: 'sim' }, 'analise_juridica', { parecer: { ok: true, obs: 'Escritório X: pode contratar com supervisor no local.', uid: P.ana, nome: 'Ana', em: serverTimestamp() } })));
   await deve('Contrato: o tomador assina o seu lado', true, () => assina('ana', 'tomador'));
   await deve('Contrato: a prestadora NÃO assina deixando "esperando" quando o outro lado já assinou', false, () => assina('beto', 'prestador'));
   await deve('Contrato: a prestadora assina com o interlocutor e o contrato fica ativo', true, () => assina('beto', 'prestador', { status: 'ativo', ativadoEm: serverTimestamp(), interlocutor: { nome: 'Beto Alves', email: EM.beto, cel: '' } }));

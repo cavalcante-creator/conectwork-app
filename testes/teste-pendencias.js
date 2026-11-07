@@ -38,15 +38,15 @@ const { ok, fim } = H.placar('pendencias');
   await entrarComo('ana@alfa.com.br');
   await page.waitForSelector('#ini-pv .pv-it', { timeout: 8000 }); await H.dorme(800);
   const pv = await page.$$eval('#ini-pv .pv-it', x => x.map(e => e.querySelector('strong').innerText));
-  const esperado = ['Assinar o contrato', 'Avaliar o serviço do período', 'Aprovar a medição', 'Conferir a nota fiscal', 'Liberar para pagamento'];
-  ok('P1 o Início do admin junta: assinar contrato, avaliar o serviço, aprovar medição, conferir nota e liberar pagamento',
+  const esperado = ['Fazer a triagem do contrato', 'Avaliar o serviço do período', 'Aprovar a medição', 'Conferir a nota fiscal', 'Liberar para pagamento'];
+  ok('P1 o Início do admin junta: triagem do contrato, avaliar o serviço, aprovar medição, conferir nota e liberar pagamento',
     esperado.every(t => pv.includes(t)) && !pv.includes('Conferir a medição'), JSON.stringify(pv));
 
   // P2 contadores no menu, no título da aba e no ícone do app
   const badges = await page.$$eval('#menu [data-mod]', x => Object.fromEntries(x.map(b => [b.dataset.mod, (b.querySelector('.badge') || {}).textContent || ''])));
   const titulo = await page.title(), badge = await page.evaluate(() => window.__badge);
   ok('P2 cada item do menu mostra quantas pendências tem; o título da aba e o ícone do app mostram o total',
-    badges.contratos === '2' && badges.medicoes === '1' && badges.espelhos === '1' && badges.titulos === '1' && !badges.inicio && badge === pv.length && titulo.startsWith(`(${pv.length})`), JSON.stringify({ badges, titulo, badge }));
+    badges.contratos === '3' && badges.medicoes === '1' && badges.espelhos === '1' && badges.titulos === '1' && !badges.inicio && badge === pv.length && titulo.startsWith(`(${pv.length})`), JSON.stringify({ badges, titulo, badge }));
 
   // P3 tocar no item abre a tela certa
   await page.click('#ini-pv .pv-it:has-text("Aprovar a medição")'); await page.waitForSelector('#md-aprovar', { timeout: 8000 });
@@ -57,7 +57,7 @@ const { ok, fim } = H.placar('pendencias');
   await page.evaluate(() => { location.hash = '#inicio'; }); await page.waitForSelector('#ini-pv', { timeout: 8000 }); await H.dorme(500);
   const pv4 = await page.$$eval('#ini-pv .pv-it', x => x.map(e => e.querySelector('strong').innerText));
   const b4 = await page.$eval('#menu [data-mod="medicoes"]', b => !!b.querySelector('.badge'));
-  ok('P4 depois de aprovar, a medição sai do "Precisa de você" e o contador some; o espelho para preparar entra', !pv4.includes('Aprovar a medição') && !b4 && pv4.includes('Preparar o espelho da nota'), JSON.stringify(pv4));
+  ok('P4 depois de aprovar, a medição sai do "Precisa de você" e o contador some; o espelho para preparar entra', !pv4.includes('Aprovar a medição') && !pv4.includes('Assinar o contrato') && !b4 && pv4.includes('Preparar o espelho da nota'), JSON.stringify(pv4));
 
   // P5 WhatsApp para a prestadora: com o celular do interlocutor e o link da tela
   await page.evaluate(() => { location.hash = '#espelhos/ver/cz_2026-09-1'; }); await page.waitForSelector('#es-zap [data-zap]', { timeout: 8000 });
@@ -74,7 +74,7 @@ const { ok, fim } = H.placar('pendencias');
   const comZap = /Avisar no WhatsApp/.test(await page.$eval('#es-zap', e => e.innerText).catch(() => ''));
   await page.evaluate(() => { location.hash = '#medicoes/ver/cz_2026-10-1'; }); await page.waitForSelector('#md-confirmar', { timeout: 8000 });
   ok('P6 prestadora vê: conferir a medição, emitir a nota, informar a conta e confirmar o recebimento',
-    ['Conferir a medição', 'Emitir e enviar a nota fiscal', 'Informe a conta para receber', 'Confirme que o dinheiro chegou'].every(t => pv6.includes(t)) && !pv6.includes('Assinar o contrato') && comZap, JSON.stringify(pv6));
+    ['Conferir a medição', 'Emitir e enviar a nota fiscal', 'Informe a conta para receber', 'Confirme que o dinheiro chegou'].every(t => pv6.includes(t)) && !pv6.includes('Assinar o contrato') && !pv6.includes('Fazer a triagem do contrato') && comZap, JSON.stringify(pv6));
 
   // P7 celular: contador na barra de baixo
   await page.setViewportSize({ width: 390, height: 844 }); await page.evaluate(() => { location.hash = '#inicio'; }); await page.waitForSelector('#ini-pv'); await H.dorme(500);

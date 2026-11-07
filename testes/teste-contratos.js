@@ -41,6 +41,18 @@ const { ok, fim } = H.placar('contratos');
   await page.fill('#ct-ini', '2026-11-01'); await dlgOk(); await page.waitForSelector('#ct-assinaturas', { timeout: 8000 });
   let c = (await contratos())[0];
   const k2 = { st: await page.$eval('#ct-dados .pill', e => e.innerText), venc: await page.$eval('#ct-venc-v', e => e.innerText) };
+  const semBotao = !(await page.$('#ct-assinar')) && /triagem/i.test(await page.$eval('#ct-sem-triagem', e => e.innerText));
+  /* triagem: jornada controlada = requer análise jurídica; com o parecer registrado, libera a assinatura */
+  await page.click('#tr-fazer'); await page.waitForSelector('.tr-q');
+  await dlgOk(); const eTri = await page.$eval('#tr-erro', e => e.innerText);
+  for (const [k, v] of Object.entries({ entrega: 'sim', supervisor: 'sim', ordens: 'nao', jornada: 'sim', exclusiv: 'nao', exempregado: 'nao', socio: 'nao' })) await page.click(`.tr-q[data-k="${k}"] .tr-b[data-v="${v}"]`);
+  await dlgOk(); await page.waitForSelector('#tr-parecer', { timeout: 8000 });
+  const res1 = await page.$eval('#tr-res', e => e.innerText), aindaSem = !(await page.$('#ct-assinar'));
+  await page.click('#tr-parecer'); await page.waitForSelector('#pj-obs'); await page.fill('#pj-obs', 'Escritório Exemplo: pode contratar com o supervisor da prestadora no local.'); await page.check('#pj-ok'); await dlgOk();
+  await page.waitForSelector('#ct-assinar', { timeout: 8000 });
+  c = (await contratos())[0];
+  ok('K1b sem triagem não assina; jornada controlada dá "Requer análise jurídica"; com o parecer favorável registrado, a assinatura é liberada',
+    semBotao && /Responda a pergunta 1/.test(eTri) && res1 === 'Requer análise jurídica' && aindaSem && c.triagem.resultado === 'analise_juridica' && c.triagem.r.jornada === 'sim' && c.triagem.parecer.ok && (await logs('contrato.triagem')).length === 1 && (await logs('contrato.parecer')).length === 1, JSON.stringify({ semBotao, eTri, res1 }));
   await page.click('#ct-assinar'); const e5 = await page.$eval('#ct-erro2', e => e.innerText);
   await page.check('#ct-li'); await page.click('#ct-assinar'); await H.dorme(500);
   c = (await contratos())[0];
@@ -81,13 +93,17 @@ const { ok, fim } = H.placar('contratos');
   // K6 corrigir antes de assinado (assinaturas recomeçam) e cancelar
   await page.evaluate(() => { location.hash = '#contratos'; }); await page.waitForSelector('#ct-novo');
   await page.click('#ct-novo'); await page.waitForSelector('#ct-prest'); await page.selectOption('#ct-prest', 'zeta'); await page.fill('#ct-obj', 'Equipe de limpeza com supervisor próprio.'); await page.fill('#ct-ini', '2026-12-01'); await dlgOk();
-  await page.waitForSelector('#ct-assinar'); await page.check('#ct-li'); await page.click('#ct-assinar'); await page.waitForSelector('#ct-corrigir', { timeout: 6000 }); await H.dorme(300);
+  await page.waitForSelector('#tr-fazer'); await page.click('#tr-fazer'); await page.waitForSelector('.tr-q');
+  for (const [k, v] of Object.entries({ entrega: 'sim', supervisor: 'sim', ordens: 'nao', jornada: 'nao', exclusiv: 'nao', exempregado: 'nao', socio: 'nao' })) await page.click(`.tr-q[data-k="${k}"] .tr-b[data-v="${v}"]`);
+  await dlgOk(); await page.waitForSelector('#ct-assinar', { timeout: 8000 });
+  const compat = await page.$eval('#tr-res', e => e.innerText);
+  await page.check('#ct-li'); await page.click('#ct-assinar'); await page.waitForSelector('#ct-corrigir', { timeout: 6000 }); await H.dorme(300);
   await page.click('#ct-corrigir'); await page.waitForSelector('#ct-obj'); await page.fill('#ct-obj', 'Equipe de limpeza e conservação com supervisor próprio.'); await dlgOk(); await H.dorme(600);
   let c2 = (await contratos()).find(x => /limpeza/.test(x.objeto));
   const k6a = { obj: c2.objeto, as: Object.keys(c2.assinaturas || {}) };
   await page.waitForSelector('#ct-cancelar'); await page.click('#ct-cancelar'); await page.waitForSelector('dialog[open]'); await dlgOk(); await H.dorme(500);
   c2 = (await contratos()).find(x => /limpeza/.test(x.objeto));
-  ok('K6 antes das assinaturas o tomador corrige (as assinaturas recomeçam) e pode cancelar', /conservação/.test(k6a.obj) && k6a.as.length === 0 && c2.status === 'cancelado' && (await logs('contrato.corrigir')).length === 1, JSON.stringify({ k6a, st: c2.status }));
+  ok('K6 (triagem compatível libera direto) antes das assinaturas o tomador corrige (as assinaturas recomeçam) e pode cancelar', compat === 'Compatível' && /conservação/.test(k6a.obj) && k6a.as.length === 0 && c2.status === 'cancelado' && (await logs('contrato.corrigir')).length === 1, JSON.stringify({ k6a, st: c2.status }));
 
   // K7 quem não é admin vê mas não muda (financeiro não tem Contratos no menu; solicitante vê sem botões)
   await page.evaluate(() => { const a = CW.sessao.estado().contexto.acesso; a.cargo = 'solicitante'; CW.app.montar(); });

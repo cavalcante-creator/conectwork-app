@@ -141,7 +141,7 @@ service cloud.firestore {
     // (nunca por um lado só) e encerrar o serviço. Nada se apaga.
     function camposContrato() { return ['modalidade','tomadorId','prestadorId','partes','tomadorNome','tomadorCnpj','prestadorNome','prestadorCnpj',
       'objeto','periodicidade','vencimentoDias','inicio','fim','status','assinaturas','interlocutor','proposta','criadoPor','criadoPorNome',
-      'criadoEm','atualizadoEm','ativadoEm','encerramento']; }
+      'criadoEm','atualizadoEm','ativadoEm','encerramento','triagem']; }
     function meuLado(c) { return admin(c.tomadorId) ? 'tomador' : (admin(c.prestadorId) ? 'prestador' : ''); }
     function vencOk(n) { return n is int && n >= 0 && n <= 90; }
     function mudou() { return request.resource.data.diff(resource.data).affectedKeys(); }
@@ -150,6 +150,31 @@ service cloud.firestore {
         && mudou().hasOnly(['objeto','periodicidade','vencimentoDias','inicio','fim','assinaturas','atualizadoEm'])
         && d.periodicidade in ['quinzena','mes'] && vencOk(d.vencimentoDias);
     }
+    // Triagem (Lei 6.019, arts. 5º-C e 5º-D): o resultado é recalculado aqui a partir das respostas; o tomador só assina com
+    // "compatível" ou "requer análise jurídica" com parecer favorável registrado.
+    function respOk(v) { return v in ['sim','nao']; }
+    function triRisco(q) { return q.entrega == 'nao' || q.supervisor == 'nao' || q.ordens == 'sim' || q.jornada == 'sim' || q.exclusiv == 'sim'; }
+    function triBloq(q) { return q.exempregado == 'sim' || q.socio == 'sim'; }
+    function triResultadoOk(t) {
+      let q = t.r;
+      return q.keys().hasOnly(['entrega','supervisor','ordens','jornada','exclusiv','exempregado','socio'])
+        && q.keys().hasAll(['entrega','supervisor','ordens','jornada','exclusiv','exempregado','socio'])
+        && respOk(q.entrega) && respOk(q.supervisor) && respOk(q.ordens) && respOk(q.jornada) && respOk(q.exclusiv) && respOk(q.exempregado) && respOk(q.socio)
+        && (t.resultado == 'nao_publicar') == triBloq(q)
+        && (t.resultado == 'analise_juridica') == (!triBloq(q) && triRisco(q));
+    }
+    function triLibera(c) {
+      return 'triagem' in c && c.triagem != null
+        && (c.triagem.resultado == 'compativel' || (c.triagem.resultado == 'analise_juridica' && c.triagem.parecer != null && c.triagem.parecer.ok == true));
+    }
+    function contratoTriagem(r, d) {
+      let t = d.triagem;
+      return admin(r.tomadorId) && r.status in ['assinatura','ativo'] && r.status == d.status && mudou().hasOnly(['triagem','atualizadoEm'])
+        && t.keys().hasOnly(['r','resultado','parecer','uid','nome','em']) && t.resultado in ['compativel','analise_juridica','nao_publicar'] && triResultadoOk(t)
+        && ((t.uid == request.auth.uid && t.parecer == null)
+            || ('triagem' in r && r.triagem != null && r.triagem.resultado == 'analise_juridica' && t.r == r.triagem.r && t.resultado == r.triagem.resultado
+                && t.uid == r.triagem.uid && t.parecer.ok == true && t.parecer.uid == request.auth.uid && t.parecer.obs is string && t.parecer.obs.size() >= 10));
+    }
     function contratoAssinar(r, d) {
       let lado = meuLado(r);
       let outro = lado == 'tomador' ? 'prestador' : 'tomador';
@@ -157,7 +182,7 @@ service cloud.firestore {
         && mudou().hasOnly(['assinaturas','status','ativadoEm','interlocutor','atualizadoEm'])
         && d.assinaturas.diff(r.assinaturas).affectedKeys().hasOnly([lado])
         && d.assinaturas[lado].uid == request.auth.uid
-        && (lado == 'prestador' || !mudou().hasAny(['interlocutor']))
+        && (lado == 'prestador' || (!mudou().hasAny(['interlocutor']) && triLibera(r)))
         && ((outro in r.assinaturas && d.status == 'ativo') || (!(outro in r.assinaturas) && d.status == 'assinatura'));
     }
     function contratoCancelar(r, d) { return admin(r.tomadorId) && r.status == 'assinatura' && d.status == 'cancelado' && mudou().hasOnly(['status','atualizadoEm']); }
@@ -177,6 +202,7 @@ service cloud.firestore {
     match /contratos/{id} {
       allow read: if master() || membro(resource.data.tomadorId) || membro(resource.data.prestadorId);
       allow create: if admin(request.resource.data.tomadorId)
+        && (!('triagem' in request.resource.data) || request.resource.data.triagem == null)
         && request.resource.data.keys().hasOnly(camposContrato())
         && request.resource.data.modalidade == 'continua'
         && request.resource.data.status == 'assinatura'
@@ -188,9 +214,10 @@ service cloud.firestore {
         && request.resource.data.criadoPor == request.auth.uid && request.resource.data.criadoEm == request.time;
       allow update: if request.resource.data.keys().hasOnly(camposContrato())
         && !mudou().hasAny(['modalidade','tomadorId','prestadorId','partes','tomadorNome','tomadorCnpj','prestadorNome','prestadorCnpj','criadoPor','criadoEm'])
-        && (contratoCorrigir(resource.data, request.resource.data) || contratoAssinar(resource.data, request.resource.data)
+        && ((mudou().hasAny(['triagem']) && contratoTriagem(resource.data, request.resource.data))
+            || (!mudou().hasAny(['triagem']) && (contratoCorrigir(resource.data, request.resource.data) || contratoAssinar(resource.data, request.resource.data)
             || contratoCancelar(resource.data, request.resource.data) || contratoPropor(resource.data, request.resource.data)
-            || contratoResponder(resource.data, request.resource.data) || contratoEncerrar(resource.data, request.resource.data));
+            || contratoResponder(resource.data, request.resource.data) || contratoEncerrar(resource.data, request.resource.data))));
       allow delete: if false;
     }
 

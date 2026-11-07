@@ -105,7 +105,9 @@
     const ass = lado => { const a = as[lado], n = lado === 'tomador' ? c.tomadorNome : c.prestadorNome;
       return `<li class="${a ? 'done' : 'now'}"><span class="dot">${a ? ic('check') : ''}</span>${esc(n)} <span class="hint">(${lado === 'tomador' ? 'contrata' : 'presta o serviço'})</span><small>${a ? 'assinou ' + esc(formatarDataHora(a.em)) + ' · ' + esc(a.nome) : 'falta assinar'}</small></li>`; };
     let acoes = '';
-    if (pode && c.status === 'assinatura' && !as[l]) acoes += `<div class="stack" style="gap:10px" id="ct-assinar-box">
+    const semTriagem = l === 'tomador' && CW.triagem && !CW.triagem.libera(c);
+    if (pode && c.status === 'assinatura' && !as[l] && semTriagem) acoes += `<div class="banner warn" id="ct-sem-triagem">${ic('shield')}<span><strong>Antes de assinar: triagem</strong>${c.triagem && c.triagem.resultado === 'nao_publicar' ? 'A triagem indica que este serviço não deve ser contratado neste modelo.' : c.triagem ? 'Registre o parecer jurídico favorável para liberar a assinatura.' : 'Faça a triagem do contrato (7 perguntas) para liberar a assinatura.'}</span></div>`;
+    if (pode && c.status === 'assinatura' && !as[l] && !semTriagem) acoes += `<div class="stack" style="gap:10px" id="ct-assinar-box">
         ${l === 'prestador' ? `<p style="margin:0;font-size:13px;font-weight:500">Interlocutor da prestadora (quem responde pelo serviço)</p>
           <div class="fgrid"><label class="f c12"><span>Nome</span><input id="ct-int-nome" maxlength="120"></label><label class="f c6"><span>E-mail</span><input id="ct-int-email" type="email" maxlength="120"></label><label class="f c6"><span>Celular</span><input id="ct-int-cel" data-mascara="celular" inputmode="tel"></label></div>` : ''}
         <label class="check"><input type="checkbox" id="ct-li"><span>Li e concordo com este contrato em nome da ${esc(l === 'tomador' ? c.tomadorNome : c.prestadorNome)}.</span></label>
@@ -134,6 +136,7 @@
         <div id="ct-avaliacoes"></div>
         <p class="hint" style="margin:0;font-size:12px">${esc(AVISO)} A assinatura aqui é um registro simples (quem e quando); a assinatura eletrônica com validade jurídica entra numa etapa futura.</p>
       </div><div class="stack">
+        <div id="ct-triagem"></div>
         <section class="card" id="ct-assinaturas"><div class="card-h"><span class="ic">${ic('edit')}</span><h3>Assinaturas</h3></div><div class="card-b stack" style="gap:16px">
           <ul class="tl">${ass('tomador')}${ass('prestador')}</ul>${acoes}
           ${!pode && (c.status === 'assinatura' || c.status === 'ativo') ? '<p class="hint" style="margin:0;font-size:12.5px">Só o administrador da empresa assina e muda o contrato.</p>' : ''}</div></section>
@@ -141,6 +144,7 @@
       </div></div>`;
     U().aplicarMascaras(el);
     ligarDetalhe(el, ctx, c, l, o);
+    if (CW.triagem) CW.triagem.bloco(document.getElementById('ct-triagem'), ctx, c, () => desenharDetalhe(el, ctx, id));
     if (CW.avaliacoes) CW.avaliacoes.bloco(document.getElementById('ct-avaliacoes'), ctx, c);
     if (CW.documentos) CW.documentos.blocoContrato(document.getElementById('ct-docs'), ctx, c);
   }
@@ -238,7 +242,10 @@
       if (!lista) return [];
       const out = [], adm = admin(ctx);
       lista.forEach(c => { const l = ladoDe(c, ctx);
-        if (adm && c.status === 'assinatura' && !(c.assinaturas || {})[l]) out.push({ txt: 'Assinar o contrato', sub: `${nomeOutro(c, ctx)} · ${c.objeto}`, rota: 'contratos/ver/' + c._id });
+        const tri = l === 'tomador' && CW.triagem && !CW.triagem.libera(c);
+        if (adm && l === 'tomador' && ['assinatura', 'ativo'].includes(c.status) && !c.triagem) out.push({ txt: 'Fazer a triagem do contrato', sub: `${nomeOutro(c, ctx)} · 7 perguntas, antes de assinar`, rota: 'contratos/ver/' + c._id });
+        else if (adm && l === 'tomador' && c.status === 'assinatura' && tri && c.triagem.resultado === 'analise_juridica') out.push({ txt: 'Registrar o parecer jurídico do contrato', sub: nomeOutro(c, ctx), rota: 'contratos/ver/' + c._id });
+        if (adm && c.status === 'assinatura' && !(c.assinaturas || {})[l] && !tri) out.push({ txt: 'Assinar o contrato', sub: `${nomeOutro(c, ctx)} · ${c.objeto}`, rota: 'contratos/ver/' + c._id });
         if (adm && c.status === 'ativo' && c.proposta && c.proposta.lado !== l) out.push({ txt: 'Responder a proposta de vencimento', sub: `${nomeOutro(c, ctx)} · para ${venc(c.proposta.vencimentoDias).toLowerCase()}`, rota: 'contratos/ver/' + c._id }); });
       if (avFeitas) titPagos.filter(t => !avFeitas.has(t._id)).forEach(t => out.push({ txt: 'Avaliar o serviço do período', sub: `${t.prestadorNome} · ${CW.medicoes ? CW.medicoes.periodoTxt(t.periodo) : t.periodo} (já pago)`, rota: 'contratos/ver/' + t.contratoId }));
       return out;

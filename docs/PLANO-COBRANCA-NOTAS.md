@@ -80,4 +80,4 @@ Divergência bloqueia o título e explica o motivo; a Colafix pode recusar a not
 3. **A prestadora vê a memória da medição** (nome, horas e valor de cada PJ; sem CPF).
 
 ## Pendente
-- **Triagem** (Lei 6.019, arts. 5º-C e 5º-D): o CLAUDE.md diz que toda contratação passa por ela; nos requisitos ela está na Etapa 4. Os contratos contínuos desta etapa nascem sem a triagem; ela entra antes de o piloto usar de verdade (com o parecer jurídico).
+- **Triagem** (Lei 6.019, arts. 5º-C e 5º-D): **feita (07/11)** no contrato contínuo, antes de o tomador assinar. Falta o parecer jurídico geral sobre o modelo antes do piloto.
