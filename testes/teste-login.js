@@ -41,7 +41,7 @@ const { ok, fim } = H.placar('login');
   });
   ok('L1d cartão (com o aviso dos termos embaixo) centralizado na vertical; cadastro e convite lado a lado', Math.abs(l1d.cima - l1d.baixo) <= 4 && l1d.lado, JSON.stringify(l1d));
 
-  // L1h fundo azul na tela inteira (sem lado claro) e cartão branco flutuando
+  // L1h fundo azul na tela inteira (sem lado claro) e cartão flutuando (escuro por padrão; branco no tema claro, ver L1g)
   const l1h = await page.evaluate(() => {
     const g = s => getComputedStyle(document.querySelector(s)), L = document.querySelector('.login').getBoundingClientRect(), c = document.getElementById('lg');
     return { fundo: g('.login').backgroundColor, ladoDir: g('.loginside').backgroundColor, painel: g('.brandpanel').backgroundColor,
@@ -49,9 +49,9 @@ const { ok, fim } = H.placar('login');
       cartao: getComputedStyle(c).backgroundColor, raio: getComputedStyle(c).borderRadius, larg: Math.round(c.getBoundingClientRect().width), sombra: getComputedStyle(c).boxShadow !== 'none' };
   });
   const transp = v => v === 'rgba(0, 0, 0, 0)' || v === 'transparent';
-  ok('L1h fundo azul e curvas na tela inteira, sem divisão; cartão branco de 440px, cantos de 20px e sombra',
+  ok('L1h fundo azul e curvas na tela inteira, sem divisão; cartão de 440px (escuro por padrão), cantos de 20px e sombra',
     l1h.fundo === 'rgb(8, 22, 56)' && transp(l1h.ladoDir) && transp(l1h.painel) && l1h.cheia && l1h.curvas
-    && l1h.cartao === 'rgb(255, 255, 255)' && l1h.raio === '20px' && l1h.larg === 440 && l1h.sombra, JSON.stringify(l1h));
+    && l1h.cartao === 'rgb(19, 40, 90)' && l1h.raio === '20px' && l1h.larg === 440 && l1h.sombra, JSON.stringify(l1h));
 
   // L1e "Tenho um convite" avisa que chega na próxima parte; "Cadastrar empresa" abre o cadastro (testado em teste-cadastro.js)
   const toast = () => page.evaluate(() => document.getElementById('toast').classList.contains('show') ? document.getElementById('toast').innerText : '');
@@ -102,11 +102,11 @@ const { ok, fim } = H.placar('login');
   ok('L1k2 hierarquia: título grande, campos com letra 16px, "Entrar" mais alto que Google/Microsoft, cadastro e convite como links, termos fora do cartão',
     hi.h2 >= 24 && hi.campo === 16 && hi.rot < hi.campo && hi.entrar > hi.google && hi.link && hi.termosFora, JSON.stringify(hi));
 
-  // L1g modo escuro do sistema: cartão azul-escuro um tom acima do fundo (não preto), campos com borda visível
+  // L1g escuro por padrão: cartão azul-escuro um tom acima do fundo (não preto), campos com borda visível; no tema claro, branco
   const cor = () => page.evaluate(() => ({ c: getComputedStyle(document.getElementById('lg')).backgroundColor, b: getComputedStyle(document.getElementById('lg-email')).borderColor }));
-  const claro = await cor(); await page.emulateMedia({ colorScheme: 'dark' }); const escuro = await cor(); await page.emulateMedia({ colorScheme: 'light' });
+  const escuro = await cor(); await page.evaluate(() => { document.documentElement.dataset.theme = 'light'; }); const claro = await cor(); await page.evaluate(() => { document.documentElement.dataset.theme = 'dark'; });
   const rgb = v => (v.match(/\d+/g) || []).slice(0, 3).map(Number), soma = v => rgb(v).reduce((a, b) => a + b, 0);
-  ok('L1g modo escuro do sistema: cartão azul-escuro mais claro que o fundo (não preto) e campos com borda visível',
+  ok('L1g escuro por padrão: cartão azul-escuro mais claro que o fundo (não preto) e campos com borda visível; tema claro = cartão branco',
     claro.c === 'rgb(255, 255, 255)' && soma(escuro.c) > soma('rgb(8, 22, 56)') + 30 && rgb(escuro.c)[2] > rgb(escuro.c)[0] && soma(escuro.b) > soma(escuro.c) + 40, JSON.stringify({ claro, escuro }));
 
   // L1k olho da senha: mostra e esconde

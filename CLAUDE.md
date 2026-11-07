@@ -26,7 +26,7 @@ As duas usam o **mesmo motor**: aceite ou medição aprovada → **espelho de fa
 - JavaScript puro, **sem etapa de build**, publicado no **GitHub Pages**.
 - **Firebase**: Authentication (e-mail e senha, Google e Microsoft) e Firestore. Projeto `conectwork`, **separado** do projeto do painel da Colafix.
 - Use o repositório irmão `../painel-colafix` como **referência de padrão**: como os módulos são registrados, como o login é tratado, como os testes são feitos. Copie o jeito, não copie dados nem regras de negócio da Colafix.
-- Visual e textos: siga `docs/prototipo-referencia.html` (cores, fonte, componentes, modo claro e escuro). O protótipo é a referência visual e de fluxo; o código dele é só ilustrativo e **não** deve ser copiado como base (ele guarda tudo em localStorage).
+- Visual e textos: siga `docs/prototipo-referencia.html` (cores, fonte, componentes, modo claro e escuro). **Tema escuro é o padrão** (07/11/2026); a pessoa troca no botão do topo: escuro → claro → automático. O protótipo é a referência visual e de fluxo; o código dele é só ilustrativo e **não** deve ser copiado como base (ele guarda tudo em localStorage).
 
 ## Estrutura de pastas
 ```
@@ -80,5 +80,6 @@ A **equipe Conectwork** (master) não é cargo: é quem tem o documento `master/
 
 ## Como entregar cada pedido
 - Trabalhe numa etapa por vez, como está em `PEDIDOS-CLAUDE-CODE.md`.
+- **Combinado com a usuária (07/11/2026):** com os testes passando, pode subir direto para a `main` (além do branch de trabalho), sem pedir de novo.
 - Ao terminar: resumo do que mudou, arquivos criados ou alterados, testes feitos, e o que a pessoa precisa fazer no console do Firebase (se houver).
 - Se algo do pedido conflitar com este arquivo, este arquivo vence. Pergunte antes de inventar regra de negócio.

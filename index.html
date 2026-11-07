@@ -18,8 +18,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/app.css">
-<script>/* tema escolhido pela pessoa (claro, escuro ou automático), aplicado antes de desenhar a tela */
-try { var t = localStorage.getItem('cw.tema'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<script>/* tema: escuro por padrão; a pessoa pode escolher claro ou automático (segue o aparelho). Aplicado antes de desenhar a tela */
+(function () { var t = null; try { t = localStorage.getItem('cw.tema'); } catch (e) {}
+  if (t === 'light') document.documentElement.dataset.theme = 'light'; else if (t !== 'auto') document.documentElement.dataset.theme = 'dark'; })();</script>
 </head>
 <body>
 <!-- abertura: o símbolo se desenha, a folha entra e o nome aparece (só na primeira abertura da sessão; respeita "reduzir movimento") -->

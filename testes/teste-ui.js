@@ -63,9 +63,9 @@ const { ok, fim } = H.placar('ui');
   await page.click('dialog.drawer [data-dlg-b="0"]'); const r3 = await p3;
   ok('U12 painel lateral abre colado à direita, na altura da tela, e devolve o botão', u12.dir === u12.larg && u12.alto === u12.h && r3 === 'f', JSON.stringify([u12, r3]));
 
-  // U13 tema claro/escuro
-  const u13 = await ev(() => { const a = CW.ui.trocarTema(), b = CW.ui.trocarTema(), bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(), c = CW.ui.trocarTema(); return [a, b, bg, c, localStorage.getItem('cw.tema')]; });
-  ok('U13 tema: automático → claro → escuro → automático (e o fundo muda)', u13[0] === 'light' && u13[1] === 'dark' && u13[2].toUpperCase() === '#050D24' && u13[3] === 'auto' && u13[4] === null, JSON.stringify(u13));
+  // U13 tema: escuro por padrão; escuro → claro → automático → escuro
+  const u13 = await ev(() => { const ini = CW.ui.tema(), bg0 = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(), a = CW.ui.trocarTema(), bg1 = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(), b = CW.ui.trocarTema(), sb = localStorage.getItem('cw.tema'), c = CW.ui.trocarTema(); return [ini, bg0, a, bg1, b, sb, c, localStorage.getItem('cw.tema')]; });
+  ok('U13 tema: escuro por padrão; escuro → claro → automático → escuro (e o fundo muda)', u13[0] === 'dark' && u13[1].toUpperCase() === '#050D24' && u13[2] === 'light' && u13[3].toUpperCase() === '#F0F3F9' && u13[4] === 'auto' && u13[5] === 'auto' && u13[6] === 'dark' && u13[7] === null, JSON.stringify(u13));
 
   const code = fim(erros); await browser.close(); process.exit(code);
 })().catch(e => { console.error('ERRO NO TESTE', e); process.exit(1); });
