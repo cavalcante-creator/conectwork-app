@@ -90,6 +90,16 @@ const { ok, fim } = H.placar('login');
   ok('L1g modo escuro do sistema: cartão azul-escuro mais claro que o fundo (não preto) e campos com borda visível',
     claro.c === 'rgb(255, 255, 255)' && soma(escuro.c) > soma('rgb(8, 22, 56)') + 30 && rgb(escuro.c)[2] > rgb(escuro.c)[0] && soma(escuro.b) > soma(escuro.c) + 40, JSON.stringify({ claro, escuro }));
 
+  // L1k olho da senha: mostra e esconde
+  await page.fill('#lg-senha', 'abc123');
+  const tipo = () => page.evaluate(() => ({ t: document.getElementById('lg-senha').type, a: document.getElementById('lg-ver').getAttribute('aria-label') }));
+  const k0 = await tipo(); await page.click('#lg-ver'); const k1 = await tipo(); await page.click('#lg-ver'); const k2 = await tipo();
+  ok('L1k "ver senha": o olho mostra e esconde a senha (com nome para leitor de tela)', k0.t === 'password' && k1.t === 'text' && k1.a === 'Esconder a senha' && k2.t === 'password' && k2.a === 'Mostrar a senha', JSON.stringify([k0, k1, k2]));
+  await page.fill('#lg-senha', '');
+  // L1l "Manter conectado" vem marcado e o botão Entrar é azul-marinho como o fundo
+  const l1l = await page.evaluate(() => ({ m: document.getElementById('lg-manter').checked, txt: document.querySelector('.lg-manter').innerText.trim(), bt: getComputedStyle(document.getElementById('lg-entrar')).backgroundColor }));
+  ok('L1l "Manter conectado" marcado por padrão e botão Entrar azul-marinho (#081638)', l1l.m && l1l.txt === 'Manter conectado' && l1l.bt === 'rgb(8, 22, 56)', JSON.stringify(l1l));
+
   // L2 campos vazios
   await page.click('#lg-entrar'); let e = await erro();
   ok('L2 campos vazios: pede para preencher e nem tenta entrar', e.er === 'Preencha o e-mail e a senha.' && !(await log()).some(x => x[0] === 'signIn'), e.er);
@@ -102,6 +112,14 @@ const { ok, fim } = H.placar('login');
   await H.entrar(page, 'ana@alfa.com.br', 'errada'); await H.dorme(300); e = await erro();
   const senhaLimpa = await page.$eval('#lg-senha', i => i.value === '' && document.activeElement === i);
   ok('L4 senha errada: mensagem clara, botão liberado e senha limpa', /^E-mail ou senha incorretos/.test(e.er) && !e.dis && senhaLimpa, JSON.stringify(e));
+
+  // L4b "Manter conectado": marcado = continua logado (local); desmarcado = sai ao fechar (session); escolha guardada
+  const pers = async () => (await log()).filter(x => x[0] === 'persist').map(x => x[1]);
+  const p1 = await pers();
+  await page.uncheck('#lg-manter'); await H.entrar(page, 'ana@alfa.com.br', 'errada'); await H.dorme(300);
+  const p2 = await pers(), guard = await page.evaluate(() => localStorage.getItem('cw.manter'));
+  await page.check('#lg-manter');
+  ok('L4b "Manter conectado": marcado guarda o login no aparelho, desmarcado só até fechar; a escolha fica guardada', p1[p1.length - 1] === 'local' && p2[p2.length - 1] === 'session' && guard === '0', JSON.stringify({ p1, p2, guard }));
 
   // L5 e-mail que não existe (proteção contra descobrir e-mails ligada no Firebase = mesma mensagem)
   await H.entrar(page, 'naoexiste@alfa.com.br', 'qualquer1'); await H.dorme(300); e = await erro();

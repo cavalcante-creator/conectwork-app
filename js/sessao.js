@@ -76,10 +76,12 @@
       card = `<form class="lform" id="lg-form" novalidate>
         <div class="lg-cab"><h2>Acesse sua conta</h2><p class="sub">Que bom ter você de volta.</p></div>
         <label class="f"><span>E-mail</span><input id="lg-email" type="email" autocomplete="username" placeholder="voce@empresa.com.br" value="${esc(email)}"></label>
-        <label class="f"><span>Senha</span><input id="lg-senha" type="password" autocomplete="current-password"></label>
+        <label class="f"><span>Senha</span><span class="lg-pw"><input id="lg-senha" type="password" autocomplete="current-password"><button type="button" class="lg-olho" id="lg-ver" aria-label="Mostrar a senha" aria-pressed="false">${ic('eye')}</button></span></label>
+        <div class="lg-linha"><label class="lg-manter"><input type="checkbox" id="lg-manter" ${manterConectado() ? 'checked' : ''}><span>Manter conectado</span></label>
+          <button class="linkbtn" type="button" id="lg-esqueci" data-lg-modo="esqueci">Esqueci minha senha</button></div>
         <p class="err" id="lg-erro" role="alert">${esc(msg || '')}</p>
         <button class="btn" id="lg-entrar" type="submit">${ic('lock')}Entrar</button>
-        <button class="linkbtn" type="button" id="lg-esqueci" data-lg-modo="esqueci" style="align-self:center">Esqueci minha senha</button></form>
+</form>
         <div class="divisoria" id="lg-novo"><span>Ainda não usa o Conectwork?</span></div>
         <div class="lg-novos">
           <button class="btn sec" type="button" id="lg-cadastrar">${ic('building')}Cadastrar empresa</button>
@@ -92,9 +94,17 @@
     const bv = document.getElementById('lg-convite'); if (bv) bv.onclick = abrirConvite;
     app().querySelectorAll('[data-lg-modo]').forEach(b => b.onclick = () => telaLogin(b.dataset.lgModo === 'esqueci' ? 'esqueci' : 'login'));
     const f = document.getElementById('lg-form'); if (f) f.onsubmit = ev => { ev.preventDefault(); entrar(); };
+    const ver = document.getElementById('lg-ver');
+    if (ver) ver.onclick = () => { const se = document.getElementById('lg-senha'), mostra = se.type === 'password';
+      se.type = mostra ? 'text' : 'password'; ver.innerHTML = ic(mostra ? 'eyeoff' : 'eye');
+      ver.setAttribute('aria-label', mostra ? 'Esconder a senha' : 'Mostrar a senha'); ver.setAttribute('aria-pressed', String(mostra)); se.focus(); };
     const fe = document.getElementById('lg-form-esq'); if (fe) fe.onsubmit = ev => { ev.preventDefault(); esqueci(); };
     const foco = document.getElementById(modo === 'esqueci' ? 'lg-esq-email' : (email ? 'lg-senha' : 'lg-email')); if (foco) foco.focus();
   }
+
+  /* "Manter conectado": marcado (padrão) = continua logado ao fechar o app; desmarcado = sai ao fechar a aba/app.
+     A escolha fica guardada no aparelho para a próxima vez. */
+  function manterConectado() { try { return localStorage.getItem('cw.manter') !== '0'; } catch (e) { return true; } }
 
   async function entrar() {
     const em = document.getElementById('lg-email'), se = document.getElementById('lg-senha'), er = document.getElementById('lg-erro'), bt = document.getElementById('lg-entrar');
@@ -104,6 +114,9 @@
     if (!U().validarEmail(email)) { er.textContent = 'Esse e-mail não parece válido. Confira se digitou certo.'; em.focus(); return; }
     bt.disabled = true; bt.lastChild.textContent = 'Entrando…';
     try {
+      const manter = !!(document.getElementById('lg-manter') || {}).checked;
+      try { localStorage.setItem('cw.manter', manter ? '1' : '0'); } catch (e) { /* sem armazenamento */ }
+      await CW.fb.auth().setPersistence(manter ? 'local' : 'session');
       await CW.fb.auth().signInWithEmailAndPassword(email, senha);
       /* o resto acontece no onAuthStateChanged */
     } catch (e) {

@@ -61,6 +61,7 @@
     get currentUser() { return User(atual); },
     useEmulator: u => window.__mockLog.push(['authEmulador', u]),
     onAuthStateChanged: cb => { cbs.push(cb); window.__mockLog.push(['onAuthStateChanged']); setTimeout(() => cb(User(atual)), ctl().authMs || 20); return () => {}; },
+    setPersistence: async t => { window.__mockLog.push(['persist', t]); },
     signInWithEmailAndPassword: async (em, p) => { await espera(); const c = ctl(); window.__mockLog.push(['signIn', em]);
       if (c.offline) throw err('auth/network-request-failed');
       if (c.tooMany) throw err('auth/too-many-requests');

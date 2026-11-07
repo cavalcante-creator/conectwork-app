@@ -28,6 +28,8 @@
     net: '<circle cx="12" cy="5" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="18" r="2"/><circle cx="12" cy="12" r="2"/><path d="M12 7v3M10.5 13.5 6.5 16.5M13.5 13.5l4 3"/>',
     x: '<path d="M6 6l12 12M18 6 6 18"/>', alert: '<path d="M12 4 2.5 20h19z"/><path d="M12 10v4M12 17v.5"/>',
     send: '<path d="M21 3 10 14"/><path d="M21 3 14 21l-4-7-7-4z"/>', arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+    eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+    eyeoff: '<path d="M3 3l18 18"/><path d="M10.6 5.1A10.4 10.4 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.1 4M6.6 6.6A17 17 0 0 0 2 12s3.5 7 10 7a9.8 9.8 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
     back: '<path d="M19 12H5M11 6l-6 6 6 6"/>', chev: '<path d="m9 6 6 6-6 6"/>',
     clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
     building: '<path d="M4 21V5l8-2v18M12 21V9l8 2v10"/><path d="M7 8h2M7 12h2M7 16h2M15 13h2M15 17h2M2 21h20"/>',
