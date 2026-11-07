@@ -22,6 +22,27 @@
 try { var t = localStorage.getItem('cw.tema'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}</script>
 </head>
 <body>
+<!-- abertura: o símbolo se desenha, a folha entra e o nome aparece (só na primeira abertura da sessão; respeita "reduzir movimento") -->
+<div id="abertura" aria-hidden="true">
+  <div class="ab-c">
+    <svg class="ab-sim" viewBox="0 0 100 100" width="112" height="112">
+      <defs><linearGradient id="aba" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3B7BFF"/><stop offset="1" stop-color="#1A5CF0"/></linearGradient>
+        <linearGradient id="abb" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0A4C8A"/><stop offset=".5" stop-color="#0FA394"/><stop offset="1" stop-color="#24DFB3"/></linearGradient></defs>
+      <path class="ab-faixa" pathLength="100" d="M70.5 40.1 61.3 30.9Q50 19.6 38.7 30.9L30.9 38.7Q19.6 50 30.9 61.3L38.7 69.1Q50 80.4 61.3 69.1L63.5 66.9" fill="none" stroke="url(#aba)" stroke-width="21"/>
+      <path class="ab-folha" d="M49.6 66 71 44.6Q74 41.6 78.5 41.2L85.5 40.7Q88.6 40.5 88.4 43.6L87.9 50.6Q87.6 54.8 84.8 57.6L64.4 80.8Z" fill="url(#abb)"/>
+    </svg>
+    <div class="ab-nome">Conect<b>work</b></div>
+    <div class="ab-frase">Conectando empresas, pessoas e oportunidades.</div>
+  </div>
+</div>
+<script>/* tira a abertura depois da animação; não bloqueia nada (pointer-events: none) */
+(function () { var a = document.getElementById('abertura'), ja = false;
+  try { ja = sessionStorage.getItem('cw.abertura') === '1'; sessionStorage.setItem('cw.abertura', '1'); } catch (e) {}
+  var calmo = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (ja || calmo || /[?&]semAbertura/.test(location.search)) { a.remove(); return; }
+  setTimeout(function () { a.classList.add('sai'); }, 2050);
+  setTimeout(function () { a.remove(); }, 2550);
+})();</script>
 <div id="app"><div class="carregando"><div class="box"><div class="giro"></div><span>Carregando o Conectwork…</span></div></div></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="offline" id="offline" role="status" aria-live="polite" hidden>Você está offline. Nada é enviado ao servidor até a conexão voltar.</div>

@@ -755,3 +755,18 @@ a.ng-link:hover{background:var(--surface2)}
 .aut-sw input{width:38px;height:22px;appearance:none;-webkit-appearance:none;background:var(--line);border-radius:999px;position:relative;cursor:pointer;transition:background .15s}
 .aut-sw input::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}
 .aut-sw input:checked{background:var(--ok)}.aut-sw input:checked::after{left:19px}
+/* ---------- abertura do app ---------- */
+#abertura{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;pointer-events:none;
+  background:radial-gradient(120% 90% at 50% 40%,#0D2152 0%,#081638 60%,#060F2A 100%);transition:opacity .45s ease}
+#abertura.sai{opacity:0}
+#abertura .ab-c{display:flex;flex-direction:column;align-items:center;gap:14px;transform:translateY(-4%)}
+#abertura .ab-faixa{stroke-dasharray:100;stroke-dashoffset:100;animation:ab-traco .9s cubic-bezier(.65,0,.35,1) .1s forwards}
+#abertura .ab-folha{opacity:0;transform-box:fill-box;transform-origin:0% 100%;transform:translate(-14px,14px) scale(.6);animation:ab-folha .55s cubic-bezier(.2,.9,.3,1.25) .8s forwards}
+#abertura .ab-sim{filter:drop-shadow(0 10px 30px rgba(26,92,240,.35))}
+#abertura .ab-nome{font-family:Sora,system-ui,sans-serif;font-size:34px;font-weight:600;letter-spacing:-.02em;color:#fff;opacity:0;transform:translateY(10px);animation:ab-sobe .5s ease-out 1s forwards}
+#abertura .ab-nome b{color:#3B7BFF;font-weight:600}
+#abertura .ab-frase{font-family:Sora,system-ui,sans-serif;font-size:14px;color:#B9C8EC;opacity:0;transform:translateY(8px);animation:ab-sobe .5s ease-out 1.2s forwards;text-align:center;padding:0 24px}
+@keyframes ab-traco{to{stroke-dashoffset:0}}
+@keyframes ab-folha{to{opacity:1;transform:none}}
+@keyframes ab-sobe{to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){#abertura{display:none}}
