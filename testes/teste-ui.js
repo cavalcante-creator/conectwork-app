@@ -64,8 +64,8 @@ const { ok, fim } = H.placar('ui');
   ok('U12 painel lateral abre colado à direita, na altura da tela, e devolve o botão', u12.dir === u12.larg && u12.alto === u12.h && r3 === 'f', JSON.stringify([u12, r3]));
 
   // U13 tema claro/escuro
-  const u13 = await ev(() => { const a = CW.ui.trocarTema(), b = CW.ui.trocarTema(), bg = getComputedStyle(document.body).backgroundColor, c = CW.ui.trocarTema(); return [a, b, bg, c, localStorage.getItem('cw.tema')]; });
-  ok('U13 tema: automático → claro → escuro → automático (e o fundo muda)', u13[0] === 'light' && u13[1] === 'dark' && u13[2] === 'rgb(5, 13, 36)' && u13[3] === 'auto' && u13[4] === null, JSON.stringify(u13));
+  const u13 = await ev(() => { const a = CW.ui.trocarTema(), b = CW.ui.trocarTema(), bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(), c = CW.ui.trocarTema(); return [a, b, bg, c, localStorage.getItem('cw.tema')]; });
+  ok('U13 tema: automático → claro → escuro → automático (e o fundo muda)', u13[0] === 'light' && u13[1] === 'dark' && u13[2].toUpperCase() === '#050D24' && u13[3] === 'auto' && u13[4] === null, JSON.stringify(u13));
 
   const code = fim(erros); await browser.close(); process.exit(code);
 })().catch(e => { console.error('ERRO NO TESTE', e); process.exit(1); });

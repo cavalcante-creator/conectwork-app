@@ -43,6 +43,7 @@
     const sub = (ctx.tipo === 'master' ? 'Equipe Conectwork' : CW.permissoes.nomeCargo(ctx.acesso.cargo) + ' · ' + ctx.nome);
     const mods = visiveis();
     const teste = CW.fb.ambiente() === 'teste' ? '<span class="env">Ambiente de testes</span>' : '';
+    document.documentElement.classList.remove('entrada');
     document.getElementById('app').innerHTML = `<div class="shell">
       <aside class="side">${CURVES}
         <div class="logo">${LOGO(32)}<span>Conect<b>work</b></span></div>

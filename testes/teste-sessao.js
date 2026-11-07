@@ -49,6 +49,8 @@ const MODS_TESTE = () => {
   ok('S7 cartão do usuário e saudação no topo', s6.quem === 'Administrador · Alfa Serviços' && /^(Bom dia|Boa tarde|Boa noite), Ana$/.test(s6.titulo), JSON.stringify(s6));
 
   // S8 menu por permissão (admin: tudo que a empresa contratou)
+  const fx = await page.evaluate(() => ({ cls: document.documentElement.classList.contains('entrada'), body: getComputedStyle(document.body).backgroundColor }));
+  ok('S-fundo dentro do app a página volta ao fundo normal (só as telas de entrada são azuis)', !fx.cls && fx.body !== 'rgb(8, 22, 56)', JSON.stringify(fx));
   await page.evaluate(MODS_TESTE); await H.dorme(200);
   let m = await menu();
   ok('S8 admin vê tudo o que a empresa contratou (não vê "conta", que a Alfa não contratou)', JSON.stringify(m) === JSON.stringify(['inicio', 'pagar', 'receber', 'relatorios', 'usuarios', 'historico', 'profissionais']), m.join(','));
