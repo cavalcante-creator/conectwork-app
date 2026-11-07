@@ -29,15 +29,18 @@
 
   /* ---------- telas de entrada (antes do app) ---------- */
   /* a tela de entrar tem que caber sem rolar: mede e, se não couber, compacta um nível por vez (css: .cmp1 a .cmp3) */
-  /* Primeiro tenta com mais respiro ("folga"); se não couber, volta ao normal; se ainda não couber, compacta um nível por vez. */
+  /* Ajuste contínuo: --k vai de 0 (o mais compacto) a 1,6 (com folga). Procura o maior --k em que tudo cabe sem rolar,
+     então a tela ocupa a altura disponível sem sobra e sem rolagem (css: bloco "Encaixe contínuo"). */
   function encaixar() {
     const L = app() && app().querySelector('.login'); if (!L) return;
-    const cabe = () => L.scrollHeight <= L.clientHeight + 1;
+    const cabe = () => L.scrollHeight <= L.clientHeight;
+    const usa = k => { L.style.setProperty('--k', k.toFixed(3)); L.classList.toggle('semsub', k < 0.55); };
     L.classList.remove('folga', 'cmp1', 'cmp2', 'cmp3');
-    L.classList.add('folga');
-    if (cabe()) return;
-    L.classList.remove('folga');
-    for (const c of ['cmp1', 'cmp2', 'cmp3']) { if (cabe()) break; L.classList.add(c); }
+    usa(1.6); if (cabe()) return;
+    usa(0); if (!cabe()) return;                         /* nem no mínimo cabe (celular deitado): o .login rola por dentro */
+    let lo = 0, hi = 1.6;
+    for (let i = 0; i < 8; i++) { const m = (lo + hi) / 2; usa(m); if (cabe()) lo = m; else hi = m; }
+    usa(lo);
   }
   let encaixeLigado = false;
   function ligarEncaixe() {

@@ -65,11 +65,11 @@ const { ok, fim } = H.placar('login');
   const l1f = await page.evaluate(() => {
     const bp = document.querySelector('.brandpanel').getBoundingClientRect(), c = document.getElementById('lg').getBoundingClientRect();
     const vis = s => { const e = document.querySelector(s); return !!e && getComputedStyle(e).display !== 'none'; };
-    return { alt: Math.round(bp.height), abaixo: c.top >= bp.bottom - 1, frase: vis('.brandpanel h1'), escondidos: !vis('.beneficios') && !vis('.selos'),
+    return { alt: Math.round(bp.height), abaixo: c.top >= bp.bottom - 1, frase: vis('.brandpanel h1') && vis('.brandpanel .tagline'), escondidos: !vis('.beneficios') && !vis('.selos'),
       margens: [Math.round(c.left), Math.round(innerWidth - c.right)], fundo: getComputedStyle(document.querySelector('.login')).backgroundColor,
       rolagem: document.documentElement.scrollWidth > window.innerWidth };
   });
-  ok('L1f celular: cabeçalho azul compacto (logo e nome), cartão abaixo dele com margens azuis de 24px dos lados, sem rolagem para o lado',
+  ok('L1f celular: cabeçalho azul compacto (logo, nome e a frase do que o Conectwork faz), cartão abaixo dele com margens azuis de 24px dos lados, sem rolagem para o lado',
     l1f.alt < 150 && l1f.abaixo && l1f.frase && l1f.escondidos && l1f.margens[0] === 24 && l1f.margens[1] === 24 && l1f.fundo === 'rgb(8, 22, 56)' && !l1f.rolagem, JSON.stringify(l1f));
   // L1i fundo da página (html e body) também azul: é o que o Safari do iPhone pinta atrás da barra de cima e no "puxar"
   const l1i = await page.evaluate(() => ({ html: getComputedStyle(document.documentElement).backgroundColor, body: getComputedStyle(document.body).backgroundColor, cls: document.documentElement.classList.contains('entrada'),
@@ -82,17 +82,17 @@ const { ok, fim } = H.placar('login');
     await page.setViewportSize({ width: w, height: h });
     await page.evaluate(([a, b]) => { const r = document.documentElement.style; r.setProperty('--sa-t', a + 'px'); r.setProperty('--sa-b', b + 'px'); CW.sessao.encaixar(); }, [st, sb]); await H.dorme(150);
     l1j.push(await page.evaluate(() => ({ t: innerWidth + 'x' + innerHeight + (getComputedStyle(document.documentElement).getPropertyValue('--sa-t').trim() !== '0px' ? ' ilha' : ''), pag: document.documentElement.scrollHeight - innerHeight, lg: document.querySelector('.login').scrollHeight - innerHeight,
-      fim: Math.round(innerHeight - document.getElementById('lg-termos').getBoundingClientRect().bottom), logo: document.querySelector('.brandpanel h1').getBoundingClientRect().top >= 0,
-      nivel: document.querySelector('.login').className.replace('login', '').trim() || 'normal' })));
+      fim: Math.round(innerHeight - document.getElementById('lg-termos').getBoundingClientRect().bottom), logo: document.querySelector('.brandpanel h1').getBoundingClientRect().top >= 0 && getComputedStyle(document.querySelector('.brandpanel .tagline')).display !== 'none',
+      nivel: getComputedStyle(document.querySelector('.login')).getPropertyValue('--k').trim() })));
   }
     await page.evaluate(() => { document.documentElement.style.removeProperty('--sa-t'); document.documentElement.style.removeProperty('--sa-b'); });
   // L1m tela alta com espaço sobrando: usa a versão com mais respiro (não compacta); cartão centralizado no espaço abaixo do logo
   await page.setViewportSize({ width: 430, height: 1000 }); await page.evaluate(() => CW.sessao.encaixar()); await H.dorme(150);
   const folga = await page.evaluate(() => { const bp = document.querySelector('.brandpanel').getBoundingClientRect(), b = document.querySelector('.lg-bloco').getBoundingClientRect();
-    return { nivel: document.querySelector('.login').className, cima: Math.round(b.top - bp.bottom), baixo: Math.round(innerHeight - b.bottom) }; });
+    return { k: +getComputedStyle(document.querySelector('.login')).getPropertyValue('--k'), cima: Math.round(b.top - bp.bottom), baixo: Math.round(innerHeight - b.bottom) }; });
   await page.setViewportSize({ width: 1280, height: 900 });
-  ok('L1m sobrando espaço: mais respiro (sem compactar) e o bloco no meio do espaço abaixo do logo', /folga/.test(folga.nivel) && !/cmp/.test(folga.nivel) && Math.abs(folga.cima - folga.baixo) < 60, JSON.stringify(folga));
-  ok('L1j celular: login cabe inteiro sem rolar (logo em cima, aviso de privacidade embaixo) em 10 telas, inclusive o app instalado no iPhone com a ilha e a barrinha', l1j.every(x => x.pag <= 0 && x.lg <= 0 && x.fim >= 0 && x.logo), JSON.stringify(l1j));
+  ok('L1m sobrando espaço: mais respiro (sem compactar) e o bloco no meio do espaço abaixo do logo', folga.k >= 1 && Math.abs(folga.cima - folga.baixo) < 60, JSON.stringify(folga));
+  ok('L1j celular: login cabe inteiro sem rolar (logo e a frase em cima, aviso de privacidade embaixo) em 10 telas, inclusive o app instalado no iPhone com a ilha e a barrinha', l1j.every(x => x.pag <= 0 && x.lg <= 0 && x.fim >= 0 && x.logo), JSON.stringify(l1j));
   await page.setViewportSize({ width: 1280, height: 900 });
 
   // L1k2 hierarquia: título maior que os campos; "Entrar" o botão mais alto; campos com letra 16px (sem zoom no iPhone); termos fora do cartão
