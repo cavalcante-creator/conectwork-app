@@ -29,10 +29,15 @@
 
   /* ---------- telas de entrada (antes do app) ---------- */
   /* a tela de entrar tem que caber sem rolar: mede e, se não couber, compacta um nível por vez (css: .cmp1 a .cmp3) */
+  /* Primeiro tenta com mais respiro ("folga"); se não couber, volta ao normal; se ainda não couber, compacta um nível por vez. */
   function encaixar() {
     const L = app() && app().querySelector('.login'); if (!L) return;
-    L.classList.remove('cmp1', 'cmp2', 'cmp3');
-    for (const c of ['cmp1', 'cmp2', 'cmp3']) { if (L.scrollHeight <= L.clientHeight + 1) break; L.classList.add(c); }
+    const cabe = () => L.scrollHeight <= L.clientHeight + 1;
+    L.classList.remove('folga', 'cmp1', 'cmp2', 'cmp3');
+    L.classList.add('folga');
+    if (cabe()) return;
+    L.classList.remove('folga');
+    for (const c of ['cmp1', 'cmp2', 'cmp3']) { if (cabe()) break; L.classList.add(c); }
   }
   let encaixeLigado = false;
   function ligarEncaixe() {
@@ -40,6 +45,11 @@
     if (encaixeLigado) return; encaixeLigado = true;
     window.addEventListener('resize', () => requestAnimationFrame(encaixar));
     window.addEventListener('orientationchange', () => setTimeout(encaixar, 300));
+    /* no app instalado o iPhone pode informar a altura da tela só depois de abrir: mede de novo algumas vezes */
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', () => requestAnimationFrame(encaixar));
+    window.addEventListener('pageshow', () => requestAnimationFrame(encaixar));
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) requestAnimationFrame(encaixar); });
+    [150, 500, 1200, 2500].forEach(ms => setTimeout(encaixar, ms));
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => encaixar());   /* a letra Sora chega depois */
     /* mensagem de erro, troca para "Esqueci minha senha" etc. mudam a altura: encaixa de novo */
     let t = 0; new MutationObserver(() => { cancelAnimationFrame(t); t = requestAnimationFrame(encaixar); }).observe(app(), { childList: true, subtree: true, characterData: true });

@@ -82,9 +82,16 @@ const { ok, fim } = H.placar('login');
     await page.setViewportSize({ width: w, height: h });
     await page.evaluate(([a, b]) => { const r = document.documentElement.style; r.setProperty('--sa-t', a + 'px'); r.setProperty('--sa-b', b + 'px'); CW.sessao.encaixar(); }, [st, sb]); await H.dorme(150);
     l1j.push(await page.evaluate(() => ({ t: innerWidth + 'x' + innerHeight + (getComputedStyle(document.documentElement).getPropertyValue('--sa-t').trim() !== '0px' ? ' ilha' : ''), pag: document.documentElement.scrollHeight - innerHeight, lg: document.querySelector('.login').scrollHeight - innerHeight,
-      fim: Math.round(innerHeight - document.getElementById('lg-termos').getBoundingClientRect().bottom), logo: document.querySelector('.brandpanel h1').getBoundingClientRect().top >= 0 })));
+      fim: Math.round(innerHeight - document.getElementById('lg-termos').getBoundingClientRect().bottom), logo: document.querySelector('.brandpanel h1').getBoundingClientRect().top >= 0,
+      nivel: document.querySelector('.login').className.replace('login', '').trim() || 'normal' })));
   }
     await page.evaluate(() => { document.documentElement.style.removeProperty('--sa-t'); document.documentElement.style.removeProperty('--sa-b'); });
+  // L1m tela alta com espaço sobrando: usa a versão com mais respiro (não compacta); cartão centralizado no espaço abaixo do logo
+  await page.setViewportSize({ width: 430, height: 1000 }); await page.evaluate(() => CW.sessao.encaixar()); await H.dorme(150);
+  const folga = await page.evaluate(() => { const bp = document.querySelector('.brandpanel').getBoundingClientRect(), b = document.querySelector('.lg-bloco').getBoundingClientRect();
+    return { nivel: document.querySelector('.login').className, cima: Math.round(b.top - bp.bottom), baixo: Math.round(innerHeight - b.bottom) }; });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  ok('L1m sobrando espaço: mais respiro (sem compactar) e o bloco no meio do espaço abaixo do logo', /folga/.test(folga.nivel) && !/cmp/.test(folga.nivel) && Math.abs(folga.cima - folga.baixo) < 60, JSON.stringify(folga));
   ok('L1j celular: login cabe inteiro sem rolar (logo em cima, aviso de privacidade embaixo) em 10 telas, inclusive o app instalado no iPhone com a ilha e a barrinha', l1j.every(x => x.pag <= 0 && x.lg <= 0 && x.fim >= 0 && x.logo), JSON.stringify(l1j));
   await page.setViewportSize({ width: 1280, height: 900 });
 
