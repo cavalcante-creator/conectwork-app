@@ -60,7 +60,9 @@ Ao terminar: resumo, arquivos, testes e passos no console do Firebase.
 
 ---
 
-## Pedido 3 · Etapa 2 (motor comum)
-Será escrito quando a Etapa 1 estiver no ar. Cobre contratos com modalidade, aceite e medição, espelho de
-faturamento, validação tripla, títulos com estados e funções separadas (ver docs/REQUISITOS-FASE1.md).
-Antes dele: regras de retenção definidas com o contador e parecer jurídico sobre a modalidade equipe contínua.
+## Pedido 3 · Etapa 2 (motor comum, começando pela equipe contínua)
+Plano completo e decisões de 07/11/2026 em `docs/PLANO-COBRANCA-NOTAS.md`. Resumo:
+Colafix → Zenith/Nexus primeiro; PJ → prestadora → Colafix; nota emitida pelo prestador fora do app e enviada em XML;
+retenções digitadas pelo responsável fiscal; medição vinda do painel do RH pelo botão "Enviar ao Conectwork".
+Ordem: contratos contínuos → medições (manual e pelo link) → botão no painel → espelho → nota e validação tripla → títulos → avaliação.
+Antes de usar de verdade: regras publicadas, parecer jurídico sobre a equipe contínua e regras de retenção com o contador.
