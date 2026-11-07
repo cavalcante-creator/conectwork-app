@@ -304,6 +304,48 @@ async function deve(nome, permitido, op) {
   await deve('Nota: o financeiro marca a nota conferida', true, () => updateDoc(doc(db('bruno'), 'espelhos', 'cm_2026-11-1'), { status: 'nota_ok', conferenciaNota: { uid: P.bruno, nome: 'Bruno', em: serverTimestamp(), manual: false }, atualizadoEm: serverTimestamp() }));
   await deve('Nota: conferida, o espelho NÃO é mais corrigido', false, () => updateDoc(doc(db('bruno'), 'espelhos', 'cm_2026-11-1'), { obs: 'x', versao: 3, atualizadoPor: P.bruno, atualizadoEm: serverTimestamp() }));
 
+  /* ---------- títulos (contas a pagar e a receber) ---------- */
+  P.tito = 'uTITO'; EM.tito = 'tito@alfa.com.br';
+  await env.withSecurityRulesDisabled(async c => { await setDoc(doc(c.firestore(), 'acessos', 'alfa_' + P.tito), { uid: P.tito, empresaId: 'alfa', nome: 'Tito', email: EM.tito, cargo: 'tesouraria', extras: [], sem: [], ativo: true }); });
+  await enviaNota('beto', 'e2', nota('beto', { envio: 't1', chaveUnica: '3'.repeat(50), chave: '3'.repeat(50) }));
+  const tit = (k, extra) => Object.assign({ espelhoId: 'e2', medicaoId: 'e2', contratoId: 'cm', tomadorId: 'alfa', prestadorId: 'beta', partes: ['alfa', 'beta'], tomadorNome: 'Alfa', prestadorNome: 'Beta', periodo: '2026-11-1',
+    notaNumero: '7', chaveUnica: '3'.repeat(50), valorCentavos: 550000, liquidoCentavos: 514250, retencoes: { iss: 27500, inss: 0, ir: 8250, pcc: 0 }, vencimentoDias: 1, base: serverTimestamp(),
+    status: 'aprovado', aprovacao: { uid: P[k], nome: k, em: serverTimestamp() }, liberacao: null, agendamento: null, liquidacao: null, baixa: null, conta: { ok: false, revisao: false, versao: 0 }, criadoEm: serverTimestamp(), atualizadoEm: serverTimestamp() }, extra || {});
+  const conferirCom = (k, t) => { const f = db(k), b = writeBatch(f); b.update(doc(f, 'espelhos', 'e2'), { status: 'nota_ok', conferenciaNota: { uid: P[k], nome: k, em: serverTimestamp(), manual: false }, atualizadoEm: serverTimestamp() }); b.set(doc(f, 'titulos', 'e2'), t); return b.commit(); };
+  await deve('Título: NÃO nasce com líquido diferente do espelho', false, () => conferirCom('bruno', tit('bruno', { liquidoCentavos: 550000 })));
+  await deve('Título: nasce junto com a nota conferida (financeiro do tomador)', true, () => conferirCom('bruno', tit('bruno')));
+  await deve('Título: quem não conferiu a nota NÃO cria título', false, () => setDoc(doc(db('ana'), 'titulos', 'cm_2026-11-1'), tit('ana', { espelhoId: 'cm_2026-11-1', chaveUnica: '2'.repeat(50), liquidoCentavos: 522500 })));
+  await deve('Título: a prestadora lê', true, () => getDoc(doc(db('beto'), 'titulos', 'e2')));
+  await deve('Título: quem conferiu a nota NÃO libera (funções separadas)', false, () => updateDoc(doc(db('bruno'), 'titulos', 'e2'), { status: 'liberado', liberacao: { uid: P.bruno }, atualizadoEm: serverTimestamp() }));
+  await deve('Título: a tesouraria NÃO libera', false, () => updateDoc(doc(db('tito'), 'titulos', 'e2'), { status: 'liberado', liberacao: { uid: P.tito }, atualizadoEm: serverTimestamp() }));
+  await deve('Título: outra pessoa do financeiro (admin) libera', true, () => updateDoc(doc(db('ana'), 'titulos', 'e2'), { status: 'liberado', liberacao: { uid: P.ana, nome: 'Ana', em: serverTimestamp() }, atualizadoEm: serverTimestamp() }));
+  await deve('Título: NÃO agenda sem a conta da prestadora', false, () => updateDoc(doc(db('tito'), 'titulos', 'e2'), { status: 'agendado', agendamento: { uid: P.tito, data: '2026-12-01' }, atualizadoEm: serverTimestamp() }));
+  const contaB = (k, versao, revisao, extra) => { const f = db(k), b = writeBatch(f);
+    b.set(doc(f, 'titulos', 'e2', 'privado', 'conta'), Object.assign({ banco: '341 · Itaú Unibanco', agencia: '1234', conta: '5678-9', tipo: 'Corrente', pix: '', titular: 'Beta', doc: '', versao, em: serverTimestamp(), por: P[k], porNome: k }, extra || {}));
+    b.update(doc(f, 'titulos', 'e2'), { conta: { ok: true, revisao, versao, em: serverTimestamp(), nome: k }, atualizadoEm: serverTimestamp() }); return b.commit(); };
+  await deve('Título: o tomador NÃO informa a conta no lugar da prestadora', false, () => contaB('bruno', 1, false));
+  await deve('Título: a prestadora informa a conta para receber', true, () => contaB('beto', 1, false));
+  await deve('Título: a tesouraria do tomador lê a conta', true, () => getDoc(doc(db('tito'), 'titulos', 'e2', 'privado', 'conta')));
+  await deve('Título: o RH do tomador NÃO lê a conta (LGPD)', false, () => getDoc(doc(db('rita'), 'titulos', 'e2', 'privado', 'conta')));
+  await deve('Título: troca de conta NÃO pode vir sem revisão', false, () => contaB('beto', 2, false, { conta: '9999-9' }));
+  await deve('Título: a prestadora troca a conta (fica para revisão)', true, () => contaB('beto', 2, true, { conta: '9999-9' }));
+  await deve('Título: com a troca sem revisão, a tesouraria NÃO agenda', false, () => updateDoc(doc(db('tito'), 'titulos', 'e2'), { status: 'agendado', agendamento: { uid: P.tito, data: '2026-12-01' }, atualizadoEm: serverTimestamp() }));
+  await deve('Título: a prestadora NÃO revisa a própria troca', false, () => updateDoc(doc(db('beto'), 'titulos', 'e2'), { conta: { ok: true, revisao: false, versao: 2, revisadoPor: P.beto }, atualizadoEm: serverTimestamp() }));
+  await deve('Título: o financeiro do tomador revisa a troca', true, () => updateDoc(doc(db('ana'), 'titulos', 'e2'), { conta: { ok: true, revisao: false, versao: 2, revisadoPor: P.ana, revisadoNome: 'Ana' }, atualizadoEm: serverTimestamp() }));
+  await deve('Título: o financeiro NÃO agenda (é a tesouraria)', false, () => updateDoc(doc(db('bruno'), 'titulos', 'e2'), { status: 'agendado', agendamento: { uid: P.bruno, data: '2026-12-01' }, atualizadoEm: serverTimestamp() }));
+  await deve('Título: a tesouraria agenda', true, () => updateDoc(doc(db('tito'), 'titulos', 'e2'), { status: 'agendado', agendamento: { uid: P.tito, nome: 'Tito', em: serverTimestamp(), data: '2026-12-01' }, atualizadoEm: serverTimestamp() }));
+  await deve('Título: agendado, a prestadora NÃO troca mais a conta', false, () => contaB('beto', 3, true, { conta: '1111-1' }));
+  const liquida = (k, semArq) => { const f = db(k), b = writeBatch(f);
+    if (!semArq) b.set(doc(f, 'titulos', 'e2', 'arquivos', 'cp1-0'), { d: 'JVBERi0x', k: 0, envio: 'cp1', em: serverTimestamp() });
+    b.update(doc(f, 'titulos', 'e2'), { status: 'liquidado', liquidacao: { uid: P[k], nome: k, em: serverTimestamp(), data: '2026-12-01', comprovante: { envio: 'cp1', partes: 1, nome: 'c.pdf', tipo: 'application/pdf', tam: 10 } }, atualizadoEm: serverTimestamp() }); return b.commit(); };
+  await deve('Título: quem liberou NÃO confirma o pagamento (funções separadas)', false, () => liquida('ana'));
+  await deve('Título: NÃO fica pago sem o comprovante', false, () => liquida('tito', true));
+  await deve('Título: a tesouraria confirma o pagamento com o comprovante', true, () => liquida('tito'));
+  await deve('Título: a prestadora abre o comprovante', true, () => getDoc(doc(db('beto'), 'titulos', 'e2', 'arquivos', 'cp1-0')));
+  await deve('Título: o tomador NÃO dá baixa no lugar da prestadora', false, () => updateDoc(doc(db('bruno'), 'titulos', 'e2'), { status: 'baixado', baixa: { uid: P.bruno }, atualizadoEm: serverTimestamp() }));
+  await deve('Título: a prestadora confirma o recebimento (baixa)', true, () => updateDoc(doc(db('beto'), 'titulos', 'e2'), { status: 'baixado', baixa: { uid: P.beto, nome: 'Beto', em: serverTimestamp() }, atualizadoEm: serverTimestamp() }));
+  await deve('Título: ninguém apaga', false, () => deleteDoc(doc(db('ana'), 'titulos', 'e2')));
+
   /* ---------- sites para emitir a nota ---------- */
   await deve('Emissores: a equipe Conectwork cadastra o site de uma cidade', true, () => setDoc(doc(db('master'), 'config', 'emissores'), { cidades: { 'RS|GRAVATAI': { cidade: 'Gravataí', url: 'https://exemplo.gov.br' } }, em: serverTimestamp(), por: P.master }));
   await deve('Emissores: qualquer pessoa logada lê a tabela', true, () => getDoc(doc(db('beto'), 'config', 'emissores')));

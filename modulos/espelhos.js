@@ -233,7 +233,7 @@
     }
     if (l === 'tomador' && x.status === 'aguardando_nota') return recTxt + `<div class="banner info" id="es-aviso">${ic('clock')}<span><strong>Esperando a nota da ${esc(x.prestadorNome)}</strong>${x.emissao ? 'A prestadora abriu o emissor em ' + esc(formatarDataHora(x.emissao.em)) + '. ' : 'A prestadora já vê o espelho. '}A nota é conferida com o contrato, a medição e este espelho.</span></div>`;
     if (x.status === 'nota_enviada') return `<div class="banner ${l === 'tomador' ? 'warn' : 'info'}" id="es-aviso">${ic(l === 'tomador' ? 'alert' : 'clock')}<span><strong>${l === 'tomador' ? 'Nota chegou: confira' : 'Nota enviada'}</strong>${l === 'tomador' ? 'Veja a conferência abaixo, abra o arquivo se precisar e marque "Nota conferida" ou recuse com o motivo.' : 'A ' + esc(x.tomadorNome) + ' confere a nota com o contrato, a medição e o espelho.'}</span></div>`;
-    if (x.status === 'nota_ok') return `<div class="banner ok" id="es-aviso">${ic('check')}<span><strong>Nota conferida</strong>Contrato, medição e nota batem. O próximo passo é o título em contas a pagar e receber (próxima parte do Conectwork).</span></div>`;
+    if (x.status === 'nota_ok') return `<div class="banner ok" id="es-aviso">${ic('check')}<span><strong>Nota conferida</strong>Contrato, medição e nota batem. O título foi para Pagar e receber. <a href="#titulos/ver/${esc(x._id)}" class="linkbtn" id="es-titulo">Ver o título</a></span></div>`;
     return '';
   }
 
@@ -291,11 +291,12 @@
       const manual = !((x.nota.conferencia || {}).ok);
       let sim = false;
       await U().dialogo({ titulo: 'Nota conferida?', sub: `Nota${x.nota.numero ? ' nº ' + x.nota.numero : ''} da ${x.prestadorNome} · ${brl(x.valorCentavos)}`,
-        corpo: `<p style="margin:0 0 12px">Você confere que a nota bate com o contrato, a medição aprovada e o espelho. Depois disso, ela segue para contas a pagar.</p>
+        corpo: `<p style="margin:0 0 12px">Você confere que a nota bate com o contrato, a medição aprovada e o espelho. Depois disso, ela vira um título em Pagar e receber, com o vencimento do contrato.</p>
           ${manual ? `<label class="check"><input type="checkbox" id="nc-chk"> <span>Abri o arquivo e conferi: CNPJ de quem emitiu, CNPJ da minha empresa, valor e competência.</span></label><p class="err" id="nc-erro"></p>` : ''}`,
         botoes: [{ texto: 'Voltar', valor: null, classe: 'sec' }, { texto: 'Nota conferida', valor: 'ok', classe: 'ok', antes: d => { const c = d.querySelector('#nc-chk'); if (c && !c.checked) { d.querySelector('#nc-erro').textContent = 'Marque que conferiu o arquivo.'; return false; } sim = true; return true; } }] });
       if (!sim) return;
       grava(b => { b.update(ref, { status: 'nota_ok', conferenciaNota: { uid: ctx.sessao.usuario.uid, nome: quem(ctx), em: agora(), manual }, atualizadoEm: agora() });
+        if (CW.titulos) CW.titulos.criarNoLote(b, ctx, x);
         log(b, ctx, 'nota.conferir', `Nota${x.nota.numero ? ' nº ' + x.nota.numero : ''} de ${x.prestadorNome} (${periodoTxt(x.periodo)}) conferida${manual ? ' à mão' : ''}: ${brl(x.valorCentavos)}.`, x._id); }, 'Nota conferida.');
     };
     const rc = $('es-nf-recusar');

@@ -343,6 +343,88 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // ---------- Títulos (contas a pagar e a receber) · id = id do espelho ----------
+    // Nasce com a nota conferida, na mesma gravação. Funções separadas: quem conferiu a nota não libera; o financeiro libera;
+    // a tesouraria agenda e confirma o pagamento com comprovante; quem liberou não confirma o pagamento. A prestadora informa a
+    // conta (área privada do título); trocar a conta exige revisão do financeiro do tomador antes de agendar. Nada se apaga.
+    function camposTitulo() { return ['espelhoId','medicaoId','contratoId','tomadorId','prestadorId','partes','tomadorNome','prestadorNome','periodo','notaNumero','chaveUnica',
+      'valorCentavos','liquidoCentavos','retencoes','vencimentoDias','base','status','aprovacao','liberacao','agendamento','liquidacao','baixa','conta','criadoEm','atualizadoEm']; }
+    function tituloCriar(id, d) {
+      let e = getAfter(caminho('espelhos', id)).data;
+      return cargoEm(e.tomadorId, ['admin','financeiro']) && d.keys().hasOnly(camposTitulo())
+        && e.status == 'nota_ok' && e.conferenciaNota.uid == request.auth.uid
+        && d.espelhoId == id && d.tomadorId == e.tomadorId && d.prestadorId == e.prestadorId && d.partes == [e.tomadorId, e.prestadorId]
+        && d.valorCentavos == e.valorCentavos && d.liquidoCentavos == e.liquidoCentavos && d.vencimentoDias == e.vencimentoDias && d.chaveUnica == e.nota.chaveUnica
+        && d.base == request.time && d.status == 'aprovado' && d.aprovacao.uid == request.auth.uid
+        && d.liberacao == null && d.agendamento == null && d.liquidacao == null && d.baixa == null
+        && d.conta == {'ok': false, 'revisao': false, 'versao': 0};
+    }
+    function tituloLiberar(r, d) {
+      return cargoEm(r.tomadorId, ['admin','financeiro']) && r.status == 'aprovado' && d.status == 'liberado'
+        && request.auth.uid != r.aprovacao.uid && d.liberacao.uid == request.auth.uid && mudou().hasOnly(['status','liberacao','atualizadoEm']);
+    }
+    function tituloAgendar(r, d) {
+      return cargoEm(r.tomadorId, ['admin','tesouraria']) && r.status == 'liberado' && d.status == 'agendado'
+        && r.conta.ok == true && r.conta.revisao == false
+        && d.agendamento.uid == request.auth.uid && d.agendamento.data is string && d.agendamento.data.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+        && mudou().hasOnly(['status','agendamento','atualizadoEm']);
+    }
+    function tituloLiquidar(id, r, d) {
+      let cp = d.liquidacao.comprovante;
+      return cargoEm(r.tomadorId, ['admin','tesouraria']) && r.status == 'agendado' && d.status == 'liquidado'
+        && request.auth.uid != r.liberacao.uid && d.liquidacao.uid == request.auth.uid && d.liquidacao.data is string
+        && cp.partes is int && cp.partes >= 1 && cp.partes <= 6
+        && existsAfter(/databases/$(database)/documents/titulos/$(id)/arquivos/$(cp.envio + '-' + string(cp.partes - 1)))
+        && mudou().hasOnly(['status','liquidacao','atualizadoEm']);
+    }
+    function tituloBaixar(r, d) {
+      return cargoEm(r.prestadorId, ['admin','financeiro']) && r.status == 'liquidado' && d.status == 'baixado'
+        && d.baixa.uid == request.auth.uid && mudou().hasOnly(['status','baixa','atualizadoEm']);
+    }
+    function tituloConta(id, r, d) {
+      return cargoEm(r.prestadorId, ['admin','financeiro']) && r.status in ['aprovado','liberado'] && r.status == d.status
+        && mudou().hasOnly(['conta','atualizadoEm']) && d.conta.ok == true && d.conta.revisao == r.conta.ok
+        && d.conta.versao == r.conta.versao + 1
+        && existsAfter(/databases/$(database)/documents/titulos/$(id)/privado/conta)
+        && getAfter(/databases/$(database)/documents/titulos/$(id)/privado/conta).data.versao == d.conta.versao;
+    }
+    function tituloRevisarConta(r, d) {
+      return cargoEm(r.tomadorId, ['admin','financeiro']) && r.status in ['aprovado','liberado'] && r.status == d.status
+        && r.conta.revisao == true && d.conta.revisao == false && d.conta.ok == true && d.conta.versao == r.conta.versao
+        && d.conta.revisadoPor == request.auth.uid && mudou().hasOnly(['conta','atualizadoEm']);
+    }
+    match /titulos/{id} {
+      allow read: if master() || membro(resource.data.tomadorId) || membro(resource.data.prestadorId);
+      allow create: if tituloCriar(id, request.resource.data);
+      allow update: if request.resource.data.keys().hasOnly(camposTitulo())
+        && (tituloLiberar(resource.data, request.resource.data) || tituloAgendar(resource.data, request.resource.data)
+            || tituloLiquidar(id, resource.data, request.resource.data) || tituloBaixar(resource.data, request.resource.data)
+            || tituloConta(id, resource.data, request.resource.data) || tituloRevisarConta(resource.data, request.resource.data));
+      allow delete: if false;
+
+      // conta para receber: só quem cuida de dinheiro nas duas empresas lê (LGPD); só a prestadora escreve, junto com o título
+      match /privado/conta {
+        allow get: if master() || cargoEm(get(caminho('titulos', id)).data.tomadorId, ['admin','financeiro','tesouraria'])
+          || cargoEm(get(caminho('titulos', id)).data.prestadorId, ['admin','financeiro']);
+        allow create, update: if cargoEm(get(caminho('titulos', id)).data.prestadorId, ['admin','financeiro'])
+          && request.resource.data.keys().hasOnly(['banco','agencia','conta','tipo','pix','titular','doc','versao','em','por','porNome'])
+          && request.resource.data.por == request.auth.uid
+          && getAfter(caminho('titulos', id)).data.conta.versao == request.resource.data.versao;
+        allow delete: if false;
+      }
+      // comprovante do pagamento em pedaços: só a tesouraria (ou admin) do tomador, quando está agendado; nunca muda
+      match /arquivos/{arq} {
+        allow get: if master() || membro(get(caminho('titulos', id)).data.tomadorId) || membro(get(caminho('titulos', id)).data.prestadorId);
+        allow create: if cargoEm(get(caminho('titulos', id)).data.tomadorId, ['admin','tesouraria'])
+          && get(caminho('titulos', id)).data.status == 'agendado'
+          && request.resource.data.keys().hasOnly(['d','k','envio','em'])
+          && request.resource.data.d is string && request.resource.data.d.size() <= 750000
+          && request.resource.data.k is int && request.resource.data.k >= 0 && request.resource.data.k < 6
+          && arq == request.resource.data.envio + '-' + string(request.resource.data.k);
+        allow update, delete: if false;
+      }
+    }
+
     // ---------- Sites para emitir a nota por cidade (o espelho escolhe sozinho): todos leem, só a equipe Conectwork muda ----------
     match /config/emissores {
       allow read: if logado();
