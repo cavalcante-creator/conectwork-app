@@ -14,6 +14,8 @@ service cloud.firestore {
     function admin(emp) { return membro(emp) && get(acessoDoc(emp)).data.cargo == 'admin'; }
     function fundador(emp) { return logado() && exists(caminho('empresas', emp)) && get(caminho('empresas', emp)).data.criadoPor == request.auth.uid; }
     // na gravação: vale o estado DEPOIS da operação (o cadastro grava empresa, área privada, acesso e histórico juntos)
+    // quem acabou de entrar na empresa (aceitando um convite) grava o histórico na mesma operação
+    function membroApos(emp) { return logado() && existsAfter(acessoDoc(emp)) && getAfter(acessoDoc(emp)).data.ativo == true; }
     function fundadorApos(emp) { return logado() && existsAfter(caminho('empresas', emp)) && getAfter(caminho('empresas', emp)).data.criadoPor == request.auth.uid; }
 
     // ---------- Equipe Conectwork ----------
@@ -78,7 +80,11 @@ service cloud.firestore {
         && c.email == meuEmail()
         && c.empresaId == d.empresaId
         && c.cargo == d.cargo
-        && d.ativo == true;
+        && d.ativo == true
+        // quem aceita não escolhe nada além do convite: sem telas a mais nem a menos, com o próprio e-mail
+        && d.keys().hasOnly(['uid','empresaId','nome','email','cargo','extras','sem','ativo','convite','criadoEm'])
+        && d.extras == [] && d.sem == []
+        && d.email == meuEmail();
     }
     function fundadorVirandoAdmin(id) {
       let d = request.resource.data;
@@ -87,7 +93,8 @@ service cloud.firestore {
         && d.uid == request.auth.uid
         && fundadorApos(d.empresaId)
         && d.cargo == 'admin'
-        && d.ativo == true;
+        && d.ativo == true
+        && d.extras == [] && d.sem == [];
     }
     match /acessos/{id} {
       allow read: if logado() && (resource.data.uid == request.auth.uid || admin(resource.data.empresaId) || master());
@@ -179,7 +186,7 @@ service cloud.firestore {
       allow create: if logado()
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.em == request.time      // hora do servidor (serverTimestamp), ninguém escolhe a data
-        && (master() || membro(request.resource.data.empresaId) || fundadorApos(request.resource.data.empresaId));
+        && (master() || membroApos(request.resource.data.empresaId) || fundadorApos(request.resource.data.empresaId));
       allow read: if master() || (logado() && admin(resource.data.empresaId));
       allow update, delete: if false;
     }

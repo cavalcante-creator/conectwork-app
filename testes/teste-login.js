@@ -55,10 +55,10 @@ const { ok, fim } = H.placar('login');
 
   // L1e "Tenho um convite" avisa que chega na próxima parte; "Cadastrar empresa" abre o cadastro (testado em teste-cadastro.js)
   const toast = () => page.evaluate(() => document.getElementById('toast').classList.contains('show') ? document.getElementById('toast').innerText : '');
-  await page.click('#lg-convite'); await H.dorme(150); const t2 = await toast();
+  await page.click('#lg-convite'); await page.waitForSelector('dialog[open] #tc-link', { timeout: 5000 }); const t2 = await page.$eval('dialog[open] h2', e => e.innerText); await page.click('dialog[open] [data-dlg-b="0"]');
   await page.click('#lg-cadastrar'); await page.waitForSelector('#cad-titulo', { timeout: 5000 }); const t1 = await page.$eval('#cad-titulo', e => e.innerText);
   await page.click('#cad-login'); await page.waitForSelector('#lg-email', { timeout: 5000 });
-  ok('L1e "Cadastrar empresa" abre "Crie seu acesso" (e volta ao login); "Tenho um convite" avisa que vem na próxima parte', t1 === 'Crie seu acesso' && /próxima etapa/.test(t2) && !(await log()).some(x => x[0] === 'signIn'), t1 + ' · ' + t2);
+  ok('L1e "Cadastrar empresa" abre "Crie seu acesso" (e volta ao login); "Tenho um convite" pede o link recebido', t1 === 'Crie seu acesso' && t2 === 'Tenho um convite' && !(await log()).some(x => x[0] === 'signIn'), t1 + ' · ' + t2);
 
   // L1f celular: painel vira cabeçalho compacto e o cartão vem logo abaixo
   await page.setViewportSize({ width: 390, height: 800 }); await H.dorme(250);

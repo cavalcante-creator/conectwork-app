@@ -131,6 +131,18 @@ async function deve(nome, permitido, op) {
   await deve('Convite: e-mail certo lê o convite', true, () => getDoc(doc(db('edu'), 'convites', 'tok123')));
   await deve('Convite: e-mail certo aceita (cria o próprio acesso)', true, () => setDoc(doc(db('edu'), 'acessos', 'alfa_' + P.edu), aceite('edu')));
   await deve('Convite: e-mail certo marca o convite como usado', true, () => updateDoc(doc(db('edu'), 'convites', 'tok123'), { usado: true, usadoPor: P.edu, usadoEm: serverTimestamp() }));
+  await semear();
+  await deve('Convite: quem aceita NÃO se dá telas a mais', false, () => setDoc(doc(db('edu'), 'acessos', 'alfa_' + P.edu), aceite('edu', { extras: ['pagar'] })));
+  await deve('Convite: quem aceita NÃO usa e-mail de outra pessoa no acesso', false, () => setDoc(doc(db('edu'), 'acessos', 'alfa_' + P.edu), aceite('edu', { email: EM.ana })));
+  await deve('Convite aceito como o app grava: acesso + convite usado + autorização + histórico juntos', true, () => {
+    const d = db('edu'), b = writeBatch(d);
+    b.set(doc(d, 'acessos', 'alfa_' + P.edu), aceite('edu', { criadoEm: serverTimestamp() }));
+    b.update(doc(d, 'convites', 'tok123'), { usado: true, usadoEm: serverTimestamp(), usadoPor: P.edu });
+    b.set(doc(d, 'usuarios', P.edu), { nome: 'Edu Martins', email: EM.edu, criadoEm: serverTimestamp(), atualizadoEm: serverTimestamp() }, { merge: true });
+    b.set(doc(d, 'consentimentos', P.edu + '_cursos'), { uid: P.edu, finalidade: 'cursos', aceite: false, texto: 'Cursos.', textoVersao: 'v1', canal: 'convite', em: serverTimestamp() });
+    b.set(doc(collection(d, 'log')), { em: serverTimestamp(), uid: P.edu, quem: 'Edu Martins', empresaId: 'alfa', acao: 'convite.aceitar', texto: 'Edu aceitou o convite.', ref: 'tok123' });
+    return b.commit();
+  });
   await deve('Convite usado NÃO serve de novo', false, () => setDoc(doc(db('edu'), 'acessos', 'beta_' + P.edu), aceite('edu', { empresaId: 'beta' })));
   await semear();
   await deve('Convite: e-mail em maiúsculas no login também vale (comparação em minúsculas)', true,

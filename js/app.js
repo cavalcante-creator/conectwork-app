@@ -103,6 +103,7 @@
   async function desenhar() {
     if (!montado) return;
     const mods = visiveis(), r = lerRota(), { ic, esc } = U();
+    if (r.modulo === 'convite') return;   /* link de convite: a sessão cuida (modulos/convite.js) */
     let m = MODULOS.find(x => x.id === r.modulo);
     if (!m || !mods.includes(m)) {
       if (r.modulo && mods.length) U().toast('Você não tem acesso a essa tela. Abrimos o início.', 'erro');

@@ -240,8 +240,18 @@
     return s;
   }
 
+  /* link de convite aberto (#convite/<token>): a parte do convite (modulos/convite.js) cuida antes de tudo */
+  const tokenConvite = () => { const m = /^#\/?convite\/([A-Za-z0-9_-]{6,64})/.exec(location.hash || ''); return m ? m[1] : null; };
+
   async function aoMudarLogin(u) {
     const minha = ++geracao;
+    const tk = tokenConvite();
+    if (tk && CW.entrada.abrirConviteLink) {
+      if (CW.app) CW.app.desmontar();
+      if (u) { try { const s = await carregar(u); if (minha !== geracao) return; st = s; } catch (e) { if (minha !== geracao) return; st = vazio(); st.usuario = { uid: u.uid, email: (u.email || '').toLowerCase() }; } }
+      else st = vazio();
+      CW.entrada.abrirConviteLink(tk, u); return;
+    }
     if (!u) {
       st = vazio(); if (CW.app) CW.app.desmontar();
       telaLogin('login'); return;
@@ -300,9 +310,13 @@
 
   /* volta para a entrada certa conforme o login atual (login, sem acesso, escolher empresa ou o app) */
   const recarregar = () => aoMudarLogin(CW.fb.auth().currentUser);
+  /* link de convite colado/aberto com a página já aberta (dentro ou fora do app) */
+  window.addEventListener('hashchange', () => { if (tokenConvite() && CW.fb.auth && CW.fb.auth()) recarregar(); });
+  /* depois de aceitar um convite, entra direto na empresa dele (mesmo tendo outras) */
+  const preferir = chave => { try { sessionStorage.setItem(chaveGuardada(), chave); } catch (e) { /* sem armazenamento */ } };
 
   CW.sessao = {
-    iniciar, sair, trocar, entrarEm, recarregar,
+    iniciar, sair, trocar, entrarEm, recarregar, preferir, moldura, telaLogin, telaCarregando, limparRota,
     estado: () => st,
     contexto: () => st.contexto,
     podeTrocar: () => st.opcoes.length > 1,

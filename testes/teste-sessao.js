@@ -28,8 +28,9 @@ const MODS_TESTE = () => {
     consultas: window.__mockLog.filter(x => x[0] === 'consulta' || x[0] === 'le').map(x => x[0] === 'consulta' ? x[1] + ' where ' + JSON.stringify(x[2]) : x[1]) }));
   ok('S1 sem acesso: "Você ainda não tem acesso a nenhuma empresa" com "Cadastrar minha empresa" e "Tenho um convite"', s1.t === 'Você ainda não tem acesso a nenhuma empresa' && /^Cadastrar minha empresa/.test(s1.cad) && /^Tenho um convite/.test(s1.conv) && !s1.shell, s1.t);
   ok('S2 depois do login carrega usuarios/{uid}, acessos where uid == meu uid e master/{uid}', s1.consultas.includes('usuarios/uCARLA') && s1.consultas.includes('master/uCARLA') && s1.consultas.includes('acessos where [["uid","==","uCARLA"]]'), s1.consultas.join(' · '));
-  await page.click('#sa-convite'); await H.dorme(100);
-  ok('S3 "Tenho um convite" avisa que a opção chega na próxima parte da Etapa 1', /próxima etapa/.test(await toast()), await toast());
+  await page.click('#sa-convite'); await page.waitForSelector('dialog[open] #tc-link', { timeout: 5000 });
+  ok('S3 "Tenho um convite" pede o link recebido', await page.$eval('dialog[open] h2', e => e.innerText) === 'Tenho um convite');
+  await page.click('dialog[open] [data-dlg-b="0"]'); await H.dorme(100);
   await page.evaluate(() => { window.__chamou = []; CW.entrada.cadastrarEmpresa = () => __chamou.push('cad'); CW.entrada.abrirConvite = () => __chamou.push('conv'); });
   await page.click('#sa-cadastrar'); await page.click('#sa-convite');
   ok('S4 os botões chamam os ganchos da Etapa 1 (cadastro e convite)', JSON.stringify(await page.evaluate(() => __chamou)) === '["cad","conv"]');
