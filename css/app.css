@@ -201,6 +201,12 @@ main{padding:22px clamp(16px,3.5vw,40px) 48px;display:flex;flex-direction:column
   .bnav button svg.i{width:22px;height:22px}
   .bnav button[aria-current="page"]{color:#fff;background:rgba(255,255,255,.08)}
   main{padding-bottom:120px}
+  /* casca no celular: a página fica parada e só o conteúdo rola (dentro do #app). A barra de cima sobe junto com a
+     tela, em vez de ficar presa ocupando espaço, e a área da hora e da bateria do iPhone fica sempre azul-marinho
+     (com a página rolando, o iPhone clareava o alto da tela por cima do conteúdo claro). */
+  html.casca,html.casca body{background:var(--navy);height:100%;overflow:hidden;overscroll-behavior:none}
+  html.casca #app{height:100%;min-height:0;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;background:var(--bg)}
+  html.casca .side{position:static}
   .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))!important}
   .appbar .crumbs{font-size:12px}
   .topobtn.tema span{display:none}

@@ -62,6 +62,10 @@ const { ok, fim } = H.placar('autorizacoes');
   const m4 = await page.evaluate(() => { document.getElementById('view').innerHTML = ''; const r = document.querySelector('.side').getBoundingClientRect(), a = document.querySelector('.appbar').getBoundingClientRect(); return { top: Math.round(r.top), h: Math.round(r.height), ap: Math.round(a.top) }; });
   ok('M4 celular: a barra de cima não estica quando a tela está vazia', m4.top <= 1 && m4.h < 90 && m4.ap <= m4.h + 1, JSON.stringify(m4));
 
+  // M5 celular: só o conteúdo rola; a barra de cima sobe junto e o alto da página (área da hora) fica azul-marinho
+  const m5 = await page.evaluate(() => { const ap = document.getElementById('app'); document.getElementById('view').insertAdjacentHTML('beforeend', '<div style="height:1500px"></div>'); ap.scrollTop = 200; return { cls: document.documentElement.classList.contains('casca'), app: ap.scrollTop, win: window.scrollY, side: Math.round(document.querySelector('.side').getBoundingClientRect().top), bg: getComputedStyle(document.documentElement).backgroundColor }; });
+  ok('M5 celular: só o conteúdo rola, a barra de cima sobe junto e o fundo do alto fica azul-marinho', m5.cls && m5.app > 0 && m5.win === 0 && m5.side < 0 && m5.bg === 'rgb(8, 22, 56)', JSON.stringify(m5));
+
   ok('Sem erros de JavaScript na página', !erros.length, erros.join(' | '));
   await browser.close(); fim();
 })().catch(e => { console.error('ERRO NO TESTE', e); process.exit(1); });

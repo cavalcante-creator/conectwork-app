@@ -76,7 +76,7 @@
     const sub = (ctx.tipo === 'master' ? 'Equipe Conectwork' : CW.permissoes.nomeCargo(ctx.acesso.cargo) + ' · ' + ctx.nome);
     const mods = menuMods(), mei = porteMei();
     const teste = CW.fb.ambiente() === 'teste' ? '<span class="env">Ambiente de testes</span>' : '';
-    document.documentElement.classList.remove('entrada', 'wizpg');
+    document.documentElement.classList.remove('entrada', 'wizpg'); document.documentElement.classList.add('casca');
     document.getElementById('app').innerHTML = `<div class="shell">
       <aside class="side">${CURVES}
         <div class="logo">${LOGO(32)}<span>Conect<b>work</b></span></div>
@@ -118,6 +118,7 @@
     Object.values(ouvintes).forEach(f => { try { f(); } catch (e) { /* já desligado */ } }); ouvintes = {};
     document.querySelectorAll('dialog[open]').forEach(d => d.close());
     montado = false; atual = null;
+    document.documentElement.classList.remove('casca');
     try { if ('clearAppBadge' in navigator) navigator.clearAppBadge(); } catch (e) {}
   }
 
@@ -179,7 +180,9 @@
       history.replaceState(null, '', '#' + m.id); return desenhar();
     }
     const ids = Object.keys(m.telas), telaId = m.telas[r.tela] ? r.tela : ids[0], tela = m.telas[telaId];
+    const mudou = !atual || atual.modulo !== m.id || atual.tela !== telaId;
     atual = { modulo: m.id, tela: telaId };
+    if (mudou) { const ap = document.getElementById('app'); if (ap) ap.scrollTop = 0; window.scrollTo(0, 0); }   /* outra tela começa do alto */
     document.querySelectorAll('#menu [data-mod]').forEach(b => { if (b.dataset.mod === m.id) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
     barraBaixo(menuMods(), m.id);
     document.getElementById('crumbs').innerHTML = `Conectwork ${ic('chev')} ${ids.length > 1 && telaId !== ids[0] ? `<span>${esc(m.nome)}</span> ${ic('chev')} <b>${esc(tela.nome)}</b>` : `<b>${esc(m.nome)}</b>`}`;
