@@ -2,12 +2,12 @@
    Troque VERSAO a cada publicação: o navegador percebe a mudança, instala a versão nova e apaga os caches antigos.
    Guarda só os arquivos do próprio app, para abrir sem internet. Estratégia: rede primeiro, cache se offline.
    NUNCA guarda Firebase (login e banco), fontes externas nem nada de outra origem: esses pedidos nem passam por aqui. */
-const VERSAO = 'conectwork-v47';
+const VERSAO = 'conectwork-v48';
 
 const ARQUIVOS = [
   './', 'index.html', 'config.js', 'manifest.webmanifest', 'css/app.css',
   'js/ui.js', 'js/firebase.js', 'js/permissoes.js', 'js/log.js', 'js/sessao.js', 'js/app.js', 'js/pwa.js',
-  'modulos/lista.js', 'modulos/inicio.js', 'modulos/avisar.js', 'modulos/logos.js', 'modulos/cadastro.js', 'modulos/cadastros-master.js', 'modulos/emissores.js', 'modulos/usuarios.js', 'modulos/convite.js', 'modulos/historico.js', 'modulos/minha-empresa.js', 'modulos/avaliacoes.js', 'modulos/triagem.js', 'modulos/dossie.js', 'modulos/contratos.js', 'modulos/ordens.js', 'modulos/negocio.js', 'modulos/medicoes.js', 'modulos/nfse.js', 'modulos/assistente.js', 'modulos/espelhos.js', 'modulos/titulos.js', 'modulos/relatorios.js', 'modulos/documentos.js', 'modulos/autorizacoes.js',
+  'modulos/lista.js', 'modulos/inicio.js', 'modulos/avisar.js', 'modulos/logos.js', 'modulos/cadastro.js', 'modulos/cadastros-master.js', 'modulos/rede.js', 'modulos/mensalidades.js', 'modulos/equipe-cw.js', 'modulos/avisos.js', 'modulos/emissores.js', 'modulos/usuarios.js', 'modulos/convite.js', 'modulos/historico.js', 'modulos/minha-empresa.js', 'modulos/avaliacoes.js', 'modulos/triagem.js', 'modulos/dossie.js', 'modulos/contratos.js', 'modulos/ordens.js', 'modulos/negocio.js', 'modulos/medicoes.js', 'modulos/nfse.js', 'modulos/assistente.js', 'modulos/espelhos.js', 'modulos/titulos.js', 'modulos/relatorios.js', 'modulos/documentos.js', 'modulos/autorizacoes.js',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-32.png'
 ];
 

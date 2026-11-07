@@ -287,7 +287,7 @@
   }
 
   /* ---------- dados ---------- */
-  const STATUS = { analise: ['warn', 'Em análise'], pendencia: ['warn', 'Ajuste pedido'], aprovado: ['ok', 'Aprovada'], recusado: ['danger', 'Recusada'] };
+  const STATUS = { analise: ['warn', 'Em análise'], pendencia: ['warn', 'Ajuste pedido'], aprovado: ['ok', 'Aprovada'], recusado: ['danger', 'Recusada'], suspenso: ['danger', 'Suspensa'] };
   const pillStatus = s => { const x = STATUS[s] || ['info', s || 'Sem situação']; return `<span class="pill ${x[0]}">${U().esc(x[1])}</span>`; };
   const nomeEmpresa = id => { const e = st.empresas[id]; return (e && (e.nome || e.razao)) || 'uma empresa'; };
   const primeiroNome = () => String((st.perfil && st.perfil.nome) || st.usuario.email || '').split(/[\s@]/)[0];
@@ -365,6 +365,28 @@
     CW.app.montar();
   }
 
+  /* equipe Conectwork: "Ver como a empresa" (suporte). Abre o app com o contexto da empresa, como o administrador dela vê,
+     mas só para consultar: CW.permissoes.soLeitura devolve true e as regras do banco não deixam a equipe gravar no lugar da
+     empresa. Não fica guardado: ao recarregar a página, volta para a equipe. */
+  async function verComo(empresaId) {
+    if (!st.master) return false;
+    const e = CW.fb.dados(await CW.fb.db().doc('empresas/' + empresaId).get());
+    if (!e) { U().toast('Empresa não encontrada.', 'erro'); return false; }
+    limparRota();
+    st.contexto = { chave: 'ver:' + empresaId, tipo: 'empresa', empresaId, empresa: e, nome: e.nome || e.razao || 'Empresa', verComo: true,
+      acesso: { uid: st.usuario.uid, empresaId, cargo: 'admin', ativo: true, extras: [], sem: [] } };
+    CW.app.montar();
+    U().toast('Você está vendo o Conectwork como ' + st.contexto.nome + '. Só consulta.');
+    return true;
+  }
+  function voltarEquipe(rota) {
+    if (!st.master) return;
+    limparRota();
+    st.contexto = st.opcoes.find(o => o.tipo === 'master');
+    CW.app.montar();
+    if (rota) CW.ir(rota);
+  }
+
   async function sair() {
     try { sessionStorage.removeItem(chaveGuardada()); } catch (e) { /* sem armazenamento */ }
     if (CW.app) CW.app.desmontar();
@@ -401,7 +423,7 @@
   const preferir = chave => { try { sessionStorage.setItem(chaveGuardada(), chave); } catch (e) { /* sem armazenamento */ } };
 
   CW.sessao = {
-    iniciar, sair, trocar, entrarEm, recarregar, preferir, moldura, encaixar, telaLogin, telaCarregando, limparRota, botoesSociais, ligarSociais,
+    iniciar, sair, trocar, entrarEm, verComo, voltarEquipe, recarregar, preferir, moldura, encaixar, telaLogin, telaCarregando, limparRota, botoesSociais, ligarSociais,
     estado: () => st,
     contexto: () => st.contexto,
     podeTrocar: () => st.opcoes.length > 1,

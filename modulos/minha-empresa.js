@@ -40,9 +40,11 @@
         <section class="card" id="me-modulos"><div class="card-h"><span class="ic">${ic('grid')}</span><h3>Plano e módulos</h3></div>
           <div class="card-b" style="padding-bottom:6px"><dl class="dl"><div><dt>Plano</dt><dd style="font-size:18px">${esc(P.nomePlano(e.plano) || '—')}</dd></div><div><dt>Módulos contratados</dt><dd>${(e.modulos || []).length}</dd></div></dl></div>
           ${mods}<p class="hint" style="margin:0;padding:12px 20px;font-size:12px;border-top:1px solid var(--line)">Os módulos são liberados pela equipe Conectwork conforme o plano. A receita do Conectwork é só a mensalidade: não há comissão sobre os serviços.</p></section>
+        ${verBanco ? `<section class="card" id="me-mens"><div class="card-h"><span class="ic">${ic('wallet')}</span><h3>Mensalidade do Conectwork</h3></div><div class="card-b" id="me-mens-b"><p class="hint" style="margin:0">Carregando…</p></div></section>` : ''}
         <section class="card" id="me-docs"><div class="card-h"><span class="ic">${ic('file')}</span><h3>Documentos</h3></div>${docs}</section>
         <div class="banner info">${ic('alert')}<span><strong>Precisa mudar algum dado?</strong>Fale com a equipe Conectwork. Dados cadastrais e bancários mudados passam por nova conferência antes de valer.</span></div>
       </div></div>`;
+    if (verBanco) mensalidades(c.empresaId);
     const arq = document.getElementById('me-logo-arq'), tirar = document.getElementById('me-logo-tirar');
     const registra = (b, texto) => b.set(db.collection('log').doc(), { em: CW.fb.agora(), uid: ctx.sessao.usuario.uid, quem: (ctx.sessao.perfil && ctx.sessao.perfil.nome) || ctx.sessao.usuario.email, empresaId: c.empresaId, acao: 'empresa.logo', texto, ref: '' });
     if (arq) arq.onchange = async () => {
@@ -59,6 +61,25 @@
       const b = db.batch(); b.delete(db.doc('logos/' + c.empresaId)); registra(b, 'Logo da empresa retirada.');
       try { await b.commit(); CW.logos.limpar(c.empresaId); U().toast('Logo retirada.'); CW.app.montar(); } catch (e) { U().toast(CW.fb.mensagemErro(e), 'erro'); }
     };
+  }
+
+  /* mensalidades do Conectwork desta empresa (só admin e financeiro leem, pelas regras do banco) */
+  async function mensalidades(empresaId) {
+    const box = document.getElementById('me-mens-b'); if (!box) return;
+    const { esc, formatarDinheiro } = U();
+    let xs = [];
+    try { xs = CW.fb.lista(await CW.fb.db().collection('mensalidades').where('empresaId', '==', empresaId).get()); }
+    catch (e) { box.innerHTML = `<p class="hint" style="margin:0">Não foi possível carregar agora.</p>`; return; }
+    if (!document.body.contains(box)) return;
+    const h = new Date().toISOString().slice(0, 10), br = s => s ? s.slice(8, 10) + '/' + s.slice(5, 7) + '/' + s.slice(0, 4) : '';
+    const MES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'], nm = c => MES[Number(c.slice(5, 7)) - 1] + '/' + c.slice(0, 4);
+    xs.sort((a, b) => b.comp.localeCompare(a.comp));
+    box.innerHTML = xs.length ? xs.slice(0, 6).map(m => {
+      const st = m.status === 'paga' ? `<span class="pill ok">Paga em ${esc(br(m.pagoNoDia))}</span>` : m.status === 'isenta' ? '<span class="tag gray">Isenta</span>'
+        : m.venc < h ? '<span class="pill danger">Atrasada</span>' : `<span class="pill info">Vence em ${esc(br(m.venc))}</span>`;
+      return `<div class="docrow"><div class="t"><strong>${esc(nm(m.comp))} · ${esc(formatarDinheiro(m.valorCentavos))}</strong></div>${st}</div>`; }).join('')
+      + '<p class="hint" style="margin:10px 0 0;font-size:12px">A mensalidade é paga direto à equipe Conectwork. Dúvidas sobre a cobrança: fale com a equipe.</p>'
+      : '<p class="hint" style="margin:0">Nenhuma mensalidade lançada ainda.</p>';
   }
 
   CW.registrarModulo({

@@ -5,7 +5,9 @@ Convenções: IDs gerados pelo Firestore, salvo quando indicado. Datas em `serve
 ## Etapas 0 e 1 (base e acesso)
 
 ### `master/{uid}`
-Quem é equipe Conectwork. Criado **à mão** no console. Campos: `nome`.
+Quem é equipe Conectwork. O primeiro é criado **à mão** no console (campo `nome`). Os outros entram pelo convite da equipe
+(`convites/{token}` com `tipo: 'master'`): ao aceitar, a própria pessoa cria `master/{uid}` {`nome`, `email`, `convite`, `criadoEm`}.
+Ninguém muda o próprio registro; outra pessoa da equipe tira alguém (apaga), ninguém tira a si mesmo.
 
 ### `usuarios/{uid}`
 Perfil da pessoa (o login é do Firebase Auth). Campos: `nome`, `email`, `tel`, `zap` (bool: recebe avisos), `criadoEm`, `atualizadoEm`.
@@ -13,10 +15,10 @@ Só a própria pessoa grava. A própria pessoa e a equipe master leem.
 
 ### `empresas/{empresaId}`
 Dados públicos dentro da rede (outras empresas aprovadas podem ler).
-`tipo` (`contratante` | `ambos` | `prestador`), `status` (`analise` | `pendencia` | `aprovado` | `recusado`), `nome` (fantasia), `razao`, `cnpj` (com máscara), `cnpjNum` (só os 14 números), `cidade`, `uf`, `protocolo` (CW-AAAA-0000), `modulos` (lista), `plano`, `criadoPor` (uid), `criadoEm`, `enviadoEm` (último envio para análise), `motivo` (texto do ajuste ou recusa).
+`tipo` (`contratante` | `ambos` | `prestador`), `status` (`analise` | `pendencia` | `aprovado` | `recusado` | `suspenso`: a equipe suspende com `motivo`; a empresa vê só Início, Meu cadastro e Documentos), `nome` (fantasia), `razao`, `cnpj` (com máscara), `cnpjNum` (só os 14 números), `cidade`, `uf`, `protocolo` (CW-AAAA-0000), `modulos` (lista), `plano`, `criadoPor` (uid), `criadoEm`, `enviadoEm` (último envio para análise), `motivo` (texto do ajuste ou recusa).
 - Criada pelo cadastro numa operação só, junto com `cnpjs/{cnpjNum}`, a área privada, o acesso admin do fundador, as autorizações e o histórico.
 - Na correção (status `pendencia` → `analise`) o CNPJ não muda.
-- Decisão da equipe master: `status`, `plano` (`essencial` | `profissional` | `rede` | `gratuito`; valores das mensalidades a definir), `modulos` (ids de `MODULOS_CONTRATAVEIS` em `js/permissoes.js`), `motivo`, `avaliadoEm`, `avaliadoPor` (nome).
+- Decisão da equipe master: `status`, `plano` (`essencial` | `profissional` | `rede` | `gratuito`; valor da mensalidade em `config/planos`), `modulos` (ids de `MODULOS_CONTRATAVEIS` em `js/permissoes.js`), `motivo`, `avaliadoEm`, `avaliadoPor` (nome).
 - `modulos`, `status` e `taxa` só a equipe master altera.
 
 ### `empresas/{empresaId}/privado/cadastro`
@@ -41,6 +43,8 @@ O vínculo de uma pessoa com uma empresa (uma pessoa pode ter vários, é assim 
 - Admin cria (só da própria empresa, cargo da lista), lista os da empresa, marca o reenvio e cancela (apaga). Não muda e-mail nem cargo depois de criado.
 - Quem foi convidado só lê o convite depois de entrar com o e-mail convidado. Ao aceitar (uma operação só): cria `acessos/{empresaId}_{uid}` com o cargo do convite, `convite` = token, sem `extras`/`sem`; marca `usado`; grava perfil, autorizações (canal `convite`) e histórico.
 O link é enviado pelo próprio admin por WhatsApp ou e-mail (botão que abre o WhatsApp com a mensagem pronta). Sem servidor na etapa 1.
+
+Convite da equipe Conectwork: `tipo: 'master'`, `empresaId: 'conectwork'`, sem `cargo`. Só a equipe cria; não vira acesso de empresa.
 
 ### `log/{id}`
 `em`, `uid`, `quem`, `empresaId` (ou `master`), `acao` (código curto), `texto` (frase legível), `ref` (id do documento afetado).
@@ -108,3 +112,21 @@ Gravados a partir da Etapa 1 (cadastro). Só a própria pessoa grava; a própria
 ### `notamodelo/{empresaId}` e `fiscal/{empresaId}`
 `notamodelo` (assistente de emissão): `codigo` (código de tributação nacional, NN.NN.NN), `codigoDesc`, `municipio`, `complemento`, `em`, `por`. Admin, financeiro e operacional.
 `fiscal` (Empresa em dia do MEI): `das` {AAAA-MM: {pago, data}} (DAS da competência vence dia 20 do mês seguinte), `dasn` {AAAA: {entregue, data}} (DASN-SIMEI até 31/05 do ano seguinte), `em`, `por`. Admin e financeiro. O relatório mensal das receitas brutas é gerado no aparelho (PDF), não é guardado.
+
+## Equipe Conectwork (painel da rede)
+
+### `config/planos`
+`valores` {essencial, profissional, rede, gratuito: centavos por mês}, `diaVenc` (1 a 28), `em`, `por`. Todos leem; só a equipe muda.
+
+### `mensalidades/{empresaId}_{AAAA-MM}`
+A receita do Conectwork (nada sobre os serviços). `empresaId`, `empresaNome`, `comp` (AAAA-MM), `plano`, `valorCentavos`, `venc` (AAAA-MM-DD),
+`status` (`aberta` | `paga` | `isenta`; "atrasada" = aberta com vencimento passado, calculado na tela), `pagoNoDia` (dia em que o dinheiro entrou,
+obrigatório para `paga`), `pagoPor`, `pagoEm`, `obs`, `criadoEm`, `criadoPor`, `atualizadoEm`.
+Só a equipe gera e dá baixa; valor e vencimento só mudam enquanto aberta; nada se apaga. A empresa (admin e financeiro) lê as suas em Minha empresa.
+
+### `avisos/{id}`
+Recado da equipe para a rede: `titulo`, `texto`, `tipo` (`info` | `atencao`), `para` (`todos` | `tomadores` | `prestadores`), `ate` (AAAA-MM-DD ou vazio),
+`ativo`, `criadoEm`, `criadoPor`, `criadoPorNome`, `atualizadoEm`. Todos leem (aparece no Início da empresa); só a equipe publica, edita e tira do ar; nada se apaga.
+
+### "Ver como a empresa"
+Não grava nada: a equipe abre o app com o contexto da empresa (cargo admin, só consulta). As regras do banco continuam valendo (a equipe lê, não grava no lugar da empresa).

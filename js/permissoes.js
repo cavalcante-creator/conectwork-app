@@ -56,12 +56,13 @@
   /* cargos de só leitura não gravam nada (a tela esconde os botões; as regras do banco ainda conferem) */
   function soLeitura(ctx) {
     if (!ctx || ctx.tipo === 'master') return false;
+    if (ctx.verComo) return true;                 /* equipe Conectwork vendo como a empresa: só consulta */
     const c = cargo(ctx.acesso && ctx.acesso.cargo); return !c || !!c.soLeitura;
   }
 
   /* Módulos que a equipe Conectwork liga para cada empresa (empresas/{id}.modulos) e planos de mensalidade.
      O plano só sugere os módulos; a equipe pode ligar e desligar um a um. Receita = mensalidade, sem comissão.
-     Valores das mensalidades: a definir (não ficam no app por enquanto). "fase" = quando o módulo entra no ar. */
+     Valores das mensalidades: a equipe define em Mensalidades › Planos (config/planos). "fase" = quando o módulo entra no ar. */
   const MODULOS_CONTRATAVEIS = [
     { id: 'equipe', nome: 'Usuários e acessos', fase: 1, desc: 'Vários logins por empresa, cada um com seu cargo.' },
     { id: 'cobrancas', nome: 'Cobranças e notas', fase: 1, desc: 'Pedido de nota, conferência da nota, contas a pagar e receber.' },

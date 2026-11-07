@@ -19,9 +19,23 @@ service cloud.firestore {
     function fundadorApos(emp) { return logado() && existsAfter(caminho('empresas', emp)) && getAfter(caminho('empresas', emp)).data.criadoPor == request.auth.uid; }
 
     // ---------- Equipe Conectwork ----------
+    // O primeiro é criado à mão no console. Depois, a equipe convida (convites/{token} com tipo 'master'):
+    // quem recebeu o convite entra com o próprio e-mail. Outra pessoa da equipe tira alguém; ninguém tira a si mesmo.
+    function masterApos() { return logado() && existsAfter(caminho('master', request.auth.uid)); }
+    function conviteMaster(tk) {
+      let c = get(caminho('convites', tk)).data;
+      return c.get('tipo', '') == 'master' && c.usado == false && c.email == meuEmail();
+    }
     match /master/{uid} {
       allow read: if logado() && (request.auth.uid == uid || master());
-      allow write: if false;                       // criado à mão no console
+      allow create: if logado() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['nome','email','convite','criadoEm'])
+        && request.resource.data.nome is string && request.resource.data.nome.size() >= 3 && request.resource.data.nome.size() <= 120
+        && request.resource.data.email == meuEmail()
+        && request.resource.data.criadoEm == request.time
+        && conviteMaster(request.resource.data.convite);
+      allow update: if false;
+      allow delete: if master() && request.auth.uid != uid;
     }
 
     // ---------- Perfil da pessoa ----------
@@ -77,6 +91,7 @@ service cloud.firestore {
         && id == d.empresaId + '_' + request.auth.uid
         && d.uid == request.auth.uid
         && c.usado == false
+        && c.get('tipo', '') != 'master'
         && c.email == meuEmail()
         && c.empresaId == d.empresaId
         && c.cargo == d.cargo
@@ -709,9 +724,60 @@ service cloud.firestore {
       allow create: if logado()
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.em == request.time      // hora do servidor (serverTimestamp), ninguém escolhe a data
-        && (master() || membroApos(request.resource.data.empresaId) || fundadorApos(request.resource.data.empresaId));
+        && (master() || masterApos() || membroApos(request.resource.data.empresaId) || fundadorApos(request.resource.data.empresaId));
       allow read: if master() || (logado() && admin(resource.data.empresaId));
       allow update, delete: if false;
+    }
+
+    // ---------- Planos: valor da mensalidade de cada plano (centavos) e dia do vencimento. Todos leem; só a equipe muda ----------
+    match /config/planos {
+      allow read: if logado();
+      allow write: if master() && request.resource.data.keys().hasOnly(['valores','diaVenc','em','por'])
+        && request.resource.data.valores is map
+        && request.resource.data.diaVenc is int && request.resource.data.diaVenc >= 1 && request.resource.data.diaVenc <= 28;
+    }
+
+    // ---------- Mensalidades do Conectwork (a receita: sem comissão sobre os serviços) · id = empresaId_AAAA-MM ----------
+    // A equipe gera e dá baixa (só com a data em que o dinheiro entrou: aberta não é paga). A empresa (admin e financeiro) só lê.
+    function camposMens() { return ['empresaId','empresaNome','comp','plano','valorCentavos','venc','status','pagoNoDia','pagoPor','pagoEm','obs','criadoEm','criadoPor','atualizadoEm']; }
+    function dataOk(v) { return v is string && v.matches('[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])'); }
+    match /mensalidades/{id} {
+      allow read: if master() || cargoEm(resource.data.empresaId, ['admin','financeiro']);
+      allow create: if master() && request.resource.data.keys().hasOnly(camposMens())
+        && id == request.resource.data.empresaId + '_' + request.resource.data.comp
+        && request.resource.data.comp is string && request.resource.data.comp.matches('[0-9]{4}-(0[1-9]|1[0-2])')
+        && request.resource.data.valorCentavos is int && request.resource.data.valorCentavos >= 0
+        && dataOk(request.resource.data.venc)
+        && request.resource.data.status in ['aberta','isenta']
+        && request.resource.data.criadoEm == request.time;
+      allow update: if master() && request.resource.data.keys().hasOnly(camposMens())
+        && mudou().hasOnly(['status','pagoNoDia','pagoPor','pagoEm','obs','valorCentavos','venc','atualizadoEm'])
+        && request.resource.data.status in ['aberta','paga','isenta']
+        && request.resource.data.valorCentavos is int && request.resource.data.valorCentavos >= 0 && dataOk(request.resource.data.venc)
+        && (request.resource.data.status != 'paga' || (dataOk(request.resource.data.pagoNoDia) && request.resource.data.pagoPor is string))
+        // valor e vencimento só mudam enquanto a mensalidade está aberta
+        && (resource.data.status == 'aberta' || (request.resource.data.valorCentavos == resource.data.valorCentavos && request.resource.data.venc == resource.data.venc));
+      allow delete: if false;
+    }
+
+    // ---------- Avisos da equipe Conectwork para a rede: todos leem; só a equipe publica e tira do ar (nada se apaga) ----------
+    match /avisos/{id} {
+      allow read: if logado();
+      allow create: if master() && request.resource.data.keys().hasOnly(['titulo','texto','tipo','para','ate','ativo','criadoEm','criadoPor','criadoPorNome'])
+        && request.resource.data.titulo is string && request.resource.data.titulo.size() >= 3 && request.resource.data.titulo.size() <= 120
+        && request.resource.data.texto is string && request.resource.data.texto.size() <= 1000
+        && request.resource.data.tipo in ['info','atencao']
+        && request.resource.data.para in ['todos','tomadores','prestadores']
+        && (request.resource.data.ate == '' || dataOk(request.resource.data.ate))
+        && request.resource.data.ativo == true
+        && request.resource.data.criadoPor == request.auth.uid && request.resource.data.criadoEm == request.time;
+      allow update: if master() && mudou().hasOnly(['ativo','titulo','texto','tipo','para','ate','atualizadoEm'])
+        && request.resource.data.ativo is bool
+        && request.resource.data.titulo is string && request.resource.data.titulo.size() >= 3 && request.resource.data.titulo.size() <= 120
+        && request.resource.data.texto is string && request.resource.data.texto.size() <= 1000
+        && request.resource.data.tipo in ['info','atencao'] && request.resource.data.para in ['todos','tomadores','prestadores']
+        && (request.resource.data.ate == '' || dataOk(request.resource.data.ate));
+      allow delete: if false;
     }
 
     // ---------- Todo o resto: negado ----------

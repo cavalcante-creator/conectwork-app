@@ -29,7 +29,7 @@
   function semLogin(token) {
     const { ic } = U();
     S().moldura(`<div class="logincard card" id="cv-boasvindas"><div class="card-b"><div class="lform">
-      <div class="lg-cab"><h2>Você recebeu um convite</h2><p class="sub">Alguém da sua empresa convidou você para usar o Conectwork. Para aceitar, crie seu acesso com o mesmo e-mail que recebeu o convite.</p></div>
+      <div class="lg-cab"><h2>Você recebeu um convite</h2><p class="sub">Você foi convidado(a) para usar o Conectwork. Para aceitar, crie seu acesso com o mesmo e-mail que recebeu o convite.</p></div>
       <button class="btn" id="cv-criar">${ic('user')}Criar meu acesso</button>
       <button class="btn sec" id="cv-tenho">${ic('lock')}Já tenho login no Conectwork</button>
       ${S().botoesSociais('cv', 'Entrar')}
@@ -92,16 +92,20 @@
     let c = null, erro = null;
     try { c = CW.fb.dados(await db.doc('convites/' + token).get()); } catch (e) { erro = e; }
     if (erro && !/permission-denied|not-found/.test(erro.code || '')) { problema('Não foi possível abrir o convite', CW.fb.mensagemErro(erro), u, true); return; }
+    const equipe = !!c && c.tipo === 'master';
     if (!c || c.email !== email) { pendente = null; problema('Este convite não está disponível para você', `Você entrou como ${email}. O convite pode ser para outro e-mail, ter sido cancelado ou já usado. Confira com quem convidou você.`, u); return; }
-    const jaTem = (S().estado().acessos || []).concat(S().estado().bloqueados || []).find(a => a.empresaId === c.empresaId);
+    if (equipe && S().estado().master) { pendente = null; problema('Você já faz parte da equipe Conectwork', `Seu login ${email} já está na equipe.`, u, false, true); return; }
+    const jaTem = !equipe && (S().estado().acessos || []).concat(S().estado().bloqueados || []).find(a => a.empresaId === c.empresaId);
     if (jaTem) { pendente = null; problema('Você já tem acesso a esta empresa', `Seu login ${email} já está ligado a ${c.empresaNome || 'esta empresa'}.`, u, false, true); return; }
     if (c.usado) { pendente = null; problema('Este convite já foi usado', 'Peça um novo convite a quem convidou você.', u); return; }
     if (pendente && pendente.token === token) { const p = pendente; pendente = null; return aceitar(token, c, u, p.nome, p.cons); }
     const perfilNome = (S().estado().perfil && S().estado().perfil.nome) || c.nome || '';
+    const nomeCargo = equipe ? 'Equipe Conectwork' : CW.permissoes.nomeCargo(c.cargo);
+    const descCargo = equipe ? 'Analisa cadastros, cuida das mensalidades e dos avisos e acompanha toda a rede. Vê os dados de todas as empresas.' : (CW.permissoes.cargo(c.cargo) || {}).desc || '';
     S().moldura(`<div class="logincard card" id="cv-card"><div class="card-b"><div class="lform">
-      <div class="lg-cab"><h2>Convite para ${esc(c.empresaNome || 'uma empresa')}</h2><p class="sub">${esc(c.criadoPorNome || 'O administrador')} convidou você para entrar como <b>${esc(CW.permissoes.nomeCargo(c.cargo))}</b>.</p></div>
-      <dl class="dl"><div><dt>Seu login</dt><dd>${esc(email)}</dd></div><div><dt>Cargo</dt><dd id="cv-cargo">${esc(CW.permissoes.nomeCargo(c.cargo))}</dd></div>
-        <div class="full"><dt>O que o cargo faz</dt><dd style="font-weight:400;font-size:13px">${esc((CW.permissoes.cargo(c.cargo) || {}).desc || '')}</dd></div></dl>
+      <div class="lg-cab"><h2>${equipe ? 'Convite para a equipe Conectwork' : 'Convite para ' + esc(c.empresaNome || 'uma empresa')}</h2><p class="sub">${esc(c.criadoPorNome || 'O administrador')} convidou você para entrar como <b>${esc(nomeCargo)}</b>.</p></div>
+      <dl class="dl"><div><dt>Seu login</dt><dd>${esc(email)}</dd></div><div><dt>Cargo</dt><dd id="cv-cargo">${esc(nomeCargo)}</dd></div>
+        <div class="full"><dt>O que o cargo faz</dt><dd style="font-weight:400;font-size:13px">${esc(descCargo)}</dd></div></dl>
       <label class="f"><span>Seu nome completo</span><input id="cv-nome2" value="${esc(perfilNome)}" maxlength="120"></label>
       <label class="check"><input type="checkbox" id="cv-termos2"><span>Li e aceito os <button type="button" class="linkbtn" data-texto="termos">Termos de uso</button> e a <button type="button" class="linkbtn" data-texto="privacidade">Política de privacidade</button>. <b style="color:var(--danger);font-weight:500" aria-hidden="true">*</b></span></label>
       <div class="stack" style="gap:8px">${autorizacoesHtml('cb', padraoCons())}</div>
@@ -133,9 +137,11 @@
 
   async function aceitar(token, c, u, nome, cons) {
     const db = CW.fb.db(), agora = CW.fb.agora, email = (u.email || '').toLowerCase(), emp = c.empresaId, K_ = K();
-    S().telaCarregando('Entrando na empresa…');
+    const equipe = c.tipo === 'master';
+    S().telaCarregando(equipe ? 'Entrando na equipe…' : 'Entrando na empresa…');
     const b = db.batch(), perfil = S().estado().perfil;
-    b.set(db.doc('acessos/' + emp + '_' + u.uid), { uid: u.uid, empresaId: emp, nome, email, cargo: c.cargo, extras: [], sem: [], ativo: true, convite: token, criadoEm: agora() });
+    if (equipe) b.set(db.doc('master/' + u.uid), { nome, email, convite: token, criadoEm: agora() });
+    else b.set(db.doc('acessos/' + emp + '_' + u.uid), { uid: u.uid, empresaId: emp, nome, email, cargo: c.cargo, extras: [], sem: [], ativo: true, convite: token, criadoEm: agora() });
     b.update(db.doc('convites/' + token), { usado: true, usadoEm: agora(), usadoPor: u.uid });
     b.set(db.doc('usuarios/' + u.uid), perfil ? { nome, email, atualizadoEm: agora() } : { nome, email, criadoEm: agora(), atualizadoEm: agora() }, { merge: true });
     K_.AUTORIZACOES.forEach(a => {
@@ -143,12 +149,14 @@
       b.set(db.doc('consentimentos/' + u.uid + '_' + a.k), reg);
       b.set(db.collection('consentimentos_log').doc(), reg);
     });
-    b.set(db.collection('log').doc(), { em: agora(), uid: u.uid, quem: nome, empresaId: emp, acao: 'convite.aceitar', texto: `${nome} (${email}) aceitou o convite e entrou como ${CW.permissoes.nomeCargo(c.cargo)}.`, ref: token });
+    b.set(db.collection('log').doc(), equipe
+      ? { em: agora(), uid: u.uid, quem: nome, empresaId: 'master', acao: 'equipe.entrar', texto: `${nome} (${email}) aceitou o convite e entrou na equipe Conectwork.`, ref: token }
+      : { em: agora(), uid: u.uid, quem: nome, empresaId: emp, acao: 'convite.aceitar', texto: `${nome} (${email}) aceitou o convite e entrou como ${CW.permissoes.nomeCargo(c.cargo)}.`, ref: token });
     try { await b.commit(); }
     catch (e) { problema('Não foi possível aceitar o convite', CW.fb.mensagemErro(e), u, true); return; }
-    S().preferir('empresa:' + emp);
+    S().preferir(equipe ? 'master' : 'empresa:' + emp);
     limparHash();
-    U().toast(`Bem-vindo(a) à ${c.empresaNome || 'empresa'}!`);
+    U().toast(equipe ? 'Bem-vindo(a) à equipe Conectwork!' : `Bem-vindo(a) à ${c.empresaNome || 'empresa'}!`);
     S().recarregar();
   }
 

@@ -89,6 +89,7 @@
           <button class="iconbtn" id="sair" aria-label="Sair" title="Sair">${ic('logout')}</button></div>
       </aside>
       <div class="content">
+        ${ctx.verComo ? `<div class="vercomo" id="vercomo">${ic('eye')}<span>Vendo como <b>${esc(ctx.nome)}</b> · só consulta</span><button class="btn sm" id="vercomo-sair">${ic('back')}Voltar para a equipe</button></div>` : ''}
         <div class="appbar"><div class="crumbs" id="crumbs"></div>
           ${CW.sessao.podeTrocar() ? `<button class="topobtn" id="trocar-empresa" title="Trocar de empresa">${ic('swap')}<span>${esc(ctx.nome)}</span></button>` : ''}
           <button class="topobtn tema" id="tema" title="Tema claro ou escuro">${ic('sun')}<span></span></button>${teste}</div>
@@ -97,6 +98,7 @@
       </div></div>
       <nav class="bnav" id="bnav" aria-label="Navegação"></nav>`;
     document.getElementById('sair').onclick = () => CW.sessao.sair();
+    const vc = document.getElementById('vercomo-sair'); if (vc) vc.onclick = () => CW.sessao.voltarEquipe('redeempresas/ver/' + ctx.empresaId);
     document.getElementById('minhas-aut').onclick = () => ir('autorizacoes');
     const ma = document.getElementById('menu-alt'); if (ma) ma.onclick = alternarMenu;
     const tr = document.getElementById('trocar-empresa'); if (tr) tr.onclick = () => CW.sessao.trocar();

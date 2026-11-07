@@ -477,6 +477,68 @@ async function deve(nome, permitido, op) {
   await deve('Pessoa NÃO lê o perfil de outra', false, () => getDoc(doc(db('carla'), 'usuarios', P.ana)));
   await deve('Coleção fora das regras é negada', false, () => getDoc(doc(db('ana'), 'qualquer', 'x')));
 
+  /* ---------- painel da equipe Conectwork: equipe, planos, mensalidades e avisos ---------- */
+  await semear();
+  await env.withSecurityRulesDisabled(async c => { const d = c.firestore();
+    await setDoc(doc(d, 'acessos', 'beta_' + P.beto), { uid: P.beto, empresaId: 'beta', nome: 'Beto', email: EM.beto, cargo: 'admin', extras: [], sem: [], ativo: true });
+    await setDoc(doc(d, 'convites', 'tkm1'), { email: EM.carla, nome: 'Carla Dias', tipo: 'master', empresaId: 'conectwork', usado: false, criadoPor: P.master });
+    await setDoc(doc(d, 'convites', 'tkm2'), { email: EM.edu, nome: 'Edu', tipo: 'master', empresaId: 'alfa', cargo: 'operacional', usado: false, criadoPor: P.master });
+  });
+  await deve('Equipe: a equipe Conectwork convida pelo link', true, () => setDoc(doc(db('master'), 'convites', 'tkm3'), { email: 'nova@conectwork.com.br', nome: 'Nova', tipo: 'master', empresaId: 'conectwork', usado: false, criadoPor: P.master, criadoEm: serverTimestamp() }));
+  await deve('Equipe: admin de empresa NÃO cria convite da equipe Conectwork', false, () => setDoc(doc(db('ana'), 'convites', 'tkm4'), { email: 'x@x.com.br', nome: 'X', tipo: 'master', empresaId: 'alfa', cargo: 'admin', usado: false, criadoPor: P.ana, criadoEm: serverTimestamp() }));
+  const entraEquipe = (k, tk) => { const d = db(k), b = writeBatch(d);
+    b.set(doc(d, 'master', P[k]), { nome: 'Pessoa Nova', email: EM[k], convite: tk, criadoEm: serverTimestamp() });
+    b.update(doc(d, 'convites', tk), { usado: true, usadoEm: serverTimestamp(), usadoPor: P[k] });
+    b.set(doc(collection(d, 'log')), { em: serverTimestamp(), uid: P[k], quem: 'Pessoa Nova', empresaId: 'master', acao: 'equipe.entrar', texto: 'Entrou na equipe.', ref: tk });
+    return b.commit(); };
+  await deve('Equipe: outra pessoa NÃO usa o convite da equipe feito para outro e-mail', false, () => entraEquipe('bruno', 'tkm1'));
+  await deve('Equipe: convite de empresa NÃO coloca ninguém na equipe', false, () => entraEquipe('edu', 'tok123'));
+  await deve('Equipe: convite da equipe NÃO vira acesso de empresa', false, () => setDoc(doc(db('edu'), 'acessos', 'alfa_' + P.edu), { uid: P.edu, empresaId: 'alfa', nome: 'Edu', email: EM.edu, cargo: 'operacional', extras: [], sem: [], ativo: true, convite: 'tkm2', criadoEm: serverTimestamp() }));
+  await deve('Equipe: quem recebeu o convite entra na equipe (com o histórico)', true, () => entraEquipe('carla', 'tkm1'));
+  await deve('Equipe: o convite usado não serve de novo', false, () => setDoc(doc(db('carla'), 'master', P.carla), { nome: 'Carla Dias', email: EM.carla, convite: 'tkm1', criadoEm: serverTimestamp() }));
+  await deve('Equipe: ninguém muda o próprio registro da equipe', false, () => updateDoc(doc(db('carla'), 'master', P.carla), { nome: 'Outra' }));
+  await deve('Equipe: ninguém se tira da equipe sozinho', false, () => deleteDoc(doc(db('master'), 'master', P.master)));
+  await deve('Equipe: quem não é da equipe NÃO tira ninguém', false, () => deleteDoc(doc(db('ana'), 'master', P.carla)));
+  await deve('Equipe: outra pessoa da equipe tira alguém', true, () => deleteDoc(doc(db('master'), 'master', P.carla)));
+
+  /* planos */
+  const planos = (k, x) => setDoc(doc(db(k), 'config', 'planos'), Object.assign({ valores: { essencial: 19900, profissional: 39900, rede: 79900, gratuito: 0 }, diaVenc: 10, em: serverTimestamp(), por: 'Iasmyn' }, x || {}));
+  await deve('Planos: a equipe define os valores e o dia do vencimento', true, () => planos('master'));
+  await deve('Planos: o dia do vencimento vai de 1 a 28', false, () => planos('master', { diaVenc: 31 }));
+  await deve('Planos: empresa NÃO muda os valores', false, () => planos('ana'));
+  await deve('Planos: qualquer pessoa logada lê os valores', true, () => getDoc(doc(db('beto'), 'config', 'planos')));
+
+  /* mensalidades */
+  const mens = (k, id, x) => setDoc(doc(db(k), 'mensalidades', id), Object.assign({ empresaId: 'beta', empresaNome: 'Beta', comp: '2026-11', plano: 'essencial', valorCentavos: 19900, venc: '2026-11-10', status: 'aberta', criadoEm: serverTimestamp(), criadoPor: P.master }, x || {}));
+  await deve('Mensalidade: a equipe gera a do mês', true, () => mens('master', 'beta_2026-11'));
+  await deve('Mensalidade: o id é empresa_mês (não gera duas do mesmo mês com outro id)', false, () => mens('master', 'beta_x'));
+  await deve('Mensalidade: NÃO nasce paga', false, () => mens('master', 'beta_2026-12', { comp: '2026-12', status: 'paga' }));
+  await deve('Mensalidade: empresa NÃO cria mensalidade', false, () => mens('beto', 'beta_2026-10', { comp: '2026-10' }));
+  await deve('Mensalidade: o admin da empresa lê a sua', true, () => getDoc(doc(db('beto'), 'mensalidades', 'beta_2026-11')));
+  await deve('Mensalidade: outra empresa NÃO lê', false, () => getDoc(doc(db('ana'), 'mensalidades', 'beta_2026-11')));
+  await deve('Mensalidade: o admin da empresa lista as suas', true, () => getDocs(query(collection(db('beto'), 'mensalidades'), where('empresaId', '==', 'beta'))));
+  await deve('Mensalidade: a empresa NÃO dá baixa', false, () => updateDoc(doc(db('beto'), 'mensalidades', 'beta_2026-11'), { status: 'paga', pagoNoDia: '2026-11-08', pagoPor: 'Beto', atualizadoEm: serverTimestamp() }));
+  await deve('Mensalidade: baixa sem a data em que o dinheiro entrou é negada', false, () => updateDoc(doc(db('master'), 'mensalidades', 'beta_2026-11'), { status: 'paga', pagoPor: 'Iasmyn', atualizadoEm: serverTimestamp() }));
+  await deve('Mensalidade: a equipe dá baixa com a data do recebimento', true, () => updateDoc(doc(db('master'), 'mensalidades', 'beta_2026-11'), { status: 'paga', pagoNoDia: '2026-11-08', pagoPor: 'Iasmyn', pagoEm: serverTimestamp(), atualizadoEm: serverTimestamp() }));
+  await deve('Mensalidade: depois de paga, o valor NÃO muda', false, () => updateDoc(doc(db('master'), 'mensalidades', 'beta_2026-11'), { valorCentavos: 100, atualizadoEm: serverTimestamp() }));
+  await deve('Mensalidade: a equipe desfaz a baixa (volta para aberta)', true, () => updateDoc(doc(db('master'), 'mensalidades', 'beta_2026-11'), { status: 'aberta', pagoNoDia: null, pagoPor: null, pagoEm: null, atualizadoEm: serverTimestamp() }));
+  await deve('Mensalidade: nada se apaga', false, () => deleteDoc(doc(db('master'), 'mensalidades', 'beta_2026-11')));
+
+  /* avisos */
+  const aviso = (k, id, x) => setDoc(doc(db(k), 'avisos', id), Object.assign({ titulo: 'Manutenção no sábado', texto: 'O Conectwork fica fora do ar das 8h às 10h.', tipo: 'info', para: 'todos', ate: '2026-12-31', ativo: true, criadoEm: serverTimestamp(), criadoPor: P[k], criadoPorNome: 'Iasmyn' }, x || {}));
+  await deve('Avisos: a equipe publica um aviso para a rede', true, () => aviso('master', 'a1'));
+  await deve('Avisos: empresa NÃO publica aviso', false, () => aviso('ana', 'a2'));
+  await deve('Avisos: aviso com público fora da lista é negado', false, () => aviso('master', 'a3', { para: 'alguns' }));
+  await deve('Avisos: qualquer pessoa logada lê', true, () => getDoc(doc(db('beto'), 'avisos', 'a1')));
+  await deve('Avisos: sem login NÃO lê', false, () => getDoc(doc(anon(), 'avisos', 'a1')));
+  await deve('Avisos: a equipe tira do ar', true, () => updateDoc(doc(db('master'), 'avisos', 'a1'), { ativo: false, atualizadoEm: serverTimestamp() }));
+  await deve('Avisos: NÃO se troca quem publicou', false, () => updateDoc(doc(db('master'), 'avisos', 'a1'), { criadoPorNome: 'Outra' }));
+  await deve('Avisos: nada se apaga', false, () => deleteDoc(doc(db('master'), 'avisos', 'a1')));
+
+  /* suspender empresa */
+  await deve('Empresa: a equipe suspende o acesso de uma empresa (com motivo)', true, () => updateDoc(doc(db('master'), 'empresas', 'beta'), { status: 'suspenso', motivo: 'Mensalidade em atraso.', avaliadoEm: serverTimestamp(), avaliadoPor: 'Iasmyn' }));
+  await deve('Empresa: o admin NÃO tira a própria suspensão', false, () => updateDoc(doc(db('beto'), 'empresas', 'beta'), { status: 'aprovado' }));
+
   await env.cleanup();
   const falhas = res.filter(r => !r.ok).length;
   console.log(`\n${res.length - falhas} de ${res.length} testes de regras passaram.`);

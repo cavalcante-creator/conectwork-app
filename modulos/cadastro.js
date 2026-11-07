@@ -494,7 +494,8 @@
   const SIT = {
     analise: ['now', 'Conferência dos dados e documentos', 'em andamento'],
     pendencia: ['now', 'Ajuste pedido pela equipe', 'corrija e reenvie'],
-    recusado: ['now', 'Cadastro recusado', 'veja o motivo']
+    recusado: ['now', 'Cadastro recusado', 'veja o motivo'],
+    suspenso: ['now', 'Acesso suspenso pela equipe', 'veja o motivo']
   };
   CW.registrarModulo({
     id: 'meucadastro', nome: 'Meu cadastro', icone: 'file', ordem: 2,
@@ -510,6 +511,7 @@
           const podeCorrigir = st === 'pendencia' && !ctx.soLeitura && (c.acesso.cargo === 'admin' || e.criadoPor === ctx.sessao.usuario.uid);
           const banner = st === 'pendencia'
             ? `<div class="banner warn" id="mc-motivo">${ic('alert')}<span><strong>A equipe Conectwork pediu um ajuste</strong>${esc(e.motivo || 'Confira os dados e reenvie.')}</span></div>`
+            : st === 'suspenso' ? `<div class="banner danger" id="mc-motivo">${ic('lock')}<span><strong>O acesso da empresa está suspenso</strong>${esc(e.motivo || '')} Os dados continuam guardados. Para voltar a usar, fale com a equipe Conectwork.</span></div>`
             : st === 'recusado' ? `<div class="banner danger" id="mc-motivo">${ic('alert')}<span><strong>O cadastro foi recusado</strong>${esc(e.motivo || '')} Se tiver dúvida, fale com a equipe Conectwork.</span></div>`
               : `<div class="banner info">${ic('clock')}<span><strong>Cadastro em análise</strong>A equipe Conectwork está conferindo os dados e os documentos. Quando terminar, as telas da empresa são liberadas.</span></div>`;
           el.innerHTML = `${banner}
