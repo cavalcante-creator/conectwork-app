@@ -7,7 +7,7 @@
   --shadow:0 1px 2px rgba(8,22,56,.04),0 6px 20px -12px rgba(8,22,56,.14);
   --sa-t:env(safe-area-inset-top,0px);--sa-b:env(safe-area-inset-bottom,0px);   /* áreas da ilha e da barrinha do iPhone (os testes simulam trocando estas variáveis) */
   color-scheme:light;box-sizing:border-box;
-  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  padding-top:var(--sa-t);padding-bottom:var(--sa-b);
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#050D24;--surface:#0C1A3B;--surface2:#112249;--ink:#E8EEFC;--muted:#9EACCB;--faint:#6F7FA4;--line:#1E3060;
@@ -373,7 +373,7 @@ label.f>span i{font-style:normal;color:var(--faint);font-weight:400}
 .cad-fim h1{margin:0;font-size:24px;font-weight:600}
 @media (max-width:860px){
   .wiz{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr}
-  .wiz-side{position:sticky;top:0;z-index:5;height:auto;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 12px;flex-direction:column;gap:10px}
+  .wiz-side{position:sticky;top:0;z-index:5;height:auto;padding:calc(12px + var(--sa-t)) 16px 12px;flex-direction:column;gap:10px}
   .wiz-side .logo{padding:0;font-size:17px}.wiz-side .logo svg{width:30px;height:auto}
   .wsteps,.wiz-side .help,.wiz-side>.curves{display:none}
   .wiz-side .mbar{display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:#C8D5F3;position:relative}
@@ -622,3 +622,14 @@ tr.click:hover td{background:var(--surface2)}
   .login .bp-topo>svg{width:calc(36px + 8px*min(var(--k),1))}
   .login .brandpanel h1{font-size:calc(22px + 5px*min(var(--k),1))}
 }
+
+/* ---------- Celular: sem zoom automático ao tocar nos campos ----------
+   O iPhone dá zoom em todo campo com letra menor que 16px. No celular, todos os campos usam 16px. */
+@media (max-width:860px){
+  input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea{font-size:16px!important}
+}
+/* cadastro no celular: a área da ilha/hora entra só uma vez (a barra azul de cima já soma a área do iPhone) */
+html.wizpg{padding-top:0;padding-bottom:0}
+/* botões Google/Microsoft do cadastro: um embaixo do outro quando não cabem lado a lado */
+#cad-social .btn{white-space:normal;min-height:46px}
+@media (max-width:560px){#cad-social{grid-template-columns:minmax(0,1fr)}}

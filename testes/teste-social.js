@@ -67,6 +67,13 @@ const { ok, fim } = H.placar('social');
   await page.click('#cv-google'); await page.waitForSelector('#cv-card', { timeout: 8000 });
   ok('S7 convite: "Entrar com Google" leva direto ao convite para aceitar', await page.$eval('.loginside h2', e => e.innerText) === 'Convite para Alfa Serviços' && await page.$eval('#cv-nome2', e => e.value) === 'Edu Martins');
 
+  // S8 celular: no "Crie seu acesso" do cadastro, os botões Google e Microsoft ficam um embaixo do outro e o texto não vaza
+  await page.setViewportSize({ width: 390, height: 844 }); await H.preparar(page, d); await page.goto(H.BASE);
+  await page.waitForSelector('#lg-cadastrar'); await page.click('#lg-cadastrar'); await page.waitForSelector('#cad-google');
+  const s8 = await page.evaluate(() => { const [g, m] = Array.from(document.querySelectorAll('#cad-social .btn')), a = g.getBoundingClientRect(), b = m.getBoundingClientRect();
+    return { emPe: b.top >= a.bottom - 1, vaza: [g, m].some(x => x.scrollWidth > x.clientWidth + 1), fonte: parseFloat(getComputedStyle(document.getElementById('cad-acesso-nome')).fontSize), lado: document.documentElement.scrollWidth > innerWidth }; });
+  ok('S8 celular: "Continuar com Google/Microsoft" um embaixo do outro, sem vazar; campos com letra 16px (sem zoom)', s8.emPe && !s8.vaza && s8.fonte >= 16 && !s8.lado, JSON.stringify(s8));
+
   ok('Sem erros de JavaScript na página', !erros.length, erros.join(' | '));
   await browser.close(); fim();
 })().catch(e => { console.error('ERRO NO TESTE', e); process.exit(1); });

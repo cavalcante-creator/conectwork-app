@@ -153,6 +153,11 @@ const CNPJ = '11.444.777/0001-61', CNPJ_USADO = '04.252.011/0001-10', CPF = '529
   // C15 celular: barra de cima com a etapa, sem rolagem para o lado
   await page.setViewportSize({ width: 390, height: 844 }); await H.dorme(250);
   const c15 = await page.evaluate(() => ({ barra: document.querySelector('.wiz-side .mbar').innerText.replace(/\s+/g, ' '), lado: document.documentElement.scrollWidth > innerWidth, passosVis: getComputedStyle(document.querySelector('.wsteps')).display }));
+  const c15b = await page.evaluate(() => { document.documentElement.style.setProperty('--sa-t', '47px');
+    const r = { fonte: Math.min(...Array.from(document.querySelectorAll('#cad input:not([type=checkbox]):not([type=file]), #cad select')).map(i => parseFloat(getComputedStyle(i).fontSize))),
+      htmlTopo: getComputedStyle(document.documentElement).paddingTop, barraTopo: getComputedStyle(document.querySelector('.wiz-side')).paddingTop };
+    document.documentElement.style.removeProperty('--sa-t'); return r; });
+  ok('C15b celular: campos com letra 16px (o iPhone não dá zoom) e a área da ilha entra uma vez só no topo', c15b.fonte >= 16 && c15b.htmlTopo === '0px' && c15b.barraTopo === '59px', JSON.stringify(c15b));
   ok('C15 celular: barra de cima "Etapa 1 de 6", lista de etapas escondida, sem rolagem para o lado', /Etapa 1 de 6/.test(c15.barra) && !c15.lado && c15.passosVis === 'none', JSON.stringify(c15));
   await page.setViewportSize({ width: 1280, height: 900 });
 
