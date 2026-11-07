@@ -189,6 +189,7 @@ main{padding:22px clamp(16px,3.5vw,40px) 48px;display:flex;flex-direction:column
 
 /* ---------- Navegação de celular ---------- */
 .bnav{display:none}
+.so-cel{display:none}
 .maisbtn{display:flex;align-items:center;gap:12px;width:100%;background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:14px;cursor:pointer;text-align:left;font-weight:500;color:var(--ink)}
 .maisbtn span{flex:1;min-width:0}
 .maisbtn small{color:var(--muted);font-weight:400}
@@ -204,9 +205,22 @@ main{padding:22px clamp(16px,3.5vw,40px) 48px;display:flex;flex-direction:column
   /* casca no celular: a página fica parada e só o conteúdo rola (dentro do #app). A barra de cima sobe junto com a
      tela, em vez de ficar presa ocupando espaço, e a área da hora e da bateria do iPhone fica sempre azul-marinho
      (com a página rolando, o iPhone clareava o alto da tela por cima do conteúdo claro). */
+  /* body preso na tela inteira (igual à tela de entrar): no app instalado no iPhone a altura de 100% pode vir sem a
+     área da ilha e da barrinha e sobrava um espaço vazio embaixo da barra de navegação */
   html.casca,html.casca body{background:var(--navy);height:100%;overflow:hidden;overscroll-behavior:none}
+  html.casca{padding:0}
+  html.casca body{position:fixed;inset:0;width:100%;padding-top:var(--sa-t)}
   html.casca #app{height:100%;min-height:0;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;background:var(--bg)}
-  html.casca .side{position:static}
+  /* barra de cima do celular: uma linha só com logo, nome, tema, autorizações e sair; fica no alto e o conteúdo rola por baixo */
+  html.casca .side{position:sticky;top:0;z-index:20;padding:8px 8px 8px 14px}
+  .side .logo{font-size:17px;gap:8px}
+  .side .logo svg{width:28px;height:28px}
+  .side .usercard{gap:2px}
+  .side .iconbtn{width:40px;height:40px}
+  .so-cel{display:grid}
+  .appbar .crumbs,.appbar .topobtn.tema{display:none}
+  .appbar:not(:has(#trocar-empresa,.env)){display:none}
+  .topbar{padding-top:18px}
   .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))!important}
   .appbar .crumbs{font-size:12px}
   .topobtn.tema span{display:none}

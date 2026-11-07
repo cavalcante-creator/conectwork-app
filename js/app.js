@@ -84,6 +84,7 @@
         <nav class="nav" id="menu" aria-label="Principal">${mods.map(m => `<button data-mod="${esc(m.id)}">${ic(m.icone)}<span>${esc(m.nome)}</span></button>`).join('')}
           ${mei ? `<button class="nav-alt" id="menu-alt">${ic(enxuto() ? 'grid' : 'star')}<span>${enxuto() ? 'Ver todas as telas' : 'Menu simples'}</span></button>` : ''}</nav>
         <div class="usercard">${avatar(nome, 'sm')}<div class="t"><strong id="quem-nome">${esc(nome)}</strong><small id="quem-sub">${esc(sub)}</small></div>
+          <button class="iconbtn so-cel" id="tema-cel" aria-label="Tema claro ou escuro" title="Tema claro ou escuro"></button>
           <button class="iconbtn" id="minhas-aut" aria-label="Minhas autorizações" title="Minhas autorizações">${ic('shield')}</button>
           <button class="iconbtn" id="sair" aria-label="Sair" title="Sair">${ic('logout')}</button></div>
       </aside>
@@ -99,8 +100,9 @@
     document.getElementById('minhas-aut').onclick = () => ir('autorizacoes');
     const ma = document.getElementById('menu-alt'); if (ma) ma.onclick = alternarMenu;
     const tr = document.getElementById('trocar-empresa'); if (tr) tr.onclick = () => CW.sessao.trocar();
-    const tb = document.getElementById('tema'); const rotTema = () => { const t = U().tema(); tb.innerHTML = ic(t === 'dark' ? 'moon' : 'sun') + `<span>${t === 'dark' ? 'Escuro' : t === 'light' ? 'Claro' : 'Automático'}</span>`; };
-    tb.onclick = () => { U().trocarTema(); rotTema(); }; rotTema();
+    const tb = document.getElementById('tema'), tc = document.getElementById('tema-cel');   /* tc: o mesmo botão na barra de cima do celular */
+    const rotTema = () => { const t = U().tema(), nm = t === 'dark' ? 'Escuro' : t === 'light' ? 'Claro' : 'Automático'; tb.innerHTML = ic(t === 'dark' ? 'moon' : 'sun') + `<span>${nm}</span>`; tc.innerHTML = ic(t === 'dark' ? 'moon' : 'sun'); tc.title = 'Tema: ' + nm; };
+    tb.onclick = tc.onclick = () => { U().trocarTema(); rotTema(); }; rotTema();
     document.getElementById('menu').addEventListener('click', e => { const b = e.target.closest('[data-mod]'); if (b) ir(b.dataset.mod); });
     document.getElementById('bnav').addEventListener('click', e => { const b = e.target.closest('[data-mod]'); if (b) ir(b.dataset.mod); else if (e.target.closest('#bnav-mais')) mais(); });
     montado = true;
