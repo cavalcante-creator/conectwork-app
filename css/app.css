@@ -91,6 +91,12 @@ h1,h2,h3{letter-spacing:-.015em}
 .divisoria{display:flex;align-items:center;gap:12px;margin:22px 0 14px;color:var(--muted);font-size:13px}
 .divisoria::before,.divisoria::after{content:"";flex:1;height:1px;background:var(--line)}
 .lg-novos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+/* Google e Microsoft */
+.lg-ou{display:flex;align-items:center;gap:12px;margin:14px 0 10px;color:var(--faint);font-size:12.5px}
+.lg-ou::before,.lg-ou::after{content:"";flex:1;height:1px;background:var(--line)}
+.lg-social{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.lg-social .btn{padding-inline:10px;white-space:nowrap}
+.btn svg.mk{width:18px;height:18px;flex:none}
 .lg-novos .btn{padding-inline:10px;white-space:normal;text-align:center;line-height:1.25}
 .lg-termos{margin:20px 0 0;font-size:12px;color:var(--faint);text-align:center;line-height:1.5}
 .lg-termos b{color:var(--muted);font-weight:500}
@@ -127,11 +133,11 @@ h1,h2,h3{letter-spacing:-.015em}
   .brandpanel{padding-top:clamp(12px,2.4vh,20px)}}
 /* celular baixo (Safari com as barras, iPhone SE): tudo mais junto para caber sem rolar */
 @media (max-width:860px) and (max-height:740px){
-  .brandpanel .tagline{font-size:14.5px;margin-top:8px}.bp-topo>svg{width:40px}.brandpanel h1{font-size:23px}
-  .lform{gap:10px}.lg-cab h2{font-size:21px}.divisoria{margin:14px 0 10px}.lg-termos{margin-top:12px}
+  .brandpanel .tagline{display:none}.bp-topo>svg{width:40px}.brandpanel h1{font-size:23px}.lg-cab .sub{display:none}
+  .lform{gap:10px}.lg-cab h2{font-size:21px}.divisoria{margin:14px 0 10px}.lg-termos{margin-top:12px}.lg-ou{margin:10px 0 8px}
   .logincard label.f input{padding:9px 12px}.lg-novos .btn{padding-block:9px}}
-@media (max-width:860px) and (max-height:620px){.brandpanel .tagline{display:none}.lg-cab .sub{display:none}.divisoria{margin:10px 0 8px}.lg-termos{margin-top:8px}.lform{gap:8px}}
-@media (max-width:380px){.lg-novos{grid-template-columns:1fr}.lg-linha{gap:8px}.lg-linha .linkbtn,.lg-manter{font-size:12.5px}.lg-manter{gap:8px}}
+@media (max-width:860px) and (max-height:620px){.brandpanel .tagline{display:none}.lg-cab .sub{display:none}.divisoria{margin:10px 0 8px}.lg-termos{margin-top:8px}.lform{gap:8px}.lg-ou{margin:8px 0 6px}.logincard .card-b{padding:14px 16px}.lg-termos{font-size:11px;line-height:1.4}.lg-social .btn,.lg-novos .btn{padding-block:8px}}
+@media (max-width:380px){.lg-novos .btn,.lg-social .btn{font-size:12.5px;gap:6px;padding-inline:6px}.lg-novos svg.i{display:none}.lg-linha{gap:8px}.lg-linha .linkbtn,.lg-manter{font-size:12.5px}.lg-manter{gap:8px}}
 
 /* ---------- Casca ---------- */
 .shell{display:grid;grid-template-columns:256px 1fr;min-height:100%}

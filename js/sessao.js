@@ -83,6 +83,7 @@
         <p class="err" id="lg-erro" role="alert">${esc(msg || '')}</p>
         <button class="btn" id="lg-entrar" type="submit">${ic('lock')}Entrar</button>
 </form>
+        ${botoesSociais('lg', 'Entrar')}
         <div class="divisoria" id="lg-novo"><span>Ainda não usa o Conectwork?</span></div>
         <div class="lg-novos">
           <button class="btn sec" type="button" id="lg-cadastrar">${ic('building')}Cadastrar empresa</button>
@@ -95,12 +96,54 @@
     const bv = document.getElementById('lg-convite'); if (bv) bv.onclick = abrirConvite;
     app().querySelectorAll('[data-lg-modo]').forEach(b => b.onclick = () => telaLogin(b.dataset.lgModo === 'esqueci' ? 'esqueci' : 'login'));
     const f = document.getElementById('lg-form'); if (f) f.onsubmit = ev => { ev.preventDefault(); entrar(); };
+    ligarSociais('lg', m => { const er = document.getElementById('lg-erro'); if (er) er.textContent = m; });
+    if (vincular && modo !== 'esqueci') { const er = document.getElementById('lg-erro'); if (er && !msg) er.textContent = `Esse e-mail já entra no Conectwork com senha. Entre com a senha uma vez para ligar também o login ${vincular.nome}.`; const em = document.getElementById('lg-email'); if (em && !em.value) em.value = vincular.email || ''; }
     const ver = document.getElementById('lg-ver');
     if (ver) ver.onclick = () => { const se = document.getElementById('lg-senha'), mostra = se.type === 'password';
       se.type = mostra ? 'text' : 'password'; ver.innerHTML = ic(mostra ? 'eyeoff' : 'eye');
       ver.setAttribute('aria-label', mostra ? 'Esconder a senha' : 'Mostrar a senha'); ver.setAttribute('aria-pressed', String(mostra)); se.focus(); };
     const fe = document.getElementById('lg-form-esq'); if (fe) fe.onsubmit = ev => { ev.preventDefault(); esqueci(); };
     const foco = document.getElementById(modo === 'esqueci' ? 'lg-esq-email' : (email ? 'lg-senha' : 'lg-email')); if (foco) foco.focus();
+  }
+
+  /* ---------- Google e Microsoft ---------- */
+  const PROV = { google: 'Google', microsoft: 'Microsoft' };
+  let vincular = null;                 /* login com Microsoft/Google de um e-mail que já entra com senha: liga depois da senha */
+  function botoesSociais(prefixo, verbo) {
+    const { MARCA } = U();
+    return `<div class="lg-ou"><span>ou ${(verbo || 'Entrar').toLowerCase()} com</span></div>
+      <div class="lg-social">${Object.keys(PROV).map(k => `<button class="btn sec" type="button" id="${prefixo}-${k}" data-social="${k}" aria-label="${verbo || 'Entrar'} com ${PROV[k]}">${MARCA[k]}<span>${PROV[k]}</span></button>`).join('')}</div>`;
+  }
+  function erroSocial(e, qual) {
+    const c = e && e.code || '', n = PROV[qual] || '';
+    if (/popup-closed-by-user|cancelled-popup-request|user-cancelled/.test(c)) return '';
+    if (/operation-not-allowed|configuration-not-found|invalid-api-key|argument-error/.test(c)) return `O login com ${n} ainda não foi ligado no Conectwork. Por enquanto, entre com e-mail e senha.`;
+    if (/unauthorized-domain/.test(c)) return `Este endereço do app ainda não está liberado para o login com ${n}. Avise a equipe Conectwork.`;
+    if (/popup-blocked/.test(c)) return `O navegador bloqueou a janela do ${n}. Libere janelas para este site e tente de novo.`;
+    if (/user-disabled/.test(c)) return 'Este login foi desativado. Fale com a equipe Conectwork.';
+    if (/network-request-failed/.test(c)) return 'Não foi possível conectar ao servidor. Confira sua internet e tente de novo.';
+    return `Não foi possível entrar com ${n} agora${c ? ' (' + c + ')' : ''}. Tente de novo ou use e-mail e senha.`;
+  }
+  /* liga os botões data-social dentro da tela; aoErro(mensagem) mostra o problema onde a tela preferir */
+  function ligarSociais(prefixo, aoErro) {
+    app().querySelectorAll('[data-social]').forEach(b => b.onclick = async () => {
+      const qual = b.dataset.social;
+      app().querySelectorAll('[data-social]').forEach(x => { x.disabled = true; });
+      aoErro('');
+      try {
+        const mc = document.getElementById('lg-manter');
+        try { await CW.fb.auth().setPersistence(!mc || mc.checked ? 'local' : 'session'); } catch (e) { /* segue com o padrão */ }
+        await CW.fb.entrarCom(qual);
+        /* o resto acontece no onAuthStateChanged */
+      } catch (e) {
+        if (/account-exists-with-different-credential/.test(e && e.code || '')) {
+          vincular = { cred: e.credential || null, email: (e.email || (e.customData && e.customData.email) || '').toLowerCase(), nome: 'com ' + PROV[qual] };
+          telaLogin('login'); return;
+        }
+        app().querySelectorAll('[data-social]').forEach(x => { x.disabled = false; });
+        const m = erroSocial(e, qual); if (m) aoErro(m);
+      }
+    });
   }
 
   /* "Manter conectado": marcado (padrão) = continua logado ao fechar o app; desmarcado = sai ao fechar a aba/app.
@@ -118,7 +161,11 @@
       const manter = !!(document.getElementById('lg-manter') || {}).checked;
       try { localStorage.setItem('cw.manter', manter ? '1' : '0'); } catch (e) { /* sem armazenamento */ }
       await CW.fb.auth().setPersistence(manter ? 'local' : 'session');
-      await CW.fb.auth().signInWithEmailAndPassword(email, senha);
+      const r = await CW.fb.auth().signInWithEmailAndPassword(email, senha);
+      if (vincular && vincular.cred && r && r.user && (!vincular.email || vincular.email === email)) {
+        try { await r.user.linkWithCredential(vincular.cred); U().toast('Pronto: agora você também entra ' + vincular.nome + '.'); } catch (e) { console.warn('não ligou o login', e); }
+      }
+      vincular = null;
       /* o resto acontece no onAuthStateChanged */
     } catch (e) {
       if (!document.getElementById('lg-erro')) return;
@@ -225,6 +272,10 @@
     const s = vazio();
     s.usuario = { uid: u.uid, email: (u.email || '').toLowerCase() };
     s.perfil = dados(pf);
+    if (!s.perfil && u.displayName) {          /* 1ª vez pelo Google/Microsoft: o perfil nasce com o nome da conta */
+      const p = { nome: String(u.displayName).trim().slice(0, 120), email: s.usuario.email, criadoEm: CW.fb.agora(), atualizadoEm: CW.fb.agora() };
+      try { await db.doc('usuarios/' + u.uid).set(p); s.perfil = { nome: p.nome, email: p.email }; } catch (e) { console.warn('perfil não gravado', e); }
+    }
     s.master = !!(ms && ms.exists);
     const todos = CW.fb.lista(acs);
     s.acessos = todos.filter(a => a.ativo === true);
@@ -306,6 +357,9 @@
     if (!window.firebase) { telaSemConexao(); return; }
     if (!CW.fb.iniciar()) { telaConfig(); return; }
     CW.fb.auth().onAuthStateChanged(aoMudarLogin);
+    /* volta do login por redirect (quando a janela foi bloqueada): mostra o erro, se houver */
+    const a = CW.fb.auth();
+    if (a.getRedirectResult) a.getRedirectResult().catch(e => { const m = erroSocial(e, (e && e.credential && /microsoft/.test(e.credential.providerId)) ? 'microsoft' : 'google'); if (m) setTimeout(() => { const er = document.getElementById('lg-erro'); if (er) er.textContent = m; }, 300); });
   }
 
   /* volta para a entrada certa conforme o login atual (login, sem acesso, escolher empresa ou o app) */
@@ -316,7 +370,7 @@
   const preferir = chave => { try { sessionStorage.setItem(chaveGuardada(), chave); } catch (e) { /* sem armazenamento */ } };
 
   CW.sessao = {
-    iniciar, sair, trocar, entrarEm, recarregar, preferir, moldura, telaLogin, telaCarregando, limparRota,
+    iniciar, sair, trocar, entrarEm, recarregar, preferir, moldura, telaLogin, telaCarregando, limparRota, botoesSociais, ligarSociais,
     estado: () => st,
     contexto: () => st.contexto,
     podeTrocar: () => st.opcoes.length > 1,

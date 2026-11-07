@@ -90,7 +90,11 @@
     if (!d.resp.nome) d.resp.nome = (s.perfil && s.perfil.nome) || d.acesso.nome || '';
   }
   /* chamado pela sessão quando o login muda e a pessoa ainda não tem empresa (ex.: logo depois de criar a conta) */
-  function continuar() { if (!W) comecar(); else desenhar(); }
+  function continuar() {
+    if (!W) { comecar(); return; }
+    if (W.passo === 'acesso' && usuario()) { W.passo = 0; W.err = {}; W.msg = ''; preencherDoLogin(); guardar(); }   /* entrou pelo Google/Microsoft */
+    desenhar();
+  }
 
   async function cancelar() {
     const sim = W.edit ? await U().confirmar('Sair sem reenviar?', 'As correções feitas agora não serão guardadas.', 'Sair')
@@ -117,8 +121,10 @@
   function corpo() {
     const d = W.d, { esc, ic } = U();
     if (W.passo === 'acesso') {
-      const f = forcaSenha(d.acesso.senha);
-      return `<div class="fgrid">
+      const f = forcaSenha(d.acesso.senha), { MARCA } = U();
+      return `<div class="lg-social" id="cad-social">${[['google', 'Google'], ['microsoft', 'Microsoft']].map(([k, n]) => `<button class="btn sec" type="button" id="cad-${k}" data-social="${k}">${MARCA[k]}<span>Continuar com ${n}</span></button>`).join('')}</div>
+        <div class="lg-ou" style="margin:18px 0"><span>ou crie com e-mail e senha</span></div>
+        <div class="fgrid">
         ${campo('acesso.nome', 'Seu nome completo', { w: 12, ac: 'name' })}
         ${campo('acesso.email', 'Seu e-mail', { w: 12, type: 'email', ac: 'email', ph: 'voce@empresa.com.br', dica: 'Será o seu login no Conectwork. Vamos mandar um link para confirmar.' })}
         <label class="f c6 ${W.err['acesso.senha'] ? 'has-err' : ''}"><span>Crie uma senha <b aria-hidden="true">*</b></span>
@@ -341,6 +347,7 @@
     el.querySelectorAll('[data-texto]').forEach(b => b.onclick = ev => { ev.preventDefault(); ev.stopPropagation(); mostrarTexto(b.dataset.texto); });
     el.querySelectorAll('[data-ir]').forEach(b => b.onclick = () => { W.passo = +b.dataset.ir; W.err = {}; W.msg = ''; guardar(); desenhar(); window.scrollTo(0, 0); });
     document.getElementById('cad-sair').onclick = cancelar;
+    if (document.getElementById('cad-social')) CW.sessao.ligarSociais('cad', m => { if (!m) return; W.msg = m; desenhar(); });
     const v = document.getElementById('cad-voltar'); if (v) v.onclick = () => { W.passo--; W.err = {}; W.msg = ''; guardar(); desenhar(); window.scrollTo(0, 0); };
     const lg = document.getElementById('cad-login'); if (lg) lg.onclick = () => { guardar(); W = null; marcar(false); CW.sessao.recarregar(); };
     document.getElementById('cad-form').onsubmit = ev => { ev.preventDefault(); avancar(); };

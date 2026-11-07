@@ -32,7 +32,10 @@
       <div class="lg-cab"><h2>Você recebeu um convite</h2><p class="sub">Alguém da sua empresa convidou você para usar o Conectwork. Para aceitar, crie seu acesso com o mesmo e-mail que recebeu o convite.</p></div>
       <button class="btn" id="cv-criar">${ic('user')}Criar meu acesso</button>
       <button class="btn sec" id="cv-tenho">${ic('lock')}Já tenho login no Conectwork</button>
+      ${S().botoesSociais('cv', 'Entrar')}
+      <p class="err" id="cv-erro0" role="alert"></p>
       <button class="linkbtn" id="cv-ignorar" style="align-self:center">Agora não</button></div></div></div>`);
+    S().ligarSociais('cv', m => { document.getElementById('cv-erro0').textContent = m; });
     document.getElementById('cv-criar').onclick = () => criarAcesso(token);
     document.getElementById('cv-tenho').onclick = () => { S().telaLogin('login', ''); const s = document.querySelector('#lg .lg-cab .sub'); if (s) s.textContent = 'Entre para ver e aceitar o convite.'; };
     document.getElementById('cv-ignorar').onclick = voltar;

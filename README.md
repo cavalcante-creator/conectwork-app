@@ -72,7 +72,7 @@ npx playwright install chromium
 **Rodar:**
 | Comando (dentro de `testes/`) | O que testa |
 |---|---|
-| `npm run telas` | Telas com o Firebase simulado (sem internet): componentes (`teste-ui.js`), login (`teste-login.js`) sessão, menu e permissões (`teste-sessao.js`), cadastro de empresa do começo ao fim (`teste-cadastro.js`), análise dos cadastros pela equipe Conectwork (`teste-analise.js`), usuários, acessos e convites (`teste-usuarios.js`), primeiro acesso pelo convite (`teste-convite.js`) e app instalável (`teste-pwa.js`: manifest, service worker, abrir sem internet, faixa de offline e troca de `VERSAO`; este usa um servidor local, porque o service worker só roda em `localhost` ou https). |
+| `npm run telas` | Telas com o Firebase simulado (sem internet): componentes (`teste-ui.js`), login (`teste-login.js`) sessão, menu e permissões (`teste-sessao.js`), cadastro de empresa do começo ao fim (`teste-cadastro.js`), análise dos cadastros pela equipe Conectwork (`teste-analise.js`), usuários, acessos e convites (`teste-usuarios.js`), primeiro acesso pelo convite (`teste-convite.js`), login com Google e Microsoft (`teste-social.js`) e app instalável (`teste-pwa.js`: manifest, service worker, abrir sem internet, faixa de offline e troca de `VERSAO`; este usa um servidor local, porque o service worker só roda em `localhost` ou https). |
 | `npm run regras` | Regras do `firestore.rules` no emulador do Firestore (`teste-regras.js`). Liga o emulador, roda e desliga sozinho. |
 | `npm test` | Os dois acima. |
 
@@ -89,3 +89,11 @@ npx http-server -p 5500 -c-1
 ```
 e abra `http://localhost:5500`. Isso usa o Firebase de verdade do `config.js`.
 Para usar os emuladores locais em vez do Firebase de verdade (nada é gravado no projeto real): em outro terminal, de dentro de `testes/`, rode `npx firebase emulators:start --only auth,firestore --project conectwork-4c285` e abra `http://localhost:5500/?emulador=1`. Sem mexer no `config.js`.
+
+## Login com Google e Microsoft
+
+Os botões já aparecem no login, no cadastro e no convite. Enquanto o provedor não estiver ligado no console, quem tocar vê "ainda não foi ligado, entre com e-mail e senha".
+
+- **Google:** Firebase → Authentication → Método de login → Google → Ativar (escolha o e-mail de suporte) → Salvar.
+- **Microsoft:** 1) No portal do Azure (Microsoft Entra ID → Registros de aplicativo → Novo registro), tipo de conta "Contas em qualquer diretório organizacional e contas Microsoft pessoais"; em URI de redirecionamento (Web) cole o endereço que o Firebase mostra ao ativar a Microsoft (termina em `/__/auth/handler`). 2) Em "Certificados e segredos", crie um segredo do cliente. 3) No Firebase → Authentication → Método de login → Microsoft → Ativar, cole o "ID do aplicativo (cliente)" e o valor do segredo → Salvar. O segredo fica só no Firebase, nunca no código.
+- **Domínios autorizados** (Authentication → Configurações): o endereço do GitHub Pages precisa estar na lista.

@@ -26,6 +26,19 @@
     return true;
   }
 
+  /* login com Google ou Microsoft (cada um precisa estar ligado no console: Authentication → Método de login).
+     Abre a janela da conta; se o navegador bloquear a janela, vai pela página inteira (redirect). */
+  function provedor(qual) {
+    const p = qual === 'google' ? new firebase.auth.GoogleAuthProvider() : new firebase.auth.OAuthProvider('microsoft.com');
+    p.setCustomParameters({ prompt: 'select_account' });
+    return p;
+  }
+  async function entrarCom(qual) {
+    const p = provedor(qual);
+    try { return await auth.signInWithPopup(p); }
+    catch (e) { if (/popup-blocked/.test(e && e.code || '')) { await auth.signInWithRedirect(p); return null; } throw e; }
+  }
+
   const agora = () => firebase.firestore.FieldValue.serverTimestamp();   /* datas sempre do servidor */
   const dados = snap => snap && snap.exists ? Object.assign({ _id: snap.id }, snap.data()) : null;
   const lista = snap => snap.docs.map(d => Object.assign({ _id: d.id }, d.data()));
@@ -40,6 +53,6 @@
     return 'Algo deu errado ao falar com o servidor' + (c ? ' (' + c + ')' : '') + '. Tente de novo em instantes.';
   }
 
-  CW.fb = { iniciar, configOk, auth: () => auth, db: () => db, agora, dados, lista, mensagemErro,
+  CW.fb = { iniciar, configOk, auth: () => auth, db: () => db, agora, dados, lista, mensagemErro, entrarCom,
     ambiente: () => (window.CONECTWORK_CONFIG && window.CONECTWORK_CONFIG.ambiente) || 'producao' };
 })();

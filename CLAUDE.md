@@ -24,7 +24,7 @@ As duas usam o **mesmo motor**: aceite ou medição aprovada → **espelho de fa
 
 ## Como o projeto é feito (igual ao painel da Colafix)
 - JavaScript puro, **sem etapa de build**, publicado no **GitHub Pages**.
-- **Firebase**: Authentication (e-mail e senha) e Firestore. Projeto `conectwork`, **separado** do projeto do painel da Colafix.
+- **Firebase**: Authentication (e-mail e senha, Google e Microsoft) e Firestore. Projeto `conectwork`, **separado** do projeto do painel da Colafix.
 - Use o repositório irmão `../painel-colafix` como **referência de padrão**: como os módulos são registrados, como o login é tratado, como os testes são feitos. Copie o jeito, não copie dados nem regras de negócio da Colafix.
 - Visual e textos: siga `docs/prototipo-referencia.html` (cores, fonte, componentes, modo claro e escuro). O protótipo é a referência visual e de fluxo; o código dele é só ilustrativo e **não** deve ser copiado como base (ele guarda tudo em localStorage).
 
@@ -46,7 +46,7 @@ testes/               testes automatizados
 ```
 
 ## Identidade e comunicação
-- Na interface aparece **só o nome Conectwork**. Nunca usar marcas de terceiros em telas, textos ou dados de exemplo (os dados reais das empresas do piloto existem só no banco de produção).
+- Na interface aparece **só o nome Conectwork**. Nunca usar marcas de terceiros em telas, textos ou dados de exemplo (os dados reais das empresas do piloto existem só no banco de produção). Única exceção: os botões de login "Google" e "Microsoft", com o símbolo de cada um (padrão exigido por eles).
 - Mensagem principal: "Contrate serviços com mais organização, rastreabilidade e gestão de riscos." Slogan: "Plataforma mais completa em outsourcing · Toda papelada e burocracia em um só lugar, na palma da sua mão."
 - Nunca prometer "sem risco trabalhista", "blindagem" ou garantia contra processos. Aviso padrão: "O Conectwork organiza a contratação e a gestão documental. A validade da relação depende da operação real, da legislação aplicável e da análise jurídica e contábil adequada."
 - **Consentimentos separados** (operacional, contrato, cobrança, cursos, ofertas, WhatsApp, e-mail, push). Cursos e ofertas **desmarcados por padrão**; registrar texto, versão, data, finalidade, canal e revogação.

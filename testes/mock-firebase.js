@@ -59,7 +59,8 @@
   const KEY = '__sess';
   const cbs = [];
   let atual = L.get(KEY, null);
-  const User = r => r ? { uid: r.uid, email: r.email, emailVerified: !!r.verificado,
+  const User = r => r ? { uid: r.uid, email: r.email, displayName: r.nome || null, emailVerified: !!r.verificado,
+    linkWithCredential: async c => { window.__mockLog.push(['vincula', r.email, c && c.providerId]); return { user: User(r) }; },
     sendEmailVerification: async op => { window.__mockLog.push(['verificacao', r.email, op || null]); } } : null;
   const muda = r => { atual = r; if (r) L.set(KEY, r); else localStorage.removeItem(KEY); cbs.forEach(cb => setTimeout(() => cb(User(r)), 0)); };
   const auth = {
@@ -68,6 +69,17 @@
     useEmulator: u => window.__mockLog.push(['authEmulador', u]),
     onAuthStateChanged: cb => { cbs.push(cb); window.__mockLog.push(['onAuthStateChanged']); setTimeout(() => cb(User(atual)), ctl().authMs || 20); return () => {}; },
     setPersistence: async t => { window.__mockLog.push(['persist', t]); },
+    /* Google/Microsoft simulados: __ctl.social = { 'google.com': { email, nome } | { erro: 'auth/…' } | { email, conflito: true } } */
+    signInWithPopup: async p => { await espera(); const c = ctl(), id = p.providerId; window.__mockLog.push(['popup', id]);
+      const cfg = (c.social || {})[id];
+      if (!cfg) throw err('auth/operation-not-allowed');
+      if (cfg.erro) throw err(cfg.erro);
+      const sv = srv(), em = cfg.email.toLowerCase();
+      if (cfg.conflito) { const e = err('auth/account-exists-with-different-credential'); e.email = em; e.credential = { providerId: id }; throw e; }
+      if (!sv.users[em]) { sv.users[em] = { uid: 'u' + Math.random().toString(36).slice(2, 10).toUpperCase(), pass: null }; salva(sv); }
+      muda({ uid: sv.users[em].uid, email: em, nome: cfg.nome || null, verificado: true }); return { user: User(atual) }; },
+    signInWithRedirect: async p => { window.__mockLog.push(['redirect', p.providerId]); },
+    getRedirectResult: async () => ({ user: null }),
     createUserWithEmailAndPassword: async (em, p) => { await espera(); const c = ctl(); window.__mockLog.push(['criaConta', em]);
       if (c.offline) throw err('auth/network-request-failed');
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) throw err('auth/invalid-email');
@@ -97,4 +109,7 @@
     auth: () => auth, firestore: () => FS
   };
   firebase.firestore.FieldValue = { serverTimestamp: () => SERVER_TS };
+  class Provedor { constructor(id) { this.providerId = id; this.params = {}; } setCustomParameters(p) { this.params = p; return this; } }
+  firebase.auth.GoogleAuthProvider = class extends Provedor { constructor() { super('google.com'); } };
+  firebase.auth.OAuthProvider = class extends Provedor { constructor(id) { super(id); } };
 })();
