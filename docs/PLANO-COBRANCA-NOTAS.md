@@ -66,7 +66,7 @@ Divergência bloqueia o título e explica o motivo; a Colafix pode recusar a not
 4. Espelho de faturamento com retenções digitadas. **Feito (07/11):** módulo "Espelhos da nota" (`espelhos/{id da medição}`).
 5. Envio e conferência da nota (XML), duplicidade, recusa com motivo. **Feito (07/11):** botão "Emitir a nota" escolhe o site sozinho (o que a empresa definiu › o da cidade da empresa na tabela `config/emissores`, mantida pela equipe Conectwork em "Sites de emissão" › o Emissor Nacional) e, na volta, o app pede a nota; aceita **PDF** (lido pelo texto com o pdf.js) ou XML; XML que não bate é barrado; PDF sem texto vai para conferência à mão com o número digitado; a Colafix marca "Nota conferida" ou recusa com motivo.
 6. Títulos com estados, funções separadas, calendário de vencimentos e comprovante. **Feito (07/11):** módulo "Pagar e receber" (`titulos/{id do espelho}`): nasce com a nota conferida; vencimento = dia da nota válida + dias do contrato; aprovado → liberado (financeiro, não quem conferiu) → agendado (tesouraria) → pago com comprovante (tesouraria, não quem liberou) → baixado (prestadora confirma). Conta para receber informada pela prestadora numa área privada do título; troca exige revisão do financeiro (confirmação por telefone) antes de agendar.
-7. Avaliação do serviço da prestadora (depois do pagamento).
+7. Avaliação do serviço da prestadora (depois do pagamento). **Feito (07/11):** cartão "Avaliação do serviço" no contrato (`avaliacoes/{id do título}`): admin ou aprovador técnico do tomador dá notas de 1 a 5 (qualidade, prazo, comunicação, fez o que foi combinado) e comentário; a prestadora responde uma vez.
 
 ## Antes de usar de verdade
 - Publicar o `firestore.rules` no console (já pendente desde a Etapa 1).

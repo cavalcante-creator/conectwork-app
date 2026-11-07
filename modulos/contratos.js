@@ -130,6 +130,7 @@
           ${c.interlocutor ? `<div class="full"><dt>Interlocutor da prestadora</dt><dd>${esc(c.interlocutor.nome)} · ${esc(c.interlocutor.email)}${c.interlocutor.cel ? ' · ' + esc(c.interlocutor.cel) : ''}</dd></div>` : ''}
           ${enc ? `<div class="full"><dt>Encerramento do serviço</dt><dd>${esc(formatarData(enc.data))} · por ${esc(enc.nome)} (${esc(enc.lado === 'tomador' ? c.tomadorNome : c.prestadorNome)}): ${esc(enc.motivo)}</dd></div>` : ''}
         </dl></div></section>
+        <div id="ct-avaliacoes"></div>
         <p class="hint" style="margin:0;font-size:12px">${esc(AVISO)} A assinatura aqui é um registro simples (quem e quando); a assinatura eletrônica com validade jurídica entra numa etapa futura.</p>
       </div><div class="stack">
         <section class="card" id="ct-assinaturas"><div class="card-h"><span class="ic">${ic('edit')}</span><h3>Assinaturas</h3></div><div class="card-b stack" style="gap:16px">
@@ -138,6 +139,7 @@
       </div></div>`;
     U().aplicarMascaras(el);
     ligarDetalhe(el, ctx, c, l, o);
+    if (CW.avaliacoes) CW.avaliacoes.bloco(document.getElementById('ct-avaliacoes'), ctx, c);
   }
 
   function ligarDetalhe(el, ctx, c, l, o) {

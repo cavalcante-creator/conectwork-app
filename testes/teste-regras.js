@@ -346,6 +346,20 @@ async function deve(nome, permitido, op) {
   await deve('Título: a prestadora confirma o recebimento (baixa)', true, () => updateDoc(doc(db('beto'), 'titulos', 'e2'), { status: 'baixado', baixa: { uid: P.beto, nome: 'Beto', em: serverTimestamp() }, atualizadoEm: serverTimestamp() }));
   await deve('Título: ninguém apaga', false, () => deleteDoc(doc(db('ana'), 'titulos', 'e2')));
 
+  /* ---------- avaliação do serviço ---------- */
+  const av = (k, extra) => Object.assign({ tipo: 'servico_prestadora', tituloId: 'e2', contratoId: 'cm', tomadorId: 'alfa', prestadorId: 'beta', partes: ['alfa', 'beta'], periodo: '2026-11-1',
+    notas: { qualidade: 5, prazo: 4, comunicacao: 4, escopo: 5 }, comentario: 'Equipe pontual.', por: P[k], porNome: k, em: serverTimestamp(), resposta: null }, extra || {});
+  await deve('Avaliação: o financeiro do tomador NÃO avalia (é o aprovador técnico)', false, () => setDoc(doc(db('bruno'), 'avaliacoes', 'e2'), av('bruno')));
+  await deve('Avaliação: a prestadora NÃO se avalia', false, () => setDoc(doc(db('beto'), 'avaliacoes', 'e2'), av('beto')));
+  await deve('Avaliação: nota fora de 1 a 5 NÃO entra', false, () => setDoc(doc(db('aldo'), 'avaliacoes', 'e2'), av('aldo', { notas: { qualidade: 6, prazo: 4, comunicacao: 4, escopo: 5 } })));
+  await deve('Avaliação: NÃO antes do pagamento', false, () => setDoc(doc(db('aldo'), 'avaliacoes', 'cm_2026-11-1'), av('aldo', { tituloId: 'cm_2026-11-1' })));
+  await deve('Avaliação: o aprovador técnico avalia depois do pagamento', true, () => setDoc(doc(db('aldo'), 'avaliacoes', 'e2'), av('aldo')));
+  await deve('Avaliação: NÃO avalia duas vezes o mesmo período', false, () => setDoc(doc(db('ana'), 'avaliacoes', 'e2'), av('ana')));
+  await deve('Avaliação: o tomador NÃO muda a nota depois', false, () => updateDoc(doc(db('aldo'), 'avaliacoes', 'e2'), { notas: { qualidade: 1, prazo: 1, comunicacao: 1, escopo: 1 } }));
+  await deve('Avaliação: a prestadora lê e responde', true, () => updateDoc(doc(db('beto'), 'avaliacoes', 'e2'), { resposta: { texto: 'Obrigado pelo retorno!', uid: P.beto, nome: 'Beto', em: serverTimestamp() } }));
+  await deve('Avaliação: a resposta é uma só', false, () => updateDoc(doc(db('beto'), 'avaliacoes', 'e2'), { resposta: { texto: 'Outra resposta.', uid: P.beto } }));
+  await deve('Avaliação: ninguém apaga', false, () => deleteDoc(doc(db('ana'), 'avaliacoes', 'e2')));
+
   /* ---------- sites para emitir a nota ---------- */
   await deve('Emissores: a equipe Conectwork cadastra o site de uma cidade', true, () => setDoc(doc(db('master'), 'config', 'emissores'), { cidades: { 'RS|GRAVATAI': { cidade: 'Gravataí', url: 'https://exemplo.gov.br' } }, em: serverTimestamp(), por: P.master }));
   await deve('Emissores: qualquer pessoa logada lê a tabela', true, () => getDoc(doc(db('beto'), 'config', 'emissores')));

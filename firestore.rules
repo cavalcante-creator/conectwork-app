@@ -425,6 +425,30 @@ service cloud.firestore {
       }
     }
 
+    // ---------- Avaliação do serviço da prestadora · id = id do título (uma por período) ----------
+    // Avalia: admin ou aprovador técnico do tomador, depois do pagamento. A prestadora (admin ou financeiro) responde uma vez. Nada se apaga.
+    function notaOk(v) { return v is int && v >= 1 && v <= 5; }
+    match /avaliacoes/{id} {
+      allow read: if master() || membro(resource.data.tomadorId) || membro(resource.data.prestadorId);
+      allow create: if cargoEm(request.resource.data.tomadorId, ['admin','aprovador'])
+        && request.resource.data.keys().hasOnly(['tipo','tituloId','contratoId','tomadorId','prestadorId','partes','periodo','notas','comentario','por','porNome','em','resposta'])
+        && request.resource.data.tipo == 'servico_prestadora' && request.resource.data.tituloId == id
+        && get(caminho('titulos', id)).data.status in ['liquidado','baixado']
+        && get(caminho('titulos', id)).data.tomadorId == request.resource.data.tomadorId
+        && get(caminho('titulos', id)).data.prestadorId == request.resource.data.prestadorId
+        && get(caminho('titulos', id)).data.contratoId == request.resource.data.contratoId
+        && request.resource.data.partes == [request.resource.data.tomadorId, request.resource.data.prestadorId]
+        && request.resource.data.notas.keys().hasOnly(['qualidade','prazo','comunicacao','escopo']) && request.resource.data.notas.keys().hasAll(['qualidade','prazo','comunicacao','escopo'])
+        && notaOk(request.resource.data.notas.qualidade) && notaOk(request.resource.data.notas.prazo) && notaOk(request.resource.data.notas.comunicacao) && notaOk(request.resource.data.notas.escopo)
+        && request.resource.data.comentario is string && request.resource.data.comentario.size() <= 1000
+        && request.resource.data.por == request.auth.uid && request.resource.data.em == request.time && request.resource.data.resposta == null;
+      allow update: if cargoEm(resource.data.prestadorId, ['admin','financeiro']) && resource.data.resposta == null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['resposta'])
+        && request.resource.data.resposta.uid == request.auth.uid && request.resource.data.resposta.texto is string
+        && request.resource.data.resposta.texto.size() >= 5 && request.resource.data.resposta.texto.size() <= 1000;
+      allow delete: if false;
+    }
+
     // ---------- Sites para emitir a nota por cidade (o espelho escolhe sozinho): todos leem, só a equipe Conectwork muda ----------
     match /config/emissores {
       allow read: if logado();

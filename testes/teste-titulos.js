@@ -10,6 +10,9 @@ const { ok, fim } = H.placar('titulos');
     delete d.docs['acessos/beta_uBRUNO'];
     Object.assign(d.docs['empresas/alfa'], { modulos: ['equipe', 'cobrancas'], cnpj: '11.444.777/0001-61', razao: 'Alfa Serviços Ltda', tipo: 'contratante' });
     const pessoa = (uid, email, nome, emp, cargo) => { d.users[email] = { uid, pass: 'senha123' }; d.docs['usuarios/' + uid] = { nome, email }; d.docs[`acessos/${emp}_${uid}`] = { uid, empresaId: emp, nome, email, cargo, extras: [], sem: [], ativo: true }; };
+    pessoa('uALDO', 'aldo@alfa.com.br', 'Aldo Reis', 'alfa', 'aprovador');
+    d.docs['contratos/cz'] = { modalidade: 'continua', tomadorId: 'alfa', prestadorId: 'zeta', partes: ['alfa', 'zeta'], tomadorNome: 'Alfa Serviços', tomadorCnpj: '11.444.777/0001-61', prestadorNome: 'Zeta Manutenção', prestadorCnpj: '04.252.011/0001-10',
+      objeto: 'Equipe de manutenção industrial.', periodicidade: 'quinzena', vencimentoDias: 1, inicio: '2026-01-01', fim: '', status: 'ativo', assinaturas: { tomador: { uid: 'uANA', nome: 'Ana Souza' }, prestador: { uid: 'uZECA', nome: 'Zeca Moura' } }, interlocutor: null, proposta: null };
     pessoa('uTITO', 'tito@alfa.com.br', 'Tito Ramos', 'alfa', 'tesouraria');
     pessoa('uZECA', 'zeca@zeta.com.br', 'Zeca Moura', 'zeta', 'admin');
     d.docs['empresas/zeta'] = { nome: 'Zeta Manutenção', razao: 'Zeta Manutenção Ltda', cnpj: '04.252.011/0001-10', status: 'aprovado', tipo: 'prestador', modulos: ['cobrancas'], criadoPor: 'uZECA' };
@@ -100,6 +103,21 @@ const { ok, fim } = H.placar('titulos');
   t = await tit();
   await page.evaluate(() => { location.hash = '#titulos'; }); await page.waitForSelector('#tt-pagos', { timeout: 8000 });
   ok('T9 a prestadora vê o comprovante, confirma que o dinheiro chegou e o título vai para "Pagos"', comp && t.status === 'baixado' && t.baixa.uid === 'uZECA', t.status);
+
+  // T12 avaliação do serviço depois do pagamento (no contrato); a prestadora responde
+  await entrarComo('aldo@alfa.com.br');
+  await page.evaluate(() => { location.hash = '#contratos/ver/cz'; }); await page.waitForSelector('[data-avaliar]', { timeout: 8000 });
+  await page.click('[data-avaliar]'); await page.waitForSelector('.av-notas');
+  await page.click('.av-notas[data-k="qualidade"] [data-v="5"]'); await page.click('.av-notas[data-k="prazo"] [data-v="4"]'); await page.click('.av-notas[data-k="comunicacao"] [data-v="4"]');
+  await dlgOk(); const er12 = await page.$eval('#av-erro', e => e.innerText);
+  await page.click('.av-notas[data-k="escopo"] [data-v="5"]'); await page.fill('#av-com', 'Equipe pontual e organizada.'); await dlgOk(); await page.waitForSelector('#av-media', { timeout: 8000 });
+  const av = (await srv())['avaliacoes/' + ID], med = await page.$eval('#av-media', e => e.innerText);
+  await entrarComo('zeca@zeta.com.br');
+  await page.evaluate(() => { location.hash = '#contratos/ver/cz'; }); await page.waitForSelector('[data-responder]', { timeout: 8000 });
+  await page.click('[data-responder]'); await page.waitForSelector('#rs-txt'); await page.fill('#rs-txt', 'Obrigado pelo retorno!'); await dlgOk(); await page.waitForSelector('.av-resp', { timeout: 8000 });
+  const av2 = (await srv())['avaliacoes/' + ID];
+  ok('T12 depois do pagamento o aprovador técnico avalia o serviço no contrato (pede todas as notas); a prestadora vê e responde',
+    /Fez o que foi combinado/.test(er12) && av && av.notas.qualidade === 5 && av.notas.prazo === 4 && av.notas.escopo === 5 && /4,5/.test(med) && av2.resposta && av2.resposta.uid === 'uZECA', JSON.stringify({ er12, med, notas: av && av.notas }));
 
   // T10 calendário e vencidos (título de outro período, vencido)
   await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('__srv')); const t = Object.assign({}, s.docs['titulos/cz_2026-10-2'], { status: 'liberado', base: '2026-10-01T12:00:00.000Z', periodo: '2026-09-2', liquidacao: null, baixa: null, agendamento: null }); s.docs['titulos/velho'] = t;

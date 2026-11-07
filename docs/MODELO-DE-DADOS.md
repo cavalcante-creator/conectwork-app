@@ -77,7 +77,7 @@ O arquivo fica em `espelhos/{id}/arquivos/{envio}-{k}` (base64 em pedaços de at
 `titulos/{id}/privado/conta` {banco, agencia, conta, tipo, pix, titular, doc, versao, em, por, porNome}: lê só admin/financeiro/tesouraria do tomador e admin/financeiro da prestadora. Comprovante em `titulos/{id}/arquivos/{envio}-{k}`.
 Próximas versões: disputa, nota substituída, cancelamento.
 ### `avaliacoes/{id}`
-`tipo` (`servico_os` | `servico_prestadora` | `profissional` | `tomador`), `de`, `para`, `ref` (contrato, título ou medição), `notas` (qualidade, prazo, comunicação, aderência ao escopo; para tomador: clareza do escopo, processo de aceite, pontualidade), `comentario`, `resposta`, `visivelEm` (quando os dois avaliarem ou após 7 dias).
+Equipe contínua (feito): id = id do título; `tipo: 'servico_prestadora'`, `tituloId`, `contratoId`, `tomadorId`, `prestadorId`, `partes`, `periodo`, `notas` {qualidade, prazo, comunicacao, escopo: 1 a 5}, `comentario`, `por`, `porNome`, `em`, `resposta` {texto, uid, nome, em}. Modelo geral: `tipo` (`servico_os` | `servico_prestadora` | `profissional` | `tomador`), `de`, `para`, `ref` (contrato, título ou medição), `notas` (qualidade, prazo, comunicação, aderência ao escopo; para tomador: clareza do escopo, processo de aceite, pontualidade), `comentario`, `resposta`, `visivelEm` (quando os dois avaliarem ou após 7 dias).
 
 ### `certidoes/{prestadorId}_{tipo}`
 `tipo` (`federal` | `fgts` | `trabalhista`), `validade`, `arquivo`, `situacao`.
