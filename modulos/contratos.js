@@ -137,10 +137,12 @@
         <section class="card" id="ct-assinaturas"><div class="card-h"><span class="ic">${ic('edit')}</span><h3>Assinaturas</h3></div><div class="card-b stack" style="gap:16px">
           <ul class="tl">${ass('tomador')}${ass('prestador')}</ul>${acoes}
           ${!pode && (c.status === 'assinatura' || c.status === 'ativo') ? '<p class="hint" style="margin:0;font-size:12.5px">Só o administrador da empresa assina e muda o contrato.</p>' : ''}</div></section>
+        <div id="ct-docs"></div>
       </div></div>`;
     U().aplicarMascaras(el);
     ligarDetalhe(el, ctx, c, l, o);
     if (CW.avaliacoes) CW.avaliacoes.bloco(document.getElementById('ct-avaliacoes'), ctx, c);
+    if (CW.documentos) CW.documentos.blocoContrato(document.getElementById('ct-docs'), ctx, c);
   }
 
   function ligarDetalhe(el, ctx, c, l, o) {

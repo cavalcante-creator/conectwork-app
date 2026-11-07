@@ -54,7 +54,7 @@ const MODS_TESTE = () => {
   ok('S-fundo dentro do app a página volta ao fundo normal (só as telas de entrada são azuis)', !fx.cls && fx.body !== 'rgb(8, 22, 56)', JSON.stringify(fx));
   await page.evaluate(MODS_TESTE); await H.dorme(200);
   let m = await menu();
-  ok('S8 admin vê tudo o que a empresa contratou (não vê "conta", que a Alfa não contratou)', JSON.stringify(m) === JSON.stringify(['inicio', 'pagar', 'receber', 'equipeteste', 'profissionais', 'contratos', 'medicoes', 'espelhos', 'titulos', 'relatorios', 'empresa', 'historico']), m.join(','));
+  ok('S8 admin vê tudo o que a empresa contratou (não vê "conta", que a Alfa não contratou)', JSON.stringify(m) === JSON.stringify(['inicio', 'pagar', 'receber', 'equipeteste', 'profissionais', 'contratos', 'medicoes', 'espelhos', 'titulos', 'relatorios', 'documentos', 'empresa', 'historico']), m.join(','));
 
   // S9 rota por hash com tela e parâmetros
   await page.evaluate(() => { location.hash = '#pagar/detalhe/C-1001/x'; }); await page.waitForSelector('#tela-detalhe');
@@ -81,7 +81,7 @@ const MODS_TESTE = () => {
   q = await quem();
   ok('S14 entra na empresa escolhida; contador vê o aviso de só leitura e o botão de troca', q.empresa === 'Beta Indústria' && q.cargo === 'Contador (só leitura)' && q.leitura && q.troca, JSON.stringify(q));
   await page.evaluate(MODS_TESTE); await H.dorme(200); m = await menu();
-  ok('S15 menu do contador: só pagar, receber, relatórios e espelhos (além do início)', JSON.stringify(m) === JSON.stringify(['inicio', 'pagar', 'receber', 'espelhos', 'titulos', 'relatorios']), m.join(','));
+  ok('S15 menu do contador: só pagar, receber, relatórios e espelhos (além do início)', JSON.stringify(m) === JSON.stringify(['inicio', 'pagar', 'receber', 'espelhos', 'titulos', 'relatorios', 'documentos']), m.join(','));
   await page.click('#trocar-empresa'); await page.waitForSelector('#trocar-lista');
   const atual = await page.evaluate(() => document.querySelector('#trocar-lista [aria-current="true"]').dataset.ctx);
   await page.click('#trocar-lista [data-ctx="empresa:alfa"]'); await H.dorme(400);
@@ -90,19 +90,19 @@ const MODS_TESTE = () => {
   await page.reload(); await page.waitForSelector('#ini-nome', { timeout: 8000 }); q = await quem();
   ok('S17 F5 continua na empresa escolhida (não pergunta de novo)', q.empresa === 'Alfa Serviços', JSON.stringify(q));
   await page.evaluate(MODS_TESTE); await H.dorme(200); m = await menu();
-  ok('S18 menu do financeiro: pagar, receber, relatórios, medições, espelhos e Minha empresa (conta não contratada; usuários e histórico são do admin)', JSON.stringify(m) === JSON.stringify(['inicio', 'pagar', 'receber', 'medicoes', 'espelhos', 'titulos', 'relatorios', 'empresa']), m.join(','));
+  ok('S18 menu do financeiro: pagar, receber, relatórios, medições, espelhos e Minha empresa (conta não contratada; usuários e histórico são do admin)', JSON.stringify(m) === JSON.stringify(['inicio', 'pagar', 'receber', 'contratos', 'medicoes', 'espelhos', 'titulos', 'relatorios', 'documentos', 'empresa']), m.join(','));
 
   // S19 ajuste individual: extras e sem
   await page.evaluate(() => { const a = CW.sessao.estado().contexto.acesso; a.extras = ['profissionais']; a.sem = ['pagar']; CW.app.montar(); }); await H.dorme(200);
   m = await menu();
-  ok('S19 ajuste por pessoa: "extras" acrescenta e "sem" tira telas do cargo', JSON.stringify(m) === JSON.stringify(['inicio', 'receber', 'profissionais', 'medicoes', 'espelhos', 'titulos', 'relatorios', 'empresa']), m.join(','));
+  ok('S19 ajuste por pessoa: "extras" acrescenta e "sem" tira telas do cargo', JSON.stringify(m) === JSON.stringify(['inicio', 'receber', 'profissionais', 'contratos', 'medicoes', 'espelhos', 'titulos', 'relatorios', 'documentos', 'empresa']), m.join(','));
 
   // S20 celular: barra de baixo com até 4 + Mais
   await page.evaluate(() => { const a = CW.sessao.estado().contexto.acesso; a.cargo = 'admin'; a.extras = []; a.sem = []; CW.app.montar(); });
   await page.setViewportSize({ width: 390, height: 800 }); await H.dorme(300);
   const s20 = await page.evaluate(() => ({ bnav: getComputedStyle(document.getElementById('bnav')).display, side: getComputedStyle(document.getElementById('menu')).display,
     itens: Array.from(document.querySelectorAll('#bnav button')).map(b => b.innerText.trim()), larg: document.documentElement.scrollWidth }));
-  ok('S20 no celular: barra de navegação embaixo (4 + "Mais"), menu lateral escondido, sem rolagem lateral', s20.bnav === 'grid' && s20.side === 'none' && s20.itens.length === 5 && s20.itens[4] === 'Mais' && s20.larg <= 390, JSON.stringify(s20));
+  ok('S20 no celular: barra de navegação embaixo (4 + "Mais"), menu lateral escondido, sem rolagem lateral', s20.bnav === 'grid' && s20.side === 'none' && s20.itens.length === 5 && /^Mais/.test(s20.itens[4]) && s20.larg <= 390, JSON.stringify(s20));
   await page.click('#bnav-mais'); await page.waitForSelector('[data-mais]');
   await page.click('[data-mais="historico"]'); await page.waitForSelector('#hs', { timeout: 8000 });
   ok('S21 "Mais" abre as outras telas e navega', await page.evaluate(() => location.hash === '#historico' && document.getElementById('bnav-mais').getAttribute('aria-current') === 'page'));
@@ -121,7 +121,7 @@ const MODS_TESTE = () => {
   // S24 empresa em análise
   await H.entrar(page, 'gil@gama.com.br', 'senha123'); await page.waitForSelector('#ini-nome', { timeout: 8000 });
   q = await quem(); await page.evaluate(MODS_TESTE); await H.dorme(200); m = await menu();
-  ok('S24 empresa em análise: entra, vê o aviso e só as telas liberadas antes da aprovação (Início e Meu cadastro)', q.analise && q.empresa === 'Gama Logística' && JSON.stringify(m) === '["inicio","meucadastro"]', JSON.stringify(q) + ' menu=' + m);
+  ok('S24 empresa em análise: entra, vê o aviso e só as telas liberadas antes da aprovação (Início, Meu cadastro e Documentos)', q.analise && q.empresa === 'Gama Logística' && JSON.stringify(m) === '["inicio","meucadastro","documentos"]', JSON.stringify(q) + ' menu=' + m);
   await sair();
 
   // S25 falha ao carregar os acessos → tela de erro com "Tentar de novo"

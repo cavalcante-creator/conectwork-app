@@ -182,7 +182,7 @@
         ${campo('banco.pixTipo', 'Tipo de chave', { w: 4, opts: PIXT })}
         ${campo('banco.pix', 'Chave', { w: 8, max: 120 })}
       </div>`;
-      case 4: return `<p class="sub" style="margin:0 0 16px">Separe os arquivos em PDF, JPG ou PNG de até 10 MB. A equipe Conectwork confere os documentos antes de aprovar. Nesta etapa do Conectwork fica registrado o nome de cada arquivo; o envio do arquivo em si entra numa próxima versão.</p>
+      case 4: return `<p class="sub" style="margin:0 0 16px">Separe os arquivos em PDF, JPG ou PNG de até 10 MB. A equipe Conectwork confere os documentos antes de aprovar. Aqui você marca os arquivos; depois do envio do cadastro, mande os arquivos em "Documentos e certidões" para a equipe Conectwork conferir.</p>
         <div class="stack" style="gap:10px">${docsReq(d).map(([k, l, req]) => {
           const f = d.docs[k], e = W.err['docs.' + k];
           return `<div class="up ${f ? 'ok' : ''} ${e ? 'has-err' : ''}" id="cad-doc-${k}"><span class="ic">${ic(f ? 'check' : 'upload')}</span>

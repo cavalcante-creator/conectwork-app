@@ -171,6 +171,7 @@
       : l === 'prestador' && st === 'divergencia' ? A.botao(ctx, { frase: `apontamos uma divergência na medição de ${fr}. Pode conferir e corrigir?`, rota: 'medicoes/ver/' + id })
       : l === 'prestador' && st === 'confirmada_prestadora' ? A.botao(ctx, { frase: `confirmamos a medição de ${fr}. Falta a aprovação do aprovador técnico.`, rota: 'medicoes/ver/' + id }) : '';
     el.innerHTML = `<div style="margin-bottom:14px"><button class="linkbtn" id="md-voltar">${ic('back')}Voltar para as medições</button></div>
+      <div id="md-docs"></div>
       ${st === 'divergencia' && m.divergencia ? `<div class="banner danger" id="md-div">${ic('alert')}<span><strong>Divergência apontada pela ${esc(m.prestadorNome)}</strong>${esc(m.divergencia.motivo)}</span></div>` : ''}
       <div class="grid-main"><div class="stack">
         <section class="card" id="md-dados"><div class="card-h"><span class="ic">${ic('list')}</span><h3>Medição</h3><span style="margin-left:auto">${pill(st)}</span></div><div class="card-b"><dl class="dl">
@@ -193,6 +194,7 @@
         </div></section></div></div>`;
     ligarDetalhe(el, ctx, m);
     if (CW.avisar) CW.avisar.ligar(el);
+    if (CW.documentos && l === 'tomador' && st !== 'cancelada') CW.documentos.alerta(document.getElementById('md-docs'), m.prestadorId, m.prestadorNome);
     if (st === 'aprovada' && CW.espelhos) CW.espelhos.blocoMedicao(document.getElementById('md-espelho'), ctx, m);
   }
 

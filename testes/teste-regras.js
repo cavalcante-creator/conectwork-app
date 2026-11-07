@@ -367,6 +367,27 @@ async function deve(nome, permitido, op) {
   await deve('Emissores: o admin define o site da própria empresa (área privada)', true, () => updateDoc(doc(db('ana'), 'empresas', 'alfa', 'privado', 'cadastro'), { emissor: { url: 'https://exemplo.gov.br', nome: 'site da prefeitura' } }));
   await deve('Emissores: o financeiro NÃO muda a área privada', false, () => updateDoc(doc(db('bruno'), 'empresas', 'alfa', 'privado', 'cadastro'), { emissor: null }));
 
+  /* ---------- documentos e certidões ---------- */
+  const docE = (k, extra) => Object.assign({ empresaId: 'alfa', tipo: 'cndt', grupo: 'certidao', nome: 'CNDT', validade: '2027-01-31', compartilhar: true, status: 'vigente',
+    arquivo: { envio: 'e1', partes: 1, nome: 'cndt.pdf', tipo: 'application/pdf', tam: 9 }, enviadoPor: P[k], enviadoPorNome: k, criadoEm: serverTimestamp() }, extra || {});
+  const enviaDoc = (k, id, dados, semArq) => { const f = db(k), b = writeBatch(f); b.set(doc(f, 'documentos', id), dados);
+    if (!semArq) b.set(doc(f, 'documentos', id, 'arquivos', dados.arquivo.envio + '-0'), { d: 'JVBERi0x', k: 0, envio: dados.arquivo.envio, em: serverTimestamp() }); return b.commit(); };
+  await deve('Documento: NÃO entra sem o arquivo', false, () => enviaDoc('ana', 'd0', docE('ana'), true));
+  await deve('Documento: o aprovador NÃO envia documento da empresa', false, () => enviaDoc('aldo', 'd0', docE('aldo')));
+  await deve('Documento: documento do responsável NÃO pode ser compartilhado', false, () => enviaDoc('ana', 'd0', docE('ana', { tipo: 'identidade', grupo: 'cadastro', validade: '' })));
+  await deve('Documento: o admin envia a certidão com o arquivo', true, () => enviaDoc('ana', 'd1', docE('ana')));
+  await deve('Documento: o RH envia o documento do cadastro (não compartilhado)', true, () => enviaDoc('rita', 'd2', docE('rita', { tipo: 'identidade', grupo: 'cadastro', nome: 'Documento do responsável', validade: '', compartilhar: false, arquivo: { envio: 'e2', partes: 1, nome: 'rg.pdf', tipo: 'application/pdf', tam: 9 } })));
+  await deve('Documento: outra empresa lê a certidão compartilhada', true, () => getDoc(doc(db('beto'), 'documentos', 'd1')));
+  await deve('Documento: outra empresa lista as certidões compartilhadas', true, () => getDocs(query(collection(db('beto'), 'documentos'), where('empresaId', '==', 'alfa'), where('compartilhar', '==', true))));
+  await deve('Documento: outra empresa abre o arquivo da certidão compartilhada', true, () => getDoc(doc(db('beto'), 'documentos', 'd1', 'arquivos', 'e1-0')));
+  await deve('Documento: outra empresa NÃO lê o documento do cadastro', false, () => getDoc(doc(db('beto'), 'documentos', 'd2')));
+  await deve('Documento: outra empresa NÃO abre o arquivo do cadastro', false, () => getDoc(doc(db('beto'), 'documentos', 'd2', 'arquivos', 'e2-0')));
+  await deve('Documento: a equipe Conectwork lê o documento do cadastro', true, () => getDoc(doc(db('master'), 'documentos', 'd2')));
+  await deve('Documento: NÃO troca o arquivo de um documento já enviado', false, () => setDoc(doc(db('ana'), 'documentos', 'd1', 'arquivos', 'e1-1'), { d: 'x', k: 1, envio: 'e1', em: serverTimestamp() }));
+  await deve('Documento: NÃO muda a validade depois de enviado', false, () => updateDoc(doc(db('ana'), 'documentos', 'd1'), { validade: '2030-01-01' }));
+  await deve('Documento: enviar de novo marca o anterior como substituído', true, () => updateDoc(doc(db('ana'), 'documentos', 'd1'), { status: 'substituido', substituidoEm: serverTimestamp(), substituidoPor: 'd9' }));
+  await deve('Documento: ninguém apaga', false, () => deleteDoc(doc(db('ana'), 'documentos', 'd1')));
+
   /* ---------- logo da empresa ---------- */
   const LOGO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
   await deve('Logo: o admin envia a logo da empresa', true, () => setDoc(doc(db('ana'), 'logos', 'alfa'), { d: LOGO, nome: 'logo.png', em: serverTimestamp(), por: P.ana }));

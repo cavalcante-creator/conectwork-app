@@ -126,7 +126,7 @@ const CNPJ = '11.444.777/0001-61', CNPJ_USADO = '04.252.011/0001-10', CPF = '529
   const menu = await page.$$eval('#menu [data-mod]', x => x.map(b => b.dataset.mod));
   await page.evaluate(() => { location.hash = '#meucadastro'; }); await page.waitForSelector('#mc-protocolo'); await H.dorme(150);
   const c12 = { menu, prot: await page.$eval('#mc-protocolo', e => e.innerText), corrigir: !!(await page.$('#mc-corrigir')), pill: await page.$eval('#mc-situacao .pill', e => e.innerText) };
-  ok('C12 entra no app com a empresa em análise: menu Início + Meu cadastro; protocolo e situação; sem "Corrigir"', JSON.stringify(menu) === '["inicio","meucadastro"]' && c12.prot === prot && !c12.corrigir && c12.pill === 'Em análise', JSON.stringify(c12));
+  ok('C12 entra no app com a empresa em análise: menu Início + Meu cadastro + Documentos; protocolo e situação; sem "Corrigir"', JSON.stringify(menu) === '["inicio","meucadastro","documentos"]' && c12.prot === prot && !c12.corrigir && c12.pill === 'Em análise', JSON.stringify(c12));
 
   // C13 equipe pede ajuste → "Corrigir cadastro" com o motivo; CNPJ travado; reenvia em análise e grava no histórico
   await page.evaluate(id => { const s = JSON.parse(localStorage.getItem('__srv')); Object.assign(s.docs['empresas/' + id], { status: 'pendencia', motivo: 'O comprovante de endereço está ilegível.' }); localStorage.setItem('__srv', JSON.stringify(s)); }, EMP);

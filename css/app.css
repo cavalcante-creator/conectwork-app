@@ -720,3 +720,5 @@ html.entrada .login{height:100%;min-height:0}
 .rl-res b{font-size:18px}
 .rl-tab td,.rl-tab th{white-space:nowrap}
 .rl-tab td.m-full{white-space:normal}
+.dc-bt{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+@media (max-width:620px){.dc-row{flex-wrap:wrap}.dc-row .dc-bt{width:100%;justify-content:flex-start;padding-left:48px}}

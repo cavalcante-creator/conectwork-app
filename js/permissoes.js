@@ -17,12 +17,12 @@
     admin:       { nome: 'Administrador', telas: '*', desc: 'Vê tudo da empresa, convida pessoas, define cargos e ajusta acessos.' },
     solicitante: { nome: 'Solicitante', telas: ['demandas', 'contratos', 'notificacoes'], desc: 'Abre demandas e acompanha contratos; não aprova pagamento.' },
     aprovador:   { nome: 'Aprovador técnico', telas: ['contratos', 'medicoes', 'demandas', 'notificacoes'], desc: 'Aprova entregas e medições; não libera pagamento.' },
-    financeiro:  { nome: 'Financeiro', telas: ['pagar', 'receber', 'medicoes', 'espelhos', 'titulos', 'relatorios', 'conta', 'empresa'], desc: 'Pagar, receber, relatórios, conta e dados da empresa.' },
+    financeiro:  { nome: 'Financeiro', telas: ['pagar', 'receber', 'contratos', 'medicoes', 'espelhos', 'titulos', 'relatorios', 'documentos', 'conta', 'empresa'], desc: 'Pagar, receber, relatórios, conta e dados da empresa.' },
     tesouraria:  { nome: 'Tesouraria', telas: ['titulos', 'pagar', 'notificacoes'], desc: 'Agenda pagamentos liberados e confirma a liquidação.' },
-    rh:          { nome: 'RH', telas: ['pagar', 'medicoes', 'integracao', 'relatorios', 'catalogo'], desc: 'Fechamentos, integração, relatórios e catálogo.' },
-    operacional: { nome: 'Operacional', telas: ['receber', 'espelhos', 'profissionais', 'catalogo'], desc: 'Notas a emitir, profissionais e catálogo.' },
-    contador:    { nome: 'Contador (só leitura)', telas: ['pagar', 'receber', 'espelhos', 'titulos', 'relatorios'], soLeitura: true, desc: 'Só leitura: cobranças e relatórios.' },
-    consulta:    { nome: 'Só consulta', telas: ['pagar', 'receber', 'espelhos', 'titulos', 'relatorios', 'empresa'], soLeitura: true, desc: 'Só leitura das telas liberadas.' }
+    rh:          { nome: 'RH', telas: ['pagar', 'medicoes', 'documentos', 'integracao', 'relatorios', 'catalogo'], desc: 'Fechamentos, integração, relatórios e catálogo.' },
+    operacional: { nome: 'Operacional', telas: ['receber', 'espelhos', 'documentos', 'profissionais', 'catalogo'], desc: 'Notas a emitir, profissionais e catálogo.' },
+    contador:    { nome: 'Contador (só leitura)', telas: ['pagar', 'receber', 'espelhos', 'titulos', 'relatorios', 'documentos'], soLeitura: true, desc: 'Só leitura: cobranças e relatórios.' },
+    consulta:    { nome: 'Só consulta', telas: ['pagar', 'receber', 'espelhos', 'titulos', 'relatorios', 'documentos', 'empresa'], soLeitura: true, desc: 'Só leitura das telas liberadas.' }
   };
 
   const cargo = id => CARGOS[id] || null;

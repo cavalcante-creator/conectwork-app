@@ -127,8 +127,9 @@
       <section class="card" style="margin-bottom:22px"><div class="card-b profile">${avatar(nomeEmp(e), 'lg', id)}<div class="t"><h2 id="cm-nome">${esc(nomeEmp(e))}</h2>
         <div class="meta">${CW.sessao.pillStatus(e.status)}<span class="tag gray">${esc(C().TIPOS[e.tipo] || '')}</span><span class="tag gray">${esc(e.cnpj || '')}</span><span class="tag gray" id="cm-protocolo">Protocolo ${esc(e.protocolo || '—')}</span>${e.plano ? `<span class="tag">${esc(P().nomePlano(e.plano))}</span>` : ''}</div></div></div></section>
       <div class="grid-main"><div>${cartaoDados(e, pv)}</div>
-        <div class="stack decision">${cartaoDecisao(e, pv, faltam)}${cartaoDocs(e, pv, editavel)}${cartaoHist(hist)}</div></div>`;
+        <div class="stack decision">${cartaoDecisao(e, pv, faltam)}${cartaoDocs(e, pv, editavel)}<div id="cm-arquivos"></div>${cartaoHist(hist)}</div></div>`;
     ligarAnalise(el, ctx, e, pv, faltam);
+    if (CW.documentos) CW.documentos.blocoMaster(document.getElementById('cm-arquivos'), id);
   }
 
   function ligarAnalise(el, ctx, e, pv, faltam) {

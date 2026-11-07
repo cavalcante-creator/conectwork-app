@@ -113,6 +113,7 @@
     }
     const contaTxt = conta ? `${esc(conta.banco)} · ag. ${esc(conta.agencia)} · conta ${esc(conta.conta)} (${esc(conta.tipo || '')})${conta.pix ? '<br>Pix: ' + esc(conta.pix) : ''}<br><span class="hint">Titular: ${esc(conta.titular)} · ${esc(conta.doc)}</span>` : '';
     el.innerHTML = `<div style="margin-bottom:14px"><button class="linkbtn" id="tt-voltar">${ic('back')}Voltar para pagar e receber</button></div>
+      <div id="tt-docs"></div>
       ${vencido(t) ? `<div class="banner danger" id="tt-venc">${ic('alert')}<span><strong>Vencido em ${esc(dataTxt(v))}</strong>${l === 'tomador' ? 'O vencimento vem do contrato. Pague o quanto antes e anexe o comprovante.' : 'A empresa que contrata já foi avisada nesta tela.'}</span></div>` : ''}
       ${c.revisao && ['aprovado', 'liberado'].includes(st) ? `<div class="banner warn" id="tt-rev">${ic('shield')}<span><strong>Conta para receber trocada</strong>${l === 'tomador' ? 'Confira a troca com a prestadora por telefone antes de aprovar (revisão reforçada). Até lá, o pagamento não pode ser agendado.' : 'A empresa que contrata confere a troca antes de agendar o pagamento.'}</span></div>` : ''}
       ${vez ? `<div class="banner info" id="tt-vez">${ic('alert')}<span><strong>${esc(vez)}</strong>${l === 'prestador' && vez.startsWith('Informe') ? 'A conta precisa estar no CNPJ da sua empresa. O dinheiro vai direto de quem paga para a sua conta.' : ''}</span></div>` : ''}
@@ -140,6 +141,7 @@
         </div></section></div></div>`;
     ligar(el, ctx, t, conta);
     if (CW.avisar) CW.avisar.ligar(el);
+    if (CW.documentos && l === 'tomador' && ['aprovado', 'liberado', 'agendado'].includes(st)) CW.documentos.alerta(document.getElementById('tt-docs'), t.prestadorId, t.prestadorNome);
   }
 
   function zapTit(t, ctx) {

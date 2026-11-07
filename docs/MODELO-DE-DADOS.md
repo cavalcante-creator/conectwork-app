@@ -91,3 +91,6 @@ Gravados a partir da Etapa 1 (cadastro). Só a própria pessoa grava; a própria
 
 ### `logos/{empresaId}`
 `d` (imagem PNG, JPEG ou WEBP em base64, reduzida no aparelho para até 256 px, até 200 mil caracteres), `nome`, `em`, `por`. Todos os logados veem; só o admin da empresa troca ou tira. SVG não é aceito.
+
+### `documentos/{id}` (documentos e certidões da empresa)
+`empresaId`, `tipo` (contrato, cartao, endereco, identidade · cnd_federal, crf_fgts, cndt, cnd_municipal, cnd_estadual · pgr, pcmso, seguro · outro), `grupo`, `nome`, `validade` (AAAA-MM-DD ou vazio), `compartilhar` (certidões e segurança: quem contrata vê; documentos do cadastro nunca), `status` (`vigente` | `substituido`), `arquivo` {envio, partes, nome, tipo, tam}, `enviadoPor`, `enviadoPorNome`, `criadoEm`, `substituidoEm`, `substituidoPor`. Arquivo em `documentos/{id}/arquivos/{envio}-{k}` (até 5 MB). Obrigatórios para prestadora: CND federal, CRF do FGTS, CNDT, municipal, PGR e PCMSO; aviso 15 dias antes de vencer. Os do cadastro são cobrados enquanto a empresa está em análise.
