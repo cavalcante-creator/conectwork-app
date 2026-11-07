@@ -194,6 +194,7 @@
     const temRet = somaRet(x.retencoes) > 0;
     el.innerHTML = `<div style="margin-bottom:14px"><button class="linkbtn" id="es-voltar">${ic('back')}Voltar para os espelhos</button></div>
       ${avisos(x, ctx)}
+      ${l === 'prestador' && x.status === 'aguardando_nota' && podeEnviar(ctx) ? '<div id="es-assist"></div>' : ''}
       <div class="grid-main"><div class="stack">
         <section class="card" id="es-tom"><div class="card-h"><span class="ic">${ic('building')}</span><h3>Tomador do serviço</h3><span style="margin-left:auto">${pill(x.status)}</span></div><div class="card-b"><dl class="dl">
           ${cp('Razão social', t.razao, 'razao', 1)}${cp('CNPJ', t.cnpj, 'cnpj')}${cp('Inscrição municipal', t.im, 'im')}${cp('Endereço', copias.end, 'end', 1)}</dl></div></section>
@@ -225,6 +226,7 @@
     el.querySelectorAll('[data-copiar]').forEach(b => b.onclick = () => copiar(copias[b.dataset.copiar] || ''));
     const co = document.getElementById('es-corrigir'); if (co) co.onclick = () => CW.ir('espelhos/preparar/' + x._id);
     ultimoCtx = ctx; ligarNota(el, ctx, x); if (CW.avisar) CW.avisar.ligar(el);
+    if (CW.assistente && document.getElementById('es-assist')) CW.assistente.bloco(document.getElementById('es-assist'), ctx, x);
   }
 
   /* ---------- nota fiscal: emitir fora, voltar e anexar (PDF ou XML), conferir ---------- */

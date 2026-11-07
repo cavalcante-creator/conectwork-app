@@ -444,6 +444,13 @@ async function deve(nome, permitido, op) {
   await deve('Negócio: NÃO aceita nomes de clientes no documento compartilhado', false, () => setDoc(doc(db('bruno'), 'independencia', 'alfa'), { nClientes: 3, compartilhar: true, clientes: ['Cliente X'], em: serverTimestamp(), por: P.bruno }));
   await deve('Negócio: quem contrata lê o número de clientes', true, () => getDoc(doc(db('beto'), 'independencia', 'alfa')));
 
+  /* ---------- modelo de nota e obrigações do MEI ---------- */
+  await deve('Modelo de nota: o financeiro salva o código de tributação', true, () => setDoc(doc(db('bruno'), 'notamodelo', 'alfa'), { codigo: '14.01.01', codigoDesc: 'Revisão de máquinas', municipio: 'Gravataí/RS', complemento: '', em: serverTimestamp(), por: P.bruno }));
+  await deve('Modelo de nota: código fora do formato NÃO entra', false, () => setDoc(doc(db('bruno'), 'notamodelo', 'alfa'), { codigo: '1401', em: serverTimestamp(), por: P.bruno }));
+  await deve('Modelo de nota: outra empresa NÃO lê', false, () => getDoc(doc(db('beto'), 'notamodelo', 'alfa')));
+  await deve('MEI: o admin marca o DAS como pago', true, () => setDoc(doc(db('ana'), 'fiscal', 'alfa'), { das: { '2026-10': { pago: true, data: '2026-11-07' } }, dasn: {}, em: serverTimestamp(), por: P.ana }));
+  await deve('MEI: o RH NÃO vê as obrigações fiscais', false, () => getDoc(doc(db('rita'), 'fiscal', 'alfa')));
+
   /* ---------- logo da empresa ---------- */
   const LOGO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
   await deve('Logo: o admin envia a logo da empresa', true, () => setDoc(doc(db('ana'), 'logos', 'alfa'), { d: LOGO, nome: 'logo.png', em: serverTimestamp(), por: P.ana }));

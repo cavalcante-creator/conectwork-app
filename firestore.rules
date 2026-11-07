@@ -551,12 +551,30 @@ service cloud.firestore {
         && request.resource.data.por == request.auth.uid;
       allow delete: if false;
     }
+    // fiscal/{emp}: DAS pagos e DASN-SIMEI entregue (marcados pela própria empresa)
+    match /fiscal/{emp} {
+      allow read: if master() || cargoEm(emp, ['admin','financeiro']);
+      allow create, update: if cargoEm(emp, ['admin','financeiro'])
+        && request.resource.data.keys().hasOnly(['das','dasn','em','por'])
+        && request.resource.data.das is map && request.resource.data.dasn is map && request.resource.data.por == request.auth.uid;
+      allow delete: if false;
+    }
     match /independencia/{emp} {
       allow read: if logado();
       allow create, update: if cargoEm(emp, ['admin','financeiro'])
         && request.resource.data.keys().hasOnly(['nClientes','compartilhar','em','por'])
         && request.resource.data.nClientes is int && request.resource.data.nClientes >= 0 && request.resource.data.nClientes <= 999
         && request.resource.data.compartilhar is bool && request.resource.data.por == request.auth.uid;
+      allow delete: if false;
+    }
+
+    // ---------- Modelo de nota (assistente de emissão): código de tributação, município, complemento ----------
+    match /notamodelo/{emp} {
+      allow read: if master() || cargoEm(emp, ['admin','financeiro','operacional']);
+      allow create, update: if cargoEm(emp, ['admin','financeiro','operacional'])
+        && request.resource.data.keys().hasOnly(['codigo','codigoDesc','municipio','complemento','em','por'])
+        && request.resource.data.codigo is string && request.resource.data.codigo.matches('[0-9]{2}[.][0-9]{2}[.][0-9]{2}')
+        && request.resource.data.por == request.auth.uid;
       allow delete: if false;
     }
 

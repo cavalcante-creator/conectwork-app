@@ -104,3 +104,7 @@ Gravados a partir da Etapa 1 (cadastro). Só a própria pessoa grava; a própria
 ### `faturamento/{empresaId}` e `independencia/{empresaId}` (Meu negócio)
 `faturamento`: `anos` {AAAA: {MM: centavos}} (faturado fora do Conectwork), `clientes` [{nome, desde}], `em`, `por`. Privado: admin e financeiro da empresa.
 `independencia`: `nClientes` (Conectwork + fora), `compartilhar`, `em`, `por`. Só o número, sem nomes nem valores; quem contrata vê no dossiê quando a empresa escolhe mostrar. Limite do MEI usado na tela: R$ 81.000/ano (`CW.negocio.LIMITE_MEI`).
+
+### `notamodelo/{empresaId}` e `fiscal/{empresaId}`
+`notamodelo` (assistente de emissão): `codigo` (código de tributação nacional, NN.NN.NN), `codigoDesc`, `municipio`, `complemento`, `em`, `por`. Admin, financeiro e operacional.
+`fiscal` (Empresa em dia do MEI): `das` {AAAA-MM: {pago, data}} (DAS da competência vence dia 20 do mês seguinte), `dasn` {AAAA: {entregue, data}} (DASN-SIMEI até 31/05 do ano seguinte), `em`, `por`. Admin e financeiro. O relatório mensal das receitas brutas é gerado no aparelho (PDF), não é guardado.

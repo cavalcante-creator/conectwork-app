@@ -740,3 +740,13 @@ html.entrada .login{height:100%;min-height:0}
 .ng-meses{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
 a.ng-link{text-decoration:none;color:inherit}
 a.ng-link:hover{background:var(--surface2)}
+.as-passo{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.as-passo summary{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;font-weight:600;font-size:14px;list-style:none}
+.as-passo summary::-webkit-details-marker{display:none}
+.as-passo[open] summary{background:var(--surface2)}
+.as-n{width:24px;height:24px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;font-size:12px;flex:none}
+.as-corpo{padding:12px 14px;display:grid;gap:10px;font-size:13.5px}
+.as-campo{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.as-campo .t{min-width:0}.as-campo small{display:block;color:var(--muted);font-size:12px}.as-campo b{display:block;overflow-wrap:anywhere}
+.as-campo em{display:block;font-style:normal;color:var(--muted);font-size:12px}
+.as-campo .btn{flex:none}
