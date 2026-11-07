@@ -25,6 +25,12 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
    do celular e no "puxar" da página — o Safari pinta essas áreas com o fundo do html/body. */
 html.entrada,html.entrada body{background:var(--navy);color-scheme:dark}
 html.entrada .carregando{color:#B8C7EA}
+/* a tela de entrada ocupa exatamente a tela: a página não rola nem "estica" (o próprio .login rola só se não couber,
+   ex.: celular deitado ou muito pequeno). A margem da barra do celular fica dentro do .login. */
+html.entrada{padding:0;height:100%;overflow:hidden}
+html.entrada body{height:100%;overflow:hidden;overscroll-behavior:none}
+html.entrada #app{height:100%;min-height:0}
+#lg-erro:empty{display:none}
 button,input,select,textarea{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
 svg.i{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -39,7 +45,8 @@ h1,h2,h3{letter-spacing:-.015em}
 
 /* ---------- Login e telas de entrada ---------- */
 /* Fundo azul-marinho e curvas na tela inteira, como uma peça só; o cartão de acesso flutua por cima. */
-.login{position:relative;overflow:hidden;width:100%;min-height:100vh;min-height:100dvh;display:grid;
+.login{position:relative;overflow-x:hidden;overflow-y:auto;overscroll-behavior:none;width:100%;height:100vh;height:100dvh;display:grid;
+  padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);
   grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);background:var(--navy);color:#fff;isolation:isolate}
 .login>.curves{z-index:-1}
 .curves{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
@@ -98,7 +105,14 @@ h1,h2,h3{letter-spacing:-.015em}
   .bp-topo{display:flex;align-items:center;gap:12px}.bp-topo>svg{width:48px;height:auto}
   .brandpanel h1{font-size:26px;margin:0}.brandpanel .slogan,.beneficios,.selos{display:none}
   .brandpanel .tagline{font-size:16px;margin-top:12px;max-width:none;color:#DCE6FB}
-  .loginside{padding:16px 16px 32px;justify-content:flex-start}.logincard .card-b{padding:24px 18px}.signup{flex-direction:column;align-items:flex-start}}
+  .loginside{padding:clamp(10px,2vh,16px) 16px clamp(8px,1.5vh,32px);justify-content:flex-start}.logincard .card-b{padding:clamp(18px,2.8vh,24px) 18px}.signup{flex-direction:column;align-items:flex-start}
+  .brandpanel{padding-top:clamp(12px,2.4vh,20px)}}
+/* celular baixo (Safari com as barras, iPhone SE): tudo mais junto para caber sem rolar */
+@media (max-width:860px) and (max-height:740px){
+  .brandpanel .tagline{font-size:14.5px;margin-top:8px}.bp-topo>svg{width:40px}.brandpanel h1{font-size:23px}
+  .lform{gap:10px}.lg-cab h2{font-size:21px}.divisoria{margin:14px 0 10px}.lg-termos{margin-top:12px}
+  .logincard label.f input{padding:9px 12px}.lg-novos .btn{padding-block:9px}}
+@media (max-width:860px) and (max-height:620px){.brandpanel .tagline{display:none}.lg-cab .sub{display:none}.divisoria{margin:10px 0 8px}.lg-termos{margin-top:8px}.lform{gap:8px}}
 @media (max-width:380px){.lg-novos{grid-template-columns:1fr}}
 
 /* ---------- Casca ---------- */

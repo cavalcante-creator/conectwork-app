@@ -73,6 +73,14 @@ const { ok, fim } = H.placar('login');
   // L1i fundo da página (html e body) também azul: é o que o Safari do iPhone pinta atrás da barra de cima e no "puxar"
   const l1i = await page.evaluate(() => ({ html: getComputedStyle(document.documentElement).backgroundColor, body: getComputedStyle(document.body).backgroundColor, cls: document.documentElement.classList.contains('entrada') }));
   ok('L1i celular: fundo da página azul-marinho atrás da barra de cima (não fica esbranquiçado)', l1i.cls && l1i.html === 'rgb(8, 22, 56)' && l1i.body === 'rgb(8, 22, 56)', JSON.stringify(l1i));
+  // L1j a tela de entrada cabe inteira na tela do celular, sem rolar (iPhone grande, Safari com as barras, iPhone SE)
+  const l1j = [];
+  for (const [w, h] of [[430, 932], [390, 844], [390, 664], [375, 667], [375, 553], [360, 640]]) {
+    await page.setViewportSize({ width: w, height: h }); await H.dorme(150);
+    l1j.push(await page.evaluate(() => ({ t: innerWidth + 'x' + innerHeight, pag: document.documentElement.scrollHeight - innerHeight, lg: document.querySelector('.login').scrollHeight - innerHeight,
+      fim: Math.round(innerHeight - document.getElementById('lg').getBoundingClientRect().bottom) })));
+  }
+  ok('L1j celular: login cabe na tela sem rolar (6 tamanhos, do iPhone SE ao Pro Max)', l1j.every(x => x.pag <= 0 && x.lg <= 0 && x.fim >= 0), JSON.stringify(l1j));
   await page.setViewportSize({ width: 1280, height: 900 });
 
   // L1g modo escuro do sistema: cartão azul-escuro um tom acima do fundo (não preto), campos com borda visível
