@@ -55,7 +55,7 @@ const servidor = http.createServer((req, res) => {
   ok('P1 manifest carrega com nome, descrição, idioma, início, modo app e cores da tela de entrada',
     p1.ok && m.name === 'Conectwork' && m.short_name === 'Conectwork' && m.lang === 'pt-BR' && m.start_url === './' && m.scope === './' && m.display === 'standalone'
     && m.theme_color === '#081638' && m.background_color === '#081638'
-    && m.description === 'Plataforma mais completa em outsourcing. Toda papelada e burocracia em um só lugar, na palma da sua mão.', JSON.stringify(m).slice(0, 300));
+    && m.description === 'Conectando empresas, pessoas e oportunidades. Toda papelada e burocracia em um só lugar, na palma da sua mão.', JSON.stringify(m).slice(0, 300));
   ok('P2 ícones 192, 512 e maskable carregam (PNG)', (p1.icones || []).length === 3 && p1.icones.every(i => i.ok && /png/.test(i.tipo)) && p1.icones.some(i => i.purpose === 'maskable'), JSON.stringify(p1.icones));
 
   const p3 = await page.evaluate(() => {

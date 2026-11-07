@@ -47,7 +47,8 @@ testes/               testes automatizados
 
 ## Identidade e comunicação
 - Na interface aparece **só o nome Conectwork**. Nunca usar marcas de terceiros em telas, textos ou dados de exemplo (os dados reais das empresas do piloto existem só no banco de produção). Única exceção: os botões de login "Google" e "Microsoft", com o símbolo de cada um (padrão exigido por eles).
-- Mensagem principal: "Contrate serviços com mais organização, rastreabilidade e gestão de riscos." Slogan: "Plataforma mais completa em outsourcing · Toda papelada e burocracia em um só lugar, na palma da sua mão."
+- **Marca (identidade aprovada em 07/11/2026):** símbolo = faixa azul em losango arredondado com a folha verde-água (`CW.ui.LOGO`, `icons/simbolo.svg`); "Conect" em branco ou azul-marinho e "work" em azul. Cores: azul `#1A5CF0`, azul-marinho `#0B1A45`/`#081638`, verde-água `#22D3A6`, cinza-claro `#E8ECF5`.
+- Frase da marca, embaixo da logo: "Conectando empresas, pessoas e oportunidades." Mensagem principal: "Contrate serviços com mais organização, rastreabilidade e gestão de riscos." Texto do login: "Toda papelada e burocracia em um só lugar, na palma da sua mão."
 - Nunca prometer "sem risco trabalhista", "blindagem" ou garantia contra processos. Aviso padrão: "O Conectwork organiza a contratação e a gestão documental. A validade da relação depende da operação real, da legislação aplicável e da análise jurídica e contábil adequada."
 - **Consentimentos separados** (operacional, contrato, cobrança, cursos, ofertas, WhatsApp, e-mail, push). Cursos e ofertas **desmarcados por padrão**; registrar texto, versão, data, finalidade, canal e revogação.
 

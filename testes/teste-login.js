@@ -25,7 +25,7 @@ const { ok, fim } = H.placar('login');
       velhos: /Cada pessoa entra com o próprio login|Integração que conecta empresas/i.test(tudo) };
   });
   ok('L1b painel: slogan, frase de destaque, 3 benefícios e 3 selos (sem os ícones antigos)',
-    l1b.slogan === 'PLATAFORMA MAIS COMPLETA EM OUTSOURCING' && l1b.tag === 'Toda papelada e burocracia em um só lugar, na palma da sua mão.'
+    l1b.slogan === 'Conectando empresas, pessoas e oportunidades.' && l1b.tag === 'Toda papelada e burocracia em um só lugar, na palma da sua mão.'
     && JSON.stringify(l1b.ben) === JSON.stringify(['Contratos, entregas e notas organizados', 'Pagamentos com data e comprovante', 'Documentos e conformidade em dia'])
     && JSON.stringify(l1b.selos) === JSON.stringify(['Empresas que contratam', 'Prestadoras', 'Profissionais MEI']) && l1b.pilares === 0, JSON.stringify(l1b));
   ok('L1c cartão: subtítulo, placeholder, divisória, dois botões e aviso de termos; frases antigas removidas',

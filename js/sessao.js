@@ -64,7 +64,7 @@
     document.documentElement.classList.add('entrada');
     app().innerHTML = `<div class="login">${CURVES}
       <section class="brandpanel">
-        <div class="bp-topo">${LOGO(120)}<div><h1>Conect<span>work</span></h1><div class="slogan">PLATAFORMA MAIS COMPLETA EM OUTSOURCING</div></div></div>
+        <div class="bp-topo">${LOGO(120)}<div><h1>Conect<span>work</span></h1><div class="slogan">Conectando empresas, pessoas e oportunidades.</div></div></div>
         <p class="tagline">Toda papelada e burocracia em um só lugar, na palma da sua mão.</p>
         <ul class="beneficios">
           <li>${ic('file')}<span>Contratos, entregas e notas organizados</span></li>
