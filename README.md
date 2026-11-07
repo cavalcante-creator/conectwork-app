@@ -72,7 +72,7 @@ npx playwright install chromium
 **Rodar:**
 | Comando (dentro de `testes/`) | O que testa |
 |---|---|
-| `npm run telas` | Telas com o Firebase simulado (sem internet): componentes (`teste-ui.js`), login (`teste-login.js`) sessão, menu e permissões (`teste-sessao.js`), cadastro de empresa do começo ao fim (`teste-cadastro.js`) e app instalável (`teste-pwa.js`: manifest, service worker, abrir sem internet, faixa de offline e troca de `VERSAO`; este usa um servidor local, porque o service worker só roda em `localhost` ou https). |
+| `npm run telas` | Telas com o Firebase simulado (sem internet): componentes (`teste-ui.js`), login (`teste-login.js`) sessão, menu e permissões (`teste-sessao.js`), cadastro de empresa do começo ao fim (`teste-cadastro.js`), análise dos cadastros pela equipe Conectwork (`teste-analise.js`) e app instalável (`teste-pwa.js`: manifest, service worker, abrir sem internet, faixa de offline e troca de `VERSAO`; este usa um servidor local, porque o service worker só roda em `localhost` ou https). |
 | `npm run regras` | Regras do `firestore.rules` no emulador do Firestore (`teste-regras.js`). Liga o emulador, roda e desliga sozinho. |
 | `npm test` | Os dois acima. |
 

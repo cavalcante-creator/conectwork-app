@@ -57,5 +57,27 @@
     const c = cargo(ctx.acesso && ctx.acesso.cargo); return !c || !!c.soLeitura;
   }
 
-  CW.permissoes = { CARGOS, cargo, nomeCargo, podeVer, soLeitura };
+  /* Módulos que a equipe Conectwork liga para cada empresa (empresas/{id}.modulos) e planos de mensalidade.
+     O plano só sugere os módulos; a equipe pode ligar e desligar um a um. Receita = mensalidade, sem comissão.
+     Valores das mensalidades: a definir (não ficam no app por enquanto). "fase" = quando o módulo entra no ar. */
+  const MODULOS_CONTRATAVEIS = [
+    { id: 'equipe', nome: 'Usuários e acessos', fase: 1, desc: 'Vários logins por empresa, cada um com seu cargo.' },
+    { id: 'cobrancas', nome: 'Cobranças e notas', fase: 1, desc: 'Pedido de nota, conferência da nota, contas a pagar e receber.' },
+    { id: 'contratos', nome: 'Contratos e OS', fase: 1, desc: 'Contratos das duas modalidades, aceite, medição e espelho de faturamento.' },
+    { id: 'integracao', nome: 'Integração com o RH', fase: 1, desc: 'Recebe a medição do período do painel do RH do tomador.' },
+    { id: 'profissionais', nome: 'Profissionais', fase: 2, desc: 'Pessoas que a prestadora disponibiliza para os clientes.' },
+    { id: 'emissao', nome: 'Emissão de NFS-e', fase: 2, desc: 'Nota emitida pelo Conectwork (certificado só no servidor).' },
+    { id: 'demandas', nome: 'Demandas e propostas', fase: 2, desc: 'Triagem, demanda, propostas, comparador e OS.' },
+    { id: 'catalogo', nome: 'Catálogo', fase: 3, desc: 'Busca e solicitação de profissionais da rede.' },
+    { id: 'conta', nome: 'Conta e benefícios', fase: 3, desc: 'Conta digital e benefícios com parceiros.' }
+  ];
+  const PLANOS = {
+    essencial: { nome: 'Essencial', desc: 'Cobranças, notas, usuários e integração com o RH.', modulos: ['equipe', 'cobrancas', 'integracao'] },
+    profissional: { nome: 'Profissional', desc: 'Essencial + contratos, profissionais e emissão de NFS-e.', modulos: ['equipe', 'cobrancas', 'integracao', 'contratos', 'profissionais', 'emissao'] },
+    rede: { nome: 'Rede', desc: 'Profissional + demandas, catálogo e conta.', modulos: ['equipe', 'cobrancas', 'integracao', 'contratos', 'profissionais', 'emissao', 'demandas', 'catalogo', 'conta'] },
+    gratuito: { nome: 'Gratuito para profissional', desc: 'Profissional MEI: cadastro grátis.', modulos: ['cobrancas'] }
+  };
+  const nomePlano = id => (PLANOS[id] && PLANOS[id].nome) || '';
+
+  CW.permissoes = { CARGOS, cargo, nomeCargo, podeVer, soLeitura, MODULOS_CONTRATAVEIS, PLANOS, nomePlano };
 })();

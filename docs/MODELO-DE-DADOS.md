@@ -16,10 +16,11 @@ Dados públicos dentro da rede (outras empresas aprovadas podem ler).
 `tipo` (`contratante` | `ambos` | `prestador`), `status` (`analise` | `pendencia` | `aprovado` | `recusado`), `nome` (fantasia), `razao`, `cnpj` (com máscara), `cnpjNum` (só os 14 números), `cidade`, `uf`, `protocolo` (CW-AAAA-0000), `modulos` (lista), `plano`, `criadoPor` (uid), `criadoEm`, `enviadoEm` (último envio para análise), `motivo` (texto do ajuste ou recusa).
 - Criada pelo cadastro numa operação só, junto com `cnpjs/{cnpjNum}`, a área privada, o acesso admin do fundador, as autorizações e o histórico.
 - Na correção (status `pendencia` → `analise`) o CNPJ não muda.
+- Decisão da equipe master: `status`, `plano` (`essencial` | `profissional` | `rede` | `gratuito`; valores das mensalidades a definir), `modulos` (ids de `MODULOS_CONTRATAVEIS` em `js/permissoes.js`), `motivo`, `avaliadoEm`, `avaliadoPor` (nome).
 - `modulos`, `status` e `taxa` só a equipe master altera.
 
 ### `empresas/{empresaId}/privado/cadastro`
-Dados sensíveis do cadastro: `dados` (abertura, porte, regime, CNAE, IM, IE), `end` (cep, logradouro, numero, compl, bairro, cidade, uf), `resp` (nome, CPF, cargo, e-mail, e-mail financeiro, celular), `banco` (banco, tipo de conta, agência, conta, tipo e chave Pix), `docs` (nome e tamanho dos arquivos; o arquivo em si vai para o Storage numa etapa futura), `aceites` (declarações: verdade, termos, versão do texto), `reenviadoEm`, `conferidos` (equipe master).
+Dados sensíveis do cadastro: `dados` (abertura, porte, regime, CNAE, IM, IE), `end` (cep, logradouro, numero, compl, bairro, cidade, uf), `resp` (nome, CPF, cargo, e-mail, e-mail financeiro, celular), `banco` (banco, tipo de conta, agência, conta, tipo e chave Pix), `docs` (nome e tamanho dos arquivos; o arquivo em si vai para o Storage numa etapa futura), `aceites` (declarações: verdade, termos, versão do texto), `reenviadoEm`, `conferidos` (equipe master: `{ doc: { nome do arquivo conferido, em, por } }`; se a empresa trocar o arquivo, o documento volta a ficar não conferido).
 Certificado digital não fica aqui (segredo só no servidor, etapa futura).
 Leem: membros da empresa, quem criou o cadastro e a equipe master.
 

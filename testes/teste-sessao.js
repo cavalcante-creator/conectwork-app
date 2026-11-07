@@ -112,7 +112,7 @@ const MODS_TESTE = () => {
   await H.entrar(page, 'iasmyn@conectwork.com.br', 'senha123'); await page.waitForSelector('#ini-nome', { timeout: 8000 });
   q = await quem();
   await page.evaluate(MODS_TESTE); await H.dorme(200); m = await menu();
-  ok('S22 equipe Conectwork (master/{uid}): entra como "Equipe Conectwork" e não vê telas de empresa', q.empresa === 'Equipe Conectwork' && q.cargo === 'Equipe Conectwork' && JSON.stringify(m) === '["inicio"]', JSON.stringify(q) + ' menu=' + m);
+  ok('S22 equipe Conectwork (master/{uid}): entra como "Equipe Conectwork" e vê só as telas da equipe (Início e Cadastros), nenhuma de empresa', q.empresa === 'Equipe Conectwork' && q.cargo === 'Equipe Conectwork' && JSON.stringify(m) === '["inicio","cadastros"]', JSON.stringify(q) + ' menu=' + m);
   const s23 = await page.evaluate(async () => { const r = await CW.registrarLog('teste', 'Teste master.'); return JSON.parse(localStorage.getItem('__srv')).docs[r.path].empresaId; });
   ok('S23 histórico gravado pela equipe master vai com empresaId "master"', s23 === 'master', s23);
   await sair();

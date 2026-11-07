@@ -100,7 +100,14 @@ async function deve(nome, permitido, op) {
   await deve('Na correção o CNPJ NÃO muda', false, () => updateDoc(doc(db('carla'), 'empresas', 'nova1'), { status: 'analise', cnpj: '04252011000110' }));
   await deve('Na correção a empresa NÃO se aprova sozinha', false, () => updateDoc(doc(db('carla'), 'empresas', 'nova1'), { status: 'aprovado' }));
   await deve('Admin NÃO aprova a própria empresa (status só a equipe master muda)', false, () => updateDoc(doc(db('ana'), 'empresas', 'alfa'), { status: 'aprovado' }));
-  await deve('Equipe master aprova empresa', true, () => updateDoc(doc(db('master'), 'empresas', 'alfa'), { status: 'aprovado' }));
+  await deve('Admin NÃO escolhe o próprio plano nem liga módulos', false, () => updateDoc(doc(db('ana'), 'empresas', 'alfa'), { plano: 'rede', modulos: ['contratos'] }));
+  await deve('Admin NÃO marca os próprios documentos como conferidos', false, () => updateDoc(doc(db('ana'), 'empresas', 'alfa', 'privado', 'cadastro'), { conferidos: { contrato: { nome: 'x.pdf' } } }));
+  await deve('Equipe master marca documento como conferido', true, () => updateDoc(doc(db('master'), 'empresas', 'alfa', 'privado', 'cadastro'), { conferidos: { contrato: { nome: 'x.pdf', em: serverTimestamp(), por: 'Iasmyn' } } }));
+  await deve('Equipe master grava a decisão no histórico da empresa analisada', true, () => addDoc(collection(db('master'), 'log'), { em: serverTimestamp(), uid: P.master, quem: 'Iasmyn', empresaId: 'alfa', acao: 'empresa.aprovar', texto: 'Cadastro aprovado.', ref: 'alfa' }));
+  await deve('Equipe master pede ajuste com motivo', true, () => updateDoc(doc(db('master'), 'empresas', 'alfa'), { status: 'pendencia', motivo: 'Comprovante ilegível.' }));
+  await deve('Equipe master aprova empresa com plano e módulos', true, () => updateDoc(doc(db('master'), 'empresas', 'alfa'), { status: 'aprovado', plano: 'essencial', modulos: ['equipe', 'cobrancas'], motivo: '' }));
+  await deve('Equipe master lista os cadastros de todas as empresas', true, () => getDocs(collection(db('master'), 'empresas')));
+  await deve('Empresa NÃO lista os cadastros das outras', false, () => getDocs(collection(db('ana'), 'empresas')));
   await semear();
 
   /* ---------- acessos ---------- */

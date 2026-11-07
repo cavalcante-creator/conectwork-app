@@ -478,6 +478,7 @@
     desenhar(); window.scrollTo(0, 0);
   }
 
+  CW.cadastro = { TIPOS, docsReq, tamanho: b => tamanho(b) };
   CW.entrada.cadastrarEmpresa = comecar;
   CW.entrada.continuarCadastro = continuar;
   CW.entrada.cadastroAberto = aberto;
