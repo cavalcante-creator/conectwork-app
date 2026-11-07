@@ -51,7 +51,7 @@ const { ok, fim } = H.placar('login');
   const transp = v => v === 'rgba(0, 0, 0, 0)' || v === 'transparent';
   ok('L1h fundo azul e curvas na tela inteira, sem divisão; cartão branco levemente transparente de 440px, cantos de 20px e sombra',
     l1h.fundo === 'rgb(8, 22, 56)' && transp(l1h.ladoDir) && transp(l1h.painel) && l1h.cheia && l1h.curvas
-    && l1h.cartao === 'rgba(255, 255, 255, 0.93)' && l1h.raio === '20px' && l1h.larg === 440 && l1h.sombra, JSON.stringify(l1h));
+    && l1h.cartao === 'rgba(255, 255, 255, 0.84)' && l1h.raio === '20px' && l1h.larg === 440 && l1h.sombra, JSON.stringify(l1h));
 
   // L1e "Tenho um convite" avisa que chega na próxima parte; "Cadastrar empresa" abre o cadastro (testado em teste-cadastro.js)
   const toast = () => page.evaluate(() => document.getElementById('toast').classList.contains('show') ? document.getElementById('toast').innerText : '');
@@ -73,8 +73,9 @@ const { ok, fim } = H.placar('login');
     l1f.alt < 150 && l1f.abaixo && l1f.frase && l1f.escondidos && l1f.margens[0] === 24 && l1f.margens[1] === 24 && l1f.fundo === 'rgb(8, 22, 56)' && !l1f.rolagem, JSON.stringify(l1f));
   // L1i fundo da página (html e body) também azul: é o que o Safari do iPhone pinta atrás da barra de cima e no "puxar"
   const l1i = await page.evaluate(() => ({ html: getComputedStyle(document.documentElement).backgroundColor, body: getComputedStyle(document.body).backgroundColor, cls: document.documentElement.classList.contains('entrada'),
-    preso: getComputedStyle(document.body).position === 'fixed' && getComputedStyle(document.documentElement).overscrollBehaviorY === 'none' }));
-  ok('L1i celular: fundo azul-marinho atrás da barra de cima e página presa na tela (sem o "elástico" do iPhone)', l1i.cls && l1i.preso && l1i.html === 'rgb(8, 22, 56)' && l1i.body === 'rgb(8, 22, 56)', JSON.stringify(l1i));
+    preso: getComputedStyle(document.body).position === 'fixed' && getComputedStyle(document.documentElement).overscrollBehaviorY === 'none',
+    cheia: getComputedStyle(document.querySelector('.login')).height === getComputedStyle(document.body).height }));
+  ok('L1i celular: fundo azul-marinho atrás da barra de cima e página presa na tela (sem o "elástico" do iPhone)', l1i.cls && l1i.preso && l1i.cheia && l1i.html === 'rgb(8, 22, 56)' && l1i.body === 'rgb(8, 22, 56)', JSON.stringify(l1i));
   // L1j a tela de entrada cabe inteira na tela do celular, sem rolar (iPhone grande, Safari com as barras, iPhone SE)
   const l1j = [];
   /* [largura, altura, ilha em cima, barrinha embaixo]: as 4 primeiras = app instalado no iPhone (tela inteira) */
@@ -106,7 +107,7 @@ const { ok, fim } = H.placar('login');
   const claro = await cor(); await page.emulateMedia({ colorScheme: 'dark' }); const escuro = await cor(); await page.emulateMedia({ colorScheme: 'light' });
   const rgb = v => (v.match(/\d+/g) || []).slice(0, 3).map(Number), soma = v => rgb(v).reduce((a, b) => a + b, 0);
   ok('L1g modo escuro do sistema: cartão azul-escuro mais claro que o fundo (não preto) e campos com borda visível',
-    claro.c === 'rgba(255, 255, 255, 0.93)' && soma(escuro.c) > soma('rgb(8, 22, 56)') + 30 && rgb(escuro.c)[2] > rgb(escuro.c)[0] && soma(escuro.b) > soma(escuro.c) + 40, JSON.stringify({ claro, escuro }));
+    claro.c === 'rgba(255, 255, 255, 0.84)' && soma(escuro.c) > soma('rgb(8, 22, 56)') + 30 && rgb(escuro.c)[2] > rgb(escuro.c)[0] && soma(escuro.b) > soma(escuro.c) + 40, JSON.stringify({ claro, escuro }));
 
   // L1k olho da senha: mostra e esconde
   await page.fill('#lg-senha', 'abc123');

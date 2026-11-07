@@ -553,7 +553,7 @@ tr.click:hover td{background:var(--surface2)}
   .brandpanel{padding-left:22px!important;padding-right:22px!important}
 }
 /* cartão levemente transparente (vidro): o azul aparece suave por trás; campos e botões continuam brancos */
-#lg.logincard{background:rgba(255,255,255,.93);-webkit-backdrop-filter:blur(14px) saturate(140%);backdrop-filter:blur(14px) saturate(140%)}
+#lg.logincard{background:rgba(255,255,255,.84);-webkit-backdrop-filter:blur(14px) saturate(140%);backdrop-filter:blur(14px) saturate(140%)}
 :root[data-theme="dark"] #lg.logincard{background:rgba(19,40,90,.82)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #lg.logincard{background:rgba(19,40,90,.82)}}
 #lg .lg-ou{color:var(--muted)}
@@ -633,3 +633,6 @@ html.wizpg{padding-top:0;padding-bottom:0}
 /* botões Google/Microsoft do cadastro: um embaixo do outro quando não cabem lado a lado */
 #cad-social .btn{white-space:normal;min-height:46px}
 @media (max-width:560px){#cad-social{grid-template-columns:minmax(0,1fr)}}
+/* app instalado no iPhone: 100dvh pode vir sem a área da ilha e da barrinha. A página já está presa na tela inteira
+   (body fixo), então a tela de entrar ocupa 100% dela: a altura certa do aparelho, com ou sem as barras. */
+html.entrada .login{height:100%;min-height:0}
