@@ -88,3 +88,6 @@ Gravados a partir da Etapa 1 (cadastro). Só a própria pessoa grava; a própria
 
 ### `cursos/{id}` e `cursos/{id}/inscricoes/{uid}`
 `titulo`, `emissor`, `carga`, `modalidade`, `validade`, `certificado`, `area`, `demandaId` (opcional). Inscrição não cria vínculo nem contratação.
+
+### `logos/{empresaId}`
+`d` (imagem PNG, JPEG ou WEBP em base64, reduzida no aparelho para até 256 px, até 200 mil caracteres), `nome`, `em`, `por`. Todos os logados veem; só o admin da empresa troca ou tira. SVG não é aceito.

@@ -449,6 +449,17 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // ---------- Logo da empresa · id = empresaId: todos os logados veem; só o admin da empresa troca ou tira ----------
+    match /logos/{emp} {
+      allow read: if logado();
+      allow create, update: if admin(emp)
+        && request.resource.data.keys().hasOnly(['d','nome','em','por'])
+        && request.resource.data.d is string && request.resource.data.d.size() <= 200000
+        && request.resource.data.d.matches('data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+')
+        && request.resource.data.por == request.auth.uid;
+      allow delete: if admin(emp);
+    }
+
     // ---------- Sites para emitir a nota por cidade (o espelho escolhe sozinho): todos leem, só a equipe Conectwork muda ----------
     match /config/emissores {
       allow read: if logado();

@@ -28,7 +28,7 @@
     const lista = empresas.filter(e => filtro === 'todos' || e.status === filtro)
       .sort((a, b) => String(b._env || '').localeCompare(String(a._env || '')));
     const linhas = lista.map(e => `<tr class="click" data-abrir="${esc(e._id)}" tabindex="0">
-        <td class="m-full"><div class="cell">${avatar(nomeEmp(e))}<div style="min-width:0"><strong>${esc(nomeEmp(e))}</strong><small>${esc(e.razao || '')}</small></div></div></td>
+        <td class="m-full"><div class="cell">${avatar(nomeEmp(e), '', e._id)}<div style="min-width:0"><strong>${esc(nomeEmp(e))}</strong><small>${esc(e.razao || '')}</small></div></div></td>
         <td class="m-hide">${esc(e.cnpj || '')}</td><td class="m-hide">${esc(C().TIPOS[e.tipo] || '')}</td>
         <td class="m-hide">${esc([e.cidade, e.uf].filter(Boolean).join('/'))}</td><td class="m-hide">${esc(tempo(e.enviadoEm || e.criadoEm))}</td>
         <td>${CW.sessao.pillStatus(e.status)}</td>
@@ -124,7 +124,7 @@
     const editavel = e.status !== 'recusado';
     document.getElementById('titulo').textContent = nomeEmp(e);
     el.innerHTML = `<div style="margin-bottom:14px"><button class="linkbtn" id="cm-voltar">${ic('back')}Voltar para a lista</button></div>
-      <section class="card" style="margin-bottom:22px"><div class="card-b profile">${avatar(nomeEmp(e), 'lg')}<div class="t"><h2 id="cm-nome">${esc(nomeEmp(e))}</h2>
+      <section class="card" style="margin-bottom:22px"><div class="card-b profile">${avatar(nomeEmp(e), 'lg', id)}<div class="t"><h2 id="cm-nome">${esc(nomeEmp(e))}</h2>
         <div class="meta">${CW.sessao.pillStatus(e.status)}<span class="tag gray">${esc(C().TIPOS[e.tipo] || '')}</span><span class="tag gray">${esc(e.cnpj || '')}</span><span class="tag gray" id="cm-protocolo">Protocolo ${esc(e.protocolo || '—')}</span>${e.plano ? `<span class="tag">${esc(P().nomePlano(e.plano))}</span>` : ''}</div></div></div></section>
       <div class="grid-main"><div>${cartaoDados(e, pv)}</div>
         <div class="stack decision">${cartaoDecisao(e, pv, faltam)}${cartaoDocs(e, pv, editavel)}${cartaoHist(hist)}</div></div>`;

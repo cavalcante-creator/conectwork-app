@@ -53,8 +53,9 @@
   const CURVES = `<svg class="curves" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g fill="none" stroke="#2F6BEA" stroke-opacity=".25" stroke-width="1"><path d="M-40 420C80 380 160 300 220 200S380 40 460 20"/><path d="M-40 470C90 430 180 350 240 250S390 90 470 70"/><path d="M-40 520C100 480 200 400 260 300S400 140 480 120"/><circle cx="420" cy="580" r="160"/><circle cx="420" cy="580" r="230"/></g></svg>`;
   const GRADS = ['linear-gradient(135deg,#1452D4,#18C5F0)', 'linear-gradient(135deg,#0D2152,#2F7BFF)', 'linear-gradient(135deg,#0E7FA8,#18C5F0)', 'linear-gradient(135deg,#3B3FD8,#2F7BFF)', 'linear-gradient(135deg,#0A5E8E,#1763E6)'];
   const iniciais = n => String(n || '?').replace(/\b(MEI|Ltda|S\.?A\.?)\b/gi, '').trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase() || '?';
-  const avatar = (nome, cls) => { let h = 0; for (const ch of String(nome || '')) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-    return `<span class="avatar ${cls || ''}" style="background:${GRADS[h % GRADS.length]}" aria-hidden="true">${esc(iniciais(nome))}</span>`; };
+  /* empId: quando a empresa tem logo (logos/{empId}), modulos/logos.js troca as iniciais pela logo */
+  const avatar = (nome, cls, empId) => { let h = 0; for (const ch of String(nome || '')) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    return `<span class="avatar ${cls || ''}" style="background:${GRADS[h % GRADS.length]}" aria-hidden="true"${empId ? ` data-logo="${esc(empId)}"` : ''}>${esc(iniciais(nome))}</span>`; };
 
   /* ---------- aviso rápido ---------- */
   function toast(msg, tipo) {

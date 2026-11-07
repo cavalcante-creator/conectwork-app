@@ -34,7 +34,7 @@
     const pode = admin(ctx);
     document.getElementById('acoes').innerHTML = pode ? `<button class="btn" id="ct-novo">${ic('plus')}Novo contrato</button>` : '';
     const linhas = lista.map(c => { const l = ladoDe(c, ctx), falta = c.status === 'assinatura' && !(c.assinaturas || {})[l];
-      return `<tr class="click" data-abrir="${esc(c._id)}" tabindex="0"><td class="m-full"><div class="cell">${avatar(nomeOutro(c, ctx))}<div style="min-width:0"><strong>${esc(nomeOutro(c, ctx))}</strong><small>${esc(l === 'tomador' ? 'Você contrata' : 'Você presta o serviço')} · ${esc(c.objeto)}</small></div></div></td>
+      return `<tr class="click" data-abrir="${esc(c._id)}" tabindex="0"><td class="m-full"><div class="cell">${avatar(nomeOutro(c, ctx), '', l === 'tomador' ? c.prestadorId : c.tomadorId)}<div style="min-width:0"><strong>${esc(nomeOutro(c, ctx))}</strong><small>${esc(l === 'tomador' ? 'Você contrata' : 'Você presta o serviço')} · ${esc(c.objeto)}</small></div></div></td>
         <td class="m-hide">${esc(PER_CURTO[c.periodicidade] || '')}</td><td class="m-hide">${esc(venc(c.vencimentoDias))}</td><td class="m-hide">${esc(formatarData(c.inicio))}</td>
         <td>${pill(c.status)}${falta ? '<br><small class="hint" style="color:var(--warn)">falta a sua assinatura</small>' : c.proposta && c.proposta.lado !== l ? '<br><small class="hint" style="color:var(--warn)">proposta de vencimento</small>' : ''}</td></tr>`; }).join('');
     el.innerHTML = `<section class="card" id="ct-lista"><div class="card-h"><span class="ic">${ic('file')}</span><h3>Contratos de equipe contínua</h3><span class="count">${lista.length}</span></div>

@@ -70,6 +70,7 @@ const servidor = http.createServer((req, res) => {
   // P4 service worker ativo e cache só com arquivos do app
   const p4 = await page.evaluate(async () => {
     const reg = await Promise.race([navigator.serviceWorker.ready, new Promise(r => setTimeout(() => r(null), 8000))]);
+    for (let i = 0; i < 40 && reg && reg.active && reg.active.state !== 'activated'; i++) await new Promise(r => setTimeout(r, 200));   /* ativar leva um instante */
     return { estado: reg && reg.active && reg.active.state, escopo: reg && reg.scope };
   });
   ok('P4 service worker registrado e ativo no escopo do app', p4.estado === 'activated' && p4.escopo === BASE, JSON.stringify(p4));

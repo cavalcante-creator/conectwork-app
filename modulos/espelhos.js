@@ -73,13 +73,13 @@
     const emitir = espP.filter(x => x.status === 'aguardando_nota');
     const conferir = pode(ctx) ? espT.filter(x => x.status === 'nota_enviada') : [];
     const outro = x => lado(x, ctx) === 'tomador' ? x.prestadorNome : x.tomadorNome;
-    const linhaEsp = x => `<tr class="click" data-abrir="${esc(x._id)}" tabindex="0"><td class="m-full"><div class="cell">${avatar(outro(x))}<div style="min-width:0"><strong>${esc(periodoTxt(x.periodo))}</strong><small>${esc(outro(x))} · ${lado(x, ctx) === 'tomador' ? 'você paga' : 'você emite a nota'}</small></div></div></td>
+    const linhaEsp = x => `<tr class="click" data-abrir="${esc(x._id)}" tabindex="0"><td class="m-full"><div class="cell">${avatar(outro(x), '', lado(x, ctx) === 'tomador' ? x.prestadorId : x.tomadorId)}<div style="min-width:0"><strong>${esc(periodoTxt(x.periodo))}</strong><small>${esc(outro(x))} · ${lado(x, ctx) === 'tomador' ? 'você paga' : 'você emite a nota'}</small></div></div></td>
       <td class="r"><b>${esc(brl(x.valorCentavos))}</b><br><small class="hint">líquido ${esc(brl(x.liquidoCentavos))}</small></td><td>${pill(x.status)}</td></tr>`;
     const tab = (xs, id) => `<div class="scroll"><table class="resp" id="${id}"><thead><tr><th>Período</th><th class="r">Valor</th><th>Situação</th></tr></thead><tbody>${xs.map(linhaEsp).join('')}</tbody></table></div>`;
     el.innerHTML = `
       ${preparar.length ? `<section class="card" id="es-preparar" style="margin-bottom:22px"><div class="card-h"><span class="ic">${ic('alert')}</span><h3>Espelhos para preparar</h3><span class="count">${preparar.length}</span></div>
         <div class="scroll"><table class="resp" id="es-tab-preparar"><thead><tr><th>Medição aprovada</th><th class="r">Valor</th><th></th></tr></thead><tbody>
-        ${preparar.map(m => `<tr><td class="m-full"><div class="cell">${avatar(m.prestadorNome)}<div style="min-width:0"><strong>${esc(periodoTxt(m.periodo))}</strong><small>${esc(m.prestadorNome)} · aprovada${m.aprovacao && m.aprovacao.nome ? ' por ' + esc(m.aprovacao.nome) : ''}</small></div></div></td>
+        ${preparar.map(m => `<tr><td class="m-full"><div class="cell">${avatar(m.prestadorNome, '', m.prestadorId)}<div style="min-width:0"><strong>${esc(periodoTxt(m.periodo))}</strong><small>${esc(m.prestadorNome)} · aprovada${m.aprovacao && m.aprovacao.nome ? ' por ' + esc(m.aprovacao.nome) : ''}</small></div></div></td>
           <td class="r"><b>${esc(brl(m.valorCentavos))}</b></td><td class="r"><button class="btn sm" data-preparar="${esc(m._id)}">${ic('edit')}Preparar espelho</button></td></tr>`).join('')}
         </tbody></table></div></section>` : ''}
       ${conferir.length ? `<section class="card" id="es-conferir" style="margin-bottom:22px"><div class="card-h"><span class="ic">${ic('alert')}</span><h3>Notas para conferir</h3><span class="count">${conferir.length}</span></div>${tab(conferir, 'es-tab-conferir')}</section>` : ''}

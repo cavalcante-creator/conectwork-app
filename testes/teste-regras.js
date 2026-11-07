@@ -367,6 +367,15 @@ async function deve(nome, permitido, op) {
   await deve('Emissores: o admin define o site da própria empresa (área privada)', true, () => updateDoc(doc(db('ana'), 'empresas', 'alfa', 'privado', 'cadastro'), { emissor: { url: 'https://exemplo.gov.br', nome: 'site da prefeitura' } }));
   await deve('Emissores: o financeiro NÃO muda a área privada', false, () => updateDoc(doc(db('bruno'), 'empresas', 'alfa', 'privado', 'cadastro'), { emissor: null }));
 
+  /* ---------- logo da empresa ---------- */
+  const LOGO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+  await deve('Logo: o admin envia a logo da empresa', true, () => setDoc(doc(db('ana'), 'logos', 'alfa'), { d: LOGO, nome: 'logo.png', em: serverTimestamp(), por: P.ana }));
+  await deve('Logo: o financeiro NÃO troca a logo', false, () => setDoc(doc(db('bruno'), 'logos', 'alfa'), { d: LOGO, nome: 'x.png', em: serverTimestamp(), por: P.bruno }));
+  await deve('Logo: NÃO troca a logo de outra empresa', false, () => setDoc(doc(db('ana'), 'logos', 'beta'), { d: LOGO, nome: 'x.png', em: serverTimestamp(), por: P.ana }));
+  await deve('Logo: NÃO aceita SVG (pode ter código)', false, () => setDoc(doc(db('ana'), 'logos', 'alfa'), { d: 'data:image/svg+xml;base64,PHN2Zz4=', nome: 'x.svg', em: serverTimestamp(), por: P.ana }));
+  await deve('Logo: outra empresa vê a logo', true, () => getDoc(doc(db('beto'), 'logos', 'alfa')));
+  await deve('Logo: o admin tira a logo', true, () => deleteDoc(doc(db('ana'), 'logos', 'alfa')));
+
   /* ---------- master e perfil ---------- */
   await deve('Pessoa lê o próprio master/{uid} (para saber se é equipe)', true, () => getDoc(doc(db('master'), 'master', P.master)));
   await deve('Pessoa consulta master/{uid} próprio mesmo sem ser master (documento não existe)', true, () => getDoc(doc(db('carla'), 'master', P.carla)));
