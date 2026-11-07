@@ -731,3 +731,12 @@ html.entrada .login{height:100%;min-height:0}
 .ct-mod{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:12px;cursor:pointer}
 .ct-mod:has(input:checked){border-color:var(--blue);background:var(--infobg)}
 .ct-mod b{display:block;font-size:13.5px}.ct-mod small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.ng-bar{height:12px;border-radius:999px;background:var(--surface2);overflow:hidden}
+.ng-bar i{display:block;height:100%;border-radius:999px;background:var(--blue)}
+.ng-bar.sm{height:8px;flex:1}
+.ng-cli{display:flex;align-items:center;gap:10px;font-size:13.5px}
+.ng-cli span{width:40%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ng-cli b{width:44px;text-align:right}
+.ng-meses{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
+a.ng-link{text-decoration:none;color:inherit}
+a.ng-link:hover{background:var(--surface2)}

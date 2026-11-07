@@ -29,15 +29,16 @@
     const c = CW.fb.dados(await db.doc('contratos/' + id).get()); if (!c) return null; c._id = id;
     const campo = c.tomadorId === emp ? 'tomadorId' : 'prestadorId', souPrest = campo === 'prestadorId';
     const doContrato = async col => { try { return CW.fb.lista(await db.collection(col).where(campo, '==', emp).get()).filter(x => x.contratoId === id); } catch (e) { return []; } };
-    const [med, esp, tit, avs] = await Promise.all([doContrato('medicoes'), doContrato('espelhos'), doContrato('titulos'), doContrato('avaliacoes')]);
+    const [med, esp, tit, avs, os] = await Promise.all([doContrato('medicoes'), doContrato('espelhos'), doContrato('titulos'), doContrato('avaliacoes'), doContrato('ordens')]);
+    let ind = null; try { const x = CW.fb.dados(await db.doc('independencia/' + c.prestadorId).get()); ind = x && x.compartilhar ? x : null; } catch (e) { ind = null; }
     let docs = [];
     try { const q = souPrest ? db.collection('documentos').where('empresaId', '==', c.prestadorId) : db.collection('documentos').where('empresaId', '==', c.prestadorId).where('compartilhar', '==', true); docs = CW.fb.lista(await q.get()); } catch (e) { docs = []; }
     let hist = null;
     if (ctx.contexto.acesso && ctx.contexto.acesso.cargo === 'admin') {
-      const refs = new Set([id].concat(med.map(x => x._id), esp.map(x => x._id), tit.map(x => x._id), avs.map(x => x._id)));
+      const refs = new Set([id].concat(os.map(x => x._id), med.map(x => x._id), esp.map(x => x._id), tit.map(x => x._id), avs.map(x => x._id)));
       try { hist = CW.fb.lista(await db.collection('log').where('empresaId', '==', emp).get()).filter(l => refs.has(l.ref)).sort((a, b) => ms(a.em) - ms(b.em)); } catch (e) { hist = null; }
     }
-    return { c, med: med.sort((a, b) => String(a.periodo).localeCompare(String(b.periodo))), esp, tit, avs, docs, hist, souPrest };
+    return { c, os: os.sort((a, b) => a.numero - b.numero), ind, med: med.sort((a, b) => String(a.periodo).localeCompare(String(b.periodo))), esp, tit, avs, docs, hist, souPrest };
   }
 
   /* indicadores tirados dos registros (fatos), separados em "a favor" e "atenção" */
@@ -62,6 +63,15 @@
       const fixos = [...todos].filter(n => nomes.every(s => s.has(n)));
       if (aprov.length >= 2 && todos.size > fixos.length) ok.push(`A prestadora alocou ${todos.size} profissionais diferentes ao longo dos períodos (a equipe muda conforme a prestadora decide).`);
       else if (aprov.length >= 3 && todos.size && todos.size === fixos.length) at.push(`As mesmas ${todos.size} pessoas aparecem em todos os períodos: registre que a prestadora pode substituir quem faz o serviço.`);
+    }
+    if (c.modalidade === 'os') {
+      const os = D.os || [], aceitas = os.filter(o => ['aceita_total', 'aceita_parcial'].includes(o.status)), recusadas = os.filter(o => o.status === 'recusada');
+      if (os.length) ok.push(`${os.length} ordem(ns) de serviço com escopo, prazo e valor da entrega (nenhuma por hora); ${aceitas.length} entrega(s) aceita(s).`);
+      if (recusadas.length) ok.push(`O profissional recusou ${recusadas.length} OS, sem nenhuma consequência: aceita só o que quer fazer.`);
+      const dv = os.filter(o => (o.entregas || []).length > 1 || o.divergencia).length;
+      if (dv) ok.push(`${dv} entrega(s) com divergência tratada pela própria OS (ajuste do resultado, não ordem disciplinar).`);
+      const vs = os.map(o => o.valorCentavos); if (vs.length >= 3 && Math.min(...vs) === Math.max(...vs)) at.push(`Todas as ${vs.length} OS têm o mesmo valor (${brl(vs[0])}): confira se o valor acompanha cada entrega e não vira um pagamento fixo.`);
+      if (D.ind) ok.push(`O profissional declara atender ${D.ind.nClientes} cliente(s) (contando os do Conectwork).`);
     }
     const notas = esp.filter(e => e.nota);
     if (notas.length) ok.push(`${notas.length} nota(s) fiscal(is) emitida(s) pela prestadora em nome dela (CNPJ ${c.prestadorCnpj || ''}), conferidas com o contrato e a medição.`);
@@ -106,6 +116,7 @@
         ${c.interlocutor ? `<div class="full"><dt>Interlocutor da prestadora</dt><dd>${esc(c.interlocutor.nome)} · ${esc(c.interlocutor.email)}</dd></div>` : ''}</dl></div>`)}
       ${sec('ds-triagem', 'shield', 'Triagem', t ? `<div class="card-b"><p style="margin:0 0 10px"><b>${esc((CW.triagem && CW.triagem.RES[t.resultado] || ['', t.resultado])[1])}</b> · ${esc(t.nome)} · ${esc(dt(t.em))}</p>${tab('ds-tab-tri', ['Pergunta', 'Resposta'], L.triagem, '')}${t.parecer && t.parecer.ok ? `<p style="margin:10px 0 0;font-size:13px">Parecer jurídico: ${esc(t.parecer.obs)} (${esc(t.parecer.nome)})</p>` : ''}</div>` : '<p class="hint" style="margin:0;padding:14px 20px">Sem triagem registrada.</p>')}
       ${sec('ds-docs', 'shield', 'Documentos da prestadora', tab('ds-tab-docs', ['Documento', 'Situação'], L.docs, 'Sem documentos.'))}
+      ${c.modalidade === 'os' ? sec('ds-os', 'list', 'Ordens de serviço', tab('ds-tab-os', ['OS', 'Entrega', 'Prazo', 'Valor', 'Situação'], L.os, 'Nenhuma OS.')) : ''}
       ${sec('ds-med', 'list', 'Medições', tab('ds-tab-med', ['Período', 'Valor', 'Profissionais', 'Conferida pela prestadora', 'Aprovada', 'Situação'], L.med, 'Nenhuma medição.'))}
       ${sec('ds-notas', 'receipt', 'Notas fiscais', tab('ds-tab-notas', ['Período', 'Nº', 'Valor', 'Enviada', 'Situação'], L.notas, 'Nenhuma nota.'))}
       ${sec('ds-pag', 'wallet', 'Pagamentos da nota', tab('ds-tab-pag', ['Período', 'Líquido', 'Vencimento', 'Pago em', 'Comprovante', 'Situação'], L.pag, 'Nenhum pagamento.'))}
@@ -118,6 +129,7 @@
   function linhas(D) {
     const { c, med, esp, tit, avs, hist } = D, t = c.triagem, R = CW.triagem;
     return {
+      os: (D.os || []).map(o => [String(o.numero), o.titulo, dia(o.prazo), brl(o.aceite ? o.aceite.valorAceito : o.valorCentavos), ({ proposta: 'Esperando resposta', recusada: 'Recusada pelo profissional', aceita: 'Em execução', entregue: 'Entregue', divergencia: 'Divergência', aceita_total: 'Aceita', aceita_parcial: 'Aceita em parte', cancelada: 'Cancelada' })[o.status] || o.status]),
       triagem: t && R ? R.pergDe(c).map(([k, q]) => [q, t.r[k] === 'sim' ? 'Sim' : 'Não']) : [],
       docs: (CW.documentos ? CW.documentos.situacao(D.docs, CW.documentos.obrigContrato(c)) : []).map(s => [s.nome, s.txt]),
       med: med.map(m => [per(m.periodo), brl(m.valorCentavos), String((m.memoria || []).length), m.confirmacao ? dt(m.confirmacao.em) + ' · ' + m.confirmacao.nome : '—', m.aprovacao ? dt(m.aprovacao.em) + ' · ' + m.aprovacao.nome : '—', ST_MED[m.status] || m.status]),
@@ -145,6 +157,7 @@
     titulo('Pontos de atenção'); tabela(['Ponto'], A.at.map(x => [x]));
     titulo('Triagem' + (c.triagem ? ` · ${(CW.triagem.RES[c.triagem.resultado] || ['', ''])[1]} · ${c.triagem.nome}, ${dt(c.triagem.em)}` : '')); tabela(['Pergunta', 'Resposta'], L.triagem.concat(c.triagem && c.triagem.parecer && c.triagem.parecer.ok ? [['Parecer jurídico', c.triagem.parecer.obs]] : []));
     titulo('Documentos da prestadora'); tabela(['Documento', 'Situação'], L.docs);
+    if (c.modalidade === 'os') { titulo('Ordens de serviço'); tabela(['OS', 'Entrega', 'Prazo', 'Valor', 'Situação'], L.os); }
     titulo('Medições'); tabela(['Período', 'Valor', 'Profissionais', 'Conferida pela prestadora', 'Aprovada', 'Situação'], L.med);
     titulo('Notas fiscais'); tabela(['Período', 'Nº', 'Valor', 'Enviada', 'Situação'], L.notas);
     titulo('Pagamentos da nota'); tabela(['Período', 'Líquido', 'Vencimento', 'Pago em', 'Comprovante', 'Situação'], L.pag);

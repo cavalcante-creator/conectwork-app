@@ -436,6 +436,14 @@ async function deve(nome, permitido, op) {
   await deve('Documento: enviar de novo marca o anterior como substituído', true, () => updateDoc(doc(db('ana'), 'documentos', 'd1'), { status: 'substituido', substituidoEm: serverTimestamp(), substituidoPor: 'd9' }));
   await deve('Documento: ninguém apaga', false, () => deleteDoc(doc(db('ana'), 'documentos', 'd1')));
 
+  /* ---------- meu negócio ---------- */
+  await deve('Negócio: o admin guarda o faturamento fora do Conectwork', true, () => setDoc(doc(db('ana'), 'faturamento', 'alfa'), { anos: { 2026: { '10': 100000 } }, clientes: [{ nome: 'Cliente X', desde: '01/2026' }], em: serverTimestamp(), por: P.ana }));
+  await deve('Negócio: o RH NÃO vê o faturamento', false, () => getDoc(doc(db('rita'), 'faturamento', 'alfa')));
+  await deve('Negócio: outra empresa NÃO vê o faturamento', false, () => getDoc(doc(db('beto'), 'faturamento', 'alfa')));
+  await deve('Negócio: o financeiro mostra só o número de clientes', true, () => setDoc(doc(db('bruno'), 'independencia', 'alfa'), { nClientes: 3, compartilhar: true, em: serverTimestamp(), por: P.bruno }));
+  await deve('Negócio: NÃO aceita nomes de clientes no documento compartilhado', false, () => setDoc(doc(db('bruno'), 'independencia', 'alfa'), { nClientes: 3, compartilhar: true, clientes: ['Cliente X'], em: serverTimestamp(), por: P.bruno }));
+  await deve('Negócio: quem contrata lê o número de clientes', true, () => getDoc(doc(db('beto'), 'independencia', 'alfa')));
+
   /* ---------- logo da empresa ---------- */
   const LOGO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
   await deve('Logo: o admin envia a logo da empresa', true, () => setDoc(doc(db('ana'), 'logos', 'alfa'), { d: LOGO, nome: 'logo.png', em: serverTimestamp(), por: P.ana }));

@@ -540,6 +540,26 @@ service cloud.firestore {
       }
     }
 
+    // ---------- Meu negócio (profissional/prestadora) ----------
+    // faturamento/{emp}: faturamento fora do Conectwork e outros clientes; privado (admin e financeiro da empresa).
+    // independencia/{emp}: só o número de clientes, que a empresa escolhe mostrar a quem contrata (sem nomes nem valores).
+    match /faturamento/{emp} {
+      allow read: if master() || cargoEm(emp, ['admin','financeiro']);
+      allow create, update: if cargoEm(emp, ['admin','financeiro'])
+        && request.resource.data.keys().hasOnly(['anos','clientes','em','por'])
+        && request.resource.data.anos is map && request.resource.data.clientes is list && request.resource.data.clientes.size() <= 200
+        && request.resource.data.por == request.auth.uid;
+      allow delete: if false;
+    }
+    match /independencia/{emp} {
+      allow read: if logado();
+      allow create, update: if cargoEm(emp, ['admin','financeiro'])
+        && request.resource.data.keys().hasOnly(['nClientes','compartilhar','em','por'])
+        && request.resource.data.nClientes is int && request.resource.data.nClientes >= 0 && request.resource.data.nClientes <= 999
+        && request.resource.data.compartilhar is bool && request.resource.data.por == request.auth.uid;
+      allow delete: if false;
+    }
+
     // ---------- Logo da empresa · id = empresaId: todos os logados veem; só o admin da empresa troca ou tira ----------
     match /logos/{emp} {
       allow read: if logado();
