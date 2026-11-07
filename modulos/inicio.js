@@ -39,7 +39,7 @@
           el.innerHTML = `${aviso}${leitura}${pv}
             <section class="card" id="ini-quem"><div class="card-b">
               <div class="profile">${avatar(nome, 'lg')}<div class="t"><h2 id="ini-nome">${esc(nome)}</h2>
-                <div class="meta"><span class="tag gray">${esc(s.usuario.email)}</span>${master ? '' : CW.sessao.pillStatus(c.empresa.status)}</div></div></div>
+                <div class="meta"><span class="tag gray">${esc(s.usuario.email)}</span><a class="tag" href="#autorizacoes" id="ini-aut">Minhas autorizações</a>${master ? '' : CW.sessao.pillStatus(c.empresa.status)}</div></div></div>
             </div></section>
             <div class="grid-2">
               <section class="card"><div class="card-h"><span class="ic">${ic(master ? 'shield' : 'building')}</span><h3>${master ? 'Acesso' : 'Empresa'}</h3></div><div class="card-b">

@@ -451,6 +451,14 @@ async function deve(nome, permitido, op) {
   await deve('MEI: o admin marca o DAS como pago', true, () => setDoc(doc(db('ana'), 'fiscal', 'alfa'), { das: { '2026-10': { pago: true, data: '2026-11-07' } }, dasn: {}, em: serverTimestamp(), por: P.ana }));
   await deve('MEI: o RH NÃO vê as obrigações fiscais', false, () => getDoc(doc(db('rita'), 'fiscal', 'alfa')));
 
+  /* ---------- minhas autorizações ---------- */
+  const regC = (k, aceite, extra) => Object.assign({ uid: P.ana, finalidade: k, aceite, texto: 'Receber ofertas.', textoVersao: '2026-10', canal: 'minhas-autorizacoes', em: serverTimestamp() }, extra || {});
+  await deve('Autorizações: a pessoa dá uma autorização opcional', true, () => setDoc(doc(db('ana'), 'consentimentos', P.ana + '_ofertas'), regC('ofertas', true)));
+  await deve('Autorizações: a pessoa retira, com a data da retirada', true, () => setDoc(doc(db('ana'), 'consentimentos', P.ana + '_ofertas'), regC('ofertas', false, { revogadoEm: serverTimestamp() })));
+  await deve('Autorizações: o histórico ganha um registro novo', true, () => addDoc(collection(db('ana'), 'consentimentos_log'), regC('ofertas', false, { revogadoEm: serverTimestamp() })));
+  await deve('Autorizações: ninguém muda a autorização de outra pessoa', false, () => setDoc(doc(db('bruno'), 'consentimentos', P.ana + '_ofertas'), regC('ofertas', true, { uid: P.ana })));
+  await deve('Autorizações: a pessoa lê o próprio histórico', true, () => getDocs(query(collection(db('ana'), 'consentimentos_log'), where('uid', '==', P.ana))));
+
   /* ---------- logo da empresa ---------- */
   const LOGO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
   await deve('Logo: o admin envia a logo da empresa', true, () => setDoc(doc(db('ana'), 'logos', 'alfa'), { d: LOGO, nome: 'logo.png', em: serverTimestamp(), por: P.ana }));
