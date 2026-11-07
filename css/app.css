@@ -516,8 +516,8 @@ tr.click:hover td{background:var(--surface2)}
    Depois de desenhar, o app mede se tudo cabe. Se não couber (ilha e barrinha do iPhone, letra maior, tela baixa),
    aplica um nível de compactação por vez até caber: cmp1 → cmp2 → cmp3. */
 .login.cmp1 .brandpanel .tagline,.login.cmp1 #lg .lg-cab .sub{display:none}
-.login.cmp1 .brandpanel{padding-top:12px}
-.login.cmp1 .loginside{padding-top:12px;padding-bottom:10px}
+.login.cmp3 .brandpanel{padding-top:12px!important}
+.login.cmp2 .loginside{padding-top:12px;padding-bottom:10px}
 .login.cmp2 #lg .card-b{padding:18px 18px}
 .login.cmp2 #lg .lform{gap:10px}
 .login.cmp2 #lg label.f{gap:5px}
@@ -551,4 +551,19 @@ tr.click:hover td{background:var(--surface2)}
 @media (max-width:380px){
   .loginside{padding-left:20px!important;padding-right:20px!important}
   .brandpanel{padding-left:22px!important;padding-right:22px!important}
+}
+/* cartão levemente transparente (vidro): o azul aparece suave por trás; campos e botões continuam brancos */
+#lg.logincard{background:rgba(255,255,255,.93);-webkit-backdrop-filter:blur(14px) saturate(140%);backdrop-filter:blur(14px) saturate(140%)}
+:root[data-theme="dark"] #lg.logincard{background:rgba(19,40,90,.82)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #lg.logincard{background:rgba(19,40,90,.82)}}
+#lg .lg-ou{color:var(--muted)}
+/* celular: logo mais longe do topo; o cartão fica no meio do espaço que sobra embaixo do logo */
+@media (max-width:860px){
+  .brandpanel{padding-top:clamp(20px,4.2vh,44px)!important}
+  .loginside{justify-content:center}
+}
+@media (max-width:430px){
+  #lg .lg-linha{font-size:13px;gap:8px;flex-wrap:nowrap}
+  #lg .lg-linha .linkbtn{font-size:13px;white-space:nowrap}
+  #lg .lg-manter{gap:8px;white-space:nowrap}
 }
