@@ -24,7 +24,25 @@
   const cargo = ctx => ctx.contexto.acesso && ctx.contexto.acesso.cargo;
   const pode = ctx => !ctx.soLeitura && PREPARA.includes(cargo(ctx));
   const podeEnviar = ctx => !ctx.soLeitura && ENVIA.includes(cargo(ctx));
-  const emissorDe = ctx => { try { return localStorage.getItem('cw.emissor.' + ctx.contexto.empresaId) || EMISSOR; } catch (e) { return EMISSOR; } };
+  /* site para emitir a nota, escolhido sozinho: 1) o que a própria empresa definiu (Minha empresa › área privada, admin);
+     2) o da cidade da empresa na tabela da equipe Conectwork (config/emissores); 3) o Emissor Nacional (gov.br). */
+  const chaveCidade = (uf, cid) => (String(uf || '').toUpperCase() + '|' + String(cid || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/\s+/g, ' ').trim());
+  let emissorCache = null;
+  async function resolverEmissor(ctx) {
+    const emp = ctx.contexto.empresaId;
+    if (emissorCache && emissorCache.emp === emp) return emissorCache;
+    const db = CW.fb.db(); let pv = {}, tab = {};
+    try { pv = CW.fb.dados(await db.doc('empresas/' + emp + '/privado/cadastro').get()) || {}; } catch (e) {}
+    try { tab = (CW.fb.dados(await db.doc('config/emissores').get()) || {}).cidades || {}; } catch (e) {}
+    const en = pv.end || {}, cid = en.cidade || '', uf = en.uf || '', t = tab[chaveCidade(uf, cid)];
+    let r;
+    if (pv.emissor && pv.emissor.url) r = { url: pv.emissor.url, origem: 'empresa', nome: pv.emissor.nome || 'site da prefeitura' };
+    else if (t && t.url) r = { url: t.url, origem: 'cidade', nome: t.nome || 'site da prefeitura' };
+    else r = { url: EMISSOR, origem: 'padrao', nome: 'Emissor Nacional' };
+    emissorCache = Object.assign(r, { emp, cidade: cid, uf });
+    return emissorCache;
+  }
+  const emissorDe = () => (emissorCache && emissorCache.url) || EMISSOR;
   const tamTxt = b => b >= 1048576 ? (b / 1048576).toFixed(1).replace('.', ',') + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB';
   const quem = ctx => (ctx.sessao.perfil && ctx.sessao.perfil.nome) || ctx.sessao.usuario.email;
   const lado = (x, ctx) => x.tomadorId === ctx.contexto.empresaId ? 'tomador' : 'prestador';
@@ -158,6 +176,7 @@
     try { x = CW.fb.dados(await CW.fb.db().doc('espelhos/' + id).get()); } catch (e) { x = null; }
     if (!x) { el.innerHTML = `<div class="card"><div class="empty"><div class="ic">${ic('receipt')}</div><strong>Espelho não encontrado.</strong><button class="btn sec sm" id="es-volta">${ic('back')}Voltar</button></div></div>`; document.getElementById('es-volta').onclick = () => CW.ir('espelhos'); return; }
     const l = lado(x, ctx), t = x.tomador || {};
+    if (l === 'prestador' && x.status === 'aguardando_nota') await resolverEmissor(ctx);
     document.getElementById('titulo').textContent = 'Espelho · ' + periodoTxt(x.periodo);
     document.getElementById('acoes').innerHTML = '';
     const cp = (rot, v, chave, cheio) => `<div class="${cheio ? 'full' : ''}"><dt>${rot}</dt><dd class="es-cp"><span>${esc(v || '—')}</span>${v ? `<button class="iconbtn sm" data-copiar="${esc(chave)}" aria-label="Copiar ${esc(rot)}" title="Copiar">${ic('copy')}</button>` : ''}</dd></div>`;
@@ -203,13 +222,14 @@
     const { esc, ic, formatarDataHora } = U(), l = lado(x, ctx), rec = (x.recusadas || [])[(x.recusadas || []).length - 1];
     const recTxt = rec ? `<div class="banner danger" id="es-recusa">${ic('alert')}<span><strong>${l === 'prestador' ? 'A ' + esc(x.tomadorNome) + ' recusou a nota' : 'Nota recusada'}${rec.numero ? ' nº ' + esc(rec.numero) : ''}</strong>${esc(rec.motivo)}${l === 'prestador' && x.status === 'aguardando_nota' ? ' · Cancele essa nota no emissor, emita outra e anexe aqui.' : ''}</span></div>` : '';
     if (l === 'prestador' && x.status === 'aguardando_nota') {
-      const outro = emissorDe(ctx) !== EMISSOR;
+      const E = emissorCache || { origem: 'padrao', nome: 'Emissor Nacional' }, onde = E.cidade ? E.cidade + '/' + E.uf : '';
+      const porque = E.origem === 'empresa' ? 'Site definido pela sua empresa.' : E.origem === 'cidade' ? `Site da prefeitura de ${onde}, escolhido pela cidade da sua empresa.` : `Emissor Nacional (gov.br)${onde ? ', o padrão para ' + onde : ''}.`;
       return recTxt + `<div class="banner ok" id="es-aviso">${ic('check')}<span><strong>Serviço aprovado: confira os dados e envie sua nota fiscal</strong>1. Toque em "Emitir a nota" e preencha com os dados abaixo (use os botões de copiar). 2. Volte para o Conectwork e anexe o PDF da nota (ou o XML).</span></div>
         ${podeEnviar(ctx) ? `<section class="card" id="es-passos" style="margin:14px 0 22px"><div class="card-b stack" style="gap:12px">
           ${x.emissao ? `<p style="margin:0;font-size:13.5px" id="es-voltou">${ic('clock')} Emissor aberto ${esc(formatarDataHora(x.emissao.em))} por ${esc(x.emissao.nome)}. <b>Já emitiu? Anexe a nota.</b></p>` : ''}
-          <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ${x.emissao ? 'sec' : ''}" id="es-emitir-bt">${ic('send')}Emitir a nota ${outro ? 'no site da prefeitura' : 'no Emissor Nacional'}</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ${x.emissao ? 'sec' : ''}" id="es-emitir-bt">${ic('send')}Emitir a nota ${E.origem === 'padrao' ? 'no Emissor Nacional' : 'no site da prefeitura'}</button>
             <button class="btn ${x.emissao ? '' : 'sec'}" id="es-anexar">${ic('upload')}Anexar a nota (PDF ou XML)</button></div>
-          <button class="linkbtn" id="es-outro-site" style="align-self:flex-start;font-size:12.5px">${outro ? 'Usar o Emissor Nacional (gov.br)' : 'Minha cidade usa outro site para emitir'}</button></div></section>` : ''}`;
+          <p class="hint" style="margin:0;font-size:12.5px" id="es-site">${esc(porque)} <button class="linkbtn" id="es-outro-site" style="font-size:12.5px;display:inline">Não é esse o site?</button></p></div></section>` : ''}`;
     }
     if (l === 'tomador' && x.status === 'aguardando_nota') return recTxt + `<div class="banner info" id="es-aviso">${ic('clock')}<span><strong>Esperando a nota da ${esc(x.prestadorNome)}</strong>${x.emissao ? 'A prestadora abriu o emissor em ' + esc(formatarDataHora(x.emissao.em)) + '. ' : 'A prestadora já vê o espelho. '}A nota é conferida com o contrato, a medição e este espelho.</span></div>`;
     if (x.status === 'nota_enviada') return `<div class="banner ${l === 'tomador' ? 'warn' : 'info'}" id="es-aviso">${ic(l === 'tomador' ? 'alert' : 'clock')}<span><strong>${l === 'tomador' ? 'Nota chegou: confira' : 'Nota enviada'}</strong>${l === 'tomador' ? 'Veja a conferência abaixo, abra o arquivo se precisar e marque "Nota conferida" ou recuse com o motivo.' : 'A ' + esc(x.tomadorNome) + ' confere a nota com o contrato, a medição e o espelho.'}</span></div>`;
@@ -249,13 +269,20 @@
     };
     const os = $('es-outro-site');
     if (os) os.onclick = async () => {
-      const k = 'cw.emissor.' + ctx.contexto.empresaId;
-      if (emissorDe(ctx) !== EMISSOR) { try { localStorage.removeItem(k); } catch (e) {} desenharVer(el, ctx, x._id); return; }
-      let url = null;
-      await U().dialogo({ titulo: 'Site para emitir a nota', sub: 'Algumas cidades ainda emitem a nota no site da prefeitura. Guardamos neste aparelho.',
-        corpo: `<label class="f"><span>Endereço do site da prefeitura</span><input id="eo-url" type="url" inputmode="url" placeholder="https://..." maxlength="300"></label><p class="err" id="eo-erro"></p>`,
-        botoes: [{ texto: 'Voltar', valor: null, classe: 'sec' }, { texto: 'Guardar', valor: 'ok', antes: d => { const v = d.querySelector('#eo-url').value.trim(); if (!/^https?:\/\/[^\s.]+\.[^\s]+$/i.test(v)) { d.querySelector('#eo-erro').textContent = 'Informe o endereço completo, começando com https://'; return false; } url = v; return true; } }] });
-      if (url) { try { localStorage.setItem(k, url); } catch (e) {} desenharVer(el, ctx, x._id); }
+      const E = emissorCache || {}, admin = cargo(ctx) === 'admin' && !ctx.soLeitura;
+      if (!admin) { await U().dialogo({ titulo: 'Site para emitir a nota', corpo: `<p style="margin:0">Quem muda o site é o administrador da sua empresa: no espelho, em "Não é esse o site?". Se a sua cidade ainda não usa o Emissor Nacional, ele informa o site da prefeitura e vale para todos da empresa.</p>` }); return; }
+      let res = null;
+      await U().dialogo({ titulo: 'Site para emitir a nota', sub: `Vale para todos da sua empresa.${E.cidade ? ' Cidade do cadastro: ' + E.cidade + '/' + E.uf + '.' : ''}`,
+        corpo: `<p style="margin:0 0 12px;font-size:13.5px">Hoje: <b>${U().esc(E.nome || 'Emissor Nacional')}</b>. Se a sua cidade ainda emite a nota no site da prefeitura, informe o endereço.</p>
+          <label class="f"><span>Endereço do site da prefeitura</span><input id="eo-url" type="url" inputmode="url" placeholder="https://..." maxlength="300" value="${E.origem === 'empresa' ? U().esc(E.url) : ''}"></label><p class="err" id="eo-erro"></p>`,
+        botoes: [{ texto: 'Voltar', valor: null, classe: 'sec' }].concat(E.origem === 'empresa' ? [{ texto: 'Voltar ao automático', valor: 'auto', classe: 'sec', antes: () => { res = { auto: true }; return true; } }] : [])
+          .concat([{ texto: 'Guardar', valor: 'ok', antes: d => { const v = d.querySelector('#eo-url').value.trim(); if (!/^https:\/\/[^\s.]+\.[^\s]+$/i.test(v)) { d.querySelector('#eo-erro').textContent = 'Informe o endereço completo, começando com https://'; return false; } res = { url: v }; return true; } }]) });
+      if (!res) return;
+      const b = db.batch();
+      b.update(db.doc('empresas/' + ctx.contexto.empresaId + '/privado/cadastro'), { emissor: res.auto ? null : { url: res.url, nome: 'site da prefeitura', por: quem(ctx), em: agora() } });
+      log(b, ctx, 'empresa.emissor', res.auto ? 'Site para emitir a nota voltou ao automático (pela cidade).' : 'Site para emitir a nota definido: ' + res.url, '');
+      try { await b.commit(); emissorCache = null; U().toast(res.auto ? 'Voltou ao automático.' : 'Site guardado para toda a empresa.'); } catch (e) { U().toast(CW.fb.mensagemErro(e), 'erro'); }
+      desenharVer(el, ctx, x._id);
     };
     const an = $('es-anexar'); if (an) an.onclick = () => anexar(el, ctx, x, false);
     const bx = $('es-nf-baixar'); if (bx) bx.onclick = () => abrirArquivo(x);
@@ -396,7 +423,7 @@
     id: 'espelhos', nome: 'Espelhos da nota', nomeCurto: 'Espelhos', icone: 'receipt', ordem: 27,
     para: ['empresa'], contrato: ['contratos', 'cobrancas'],
     iniciar(ctx) {
-      espT = []; espP = []; medsAprov = []; pronto = false;
+      espT = []; espP = []; medsAprov = []; pronto = false; emissorCache = null;
       const db = CW.fb.db(), emp = ctx.contexto.empresaId, ok = { t: false, p: false, m: false };
       const redesenha = () => {
         if (!(ok.t && ok.p && ok.m)) return; pronto = true;

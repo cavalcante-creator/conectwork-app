@@ -304,6 +304,13 @@ async function deve(nome, permitido, op) {
   await deve('Nota: o financeiro marca a nota conferida', true, () => updateDoc(doc(db('bruno'), 'espelhos', 'cm_2026-11-1'), { status: 'nota_ok', conferenciaNota: { uid: P.bruno, nome: 'Bruno', em: serverTimestamp(), manual: false }, atualizadoEm: serverTimestamp() }));
   await deve('Nota: conferida, o espelho NÃO é mais corrigido', false, () => updateDoc(doc(db('bruno'), 'espelhos', 'cm_2026-11-1'), { obs: 'x', versao: 3, atualizadoPor: P.bruno, atualizadoEm: serverTimestamp() }));
 
+  /* ---------- sites para emitir a nota ---------- */
+  await deve('Emissores: a equipe Conectwork cadastra o site de uma cidade', true, () => setDoc(doc(db('master'), 'config', 'emissores'), { cidades: { 'RS|GRAVATAI': { cidade: 'Gravataí', url: 'https://exemplo.gov.br' } }, em: serverTimestamp(), por: P.master }));
+  await deve('Emissores: qualquer pessoa logada lê a tabela', true, () => getDoc(doc(db('beto'), 'config', 'emissores')));
+  await deve('Emissores: empresa NÃO muda a tabela', false, () => setDoc(doc(db('ana'), 'config', 'emissores'), { cidades: {}, em: serverTimestamp(), por: P.ana }));
+  await deve('Emissores: o admin define o site da própria empresa (área privada)', true, () => updateDoc(doc(db('ana'), 'empresas', 'alfa', 'privado', 'cadastro'), { emissor: { url: 'https://exemplo.gov.br', nome: 'site da prefeitura' } }));
+  await deve('Emissores: o financeiro NÃO muda a área privada', false, () => updateDoc(doc(db('bruno'), 'empresas', 'alfa', 'privado', 'cadastro'), { emissor: null }));
+
   /* ---------- master e perfil ---------- */
   await deve('Pessoa lê o próprio master/{uid} (para saber se é equipe)', true, () => getDoc(doc(db('master'), 'master', P.master)));
   await deve('Pessoa consulta master/{uid} próprio mesmo sem ser master (documento não existe)', true, () => getDoc(doc(db('carla'), 'master', P.carla)));

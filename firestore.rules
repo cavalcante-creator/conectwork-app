@@ -343,6 +343,12 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // ---------- Sites para emitir a nota por cidade (o espelho escolhe sozinho): todos leem, só a equipe Conectwork muda ----------
+    match /config/emissores {
+      allow read: if logado();
+      allow write: if master() && request.resource.data.keys().hasOnly(['cidades','em','por']) && request.resource.data.cidades is map;
+    }
+
     // ---------- CNPJ reservado (impede cadastro repetido) · id = só os 14 números ----------
     // Qualquer pessoa logada consulta se o CNPJ já tem cadastro (o CNPJ é dado público).
     // Só nasce junto com a empresa, por quem a está cadastrando; nunca muda nem some pelo app.

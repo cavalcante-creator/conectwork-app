@@ -64,7 +64,7 @@ Divergência bloqueia o título e explica o motivo; a Colafix pode recusar a not
 2. Medições: lançar à mão, importar pelo link, confirmar, apontar divergência e aprovar.
 3. Botão "Enviar ao Conectwork" no painel da Colafix (pull request no repositório do painel).
 4. Espelho de faturamento com retenções digitadas. **Feito (07/11):** módulo "Espelhos da nota" (`espelhos/{id da medição}`).
-5. Envio e conferência da nota (XML), duplicidade, recusa com motivo. **Feito (07/11):** botão "Emitir a nota" abre o Emissor Nacional (ou o site da prefeitura, guardado no aparelho) e, na volta, o app pede a nota; aceita **PDF** (lido pelo texto com o pdf.js) ou XML; XML que não bate é barrado; PDF sem texto vai para conferência à mão com o número digitado; a Colafix marca "Nota conferida" ou recusa com motivo.
+5. Envio e conferência da nota (XML), duplicidade, recusa com motivo. **Feito (07/11):** botão "Emitir a nota" escolhe o site sozinho (o que a empresa definiu › o da cidade da empresa na tabela `config/emissores`, mantida pela equipe Conectwork em "Sites de emissão" › o Emissor Nacional) e, na volta, o app pede a nota; aceita **PDF** (lido pelo texto com o pdf.js) ou XML; XML que não bate é barrado; PDF sem texto vai para conferência à mão com o número digitado; a Colafix marca "Nota conferida" ou recusa com motivo.
 6. Títulos com estados, funções separadas, calendário de vencimentos e comprovante.
 7. Avaliação do serviço da prestadora (depois do pagamento).
 

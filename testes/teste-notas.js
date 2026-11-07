@@ -18,6 +18,8 @@ const TEXTO_PDF = `DANFSe v1.0 Documento Auxiliar da NFS-e\nChave de Acesso da N
     Object.assign(d.docs['empresas/alfa'], { modulos: ['equipe', 'cobrancas'], cnpj: '11.444.777/0001-61', razao: 'Alfa Serviços Ltda', tipo: 'contratante' });
     d.users['zeca@zeta.com.br'] = { uid: 'uZECA', pass: 'senha123' }; d.docs['usuarios/uZECA'] = { nome: 'Zeca Moura', email: 'zeca@zeta.com.br' };
     d.docs['acessos/zeta_uZECA'] = { uid: 'uZECA', empresaId: 'zeta', nome: 'Zeca Moura', email: 'zeca@zeta.com.br', cargo: 'admin', extras: [], sem: [], ativo: true };
+    d.docs['empresas/zeta/privado/cadastro'] = { end: { cidade: 'Gravataí', uf: 'RS' } };
+    d.docs['config/emissores'] = { cidades: { 'RS|GRAVATAI': { cidade: 'Gravataí', url: 'https://nfse.exemplo-prefeitura.gov.br/' } } };
     d.docs['empresas/zeta'] = { nome: 'Zeta Manutenção', cnpj: '04.252.011/0001-10', status: 'aprovado', tipo: 'prestador', modulos: ['cobrancas'], criadoPor: 'uZECA' };
     const esp = per => ({ medicaoId: 'cz_' + per, contratoId: 'cz', tomadorId: 'alfa', prestadorId: 'zeta', partes: ['alfa', 'zeta'], tomadorNome: 'Alfa Serviços', prestadorNome: 'Zeta Manutenção', prestadorCnpj: '04.252.011/0001-10',
       tomador: { razao: 'Alfa Serviços Ltda', cnpj: '11.444.777/0001-61', im: '', endereco: 'Rua A, 1', cidade: 'Gravataí', uf: 'RS' }, periodo: per, competencia: per.slice(0, 7), descricao: 'Prestação de serviços de manutenção.',
@@ -37,16 +39,29 @@ const TEXTO_PDF = `DANFSe v1.0 Documento Auxiliar da NFS-e\nChave de Acesso da N
   await entrarComo('zeca@zeta.com.br');
   await page.evaluate(() => { window.__abriu = []; window.open = u => { window.__abriu.push(u); return null; }; });
 
-  // N1 emitir: abre o Emissor Nacional, registra e, na volta, pede a nota
+  // N1 emitir: o site vem sozinho pela cidade da empresa; registra e, na volta, pede a nota
   await abrirEsp('cz_2026-10-2');
-  const bt = await page.$eval('#es-emitir-bt', e => e.innerText);
+  const bt = await page.$eval('#es-emitir-bt', e => e.innerText), porque = await page.$eval('#es-site', e => e.innerText);
   await page.click('#es-emitir-bt'); await page.waitForSelector('#es-voltou', { timeout: 8000 });
   await page.evaluate(() => { const v = JSON.parse(sessionStorage.getItem('cw.emissao')); v.em -= 10000; sessionStorage.setItem('cw.emissao', JSON.stringify(v)); document.dispatchEvent(new Event('visibilitychange')); });
   await page.waitForSelector('#an-arq', { state: 'attached', timeout: 8000 });
   const sub = await page.$eval('dialog[open]', e => e.innerText);
   let e = await espDoc('cz_2026-10-2');
-  ok('N1 "Emitir a nota" abre o Emissor Nacional, registra quem abriu e, ao voltar, o app pede a nota',
-    /Emissor Nacional/.test(bt) && /nfse\.gov\.br\/EmissorNacional/.test(await page.evaluate(() => window.__abriu[0])) && e.emissao && e.emissao.uid === 'uZECA' && /Voltou do emissor/.test(sub) && (await logs('espelho.emissao')).length === 1, JSON.stringify({ bt, emissao: e.emissao }));
+  ok('N1 "Emitir a nota" escolhe sozinho o site pela cidade da empresa (Gravataí/RS na tabela), registra quem abriu e, ao voltar, pede a nota',
+    /site da prefeitura/.test(bt) && /Gravataí\/RS/.test(porque) && (await page.evaluate(() => window.__abriu[0])) === 'https://nfse.exemplo-prefeitura.gov.br/' && e.emissao && e.emissao.uid === 'uZECA' && /Voltou do emissor/.test(sub) && (await logs('espelho.emissao')).length === 1, JSON.stringify({ bt, emissao: e.emissao }));
+
+  // N10 o admin define o site da empresa (vale para todos) e depois volta ao automático
+  await page.click('dialog[open] [data-dlg-b="0"]'); await H.dorme(200);
+  await page.click('#es-outro-site'); await page.waitForSelector('#eo-url'); await page.fill('#eo-url', 'https://emissor.minha-cidade.gov.br'); await page.click('dialog[open] [data-dlg-b="1"]');
+  await page.waitForSelector('#es-site', { timeout: 8000 }); await H.dorme(300);
+  const p10 = await page.$eval('#es-site', e => e.innerText); await page.click('#es-emitir-bt'); await H.dorme(300);
+  const u10 = await page.evaluate(() => window.__abriu[window.__abriu.length - 1]);
+  const pv = (await srv())['empresas/zeta/privado/cadastro'];
+  await page.click('#es-outro-site'); await page.waitForSelector('#eo-url'); await page.click('dialog[open] [data-dlg-b="1"]'); await H.dorme(600);
+  const p10b = await page.$eval('#es-site', e => e.innerText);
+  ok('N10 o admin da prestadora define o site da empresa (vale para todos) e volta ao automático pela cidade',
+    /definido pela sua empresa/.test(p10) && u10 === 'https://emissor.minha-cidade.gov.br' && pv.emissor && pv.emissor.url === u10 && /Gravataí\/RS/.test(p10b) && (await logs('empresa.emissor')).length === 2, JSON.stringify({ p10, u10, p10b }));
+  await page.click('#es-anexar'); await page.waitForSelector('#an-arq', { state: 'attached' });
 
   // N2 XML com valor errado é barrado
   await arquivo('nota.xml', 'application/xml', xml('7000.00', CH1)); await page.waitForSelector('#an-bloq', { timeout: 8000 });
