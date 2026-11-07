@@ -21,8 +21,9 @@
 <script>/* tema: escuro por padrão; a pessoa pode escolher claro ou automático (segue o aparelho). Aplicado antes de desenhar a tela */
 (function () { var t = null; try { t = localStorage.getItem('cw.tema'); } catch (e) {}
   if (t === 'light') document.documentElement.dataset.theme = 'light'; else if (t !== 'auto') document.documentElement.dataset.theme = 'dark'; })();</script>
-<script>/* iPhone, app instalado (iOS 26): a área útil pode vir mais curta que a tela e sobrava um espaço vazio embaixo da barra
-   de navegação. Mede a diferença (tela − área útil) e estica a página até o fim da tela (--cw-gap). Teclado aberto não conta. */
+<script>/* iPhone, app instalado (iOS 26): o próprio iOS pode deixar a área do app mais curta que a tela (a faixa de baixo fica
+   fora do app e nada aparece lá). Mede a diferença (tela − área do app, --cw-gap) para a barra de baixo não reservar a margem
+   da barrinha do iPhone, que nesse caso já está fora do app. Teclado aberto não conta. */
 (function () { var el = document.documentElement;
   function sozinho() { return navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches); }
   function medir() { var g = 0;

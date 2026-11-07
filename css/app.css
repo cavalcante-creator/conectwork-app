@@ -5,7 +5,10 @@
   --bg:#F0F3F9;--surface:#FFFFFF;--surface2:#F6F8FC;--ink:#0A1838;--muted:#5E6A88;--faint:#8F9AB5;--line:#E1E7F1;
   --ok:#0A7B55;--okbg:#DEF5EA;--warn:#9A5B00;--warnbg:#FFF0D6;--info:#1450C0;--infobg:#E3ECFE;--danger:#B42D24;--dangerbg:#FCE8E6;
   --shadow:0 1px 2px rgba(8,22,56,.04),0 6px 20px -12px rgba(8,22,56,.14);
-  --sa-t:env(safe-area-inset-top,0px);--sa-b:env(safe-area-inset-bottom,0px);   /* áreas da ilha e da barrinha do iPhone (os testes simulam trocando estas variáveis) */
+  --sa-t:env(safe-area-inset-top,0px);--sa-b:env(safe-area-inset-bottom,0px);
+  /* --sa-bx: margem da barrinha do iPhone que ainda cai dentro da área do app. No app instalado do iOS 26 a área do app
+     pode terminar antes do fim da tela (--cw-gap, medido no index.html); aí a barrinha já fica fora e a margem não é preciso */
+  --sa-bx:max(0px,calc(var(--sa-b) - var(--cw-gap,0px)));   /* áreas da ilha e da barrinha do iPhone (os testes simulam trocando estas variáveis) */
   color-scheme:light;box-sizing:border-box;
   padding-top:var(--sa-t);padding-bottom:var(--sa-b);
 }
@@ -32,7 +35,7 @@ html.entrada .carregando{color:#B8C7EA}
 html.entrada{padding:0;height:100%;overflow:hidden;overscroll-behavior:none}
 /* iPhone: mesmo sem nada para rolar, o Safari deixa "puxar" a página (efeito elástico). Com o body preso na tela,
    a página não se mexe; se um dia o conteúdo não couber (celular deitado), só o .login rola por dentro. */
-html.entrada body{position:fixed;inset:0;bottom:calc(-1 * var(--cw-gap,0px));width:100%;height:auto;overflow:hidden;overscroll-behavior:none}
+html.entrada body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none}
 html.entrada #app{height:100%;min-height:0}
 #lg-erro:empty{display:none}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -197,7 +200,7 @@ main{padding:22px clamp(16px,3.5vw,40px) 48px;display:flex;flex-direction:column
 @media (max-width:760px){
   .side .nav{display:none}
   .side .usercard{margin-left:auto}
-  .bnav{display:grid;position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--navy);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));border-top:1px solid rgba(255,255,255,.08)}
+  .bnav{display:grid;position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--navy);padding:6px 6px calc(6px + var(--sa-bx));border-top:1px solid rgba(255,255,255,.08)}
   .bnav button{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:0;color:#9FB2DD;font-size:11px;font-weight:500;padding:6px 2px;border-radius:10px;cursor:pointer;min-width:0}
   .bnav button span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
   .bnav button svg.i{width:22px;height:22px}
@@ -210,8 +213,7 @@ main{padding:22px clamp(16px,3.5vw,40px) 48px;display:flex;flex-direction:column
      área da ilha e da barrinha e sobrava um espaço vazio embaixo da barra de navegação */
   html.casca,html.casca body{background:var(--navy);height:100%;overflow:hidden;overscroll-behavior:none}
   html.casca{padding:0}
-  html.casca body{position:fixed;inset:0;bottom:calc(-1 * var(--cw-gap,0px));width:100%;height:auto;padding-top:var(--sa-t)}
-  .bnav{bottom:calc(-1 * var(--cw-gap,0px))!important}
+  html.casca body{position:fixed;inset:0;width:100%;padding-top:var(--sa-t)}
   html.casca #app{height:100%;min-height:0;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;background:var(--bg)}
   /* barra de cima do celular: uma linha só com logo, nome, tema, autorizações e sair; fica no alto e o conteúdo rola por baixo */
   html.casca .side{position:sticky;top:0;z-index:20;padding:8px 8px 8px 14px}

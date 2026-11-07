@@ -68,11 +68,14 @@ const { ok, fim } = H.placar('autorizacoes');
     return { cls: document.documentElement.classList.contains('casca'), app: ap.scrollTop, win: window.scrollY, side: Math.round(document.querySelector('.side').getBoundingClientRect().top), bg: getComputedStyle(document.documentElement).backgroundColor,
       nome: getComputedStyle(document.querySelector('.side .logo')).fontSize !== '0px', tema: vis('#tema-cel'), sair: vis('#sair'), appbar: vis('.appbar'), baixo: Math.round(document.getElementById('bnav').getBoundingClientRect().bottom) === innerHeight }; });
   ok('M5 celular: só o conteúdo rola; barra de cima fixa com logo, nome, tema e sair (sem a barra de "Conectwork › tela"); barra de baixo no fim da tela', m5.cls && m5.app > 0 && m5.win === 0 && m5.side === 0 && m5.bg === 'rgb(8, 22, 56)' && m5.nome && m5.tema && m5.sair && !m5.appbar && m5.baixo, JSON.stringify(m5));
-  // M6 iPhone (app instalado, iOS 26): quando a área útil vem mais curta que a tela (--cw-gap), a página e a barra de baixo vão até o fim da tela
-  const m6 = await page.evaluate(async () => { const r0 = document.documentElement.style.getPropertyValue('--cw-gap'); document.documentElement.style.setProperty('--cw-gap', '60px'); await new Promise(r => setTimeout(r, 50));
-    const o = { r0, nav: Math.round(document.getElementById('bnav').getBoundingClientRect().bottom), body: Math.round(document.body.getBoundingClientRect().bottom), h: innerHeight, letra: getComputedStyle(document.documentElement).webkitTextSizeAdjust };
-    document.documentElement.style.setProperty('--cw-gap', '0px'); return o; });
-  ok('M6 app instalado no iPhone: a página e a barra de baixo descem até o fim da tela (e a letra não aumenta sozinha)', m6.r0 === '0px' && m6.nav === m6.h + 60 && m6.body === m6.h + 60 && m6.letra === '100%', JSON.stringify(m6));
+  // M6 iPhone (app instalado, iOS 26): quando a área do app vem mais curta que a tela (--cw-gap), a barra de baixo fica no fim da área do app,
+  //    inteira, e não reserva a margem da barrinha do iPhone (que já ficou fora do app); sem diferença, a margem continua
+  const m6 = await page.evaluate(async () => { const st = document.documentElement.style, r0 = st.getPropertyValue('--cw-gap'), nav = document.getElementById('bnav'), espera = () => new Promise(r => setTimeout(r, 50));
+    st.setProperty('--sa-b', '34px'); await espera(); const semGap = getComputedStyle(nav).paddingBottom;
+    st.setProperty('--cw-gap', '60px'); await espera(); const comGap = getComputedStyle(nav).paddingBottom, fim = Math.round(nav.getBoundingClientRect().bottom);
+    st.removeProperty('--sa-b'); st.setProperty('--cw-gap', '0px');
+    return { r0, semGap, comGap, fim, h: innerHeight, letra: getComputedStyle(document.documentElement).webkitTextSizeAdjust }; });
+  ok('M6 app instalado no iPhone: barra de baixo inteira no fim da área do app, sem margem sobrando (e a letra não aumenta sozinha)', m6.r0 === '0px' && m6.semGap === '40px' && m6.comGap === '6px' && m6.fim === m6.h && m6.letra === '100%', JSON.stringify(m6));
 
   ok('Sem erros de JavaScript na página', !erros.length, erros.join(' | '));
   await browser.close(); fim();
