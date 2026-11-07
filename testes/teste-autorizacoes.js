@@ -58,6 +58,10 @@ const { ok, fim } = H.placar('autorizacoes');
   const bn = await page.$$eval('#bnav button', x => x.map(b => b.innerText.trim().split('\n')[0]));
   ok('M3 celular: a barra de baixo usa o menu enxuto', bn[0] === 'Início' && bn[1] === 'Negócio' && bn.includes('Mais'), JSON.stringify(bn));
 
+  // M4 celular: com a tela ainda vazia (carregando), a barra de cima fica no alto e do tamanho dela (antes ia para o meio da tela)
+  const m4 = await page.evaluate(() => { document.getElementById('view').innerHTML = ''; const r = document.querySelector('.side').getBoundingClientRect(), a = document.querySelector('.appbar').getBoundingClientRect(); return { top: Math.round(r.top), h: Math.round(r.height), ap: Math.round(a.top) }; });
+  ok('M4 celular: a barra de cima não estica quando a tela está vazia', m4.top <= 1 && m4.h < 90 && m4.ap <= m4.h + 1, JSON.stringify(m4));
+
   ok('Sem erros de JavaScript na página', !erros.length, erros.join(' | '));
   await browser.close(); fim();
 })().catch(e => { console.error('ERRO NO TESTE', e); process.exit(1); });

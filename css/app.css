@@ -174,7 +174,9 @@ h1,h2,h3{letter-spacing:-.015em}
 .topbar .grow{flex:1;min-width:240px}
 main{padding:22px clamp(16px,3.5vw,40px) 48px;display:flex;flex-direction:column;gap:22px}
 @media (max-width:900px){
-  .shell{grid-template-columns:1fr}
+  /* celular: a barra de cima fica do tamanho dela; o resto da altura vai para o conteúdo (sem isso, com a tela ainda
+     vazia ou curta, a grade esticava a barra e o logo ia parar no meio da tela) */
+  .shell{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);align-content:start}
   .side{position:sticky;height:auto;flex-direction:row;align-items:center;padding:10px 12px;gap:6px;z-index:20}
   .side .curves,.navlabel{display:none}
   .logo{padding:0 4px 0 2px;font-size:0;gap:0}
