@@ -67,6 +67,16 @@
       return rot + `<button data-mod="${esc(m.id)}">${ic(m.icone)}<span>${esc(m.nome)}</span></button>`; }).join('');
   }
 
+  /* 09/11/2026: no computador, a empresa e a pessoa (com Sair) ficam no canto de cima, à direita; no celular, no menu de cima */
+  const telaGrande = () => !window.matchMedia || matchMedia('(min-width: 901px)').matches;
+  function posicionarTopo() {
+    const dir = document.getElementById('topo-dir'), side = document.querySelector('.shell .side'); if (!dir || !side) return;
+    const emp = document.querySelector('.shell .empbloco'), uc = document.querySelector('.shell .usercard'), tema = document.getElementById('tema');
+    if (telaGrande()) { if (emp) dir.appendChild(emp); if (tema) dir.appendChild(tema); if (uc) dir.appendChild(uc); }
+    else { const logo = side.querySelector('.logo'); if (emp && logo) logo.after(emp); if (uc) side.appendChild(uc); if (tema) dir.parentNode.appendChild(tema); }
+  }
+  if (window.matchMedia) { const mq = matchMedia('(min-width: 901px)'); (mq.addEventListener ? mq.addEventListener('change', posicionarTopo) : mq.addListener(posicionarTopo)); }
+
   /* listener do Firestore que é desligado sozinho ao sair ou trocar de empresa */
   function inscrever(chave, consulta, aoMudar, aoErro) {
     if (ouvintes[chave]) ouvintes[chave]();
@@ -102,7 +112,7 @@
       </aside>
       <div class="content">
         ${ctx.verComo ? `<div class="vercomo" id="vercomo">${ic('eye')}<span>Vendo como <b>${esc(ctx.nome)}</b> · só consulta</span><button class="btn sm" id="vercomo-sair">${ic('back')}Voltar para a equipe</button></div>` : ''}
-        <div class="appbar"><div class="crumbs" id="crumbs"></div>
+        <div class="appbar"><div class="crumbs" id="crumbs"></div><div class="topo-dir" id="topo-dir"></div>
           ${CW.sessao.podeTrocar() ? `<button class="topobtn" id="trocar-empresa-top" title="Trocar de empresa">${ic('swap')}<span>${esc(ctx.nome)}</span></button>` : ''}
           <button class="topobtn tema" id="tema" title="Tema claro ou escuro">${ic('sun')}<span></span></button>${teste}</div>
         <div class="topbar"><div class="grow"><small class="eyebrow" id="eyebrow"></small><h1 id="titulo"></h1><p class="sub" id="subtitulo"></p></div><div id="acoes"></div></div>
@@ -110,6 +120,7 @@
       </div></div>
       <nav class="bnav" id="bnav" aria-label="Navegação"></nav>`;
     document.getElementById('sair').onclick = () => CW.sessao.sair();
+    posicionarTopo();
     const vc = document.getElementById('vercomo-sair'); if (vc) vc.onclick = () => CW.sessao.voltarEquipe('redeempresas/ver/' + ctx.empresaId);
     document.getElementById('minhas-aut').onclick = () => ir('autorizacoes');
     const ma = document.getElementById('menu-alt'); if (ma) ma.onclick = alternarMenu;

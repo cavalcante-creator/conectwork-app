@@ -39,7 +39,7 @@ const { ok, fim } = H.placar('precadastro');
 
   // P4 "Entrar na empresa": a Iasmyn entra na empresa nova como administradora e vê o menu dela
   await page.click('dialog[open] [data-dlg-b="1"]');
-  await page.waitForFunction(() => { const t = document.querySelector('.side') && document.querySelector('.side').innerText; return t && /Prestadora Delta/.test(t); }, null, { timeout: 8000 });
+  await page.waitForFunction(() => { const t = document.querySelector('.empbloco') && document.querySelector('.empbloco').innerText; return t && /Prestadora Delta/.test(t); }, null, { timeout: 8000 });
   const p4 = await page.evaluate(() => ({ menu: Array.from(document.querySelectorAll('#menu [data-mod]')).map(b => b.dataset.mod), cad: !!document.querySelector('#menu [data-mod="cadastros"]') }));
   ok('P4 "Entrar na empresa" abre a empresa nova (menu da empresa, sem as telas da equipe)', p4.menu.length > 0 && !p4.cad, JSON.stringify(p4));
 

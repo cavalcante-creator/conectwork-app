@@ -1173,3 +1173,38 @@ table.resp th,table th{font-size:11px;font-weight:600;letter-spacing:.06em;text-
 }
 :root[data-theme="dark"] .ini-num.dest small{color:#E6EEFF}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .ini-num.dest small{color:#E6EEFF}}
+
+/* ==========================================================================
+   Topo à direita e tela cheia (09/11/2026: "o sair e a empresa no canto de cima à direita; preencher mais o espaço")
+   ========================================================================== */
+@media (min-width:901px){
+  .appbar{gap:12px}
+  .topo-dir{margin-left:auto;display:flex;align-items:center;gap:10px;min-width:0}
+  .topo-dir .empbloco{margin:0;height:44px;padding:0 6px 0 8px;border-radius:10px;background:var(--surface2);border:1px solid var(--line);max-width:340px}
+  .topo-dir .empbloco small{color:var(--muted)}
+  .topo-dir .empbloco strong{color:var(--ink)}
+  .topo-dir .empbloco .iconbtn,.topo-dir .usercard .iconbtn{color:var(--muted)}
+  .topo-dir .empbloco .iconbtn:hover,.topo-dir .usercard .iconbtn:hover{background:var(--line);color:var(--ink)}
+  .topo-dir .usercard{margin:0;height:44px;padding:0 4px 0 6px;border-radius:10px;background:var(--surface2);border:1px solid var(--line);max-width:300px}
+  .topo-dir .usercard strong{color:var(--ink)}
+  .topo-dir .usercard small{color:var(--muted)}
+  .topo-dir .topobtn.tema{height:44px;border-radius:10px}
+  .shell .nav{margin-bottom:0}
+  /* preencher a tela: sem limite de largura */
+  .topbar,main#view{max-width:none}
+}
+@media (min-width:1400px){
+  body{font-size:15px}
+  .shell{grid-template-columns:260px 1fr}
+  .appbar,.topbar,main#view{padding-left:44px;padding-right:44px}
+  .topbar h1{font-size:34px}
+  .ini-grade{grid-template-columns:minmax(0,1fr) 400px}
+  .ini-num{padding:18px 22px 20px}
+  .ini-num b{font-size:38px}
+  .card-h h3{font-size:16px}
+  .pv-it strong,.pv-g .t strong{font-size:15px}
+  .shell .nav button{font-size:15px;padding-block:10px}
+}
+/* tema escuro (versão 2): os blocos do topo translúcidos */
+:root[data-theme="dark"] .topo-dir .empbloco,:root[data-theme="dark"] .topo-dir .usercard{background:rgba(16,39,90,.6);border-color:rgba(120,160,230,.25)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .topo-dir .empbloco,:root:not([data-theme="light"]) .topo-dir .usercard{background:rgba(16,39,90,.6);border-color:rgba(120,160,230,.25)}}

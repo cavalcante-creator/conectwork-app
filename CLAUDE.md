@@ -78,7 +78,7 @@ testes/               testes automatizados
 - **Menu em grupos** (`GRUPO`/`menuHtml` em `js/app.js`): Contratação · Financeiro · Empresa (equipe: Rede · Equipe), títulos `.navgrupo`; ícones diferentes (Ordens `clipboard`, Medições `ruler`, Relatórios `chart`, Documentos `folder`). **Empresa no topo do menu** (`.empbloco`, botão `#trocar-empresa`); no celular o botão continua na barra de cima (`#trocar-empresa-top`).
 - **Início** (`modulos/inicio.js`): números do dia (`#ini-nums`, pendências por tela, toque abre a tela), "Precisa de você" com **3+ pendências do mesmo módulo num item só** (`details.pv-g`, "N documentos para enviar"/"N pendências em …", abre a lista) e, ao lado, o cartão da pessoa (`#ini-quem`: nome, empresa, cargo, situação, Minhas autorizações). Saíram o cartão grande do nome e "Telas liberadas".
 - **Telas vazias com os passos** (`CW.ui.passos([...])`): Pagar e receber, Espelhos, Medições, Contratos, Ordens de serviço.
-- Conteúdo com no máximo 1280px; `main#view>*` sem margem própria (a tela já separa os blocos com 22px; antes dobrava).
+- (o limite de 1280px saiu em 09/11, ver "Topo à direita e tela cheia"); `main#view>*` sem margem própria (a tela já separa os blocos com 22px; antes dobrava).
 - Testes que leem o "Precisa de você" usam `textContent` e `state:'attached'` (itens agrupados ficam fechados). `teste-pendencias.js` (P1b, P1c).
 
 ## Visual corporativo · versão 3 (escolhida em 09/11/2026 entre três versões do Início)
@@ -87,6 +87,10 @@ testes/               testes automatizados
 - Início: números com faixa de cor em cima (amarelo = tem pendência, cinza = nada pendente) e **Próximos vencimentos** (`#ini-venc`, `CW.titulos.proximos(ctx, n)`: os títulos que Pagar e receber já carrega, sem leitura nova; tocar abre o título).
 - A tela de entrar continua como aprovada (Entrar em degradê; regra `.login #lg .btn.lg-principal`).
 - **Tema escuro = versão 2 "escura premium"** (09/11: "gostei da 2 também" → escuro 2, claro 3): bloco no fim do `css/app.css`, as mesmas regras com `:root[data-theme="dark"]` e com `@media (prefers-color-scheme:dark) :root:not([data-theme="light"])`. Fundo `#071533` com brilho azul e faixa diagonal, cartões translúcidos `rgba(16,39,90,.55)` com borda clara e cantos de 18px, menu com item aberto em pílula, ícones em moldura, botão em degradê azul (sem ciano), o número do Início com mais pendências em destaque azul (`.ini-num.dest`, marcado em `numeros()` no `modulos/inicio.js`). Ao mexer numa peça, ajuste os dois temas.
+
+## Topo à direita e tela cheia (09/11/2026)
+- No computador (≥901px) a empresa (`.empbloco`, com `#trocar-empresa`), o botão de tema e o cartão da pessoa (`.usercard`: nome, cargo, Minhas autorizações e **Sair**) ficam no canto de cima, à direita (`#topo-dir` na `.appbar`); `posicionarTopo()` em `js/app.js` move os elementos (os mesmos ids) entre o topo e o menu do celular quando a largura muda. No celular continua tudo no menu de cima.
+- O conteúdo ocupa a largura toda (sem o limite de 1280px); a partir de 1400px, letra 15px, menu de 260px, títulos e números maiores e a coluna da direita do Início com 400px.
 
 ## Cargos (dentro de cada empresa)
 | Cargo | O que vê |
