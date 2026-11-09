@@ -214,6 +214,10 @@ async function deve(nome, permitido, op) {
   await deve('Contrato: NÃO nasce assinado nem ativo', false, () => setDoc(doc(db('ana'), 'contratos', 'c4'), ct({ status: 'ativo', assinaturas: { tomador: { uid: P.ana } } })));
   await deve('Contrato: NÃO em nome de outra empresa (tomador que não é a minha)', false, () => setDoc(doc(db('ana'), 'contratos', 'c5'), ct({ tomadorId: 'beta', prestadorId: 'alfa', partes: ['beta', 'alfa'] })));
   await deve('Contrato: a prestadora lê', true, () => getDoc(doc(db('beto'), 'contratos', 'c1')));
+  /* quem só presta serviço (ex.: MEI) não contrata ninguém (10/11/2026) */
+  await env.withSecurityRulesDisabled(async c => { await updateDoc(doc(c.firestore(), 'empresas', 'alfa'), { tipo: 'prestador' }); });
+  await deve('Contrato: empresa que só presta serviço NÃO cria contrato como contratante', false, () => setDoc(doc(db('ana'), 'contratos', 'c6'), ct()));
+  await env.withSecurityRulesDisabled(async c => { await updateDoc(doc(c.firestore(), 'empresas', 'alfa'), { tipo: 'contratante' }); });
   await deve('Contrato: a prestadora lista os seus (prestadorId)', true, () => getDocs(query(collection(db('beto'), 'contratos'), where('prestadorId', '==', 'beta'))));
   await deve('Contrato: quem não é das duas empresas NÃO lê', false, () => getDoc(doc(db('carla'), 'contratos', 'c1')));
   const assina = (k, lado, extra) => updateDoc(doc(db(k), 'contratos', 'c1'), Object.assign({ ['assinaturas.' + lado]: { uid: P[k], nome: k, em: serverTimestamp() }, atualizadoEm: serverTimestamp() }, extra || {}));

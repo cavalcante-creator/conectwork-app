@@ -51,6 +51,9 @@ const { ok, fim } = H.placar('autorizacoes');
   await page.evaluate(() => { location.hash = '#ordens'; }); await page.waitForSelector('#os-lista', { timeout: 8000 });
   const m1b = await page.evaluate(() => ({ nova: !!document.getElementById('os-nova'), tit: document.getElementById('titulo').innerText, vazio: (document.getElementById('os-vazio-presta') || {}).innerText || '' }));
   ok('M1b MEI que só presta: tela "Demandas", sem "Nova ordem de serviço"; explica que quem abre a demanda é a empresa que contrata', !m1b.nova && m1b.tit === 'Demandas' && /empresa que contrata/.test(m1b.vazio), JSON.stringify(m1b));
+  await page.evaluate(() => { location.hash = '#contratos'; }); await H.dorme(600);
+  const m1c = await page.evaluate(() => ({ novo: !!document.getElementById('ct-novo'), txt: document.getElementById('view').innerText }));
+  ok('M1c MEI que só presta: sem "Novo contrato"; a tela explica que o contrato vem da empresa que contrata', !m1c.novo && /empresa que contrata você/.test(m1c.txt), JSON.stringify({ novo: m1c.novo, txt: m1c.txt.slice(0, 200) }));
   await page.evaluate(() => { location.hash = '#inicio'; }); await page.waitForSelector('#menu-alt');
 
   // M2 "Ver todas as telas" e "Menu simples"

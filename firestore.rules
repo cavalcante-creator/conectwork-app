@@ -230,6 +230,8 @@ service cloud.firestore {
     match /contratos/{id} {
       allow read: if master() || membro(resource.data.tomadorId) || membro(resource.data.prestadorId);
       allow create: if admin(request.resource.data.tomadorId)
+        // quem só presta serviço (ex.: MEI) não contrata: o contrato é feito pela empresa que contrata
+        && get(caminho('empresas', request.resource.data.tomadorId)).data.tipo != 'prestador'
         && (!('triagem' in request.resource.data) || request.resource.data.triagem == null)
         && request.resource.data.keys().hasOnly(camposContrato())
         && modalOk(request.resource.data)

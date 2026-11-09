@@ -23,6 +23,8 @@
   const ladoDe = (c, ctx) => c.tomadorId === ctx.contexto.empresaId ? 'tomador' : 'prestador';
   const outro = l => l === 'tomador' ? 'prestador' : 'tomador';
   const admin = ctx => ctx.contexto.acesso && ctx.contexto.acesso.cargo === 'admin' && !ctx.soLeitura;
+  /* empresa que só presta serviço (ex.: profissional MEI) não contrata ninguém: recebe o contrato de quem contrata (10/11/2026) */
+  const soPresta = ctx => ((ctx.contexto && ctx.contexto.empresa) || {}).tipo === 'prestador';
   const quem = ctx => (ctx.sessao.perfil && ctx.sessao.perfil.nome) || ctx.sessao.usuario.email;
   const log = (b, ctx, acao, texto, ref) => b.set(CW.fb.db().collection('log').doc(), { em: CW.fb.agora(), uid: ctx.sessao.usuario.uid, quem: quem(ctx), empresaId: ctx.contexto.empresaId, acao, texto, ref: ref || '' });
   const nomeOutro = (c, ctx) => ladoDe(c, ctx) === 'tomador' ? c.prestadorNome : c.tomadorNome;
@@ -31,7 +33,7 @@
   function desenharLista(el, ctx) {
     const { esc, ic, avatar, formatarData } = U();
     if (!lista) { el.innerHTML = `<div class="card"><div class="empty"><div class="giro"></div><span>Carregando os contratos…</span></div></div>`; return; }
-    const pode = admin(ctx);
+    const pode = admin(ctx) && !soPresta(ctx);
     document.getElementById('acoes').innerHTML = pode ? `<button class="btn" id="ct-novo">${ic('plus')}Novo contrato</button>` : '';
     const linhas = lista.map(c => { const l = ladoDe(c, ctx), falta = c.status === 'assinatura' && !(c.assinaturas || {})[l];
       return `<tr class="click" data-abrir="${esc(c._id)}" tabindex="0"><td class="m-full"><div class="cell">${avatar(nomeOutro(c, ctx), '', l === 'tomador' ? c.prestadorId : c.tomadorId)}<div style="min-width:0"><strong>${esc(nomeOutro(c, ctx))}</strong><small>${esc(MODAL[c.modalidade] || 'Equipe contínua')} · ${esc(l === 'tomador' ? 'Você contrata' : 'Você presta o serviço')} · ${esc(c.objeto)}</small></div></div></td>
@@ -39,7 +41,7 @@
         <td>${pill(c.status)}${falta ? '<br><small class="hint" style="color:var(--warn)">falta a sua assinatura</small>' : c.proposta && c.proposta.lado !== l ? '<br><small class="hint" style="color:var(--warn)">proposta de vencimento</small>' : ''}</td></tr>`; }).join('');
     el.innerHTML = `<section class="card" id="ct-lista"><div class="card-h"><span class="ic">${ic('file')}</span><h3>Contratos</h3><span class="count">${lista.length}</span></div>
       ${lista.length ? `<div class="scroll"><table class="resp"><thead><tr><th>Com quem</th><th>Medição</th><th>Vencimento</th><th>Início</th><th>Situação</th></tr></thead><tbody>${linhas}</tbody></table></div>`
-        : `<div class="empty"><div class="ic">${ic('file')}</div><strong>Nenhum contrato ainda.</strong><span>${pode ? 'Use "Novo contrato" para contratar uma prestadora aprovada no Conectwork.' : 'Quando a sua empresa tiver um contrato, ele aparece aqui.'}</span>${U().passos(['Escolha a prestadora aprovada no Conectwork', 'Responda a triagem (7 perguntas)', 'As duas empresas assinam e o contrato fica ativo'])}</div>`}</section>
+        : `<div class="empty"><div class="ic">${ic('file')}</div><strong>Nenhum contrato ainda.</strong><span>${pode ? 'Use "Novo contrato" para contratar uma prestadora aprovada no Conectwork.' : (soPresta(ctx) ? 'Quem faz o contrato é a empresa que contrata você. Ele aparece aqui para você conferir e assinar.' : 'Quando a sua empresa tiver um contrato, ele aparece aqui.')}</span>${U().passos(['Escolha a prestadora aprovada no Conectwork', 'Responda a triagem (7 perguntas)', 'As duas empresas assinam e o contrato fica ativo'])}</div>`}</section>
       <p class="hint" style="margin:14px 0 0;font-size:12px">${esc(AVISO)}</p>`;
     const n = document.getElementById('ct-novo'); if (n) n.onclick = () => formulario(ctx, null);
     el.querySelectorAll('[data-abrir]').forEach(r => { const ir = () => CW.ir('contratos/ver/' + r.dataset.abrir); r.onclick = ir; r.onkeydown = e => { if (e.key === 'Enter') ir(); }; });
