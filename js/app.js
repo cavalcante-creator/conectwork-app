@@ -29,7 +29,7 @@
   /* ---------- menu: módulos com menu:false abrem pela rota, mas não aparecem no menu (ex.: Minhas autorizações).
      Profissional MEI (empresa só prestadora, porte MEI): menu enxuto, com nomes do dia a dia dele e "Ver todas as telas". */
   const ENXUTO = ['inicio', 'negocio', 'ordens', 'espelhos', 'titulos', 'contratos', 'documentos', 'empresa'];
-  const NOMES_MEI = { ordens: 'Serviços pedidos', espelhos: 'Notas a emitir', titulos: 'A receber' };
+  const NOMES_MEI = { ordens: 'Demandas', espelhos: 'Notas a emitir', titulos: 'A receber' };
   const ctxEmp = () => { const c = CW.sessao.contexto(); return c && c.tipo === 'empresa' ? c : null; };
   const chaveCompleto = () => 'cw.menu.completo.' + ((ctxEmp() || {}).empresaId || '');
   function porteMei() {
@@ -220,7 +220,8 @@
     document.querySelectorAll('#menu [data-mod]').forEach(b => { if (b.dataset.mod === m.id) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
     barraBaixo(menuMods(), m.id);
     document.getElementById('crumbs').innerHTML = `Conectwork ${ic('chev')} ${ids.length > 1 && telaId !== ids[0] ? `<span>${esc(m.nome)}</span> ${ic('chev')} <b>${esc(tela.nome)}</b>` : `<b>${esc(m.nome)}</b>`}`;
-    document.getElementById('titulo').textContent = tela.titulo ? tela.titulo(baseCtx()) : (tela.nome || m.nome);
+    const nomeMei = enxuto() && NOMES_MEI[m.id] && telaId === ids[0] ? NOMES_MEI[m.id] : '';   /* menu simples do MEI: o título usa o mesmo nome do menu */
+    document.getElementById('titulo').textContent = nomeMei || (tela.titulo ? tela.titulo(baseCtx()) : (tela.nome || m.nome));
     document.getElementById('subtitulo').textContent = tela.sub || '';
     const eb = document.getElementById('eyebrow'); if (eb) eb.textContent = m.id === 'inicio' ? new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }) : (GRUPO[m.id] || 'Conectwork');
     document.getElementById('acoes').innerHTML = '';
