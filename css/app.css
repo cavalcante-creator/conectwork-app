@@ -1208,3 +1208,6 @@ table.resp th,table th{font-size:11px;font-weight:600;letter-spacing:.06em;text-
 /* tema escuro (versão 2): os blocos do topo translúcidos */
 :root[data-theme="dark"] .topo-dir .empbloco,:root[data-theme="dark"] .topo-dir .usercard{background:rgba(16,39,90,.6);border-color:rgba(120,160,230,.25)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .topo-dir .empbloco,:root:not([data-theme="light"]) .topo-dir .usercard{background:rgba(16,39,90,.6);border-color:rgba(120,160,230,.25)}}
+/* lista "Trocar de empresa" e "Mais": só o nome estica; a logo, as iniciais e o selo "Atual" ficam do tamanho deles */
+.maisbtn .avatar,.maisbtn .pill,.maisbtn svg.i{flex:none}
+.maisbtn .avatar{width:44px;height:44px;font-size:13px}
