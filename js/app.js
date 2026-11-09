@@ -78,8 +78,8 @@
     const teste = CW.fb.ambiente() === 'teste' ? '<span class="env">Ambiente de testes</span>' : '';
     document.documentElement.classList.remove('entrada', 'wizpg'); document.documentElement.classList.add('casca');
     document.getElementById('app').innerHTML = `<div class="shell">
-      <aside class="side">${CURVES}
-        <div class="logo">${LOGO(32)}<span>Conect<b>work</b></span></div>
+      <aside class="side">
+        <div class="logo">${LOGO(32)}<span>Conect<b>work</b></span></div><i class="side-traco" aria-hidden="true"></i>
         <div class="navlabel">MENU</div>
         <nav class="nav" id="menu" aria-label="Principal">${mods.map(m => `<button data-mod="${esc(m.id)}">${ic(m.icone)}<span>${esc(m.nome)}</span></button>`).join('')}
           ${mei ? `<button class="nav-alt" id="menu-alt">${ic(enxuto() ? 'grid' : 'star')}<span>${enxuto() ? 'Ver todas as telas' : 'Menu simples'}</span></button>` : ''}</nav>
@@ -90,10 +90,15 @@
       </aside>
       <div class="content">
         ${ctx.verComo ? `<div class="vercomo" id="vercomo">${ic('eye')}<span>Vendo como <b>${esc(ctx.nome)}</b> · só consulta</span><button class="btn sm" id="vercomo-sair">${ic('back')}Voltar para a equipe</button></div>` : ''}
+        <header class="hero"><svg class="hero-fx" viewBox="0 0 900 220" preserveAspectRatio="xMaxYMid slice" aria-hidden="true"><defs>
+          <linearGradient id="hfx1" x1="1" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#12C7E8" stop-opacity=".55"/><stop offset=".5" stop-color="#1769FF" stop-opacity=".3"/><stop offset="1" stop-color="#1769FF" stop-opacity="0"/></linearGradient>
+          <linearGradient id="hfx2" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#12C7E8" stop-opacity="0"/><stop offset=".55" stop-color="#3F8CFF" stop-opacity=".8"/><stop offset="1" stop-color="#12C7E8" stop-opacity=".15"/></linearGradient></defs>
+          <path d="M900 220H700L900 20Z" fill="url(#hfx1)"/><path d="M900 0V-40L640 220H690Z" fill="url(#hfx1)" opacity=".7"/>
+          <path d="M330 230C470 170 560 120 640 70S790 10 900 4" fill="none" stroke="url(#hfx2)" stroke-width="2"/></svg>
         <div class="appbar"><div class="crumbs" id="crumbs"></div>
           ${CW.sessao.podeTrocar() ? `<button class="topobtn" id="trocar-empresa" title="Trocar de empresa">${ic('swap')}<span>${esc(ctx.nome)}</span></button>` : ''}
           <button class="topobtn tema" id="tema" title="Tema claro ou escuro">${ic('sun')}<span></span></button>${teste}</div>
-        <div class="topbar"><div class="grow"><h1 id="titulo"></h1><p class="sub" id="subtitulo"></p></div><div id="acoes"></div></div>
+        <div class="topbar"><div class="grow"><h1 id="titulo"></h1><p class="sub" id="subtitulo"></p></div><div id="acoes"></div></div></header>
         <main id="view"></main>
       </div></div>
       <nav class="bnav" id="bnav" aria-label="Navegação"></nav>`;
