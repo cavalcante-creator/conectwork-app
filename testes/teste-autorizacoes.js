@@ -44,8 +44,14 @@ const { ok, fim } = H.placar('autorizacoes');
   // M1 profissional MEI: menu enxuto com os nomes do dia a dia
   await entrarComo('lia@lia.com.br'); await page.waitForFunction(() => !!document.getElementById('menu-alt'), null, { timeout: 8000 });
   const m2 = await menu();
-  ok('M1 profissional MEI vê o menu enxuto: Início, Meu negócio, Ordens de serviço, Notas a emitir, A receber, Contratos, Documentos e Minha empresa',
-    m2.map(x => x.split(':')[0]).join() === 'inicio,negocio,ordens,espelhos,titulos,contratos,documentos,empresa' && m2.includes('espelhos:Notas a emitir') && m2.includes('titulos:A receber'), JSON.stringify(m2));
+  ok('M1 profissional MEI vê o menu enxuto: Início, Meu negócio, Serviços pedidos, Notas a emitir, A receber, Contratos, Documentos e Minha empresa',
+    m2.map(x => x.split(':')[0]).join() === 'inicio,negocio,ordens,espelhos,titulos,contratos,documentos,empresa' && m2.includes('ordens:Serviços pedidos') && m2.includes('espelhos:Notas a emitir') && m2.includes('titulos:A receber'), JSON.stringify(m2));
+
+  // M1b quem só presta serviço não abre ordem de serviço: recebe as da empresa que contrata
+  await page.evaluate(() => { location.hash = '#ordens'; }); await page.waitForSelector('#os-lista', { timeout: 8000 });
+  const m1b = await page.evaluate(() => ({ nova: !!document.getElementById('os-nova'), vazio: (document.getElementById('os-vazio-presta') || {}).innerText || '' }));
+  ok('M1b MEI que só presta: sem "Nova ordem de serviço"; a tela explica que quem abre a OS é a empresa que contrata', !m1b.nova && /empresa que contrata/.test(m1b.vazio), JSON.stringify(m1b));
+  await page.evaluate(() => { location.hash = '#inicio'; }); await page.waitForSelector('#menu-alt');
 
   // M2 "Ver todas as telas" e "Menu simples"
   await page.click('#menu-alt'); await page.waitForSelector('#menu [data-mod="usuarios"]', { timeout: 8000 });
