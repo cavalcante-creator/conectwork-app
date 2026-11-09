@@ -52,7 +52,74 @@
     const k = document.getElementById('ini-nums');
     if (k) { k.innerHTML = numeros(ps); k.hidden = !k.innerHTML; k.querySelectorAll('[data-ir]').forEach(x => x.onclick = () => CW.ir(x.dataset.ir)); }
   }
-  window.addEventListener('cw:pendencias', e => pvDesenha(e.detail || []));
+  window.addEventListener('cw:pendencias', e => { pvDesenha(e.detail || []); meiAtualiza(e.detail || []); });
+
+  /* ---------- Início do MEI (opção A, escolhida em 10/11/2026): saudação, o que tem hoje, botões grandes e o limite ---------- */
+  const TILES = [
+    { id: 'agenda', t: 'Minha agenda', ic: 'clock', cor: 'sol' },
+    { id: 'ordens', t: 'Demandas', ic: 'clipboard', cor: 'ceu' },
+    { id: 'titulos', t: 'A receber', ic: 'wallet', cor: 'agua' },
+    { id: 'espelhos', t: 'Emitir nota', ic: 'receipt', cor: 'coral' },
+    { id: 'negocio', t: 'Meu MEI', ic: 'chart', cor: 'lilas' },
+    { id: 'assistentemei', t: 'Tire uma dúvida', ic: 'help', cor: 'ceu' }
+  ];
+  const isoHoje = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const ctxAgora = () => Object.assign({}, { contexto: CW.sessao.contexto(), sessao: CW.sessao.estado(), soLeitura: CW.permissoes.soLeitura(CW.sessao.contexto()) });
+  function hojeLinhas() { const h = isoHoje(); return CW.agenda ? CW.agenda.linhas(ctxAgora(), h, h).filter(l => !l.feito) : []; }
+  function subTile(id, n) {
+    const ctx = ctxAgora();
+    if (id === 'agenda') { const k = hojeLinhas().length; return k ? `${k} ${k === 1 ? 'coisa' : 'coisas'} hoje` : 'Nada para hoje'; }
+    if (id === 'ordens') return n ? `${n} ${n === 1 ? 'para responder' : 'para responder'}` : 'Nenhuma nova';
+    if (id === 'titulos') { const l = (CW.titulos && CW.titulos.proximos(ctx, 50) || []).filter(t => t.lado === 'prestador'); const tot = l.reduce((a, t) => a + (t.centavos || 0), 0); return tot ? U().formatarDinheiro(tot) : 'Nada em aberto'; }
+    if (id === 'espelhos') return n ? `${n} esperando` : 'Nenhuma agora';
+    if (id === 'negocio') { const f = CW.negocio && CW.negocio.fiscal && CW.negocio.fiscal(); return f && f.das.some(x => !x.pago && x.vencido) ? 'DAS atrasado' : 'DAS e limite'; }
+    return 'Assistente';
+  }
+  function hojeHtml() {
+    const { esc, ic } = U(), l = hojeLinhas()[0], f = CW.negocio && CW.negocio.fiscal && CW.negocio.fiscal();
+    const das = f && f.das.find(x => !x.pago && !x.vencido), dasTxt = das ? `e o DAS vence dia ${das.venc.slice(8, 10)}` : f && f.das.some(x => !x.pago && x.vencido) ? 'e tem DAS atrasado' : '';
+    if (!l) return `<span class="mei-bola sol">${ic('clock')}</span><div><small>Hoje</small><b>Nada marcado para hoje</b>${dasTxt ? `<small>${esc(dasTxt[0].toUpperCase() + dasTxt.slice(1))}</small>` : ''}</div>`;
+    const o = l.x || l.a, hora = l.hora ? `às ${l.hora.replace(':', 'h').replace('h00', 'h')}` : '';
+    return `<span class="mei-bola sol">${ic('clock')}</span><div><small>Hoje ${esc(hora)}</small><b>${esc(o.titulo)}${l.x && l.x.cliente ? ' · ' + esc(l.x.cliente) : ''}</b>${dasTxt ? `<small>${esc(dasTxt)}</small>` : ''}</div>`;
+  }
+  function meiAtualiza(ps) {
+    const g = document.getElementById('mei-grade'); if (!g) return;
+    const { esc, ic } = U(), por = {}; (ps || CW.app.pendencias()).forEach(p => { por[p.mod] = (por[p.mod] || 0) + 1; });
+    const vis = CW.app.visiveis().map(m => m.id);
+    g.innerHTML = TILES.filter(x => vis.includes(x.id)).map(x => { const n = por[x.id] || 0;
+      return `<button class="mei-tile" data-ir="${esc(x.id)}" data-tile="${esc(x.id)}">${n && x.id !== 'agenda' ? `<span class="mei-num" aria-label="${n} para ver">${n > 9 ? '9+' : n}</span>` : ''}<span class="mei-bola ${x.cor}">${ic(x.ic)}</span><b>${esc(x.t)}</b><small>${esc(subTile(x.id, n))}</small></button>`; }).join('');
+    g.querySelectorAll('[data-ir]').forEach(b => b.onclick = () => CW.ir(b.dataset.ir));
+    const h = document.getElementById('mei-hoje'); if (h) h.innerHTML = hojeHtml();
+  }
+  async function meiLimite(ctx) {
+    const box = document.getElementById('mei-lim'); if (!box || !CW.negocio || !CW.negocio.carregar) return;
+    try {
+      const D = await CW.negocio.carregar(ctx), K = CW.negocio.contas(D), L = CW.negocio.LIMITE_MEI, p = Math.min(1, K.noAno / L), brl = U().formatarDinheiro;
+      const est = p >= 1 ? ['passou', 'passou do limite'] : p >= 0.8 ? ['perto', 'perto do limite'] : ['ok', 'tudo certo'];
+      box.innerHTML = `<p class="mei-rot">Seu MEI em ${new Date().getFullYear()}</p><div class="mei-prog ${est[0]}"><i style="width:${Math.round(p * 100)}%"></i></div>
+        <p class="mei-lim-t"><b>${brl(K.noAno).replace(/,00$/, '')}</b> de ${brl(L).replace(/,00$/, '')} · ${est[1]}</p>`;
+      box.hidden = false; box.onclick = () => CW.ir('negocio');
+    } catch (e) { box.hidden = true; }
+  }
+  function meiInicio(el, ctx) {
+    const { esc, ic } = U(), s = ctx.sessao, nome = String((s.perfil && s.perfil.nome) || '').split(' ')[0];
+    const tb = document.querySelector('.topbar'); if (tb) tb.hidden = true;
+    const data = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+    el.innerHTML = `<div id="ini-avisos" class="stack" style="gap:10px"></div>
+      <div class="mei-home" id="mei-home">
+        <div class="mei-topo"><h2>Oi${nome ? ', ' + esc(nome) : ''}!</h2><p>${esc(data[0].toUpperCase() + data.slice(1))}</p></div>
+        <button class="mei-hoje" id="mei-hoje" data-ir="agenda"></button>
+        <div class="mei-grade" id="mei-grade"></div>
+        <button class="mei-lim" id="mei-lim" hidden></button>
+        <section class="card" id="ini-pv" hidden><div class="card-h"><span class="ic">${ic('alert')}</span><h3>Para fazer</h3><span class="count" id="ini-pv-n" hidden></span></div><div class="card-b" id="ini-pv-b"></div></section>
+      </div>`;
+    document.getElementById('mei-hoje').onclick = () => CW.ir('agenda');
+    const ps = CW.app.pendencias(); meiAtualiza(ps); pvDesenha(ps); mostraPv(ps);
+    meiLimite(ctx);
+    if (CW.avisos) CW.avisos.bloco(document.getElementById('ini-avisos'), ctx);
+  }
+  function mostraPv(ps) { const c = document.getElementById('ini-pv'); if (c && document.getElementById('mei-home')) c.hidden = !ps.length; }
+  window.addEventListener('cw:pendencias', e => mostraPv(e.detail || []));
   const saudacao = () => { const h = new Date().getHours(); return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'; };
 
   CW.registrarModulo({
@@ -64,6 +131,7 @@
         titulo: ctx => { const p = ctx.sessao.perfil; const n = String((p && p.nome) || '').split(' ')[0]; return saudacao() + (n ? ', ' + n : ''); },
         render(el, ctx) {
           if (ctx.contexto.tipo === 'master' && CW.rede) return CW.rede.painel(el, ctx);   /* equipe Conectwork: Painel da rede */
+          if (CW.app.mei && CW.app.mei() && ctx.contexto.empresa && ctx.contexto.empresa.status === 'aprovado') return meiInicio(el, ctx);   /* perfil MEI */
           const { esc, ic, avatar } = CW.ui, s = ctx.sessao, c = ctx.contexto;
           const nome = (s.perfil && s.perfil.nome) || s.usuario.email;
           const master = c.tipo === 'master';

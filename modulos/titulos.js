@@ -279,7 +279,7 @@
     if (!pronto || !ctx || !ctx.contexto) return null;
     const vistos = {}, todos = tT.concat(tP).filter(t => !vistos[t._id] && (vistos[t._id] = 1));
     return todos.filter(t => ABERTO.includes(t.status) && vencimento(t)).sort((a, b) => vencimento(a).localeCompare(vencimento(b))).slice(0, n || 5)
-      .map(t => { const l = lado(t, ctx); return { id: t._id, nome: l === 'tomador' ? t.prestadorNome : t.tomadorNome, lado: l, valor: brl(t.liquidoCentavos), venc: dataTxt(vencimento(t)), vencIso: vencimento(t), vencido: vencido(t) }; });
+      .map(t => { const l = lado(t, ctx); return { id: t._id, nome: l === 'tomador' ? t.prestadorNome : t.tomadorNome, lado: l, valor: brl(t.liquidoCentavos), centavos: t.liquidoCentavos || 0, venc: dataTxt(vencimento(t)), vencIso: vencimento(t), vencido: vencido(t) }; });
   };
 
   CW.registrarModulo({

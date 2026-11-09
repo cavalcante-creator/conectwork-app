@@ -1333,3 +1333,49 @@ table.resp th,table th{font-size:11px;font-weight:600;letter-spacing:.06em;text-
 .as-form input{flex:1;min-width:0;height:44px;border:1px solid var(--line);border-radius:8px;padding:0 12px;background:var(--surface);color:var(--ink);font:inherit;font-size:15px}
 .as-form input:focus{outline:2px solid var(--blue);outline-offset:0;border-color:transparent}
 @media (max-width:560px){.as-msgs{padding:14px}.as-sug,.as-form{padding-inline:14px}.as-form .btn{padding-inline:12px}}
+
+/* ---------- Perfil MEI · opção A "Botões grandes" (10/11/2026): mais leve e amigável; só com html.mei (menu simples) ---------- */
+:root{--mei-sol:#B26B00;--mei-sol-bg:#FFF3D6;--mei-ceu:#1769FF;--mei-ceu-bg:#EAF1FF;--mei-agua:#0B7C99;--mei-agua-bg:#E1F5FB;
+  --mei-coral:#D2432F;--mei-coral-bg:#FFE8E4;--mei-lilas:#6A4FF0;--mei-lilas-bg:#EEEAFF;--mei-tile:#FFFFFF;--mei-hoje:#FFFFFF;--mei-sombra:0 6px 18px -12px rgba(11,26,69,.35)}
+:root[data-theme="dark"]{--mei-sol:#FFC56B;--mei-sol-bg:rgba(255,176,32,.16);--mei-ceu:#8DB8FF;--mei-ceu-bg:rgba(77,147,255,.18);--mei-agua:#6FD6F0;--mei-agua-bg:rgba(20,163,199,.18);
+  --mei-coral:#FF9C8F;--mei-coral-bg:rgba(255,107,87,.16);--mei-lilas:#B5A6FF;--mei-lilas-bg:rgba(123,97,255,.2);--mei-tile:rgba(16,39,90,.55);--mei-hoje:#12285E;--mei-sombra:none}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--mei-sol:#FFC56B;--mei-sol-bg:rgba(255,176,32,.16);--mei-ceu:#8DB8FF;--mei-ceu-bg:rgba(77,147,255,.18);--mei-agua:#6FD6F0;--mei-agua-bg:rgba(20,163,199,.18);
+  --mei-coral:#FF9C8F;--mei-coral-bg:rgba(255,107,87,.16);--mei-lilas:#B5A6FF;--mei-lilas-bg:rgba(123,97,255,.2);--mei-tile:rgba(16,39,90,.55);--mei-hoje:#12285E;--mei-sombra:none}}
+.mei-home{display:flex;flex-direction:column;gap:16px;max-width:960px}
+.mei-topo{background:linear-gradient(160deg,#1769FF 0%,#0B3FCC 100%);color:#fff;border-radius:24px;padding:22px 22px 58px}
+.mei-topo h2{margin:0;font-family:var(--fd);font-weight:800;font-size:clamp(26px,5vw,32px);letter-spacing:-.02em;line-height:1.15}
+.mei-topo p{margin:4px 0 0;color:#CFE0FF;font-size:15px}
+.mei-hoje{margin:-52px 12px 0;display:flex;gap:14px;align-items:center;text-align:left;background:var(--mei-hoje);color:var(--ink);border:1px solid var(--line);border-radius:22px;padding:16px;box-shadow:var(--mei-sombra);cursor:pointer;font:inherit}
+.mei-hoje div{display:flex;flex-direction:column;min-width:0}
+.mei-hoje small{color:var(--muted);font-size:13.5px}
+.mei-hoje b{font-family:var(--fd);font-size:17px;line-height:1.3;overflow-wrap:anywhere}
+.mei-grade{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (min-width:700px){.mei-grade{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.mei-tile{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:10px;text-align:left;background:var(--mei-tile);color:var(--ink);border:1px solid var(--line);border-radius:22px;padding:16px 14px;box-shadow:var(--mei-sombra);cursor:pointer;font:inherit;min-height:132px;transition:transform .12s}
+.mei-tile:hover{transform:translateY(-2px)}
+.mei-tile:active{transform:scale(.98)}
+.mei-tile b{font-family:var(--fd);font-size:17px;line-height:1.2}
+.mei-tile small{color:var(--muted);font-size:13px;margin-top:-6px}
+.mei-tile:focus-visible,.mei-hoje:focus-visible,.mei-lim:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.mei-num{position:absolute;top:12px;right:12px;min-width:24px;height:24px;border-radius:12px;background:#FF6B57;color:#fff;font-size:12.5px;font-weight:700;display:grid;place-items:center;padding:0 7px}
+.mei-bola{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;flex:none}
+.mei-bola svg.i{width:24px;height:24px}
+.mei-bola.sol{background:var(--mei-sol-bg);color:var(--mei-sol)}.mei-bola.ceu{background:var(--mei-ceu-bg);color:var(--mei-ceu)}
+.mei-bola.agua{background:var(--mei-agua-bg);color:var(--mei-agua)}.mei-bola.coral{background:var(--mei-coral-bg);color:var(--mei-coral)}
+.mei-bola.lilas{background:var(--mei-lilas-bg);color:var(--mei-lilas)}
+.mei-lim{display:block;width:100%;text-align:left;background:var(--mei-tile);color:var(--ink);border:1px solid var(--line);border-radius:22px;padding:16px 18px;box-shadow:var(--mei-sombra);cursor:pointer;font:inherit}
+.mei-rot{margin:0 0 10px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.mei-prog{height:12px;border-radius:99px;background:var(--mei-ceu-bg);overflow:hidden}
+.mei-prog i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#1769FF,#4D93FF)}
+.mei-prog.perto i{background:linear-gradient(90deg,#FFB020,#FFC56B)}.mei-prog.passou i{background:linear-gradient(90deg,#E5484D,#FF6B57)}
+.mei-lim-t{margin:10px 0 0;font-size:14.5px;color:var(--muted)}.mei-lim-t b{color:var(--ink);font-family:var(--fd);font-size:16px}
+/* as outras telas do MEI: letra um pouco maior, cantos redondos e botões mais altos (fáceis de tocar) */
+html.mei main#view{font-size:15.5px}
+html.mei .card{border-radius:20px}
+html.mei .btn{border-radius:14px;min-height:44px}
+html.mei .btn.sm{min-height:36px;border-radius:12px}
+html.mei .pill,html.mei .tag{border-radius:99px}
+html.mei .ag-it{padding-block:12px}
+html.mei .as-chip{padding:9px 14px;font-size:14px}
+html.mei .topbar h1{letter-spacing:-.01em}
+@media (max-width:760px){html.mei .bnav button span{font-size:11.5px}html.mei .bnav button svg.i{width:24px;height:24px}}

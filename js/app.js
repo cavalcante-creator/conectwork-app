@@ -98,6 +98,7 @@
     const mods = menuMods(), mei = porteMei();
     const teste = CW.fb.ambiente() === 'teste' ? '<span class="env">Ambiente de testes</span>' : '';
     document.documentElement.classList.remove('entrada', 'wizpg'); document.documentElement.classList.add('casca');
+    document.documentElement.classList.toggle('mei', enxuto());   /* perfil MEI (menu simples): visual mais leve e amigável (10/11/2026) */
     document.getElementById('app').innerHTML = `<div class="shell">
       <aside class="side">${CURVES}
         <div class="logo">${LOGO(32)}<span>Conect<b>work</b></span></div>
@@ -152,7 +153,7 @@
     Object.values(ouvintes).forEach(f => { try { f(); } catch (e) { /* já desligado */ } }); ouvintes = {};
     document.querySelectorAll('dialog[open]').forEach(d => d.close());
     montado = false; atual = null;
-    document.documentElement.classList.remove('casca');
+    document.documentElement.classList.remove('casca', 'mei');
     try { if ('clearAppBadge' in navigator) navigator.clearAppBadge(); } catch (e) {}
   }
 
@@ -225,6 +226,7 @@
     document.getElementById('subtitulo').textContent = tela.sub || '';
     const eb = document.getElementById('eyebrow'); if (eb) eb.textContent = m.id === 'inicio' ? new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }) : (GRUPO[m.id] || 'Conectwork');
     document.getElementById('acoes').innerHTML = '';
+    const tb = document.querySelector('.topbar'); if (tb) tb.hidden = false;   /* o Início do MEI esconde o título dele */
     const view = document.getElementById('view'); view.innerHTML = '';
     document.title = (tela.nome || m.nome) + ' · Conectwork';
     pendenciasMudaram();
@@ -296,5 +298,5 @@
   CW.inscrever = inscrever;
   CW.ir = ir;
   CW.iniciar = iniciar;
-  CW.app = { montar, desmontar, desenhar, modulos: () => MODULOS.slice(), visiveis, atual: () => atual, pendencias, pendenciasMudaram, buscar };
+  CW.app = { montar, desmontar, desenhar, modulos: () => MODULOS.slice(), visiveis, atual: () => atual, pendencias, pendenciasMudaram, buscar, mei: () => enxuto() };
 })();
