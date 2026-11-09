@@ -102,6 +102,12 @@
       if (c.offline) throw err('auth/network-request-failed');
       if (c.tooMany) throw err('auth/too-many-requests');
       if (!srv().users[em] && c.enumProt === false) throw err('auth/user-not-found'); },
+    /* links dos e-mails: __ctl.acao = { email, erro: 'auth/…' (código vencido), erroConfirma: 'auth/…' } */
+    verifyPasswordResetCode: async code => { await espera(); const a = ctl().acao || {}; window.__mockLog.push(['verificaReset', code]); if (a.erro) throw err(a.erro); return a.email; },
+    confirmPasswordReset: async (code, senha) => { await espera(); const a = ctl().acao || {}; window.__mockLog.push(['confirmaReset', code]);
+      if (a.erroConfirma) throw err(a.erroConfirma); const sv = srv(); if (sv.users[a.email]) { sv.users[a.email].pass = senha; salva(sv); } },
+    applyActionCode: async code => { await espera(); const a = ctl().acao || {}; window.__mockLog.push(['aplicaCodigo', code]); if (a.erro) throw err(a.erro); },
+    checkActionCode: async code => { await espera(); const a = ctl().acao || {}; window.__mockLog.push(['confereCodigo', code]); if (a.erro) throw err(a.erro); return { data: { email: a.email } }; },
     signOut: async () => { window.__mockLog.push(['signOut']); muda(null); }
   };
 

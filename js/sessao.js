@@ -407,9 +407,115 @@
     window.addEventListener('online', () => location.reload(), { once: true });
   }
 
+  /* ---------- links que chegam por e-mail (09/11/2026) ----------
+     No console do Firebase (Authentication › Modelos › Personalizar URL de ação) o link dos e-mails aponta para o próprio
+     app. O Firebase acrescenta ?mode=…&oobCode=… e o app mostra a tela certa no visual da entrada:
+     resetPassword (criar senha nova), verifyEmail / verifyAndChangeEmail (confirmar e-mail) e recoverEmail (desfazer troca). */
+  function lerAcao() {
+    const q = new URLSearchParams(location.search || ''), mode = q.get('mode'), code = q.get('oobCode');
+    return mode && code ? { mode, code } : null;
+  }
+  const limparAcao = () => { try { history.replaceState(null, '', location.pathname + (location.hash || '')); } catch (e) { /* sem histórico */ } };
+  const forte = s => (CW.cadastro && CW.cadastro.forcaSenha) ? CW.cadastro.forcaSenha(s) : (String(s || '').length >= 8 ? 2 : 1);
+  const senhaBoa = s => (CW.cadastro && CW.cadastro.senhaOk) ? CW.cadastro.senhaOk(s) : (String(s || '').length >= 8 && /[a-zA-Z]/.test(s) && /\d/.test(s));
+  function cartaoAcao(html) {
+    moldura(`<div class="lg-bloco"><div class="logincard card" id="lg"><div class="card-b"><div class="lform" id="ac-tela">${html}</div></div></div>
+      <p class="lg-termos" id="lg-termos">Precisa de ajuda? Fale com a equipe Conectwork.</p></div>`);
+  }
+  function erroAcao(e) {
+    const c = e && e.code || '';
+    if (/expired-action-code|invalid-action-code/.test(c)) return 'Este link venceu ou já foi usado. Peça um link novo em "Esqueci minha senha".';
+    if (/user-disabled/.test(c)) return 'Este login foi desativado. Fale com a equipe Conectwork.';
+    if (/user-not-found/.test(c)) return 'Não encontramos o acesso deste link. Peça um link novo em "Esqueci minha senha".';
+    if (/weak-password/.test(c)) return 'Essa senha é fraca. Use 8 ou mais caracteres, com letras e números.';
+    if (/network-request-failed/.test(c)) return 'Não foi possível conectar ao servidor. Confira sua internet e tente de novo.';
+    if (/too-many-requests/.test(c)) return 'Muitas tentativas seguidas. Espere alguns minutos e tente de novo.';
+    return 'Não foi possível concluir agora' + (c ? ' (' + c + ')' : '') + '. Tente de novo em instantes.';
+  }
+  function seguir() { limparAcao(); iniciarLogin(); }
+  function telaLinkRuim(msg) {
+    const { ic, esc } = U();
+    cartaoAcao(`<div class="lg-cab"><h2>Link fora da validade</h2><p class="sub">${esc(msg)}</p></div>
+      <button class="btn lg-principal" id="ac-novo" type="button">${ic('mail')}Pedir um link novo</button>
+      <button class="linkbtn" id="ac-entrar" type="button" style="align-self:center">Voltar para o login</button>`);
+    document.getElementById('ac-novo').onclick = () => { limparAcao(); iniciarLogin('esqueci'); };
+    document.getElementById('ac-entrar').onclick = seguir;
+  }
+  async function telaAcao(a) {
+    const { ic, esc } = U(), auth = CW.fb.auth();
+    try { auth.languageCode = 'pt-BR'; } catch (e) { /* sem idioma */ }
+    cartaoAcao(`<div class="lg-cab"><h2>Um instante…</h2><p class="sub">Conferindo o link.</p></div><div class="giro" style="align-self:center"></div>`);
+    if (a.mode === 'resetPassword') {
+      let email;
+      try { email = await auth.verifyPasswordResetCode(a.code); } catch (e) { telaLinkRuim(erroAcao(e)); return; }
+      cartaoAcao(`<form class="lform" id="ac-form" novalidate><div class="lg-cab"><h2>Crie uma senha nova</h2><p class="sub">Para o acesso <b>${esc(email)}</b>.</p></div>
+        <label class="f"><span>${ic('lock')}Senha nova</span><span class="lg-pw"><input id="ac-senha" type="password" autocomplete="new-password" placeholder="8 ou mais caracteres, com letras e números"><button type="button" class="lg-olho" id="ac-ver" aria-label="Mostrar a senha" aria-pressed="false">${ic('eyeoff')}</button></span>
+          <span class="senha-forca" id="ac-forca" aria-hidden="true"><i></i><i></i><i></i></span></label>
+        <label class="f"><span>${ic('lock')}Repita a senha nova</span><input id="ac-senha2" type="password" autocomplete="new-password"></label>
+        <p class="err" id="ac-erro" role="alert"></p>
+        <button class="btn lg-principal" id="ac-salvar" type="submit">${ic('check')}Salvar senha nova</button></form>`);
+      const $ = id => document.getElementById(id);
+      $('ac-senha').oninput = () => { $('ac-forca').className = 'senha-forca n' + forte($('ac-senha').value); };
+      $('ac-ver').onclick = () => { const m = $('ac-senha').type === 'password'; [$('ac-senha'), $('ac-senha2')].forEach(i => { i.type = m ? 'text' : 'password'; });
+        $('ac-ver').innerHTML = ic(m ? 'eye' : 'eyeoff'); $('ac-ver').setAttribute('aria-label', m ? 'Esconder a senha' : 'Mostrar a senha'); $('ac-ver').setAttribute('aria-pressed', String(m)); };
+      $('ac-senha').focus();
+      $('ac-form').onsubmit = async ev => {
+        ev.preventDefault();
+        const s1 = $('ac-senha').value, s2 = $('ac-senha2').value, er = $('ac-erro'), bt = $('ac-salvar');
+        er.textContent = '';
+        if (!senhaBoa(s1)) { er.textContent = 'A senha precisa ter 8 ou mais caracteres, com letras e números.'; $('ac-senha').focus(); return; }
+        if (s1 !== s2) { er.textContent = 'As duas senhas estão diferentes. Digite de novo.'; $('ac-senha2').value = ''; $('ac-senha2').focus(); return; }
+        bt.disabled = true;
+        try { await auth.confirmPasswordReset(a.code, s1); }
+        catch (e) { bt.disabled = false; if (/expired-action-code|invalid-action-code/.test(e && e.code)) telaLinkRuim(erroAcao(e)); else er.textContent = erroAcao(e); return; }
+        cartaoAcao(`<div class="lg-cab"><h2>Senha nova salva</h2><p class="sub">Pronto. A partir de agora, entre com <b>${esc(email)}</b> e a senha nova.</p></div>
+          <button class="btn lg-principal" id="ac-entrar" type="button">${ic('arrow')}Entrar no Conectwork</button>`);
+        $('ac-entrar').onclick = async () => {
+          $('ac-entrar').disabled = true;
+          try { await auth.setPersistence(manterConectado() ? 'local' : 'session'); await auth.signInWithEmailAndPassword(email, s1); } catch (e) { /* entra pela tela de login */ }
+          seguir();
+          setTimeout(() => { const em = document.getElementById('lg-email'); if (em && !em.value) em.value = email; }, 300);
+        };
+      };
+      return;
+    }
+    if (a.mode === 'verifyEmail' || a.mode === 'verifyAndChangeEmail') {
+      try { await auth.applyActionCode(a.code); if (auth.currentUser && auth.currentUser.reload) await auth.currentUser.reload().catch(() => {}); }
+      catch (e) { telaLinkRuim(/expired-action-code|invalid-action-code/.test(e && e.code) ? 'Este link venceu ou já foi usado. Se o e-mail ainda não estiver confirmado, entre no Conectwork e peça outro.' : erroAcao(e)); return; }
+      cartaoAcao(`<div class="lg-cab"><h2>E-mail confirmado</h2><p class="sub">${a.mode === 'verifyAndChangeEmail' ? 'Seu e-mail de acesso foi trocado. Use o e-mail novo para entrar.' : 'Obrigado! Seu e-mail está confirmado no Conectwork.'}</p></div>
+        <button class="btn lg-principal" id="ac-entrar" type="button">${ic('arrow')}Continuar</button>`);
+      document.getElementById('ac-entrar').onclick = seguir;
+      return;
+    }
+    if (a.mode === 'recoverEmail') {
+      let email = '';
+      try { const info = await auth.checkActionCode(a.code); email = (info && info.data && info.data.email) || ''; await auth.applyActionCode(a.code); }
+      catch (e) { telaLinkRuim(erroAcao(e)); return; }
+      cartaoAcao(`<div class="lg-cab"><h2>E-mail de acesso devolvido</h2><p class="sub">O seu acesso voltou a usar <b>${esc(email)}</b>. Se não foi você quem pediu a troca, crie uma senha nova agora.</p></div>
+        <button class="btn lg-principal" id="ac-senha-nova" type="button">${ic('lock')}Criar senha nova</button>
+        <button class="linkbtn" id="ac-entrar" type="button" style="align-self:center">Voltar para o login</button>`);
+      document.getElementById('ac-senha-nova').onclick = () => { limparAcao(); iniciarLogin('esqueci'); setTimeout(() => { const em = document.getElementById('lg-esq-email'); if (em) em.value = email; }, 300); };
+      document.getElementById('ac-entrar').onclick = seguir;
+      return;
+    }
+    seguir();
+  }
+
+  let loginLigado = false;
+  function iniciarLogin(modo) {
+    if (modo) { telaLogin(modo); }
+    if (loginLigado) { if (!modo) recarregar(); return; }
+    loginLigado = true;
+    if (modo) { const prim = CW.fb.auth(); let primeira = true; prim.onAuthStateChanged(u => { if (primeira && !u) { primeira = false; return; } primeira = false; aoMudarLogin(u); }); return; }
+    CW.fb.auth().onAuthStateChanged(aoMudarLogin);
+  }
+
   function iniciar() {
     if (!window.firebase) { telaSemConexao(); return; }
     if (!CW.fb.iniciar()) { telaConfig(); return; }
+    const acao = lerAcao();
+    if (acao) { telaAcao(acao); return; }
+    loginLigado = true;
     CW.fb.auth().onAuthStateChanged(aoMudarLogin);
     /* volta do login por redirect (quando a janela foi bloqueada): mostra o erro, se houver */
     const a = CW.fb.auth();

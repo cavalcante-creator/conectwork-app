@@ -70,6 +70,9 @@ testes/               testes automatizados
 - Na lista aparece "Documentos pendentes"; na análise, "Pedir para a empresa completar o cadastro" (vira `pendencia`; a empresa preenche em "Meu cadastro" e reenvia; aprovar de novo grava `preCadastro:false`).
 - Regra: `empresas` create aceita, só para `master()`, `status 'aprovado'` com `preCadastro == true`, plano, módulos e avaliação. Testes: `teste-precadastro.js` e `teste-regras.js`.
 
+## Links dos e-mails (09/11/2026)
+- O link dos e-mails do Firebase aponta para o app (Authentication › Modelos › Personalizar URL de ação = endereço do app). `js/sessao.js` (`lerAcao`/`telaAcao`) lê `?mode=…&oobCode=…` e mostra, no visual da entrada: **Crie uma senha nova** (`verifyPasswordResetCode` → `confirmPasswordReset`, depois já entra), **E-mail confirmado** (`applyActionCode`), **E-mail de acesso devolvido** (`checkActionCode` + `applyActionCode`) e **Link fora da validade** ("Pedir um link novo"). O código sai do endereço depois. Modelos de e-mail em `docs/emails/` (HTML para colar no console, com `%LINK%`/`%EMAIL%`) e o passo a passo em `docs/emails/COMO-CONFIGURAR.md`. Teste: `teste-linkemail.js`.
+
 ## Cargos (dentro de cada empresa)
 | Cargo | O que vê |
 |---|---|
