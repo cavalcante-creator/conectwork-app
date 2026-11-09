@@ -198,6 +198,22 @@ async function deve(nome, permitido, op) {
   await deve('Membro lê a área privada da própria empresa (Minha empresa)', true, () => getDoc(doc(db('ana'), 'empresas', 'alfa', 'privado', 'cadastro')));
   await deve('Equipe master grava no histórico como "master"', true, () => addDoc(collection(db('master'), 'log'), reg('master', { empresaId: 'master' })));
 
+  /* ---------- dinheiro do MEI (10/11/2026) ---------- */
+  const mv = extra => Object.assign({ empresaId: 'alfa', tipo: 'entrada', valorCentavos: 20000, data: '2026-11-09', descricao: 'Venda de bolos', categoria: 'Venda', forma: 'pix', situacao: 'pago', vencimento: '', cliente: '',
+    origem: 'manual', removido: false, pagoEm: '2026-11-09', criadoPor: P.ana, criadoPorNome: 'Ana', criadoEm: serverTimestamp(), atualizadoEm: serverTimestamp() }, extra || {});
+  await deve('Dinheiro: admin registra uma entrada', true, () => setDoc(doc(db('ana'), 'movimentos', 'm1'), mv()));
+  await deve('Dinheiro: financeiro lê', true, () => getDocs(query(collection(db('bruno'), 'movimentos'), where('empresaId', '==', 'alfa'))));
+  await deve('Dinheiro: quem não é da empresa NÃO lê', false, () => getDoc(doc(db('carla'), 'movimentos', 'm1')));
+  await deve('Dinheiro: NÃO com valor zero ou quebrado', false, () => setDoc(doc(db('ana'), 'movimentos', 'm2'), mv({ valorCentavos: 0 })));
+  await deve('Dinheiro: NÃO com forma de pagamento inventada', false, () => setDoc(doc(db('ana'), 'movimentos', 'm3'), mv({ forma: 'cheque' })));
+  await deve('Dinheiro: NÃO na empresa de outro', false, () => setDoc(doc(db('ana'), 'movimentos', 'm4'), mv({ empresaId: 'beta' })));
+  await deve('Dinheiro: NÃO pago sem o dia do pagamento', false, () => setDoc(doc(db('ana'), 'movimentos', 'm5'), mv({ pagoEm: '' })));
+  await deve('Dinheiro: em aberto sem dia de pagamento', true, () => setDoc(doc(db('ana'), 'movimentos', 'm6'), mv({ situacao: 'aberto', pagoEm: '', vencimento: '2026-11-20', tipo: 'saida', categoria: 'Material' })));
+  await deve('Dinheiro: marca como pago', true, () => updateDoc(doc(db('ana'), 'movimentos', 'm6'), { situacao: 'pago', pagoEm: '2026-11-10', atualizadoEm: serverTimestamp() }));
+  await deve('Dinheiro: tira (removido), sem apagar', true, () => updateDoc(doc(db('ana'), 'movimentos', 'm1'), { removido: true }));
+  await deve('Dinheiro: NÃO troca a origem nem a empresa', false, () => updateDoc(doc(db('ana'), 'movimentos', 'm1'), { origem: 'assistente' }));
+  await deve('Dinheiro: ninguém apaga', false, () => deleteDoc(doc(db('ana'), 'movimentos', 'm1')));
+
   /* ---------- agenda e lembretes (10/11/2026) ---------- */
   const ag = extra => Object.assign({ empresaId: 'alfa', tipo: 'compromisso', titulo: 'Visita técnica', data: '2026-11-20', hora: '09:00', cliente: 'Cliente X', local: '', obs: '', repete: '', avisar: 60,
     feito: false, feitos: [], removido: false, criadoPor: P.ana, criadoPorNome: 'Ana', criadoEm: serverTimestamp(), atualizadoEm: serverTimestamp() }, extra || {});

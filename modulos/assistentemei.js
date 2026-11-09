@@ -57,13 +57,15 @@
         const h = new Date(), de = iso(h), ate = iso(new Date(h.getFullYear(), h.getMonth(), h.getDate() + 7));
         const ls = CW.agenda.linhas(ctx, de, ate).filter(l => !l.feito);
         return { t: ls.length ? `Nos próximos 7 dias: ${ls.slice(0, 8).map(l => `${dataBR(l.data).slice(0, 5)} · ${l.a ? l.a.titulo : l.x.titulo}`).join('; ')}.` : 'Nada marcado para os próximos 7 dias.', ir: [['Abrir a agenda', 'agenda']] }; } },
+    { id: 'registrar', p: ['Como registro uma venda ou um gasto?'], k: [['registr'], ['lancar'], ['anotar']],
+      r: () => ({ t: 'É só me escrever do seu jeito, por exemplo: "vendi R$ 200 hoje no Pix", "comprei R$ 80 de material", "o cliente me deve R$ 150". Eu mostro como entendi e só registro depois que você confirmar. Também dá para tocar em "Registrar", no canto da tela.', ir: [['Abrir o Dinheiro', 'dinheiro']] }) },
     { id: 'contador', p: ['Preciso de contador?'], k: [['contador'], ['contabil']],
       r: () => ({ t: 'O MEI não é obrigado a ter contador: dá para pagar o DAS e entregar a declaração sozinho. Mas um contador ajuda quando você chega perto do limite, quer mudar de atividade, contratar alguém ou virar microempresa.' }) },
     { id: 'clientes', p: ['Por que é bom ter mais de um cliente?'], k: [['cliente'], ['depend'], ['exclusiv']],
       r: () => ({ t: 'Atender várias empresas mostra que você tem um negócio próprio, com autonomia. Quando quase todo o faturamento vem de um cliente só, isso pode ser visto como dependência. Em Meu negócio, o Conectwork mostra de quem vem o seu faturamento.', ir: [['Ver em Meu negócio', 'negocio']] }) }
   ];
   const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  const SUGESTOES = ['faturei', 'limite', 'das', 'receber', 'semana', 'obrig', 'impostos', 'nota'];
+  const SUGESTOES = ['registrar', 'faturei', 'limite', 'das', 'receber', 'semana', 'obrig', 'impostos'];
 
   function achar(texto) {
     const q = norm(texto), pal = q.split(/[^a-z0-9]+/).filter(Boolean);
@@ -76,6 +78,9 @@
     return melhor;
   }
   async function responder(texto, ctx) {
+    /* frase de lançamento ("vendi R$ 200 no pix"): prepara e pede confirmação; só grava depois do "Confirmar" */
+    const lanc = CW.dinheiro && CW.dinheiro.interpretar && CW.dinheiro.interpretar(texto);
+    if (lanc) return { id: 'lanc', t: `Entendi assim: ${CW.dinheiro.resumoTxt(lanc)}. Posso registrar?`, lanc };
     const x = achar(texto);
     if (x) return Object.assign({ id: x.id }, await x.r(ctx));
     return { id: 'nao', t: 'Ainda não sei responder essa. Por enquanto eu respondo sobre faturamento, limite do MEI, DAS, impostos, declaração anual, nota fiscal, o que você tem a receber e a sua agenda. Escolha uma das perguntas abaixo.' };
@@ -83,20 +88,29 @@
 
   function desenhar(el, ctx) {
     const { esc, ic } = U(), nome = String((ctx.sessao.perfil && ctx.sessao.perfil.nome) || '').split(' ')[0];
-    const msgs = conversa.length ? conversa : [{ de: 'a', t: `Oi${nome ? ', ' + nome : ''}! Eu sou o assistente do Conectwork. Pergunte sobre o seu MEI: faturamento, limite, DAS, impostos, notas e prazos. Respondo em linguagem simples e com os seus números.` }];
+    const msgs = conversa.length ? conversa : [{ de: 'a', t: `Oi${nome ? ', ' + nome : ''}! Eu sou o assistente do Conectwork. Pergunte sobre o seu MEI (faturamento, limite, DAS, impostos, notas e prazos) ou me conte o que vendeu e gastou, que eu registro para você.` }];
     el.innerHTML = `<div class="as-wrap"><section class="card as-card" id="as-chat"><div class="as-msgs" id="as-msgs" aria-live="polite">
-        ${msgs.map(m => `<div class="as-m ${m.de === 'eu' ? 'eu' : ''}" ${m.id ? `data-resp="${esc(m.id)}"` : ''}><p>${esc(m.t)}</p>${(m.ir || []).length ? `<div class="as-ir">${m.ir.map(([t, r]) => `<button class="btn sm sec" data-ir="${esc(r)}">${esc(t)}</button>`).join('')}</div>` : ''}</div>`).join('')}</div>
+        ${msgs.map((m, i) => `<div class="as-m ${m.de === 'eu' ? 'eu' : ''}" ${m.id ? `data-resp="${esc(m.id)}"` : ''}><p>${esc(m.t)}</p>${(m.ir || []).length ? `<div class="as-ir">${m.ir.map(([t, r]) => `<button class="btn sm sec" data-ir="${esc(r)}">${esc(t)}</button>`).join('')}</div>` : ''}
+          ${m.lanc && !m.feito ? `<div class="as-ir"><button class="btn sm" data-lanc-ok="${i}">${ic('check')}Confirmar</button><button class="btn sm sec" data-lanc-mudar="${i}">Mudar</button><button class="btn sm ghost" data-lanc-nao="${i}">Cancelar</button></div>` : ''}</div>`).join('')}</div>
         <div class="as-sug" id="as-sug">${SUGESTOES.map(id => R.find(x => x.id === id)).map(x => `<button class="as-chip" data-p="${esc(x.p[0])}">${esc(x.p[0])}</button>`).join('')}</div>
-        <form class="as-form" id="as-form"><input id="as-q" maxlength="200" autocomplete="off" placeholder="Escreva a sua pergunta" aria-label="Sua pergunta"><button class="btn" type="submit">${ic('send')}Perguntar</button></form></section>
+        <form class="as-form" id="as-form"><input id="as-q" maxlength="200" autocomplete="off" placeholder="Pergunte ou registre: vendi R$ 200 no Pix" aria-label="Sua pergunta ou o que quer registrar"><button class="btn" type="submit">${ic('send')}Perguntar</button></form></section>
       <p class="hint" style="margin:12px 0 0;font-size:12px">${esc(AVISO)} O assistente com inteligência artificial, que conversa sobre qualquer assunto, chega numa próxima etapa.</p></div>`;
     const box = document.getElementById('as-msgs'); box.scrollTop = box.scrollHeight;
     const perguntar = async t => { t = String(t || '').trim(); if (!t) return;
       conversa = (conversa.length ? conversa : msgs).concat([{ de: 'eu', t }]); desenhar(el, ctx);
-      const r = await responder(t, ctx); conversa = conversa.concat([{ de: 'a', t: r.t, ir: r.ir, id: r.id }]).slice(-40); desenhar(el, ctx);
+      const r = await responder(t, ctx); conversa = conversa.concat([{ de: 'a', t: r.t, ir: r.ir, id: r.id, lanc: r.lanc }]).slice(-40); desenhar(el, ctx);
       const q = document.getElementById('as-q'); if (q) q.focus(); };
     document.getElementById('as-form').onsubmit = e => { e.preventDefault(); perguntar(document.getElementById('as-q').value); };
     el.querySelectorAll('[data-p]').forEach(b => b.onclick = () => perguntar(b.dataset.p));
     el.querySelectorAll('[data-ir]').forEach(b => b.onclick = () => CW.ir(b.dataset.ir));
+    /* lançamento proposto: Confirmar grava; Mudar abre o formulário já preenchido; Cancelar não grava nada */
+    const fecha = (i, extra) => { conversa = conversa.slice(); conversa[i] = Object.assign({}, conversa[i], { feito: true }); if (extra) conversa = conversa.concat([extra]); desenhar(el, ctx); };
+    el.querySelectorAll('[data-lanc-ok]').forEach(b => b.onclick = async () => { const i = +b.dataset.lancOk, x = conversa[i].lanc; b.disabled = true;
+      try { await CW.dinheiro.gravar(ctx, x, 'assistente'); fecha(i, { de: 'a', id: 'lanc-ok', t: `Pronto, registrei: ${CW.dinheiro.resumoTxt(x)}.`, ir: [['Ver no Dinheiro', 'dinheiro']] }); }
+      catch (e) { b.disabled = false; U().toast(CW.fb.mensagemErro(e), 'erro'); } });
+    el.querySelectorAll('[data-lanc-mudar]').forEach(b => b.onclick = async () => { const i = +b.dataset.lancMudar, x = conversa[i].lanc;
+      const id = await CW.dinheiro.registrar(ctx, Object.assign({}, x, { origem: 'assistente' })); if (id) fecha(i, { de: 'a', id: 'lanc-ok', t: 'Pronto, registrei do jeito que você ajustou.', ir: [['Ver no Dinheiro', 'dinheiro']] }); });
+    el.querySelectorAll('[data-lanc-nao]').forEach(b => b.onclick = () => fecha(+b.dataset.lancNao, { de: 'a', id: 'lanc-nao', t: 'Tudo bem, não registrei nada.' }));
   }
 
   const ehMei = ctx => { let p = ''; try { p = sessionStorage.getItem('cw.porte.' + ctx.empresaId) || ''; } catch (e) {} return String(p).startsWith('MEI'); };

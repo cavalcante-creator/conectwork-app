@@ -26,13 +26,17 @@
   async function carregar(ctx) {
     const db = CW.fb.db(), emp = ctx.contexto.empresaId, q = col => db.collection(col).where('prestadorId', '==', emp).get().then(s => CW.fb.lista(s)).catch(() => []);
     const [esp, tit, os, f, i, pv, fi] = await Promise.all([q('espelhos'), q('titulos'), q('ordens'), db.doc('faturamento/' + emp).get().catch(() => null), db.doc('independencia/' + emp).get().catch(() => null), db.doc('empresas/' + emp + '/privado/cadastro').get().catch(() => null), db.doc('fiscal/' + emp).get().catch(() => null)]);
-    return { fiscal: (fi && CW.fb.dados(fi)) || { das: {}, dasn: {} }, esp, tit, os, fat: (f && CW.fb.dados(f)) || { anos: {}, clientes: [] }, ind: (i && CW.fb.dados(i)) || null, porte: ((pv && CW.fb.dados(pv)) || {}).dados ? CW.fb.dados(pv).dados.porte || '' : '' };
+    /* Dinheiro do MEI (10/11/2026): vendas e serviços recebidos, lançados fora das notas; só leitura de quem pode ver */
+    const mov = await db.collection('movimentos').where('empresaId', '==', emp).get().then(sn => CW.fb.lista(sn).filter(m => !m.removido)).catch(() => []);
+    return { mov, fiscal: (fi && CW.fb.dados(fi)) || { das: {}, dasn: {} }, esp, tit, os, fat: (f && CW.fb.dados(f)) || { anos: {}, clientes: [] }, ind: (i && CW.fb.dados(i)) || null, porte: ((pv && CW.fb.dados(pv)) || {}).dados ? CW.fb.dados(pv).dados.porte || '' : '' };
   }
   /* faturado pelo Conectwork por mês (competência da nota) e por cliente */
   function contas(D) {
     const porMes = {}, porCli = {}, ult = new Set(mesesAtras(12));
     D.esp.filter(e => e.nota).forEach(e => { const m = e.competencia; porMes[m] = (porMes[m] || 0) + e.valorCentavos; if (ult.has(m)) porCli[e.tomadorNome] = (porCli[e.tomadorNome] || 0) + e.valorCentavos; });
     const fora = {}; Object.entries(D.fat.anos || {}).forEach(([a, ms]) => Object.entries(ms || {}).forEach(([mm, v]) => { fora[`${a}-${mm}`] = v || 0; }));
+    /* vendas e serviços recebidos do Dinheiro somam como faturamento fora do Conectwork, no mês em que foram pagos */
+    (D.mov || []).filter(m => m.tipo === 'entrada' && m.situacao === 'pago' && ['Venda', 'Serviço'].includes(m.categoria)).forEach(m => { const k = String(m.pagoEm || m.data).slice(0, 7); fora[k] = (fora[k] || 0) + m.valorCentavos; });
     const foraUlt = [...ult].reduce((s, m) => s + (fora[m] || 0), 0);
     if (foraUlt) porCli['Fora do Conectwork'] = foraUlt;
     const ano = String(anoAtual()), noAno = Object.entries(porMes).filter(([m]) => m.startsWith(ano)).reduce((s, [, v]) => s + v, 0) + Object.entries(fora).filter(([m]) => m.startsWith(ano)).reduce((s, [, v]) => s + v, 0);
@@ -135,7 +139,8 @@
     return { das, dasn };
   }
   function receitaMes(D, m) {
-    const notas = D.esp.filter(e => e.nota && e.competencia === m), fora = (((D.fat.anos || {})[m.slice(0, 4)] || {})[m.slice(5, 7)]) || 0;
+    const lanc = (D.mov || []).filter(x => x.tipo === 'entrada' && x.situacao === 'pago' && ['Venda', 'Serviço'].includes(x.categoria) && String(x.pagoEm || x.data).slice(0, 7) === m).reduce((a, x) => a + x.valorCentavos, 0);
+    const notas = D.esp.filter(e => e.nota && e.competencia === m), fora = ((((D.fat.anos || {})[m.slice(0, 4)] || {})[m.slice(5, 7)]) || 0) + lanc;
     return { notas, conect: notas.reduce((s, e) => s + e.valorCentavos, 0), fora, total: notas.reduce((s, e) => s + e.valorCentavos, 0) + fora };
   }
   function agendaHtml(D, K, ctx) {

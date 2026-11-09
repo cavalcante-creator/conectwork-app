@@ -21,7 +21,7 @@ const { ok, fim } = H.placar('agenda');
 
   // A1 menu do MEI: Agenda e Assistente aparecem; no celular a barra de baixo começa por Início, Agenda, Demandas, A receber
   const m1 = await page.$$eval('#menu [data-mod]', x => x.map(b => b.dataset.mod));
-  ok('A1 menu do MEI tem Agenda e lembretes e Assistente', m1.join() === 'inicio,agenda,ordens,titulos,negocio,espelhos,assistentemei,contratos,documentos,empresa', m1.join());
+  ok('A1 menu do MEI tem Agenda e lembretes e Assistente', m1.join() === 'inicio,dinheiro,agenda,ordens,titulos,negocio,espelhos,assistentemei,contratos,documentos,empresa', m1.join());
 
   // A2 prazos automáticos: o DAS entra sozinho (marcado "automático") e o que venceu aparece em "Ficou para trás"
   await page.evaluate(() => { location.hash = '#agenda'; }); await page.waitForSelector('#ag-lista', { timeout: 8000 }); await H.dorme(400);
@@ -92,7 +92,7 @@ const { ok, fim } = H.placar('agenda');
     tiles: Array.from(document.querySelectorAll('.mei-tile')).map(t => t.dataset.tile), hoje: document.getElementById('mei-hoje').innerText, lim: (document.getElementById('mei-lim') || {}).innerText || '' }));
   await page.click('.mei-tile[data-tile="ordens"]'); await H.dorme(300); const h10 = await page.evaluate(() => location.hash);
   ok('A10 Início do MEI: "Oi, Lia!", o que tem hoje, 6 botões grandes (abrem a tela) e o limite do MEI',
-    a10.ola === 'Oi, Lia!' && a10.topo && a10.mei && a10.tiles.join() === 'agenda,ordens,titulos,espelhos,negocio,assistentemei' && /Hoje/.test(a10.hoje) && /R\$ 35\.000 de R\$ 81\.000/.test(a10.lim) && h10 === '#ordens'
+    a10.ola === 'Oi, Lia!' && a10.topo && a10.mei && a10.tiles.join() === 'agenda,ordens,dinheiro,espelhos,negocio,assistentemei' && /Hoje/.test(a10.hoje) && /R\$ 35\.000 de R\$ 81\.000/.test(a10.lim) && h10 === '#ordens'
     && !(await page.evaluate(() => document.querySelector('.topbar').hidden)), JSON.stringify(a10));
 
   // A9 celular: agenda e assistente cabem sem rolar para o lado

@@ -58,7 +58,7 @@
   const TILES = [
     { id: 'agenda', t: 'Minha agenda', ic: 'clock', cor: 'sol' },
     { id: 'ordens', t: 'Demandas', ic: 'clipboard', cor: 'ceu' },
-    { id: 'titulos', t: 'A receber', ic: 'wallet', cor: 'agua' },
+    { id: 'dinheiro', t: 'Dinheiro', ic: 'bank', cor: 'agua' },
     { id: 'espelhos', t: 'Emitir nota', ic: 'receipt', cor: 'coral' },
     { id: 'negocio', t: 'Meu MEI', ic: 'chart', cor: 'lilas' },
     { id: 'assistentemei', t: 'Tire uma dúvida', ic: 'help', cor: 'ceu' }
@@ -71,6 +71,7 @@
     if (id === 'agenda') { const k = hojeLinhas().length; return k ? `${k} ${k === 1 ? 'coisa' : 'coisas'} hoje` : 'Nada para hoje'; }
     if (id === 'ordens') return n ? `${n} ${n === 1 ? 'para responder' : 'para responder'}` : 'Nenhuma nova';
     if (id === 'titulos') { const l = (CW.titulos && CW.titulos.proximos(ctx, 50) || []).filter(t => t.lado === 'prestador'); const tot = l.reduce((a, t) => a + (t.centavos || 0), 0); return tot ? U().formatarDinheiro(tot) : 'Nada em aberto'; }
+    if (id === 'dinheiro') { if (!CW.dinheiro || !CW.dinheiro.pronto()) return 'Entrou e saiu'; const r = CW.dinheiro.doMes(ctx, isoHoje().slice(0, 7)); return r.entrou || r.saiu ? (r.sobrou < 0 ? 'Faltou ' : 'Sobrou ') + U().formatarDinheiro(Math.abs(r.sobrou)) + ' no mês' : 'Registre o que entra'; }
     if (id === 'espelhos') return n ? `${n} esperando` : 'Nenhuma agora';
     if (id === 'negocio') { const f = CW.negocio && CW.negocio.fiscal && CW.negocio.fiscal(); return f && f.das.some(x => !x.pago && x.vencido) ? 'DAS atrasado' : 'DAS e limite'; }
     return 'Assistente';
@@ -90,7 +91,17 @@
       return `<button class="mei-tile" data-ir="${esc(x.id)}" data-tile="${esc(x.id)}">${n && x.id !== 'agenda' ? `<span class="mei-num" aria-label="${n} para ver">${n > 9 ? '9+' : n}</span>` : ''}<span class="mei-bola ${x.cor}">${ic(x.ic)}</span><b>${esc(x.t)}</b><small>${esc(subTile(x.id, n))}</small></button>`; }).join('');
     g.querySelectorAll('[data-ir]').forEach(b => b.onclick = () => CW.ir(b.dataset.ir));
     const h = document.getElementById('mei-hoje'); if (h) h.innerHTML = hojeHtml();
+    meiMes();
   }
+  /* "Este mês": entrou, saiu e sobrou (as mesmas contas da tela Dinheiro) */
+  function meiMes() {
+    const b = document.getElementById('mei-mes'); if (!b) return;
+    if (!CW.dinheiro || !CW.dinheiro.pronto()) { b.hidden = true; return; }
+    const { esc } = U(), r = CW.dinheiro.doMes(ctxAgora(), isoHoje().slice(0, 7)), brl = c => U().formatarDinheiro(c).replace(/,00$/, '');
+    b.innerHTML = `<p class="mei-rot">Este mês</p><div class="mei-mes-n"><div><small>Entrou</small><b class="ent">${esc(brl(r.entrou))}</b></div><div><small>Saiu</small><b class="sai">${esc(brl(r.saiu))}</b></div><div><small>${r.sobrou < 0 ? 'Faltou' : 'Sobrou'}</small><b>${esc(brl(Math.abs(r.sobrou)))}</b></div></div>`;
+    b.hidden = false; b.onclick = () => CW.ir('dinheiro');
+  }
+  window.addEventListener('cw:dinheiro', () => { if (document.getElementById('mei-home')) meiAtualiza(); });
   async function meiLimite(ctx) {
     const box = document.getElementById('mei-lim'); if (!box || !CW.negocio || !CW.negocio.carregar) return;
     try {
@@ -110,6 +121,7 @@
         <div class="mei-topo"><h2>Oi${nome ? ', ' + esc(nome) : ''}!</h2><p>${esc(data[0].toUpperCase() + data.slice(1))}</p></div>
         <button class="mei-hoje" id="mei-hoje" data-ir="agenda"></button>
         <div class="mei-grade" id="mei-grade"></div>
+        <button class="mei-mes" id="mei-mes" hidden></button>
         <button class="mei-lim" id="mei-lim" hidden></button>
         <section class="card" id="ini-pv" hidden><div class="card-h"><span class="ic">${ic('alert')}</span><h3>Para fazer</h3><span class="count" id="ini-pv-n" hidden></span></div><div class="card-b" id="ini-pv-b"></div></section>
       </div>`;

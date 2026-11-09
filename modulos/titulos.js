@@ -313,5 +313,11 @@
       ver: { nome: 'Título', sub: 'Vencimento, liberação, agendamento, pagamento com comprovante e baixa.', render: (el, ctx) => desenharVer(el, ctx, ctx.params[0]) }
     }
   });
-  CW.titulos = { criarNoLote, vencimento, proximos };
+  /* Dinheiro do MEI (10/11/2026): notas da rede já pagas para a minha empresa, com o dia do pagamento (sem leitura nova) */
+  const recebidos = function (ctx) {
+    if (!pronto || !ctx || !ctx.contexto) return [];
+    return tP.filter(t => ['liquidado', 'baixado'].includes(t.status) && t.liquidacao && t.liquidacao.data)
+      .map(t => ({ id: t._id, nome: t.tomadorNome, centavos: t.liquidoCentavos || 0, data: String(t.liquidacao.data).slice(0, 10), nota: t.notaNumero || '' }));
+  };
+  CW.titulos = { criarNoLote, vencimento, proximos, recebidos };
 })();

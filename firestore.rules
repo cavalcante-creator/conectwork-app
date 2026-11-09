@@ -733,6 +733,31 @@ service cloud.firestore {
     }
 
     // ---------- Histórico de alterações ----------
+    // ---------- Dinheiro do MEI (10/11/2026): entradas e saídas fora das notas do Conectwork; nada se apaga (removido:true) ----------
+    function movOk(d) {
+      return d.keys().hasOnly(['empresaId','tipo','valorCentavos','data','descricao','categoria','forma','situacao','vencimento','cliente','origem','removido','pagoEm','criadoPor','criadoPorNome','criadoEm','atualizadoEm'])
+        && d.tipo in ['entrada','saida']
+        && d.valorCentavos is int && d.valorCentavos > 0 && d.valorCentavos <= 100000000000
+        && d.data is string && d.data.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+        && d.descricao is string && d.descricao.size() >= 1 && d.descricao.size() <= 120
+        && d.categoria is string && d.categoria.size() <= 60
+        && d.forma in ['pix','dinheiro','cartao','boleto','transferencia','outro']
+        && d.situacao in ['pago','aberto']
+        && d.vencimento is string && (d.vencimento == '' || d.vencimento.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}'))
+        && d.pagoEm is string && (d.situacao == 'aberto' || d.pagoEm.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}'))
+        && d.cliente is string && d.cliente.size() <= 80
+        && d.origem in ['manual','assistente'] && d.removido is bool;
+    }
+    match /movimentos/{id} {
+      allow read: if master() || cargoEm(resource.data.empresaId, ['admin','financeiro','contador']);
+      allow create: if cargoEm(request.resource.data.empresaId, ['admin','financeiro'])
+        && movOk(request.resource.data) && request.resource.data.criadoPor == request.auth.uid && request.resource.data.removido == false;
+      allow update: if cargoEm(resource.data.empresaId, ['admin','financeiro'])
+        && movOk(request.resource.data)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['empresaId','criadoPor','criadoPorNome','criadoEm','origem']);
+      allow delete: if false;
+    }
+
     // ---------- Agenda e lembretes da empresa (10/11/2026): compromissos e lembretes; nada se apaga (removido:true) ----------
     function agendaOk(d) {
       return d.keys().hasOnly(['empresaId','tipo','titulo','data','hora','cliente','local','obs','repete','avisar','feito','feitos','removido','criadoPor','criadoPorNome','criadoEm','atualizadoEm'])
