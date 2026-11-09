@@ -104,7 +104,10 @@
     let corpo;
     if (st === 'aprovado') corpo = `<div class="banner ok">${ic('check')}<span><strong>Aprovada em ${esc(tempo(e.avaliadoEm))}</strong>Empresa ativa na rede${e.avaliadoPor ? ' · por ' + esc(e.avaliadoPor) : ''}.</span></div>
       ${e.preCadastro ? `<div class="banner warn" id="cm-pre-aviso">${ic('alert')}<span><strong>Pré-cadastro: dados e documentos pendentes</strong>A empresa foi liberada só com o CNPJ. Quando tiver o responsável e os documentos, peça para a empresa completar o cadastro: ela preenche em "Meu cadastro", envia, e você confere e aprova de novo.</span></div>` : ''}
-      ${planoSel}${mods}<button class="btn" id="cm-salvar">${ic('check')}Salvar plano e módulos</button>
+      ${e.preCadastro ? `<div class="fgrid"><label class="f c6"><span>Uso</span><select id="cm-tipo">${Object.entries(C().TIPOS).map(([k, t]) => `<option value="${k}" ${k === e.tipo ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
+        <label class="f c6"><span>Porte</span><select id="cm-porte"><option value="">Não informado</option>${C().PORTES.map(x => `<option ${x === (pv.dados || {}).porte ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></label>
+        <em class="hint c12" style="margin-top:-6px">MEI que só presta serviço abre no jeito do profissional: menu simples, notas a emitir e a receber.</em></div>` : ''}
+      ${planoSel}${mods}<button class="btn" id="cm-salvar">${ic('check')}${e.preCadastro ? 'Salvar uso, porte, plano e módulos' : 'Salvar plano e módulos'}</button>
       ${e.preCadastro ? `<label class="f"><span>Mensagem para a empresa</span><textarea id="cm-motivo" rows="2" maxlength="500">Complete os dados da empresa e envie os documentos para conferência.</textarea><em class="ferr" id="cm-motivo-erro"></em></label>
       <div><button class="btn warn" id="cm-ajuste">${ic('edit')}Pedir para a empresa completar o cadastro</button></div>` : ''}`;
     else if (st === 'recusado') corpo = `<div class="banner danger">${ic('x')}<span><strong>Recusada em ${esc(tempo(e.avaliadoEm))}</strong>${esc(e.motivo || '')}</span></div>`;
@@ -198,9 +201,12 @@
     if (sv) sv.onclick = async () => {
       const plano = sel.value, mods = lerMods();
       if (!plano) { U().toast('Escolha o plano.', 'erro'); sel.focus(); return; }
-      const b = db.batch();
-      b.update(db.doc('empresas/' + id), { plano, modulos: mods });
-      log(b, 'empresa.plano', `Plano de ${nomeEmp(e)}: ${P().nomePlano(plano)}. Módulos: ${nomesMods(mods)}.`);
+      const b = db.batch(), ct = document.getElementById('cm-tipo'), cp = document.getElementById('cm-porte');
+      const tipo = ct ? ct.value : e.tipo, porte = cp ? cp.value : null, porteAntes = (pv.dados || {}).porte || '';
+      b.update(db.doc('empresas/' + id), { plano, modulos: mods, tipo });
+      if (cp && porte !== porteAntes) b.update(db.doc('empresas/' + id + '/privado/cadastro'), { 'dados.porte': porte });
+      log(b, 'empresa.plano', `Plano de ${nomeEmp(e)}: ${P().nomePlano(plano)}. Módulos: ${nomesMods(mods)}.${tipo !== e.tipo ? ' Uso: ' + C().TIPOS[tipo] + '.' : ''}${cp && porte !== porteAntes ? ' Porte: ' + (porte || 'não informado') + '.' : ''}`);
+      try { sessionStorage.removeItem('cw.porte.' + id); } catch (er) { /* o menu do MEI confere o porte de novo ao entrar */ }
       sv.disabled = true;
       try { await b.commit(); U().toast(`Plano e módulos de ${nomeEmp(e)} salvos.`); refazer(); } catch (err) { falhou(err); }
     };
@@ -219,6 +225,8 @@
       corpo: `<div class="stack" style="gap:14px" id="pc-form">
         <label class="f"><span>CNPJ <b aria-hidden="true">*</b></span><input id="pc-cnpj" data-mascara="cnpj" inputmode="numeric" placeholder="00.000.000/0000-00" autocomplete="off"></label>
         <label class="f"><span>Nome da empresa <b aria-hidden="true">*</b></span><input id="pc-nome" maxlength="120" autocomplete="off" placeholder="Nome fantasia ou razão social"></label>
+        <label class="f"><span>Porte</span><select id="pc-porte"><option value="">Não sei ainda</option>${C().PORTES.map(x => `<option>${esc(x)}</option>`).join('')}</select>
+          <em class="hint">MEI abre o Conectwork no jeito do profissional: menu simples, notas a emitir e a receber.</em></label>
         <label class="f"><span>Uso</span><select id="pc-tipo">${Object.entries(C().TIPOS).map(([k, t]) => `<option value="${k}">${esc(t)}</option>`).join('')}</select></label>
         <label class="f"><span>Plano</span><select id="pc-plano">${planos.map(([k, p]) => `<option value="${k}" ${k === 'profissional' ? 'selected' : ''}>${esc(p.nome)}</option>`).join('')}</select>
           <em class="hint" id="pc-plano-desc">${esc(P().PLANOS.profissional.desc)} Os módulos do plano já vêm ligados; dá para mudar depois.</em></label>
@@ -230,9 +238,10 @@
         if (!U().validarCNPJ(cnpj)) { er.textContent = dig(cnpj).length ? 'CNPJ inválido. Confira os números.' : 'Informe o CNPJ.'; d.querySelector('#pc-cnpj').focus(); return false; }
         if (nome.length < 2) { er.textContent = 'Informe o nome da empresa.'; d.querySelector('#pc-nome').focus(); return false; }
         if ((empresas || []).some(e => dig(e.cnpj) === dig(cnpj))) { er.textContent = 'Este CNPJ já tem cadastro no Conectwork. Procure a empresa na lista "Todas".'; return false; }
-        dados = { cnpj, nome, tipo: d.querySelector('#pc-tipo').value, plano: d.querySelector('#pc-plano').value, admin: d.querySelector('#pc-admin').checked };
+        dados = { cnpj, nome, porte: d.querySelector('#pc-porte').value, tipo: d.querySelector('#pc-tipo').value, plano: d.querySelector('#pc-plano').value, admin: d.querySelector('#pc-admin').checked };
         return true; } }],
-      aoAbrir: d => { U().aplicarMascaras(d); const sp = d.querySelector('#pc-plano');
+      aoAbrir: d => { U().aplicarMascaras(d); const sp = d.querySelector('#pc-plano'), po = d.querySelector('#pc-porte');
+        po.onchange = () => { if (po.value.startsWith('MEI')) d.querySelector('#pc-tipo').value = 'prestador'; };   /* MEI presta serviço */
         sp.onchange = () => { d.querySelector('#pc-plano-desc').textContent = (P().PLANOS[sp.value] || {}).desc + ' Os módulos do plano já vêm ligados; dá para mudar depois.'; };
         d.querySelector('#pc-cnpj').focus(); }
     }).then(async v => {
@@ -251,10 +260,10 @@
           tx.set(nRef, { empresaId: id, criadoEm: agora() });
           tx.set(empRef, { tipo: dados.tipo, status: 'aprovado', nome: dados.nome, razao: '', cnpj: dados.cnpj, cnpjNum: num, cidade: '', uf: '', protocolo,
             criadoPor: u.uid, criadoEm: agora(), enviadoEm: agora(), plano: dados.plano, modulos: mods, preCadastro: true, avaliadoEm: agora(), avaliadoPor: quem });
-          tx.set(db.doc('empresas/' + id + '/privado/cadastro'), { dados: {}, end: {}, resp: {}, banco: {}, docs: {}, preCadastro: true });
+          tx.set(db.doc('empresas/' + id + '/privado/cadastro'), { dados: dados.porte ? { porte: dados.porte } : {}, end: {}, resp: {}, banco: {}, docs: {}, preCadastro: true });
           if (dados.admin) tx.set(db.doc('acessos/' + id + '_' + u.uid), { uid: u.uid, empresaId: id, nome: quem, email: (u.email || '').toLowerCase(), cargo: 'admin', extras: [], sem: [], ativo: true, criadoEm: agora() });
           tx.set(db.collection('log').doc(), { em: agora(), uid: u.uid, quem, empresaId: id, acao: 'empresa.precadastro',
-            texto: `Pré-cadastro de ${dados.nome} (CNPJ ${dados.cnpj}) pela equipe Conectwork, no plano ${P().nomePlano(dados.plano)}. Dados e documentos pendentes.${dados.admin ? ` ${quem} entrou como administrador(a).` : ''}`, ref: id });
+            texto: `Pré-cadastro de ${dados.nome} (CNPJ ${dados.cnpj}) pela equipe Conectwork, no plano ${P().nomePlano(dados.plano)}${dados.porte ? ', porte ' + dados.porte : ''}. Dados e documentos pendentes.${dados.admin ? ` ${quem} entrou como administrador(a).` : ''}`, ref: id });
         });
       } catch (err) {
         U().toast(err && err.code === 'cw/cnpj-repetido' ? 'Este CNPJ já tem cadastro no Conectwork.' : 'O pré-cadastro não foi feito. ' + CW.fb.mensagemErro(err), 'erro');

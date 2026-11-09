@@ -61,6 +61,36 @@ const { ok, fim } = H.placar('precadastro');
   const s7 = await srv(), id7 = Object.keys(s7).find(k => /^empresas\/[^/]+$/.test(k) && s7[k].nome === 'Tomadora Épsilon');
   ok('P7 sem "me colocar como administrador(a)": pré-cadastra sem criar acesso', !!id7 && !Object.keys(s7).some(k => k.startsWith('acessos/' + id7.split('/')[1] + '_')), id7);
 
+  // P9 MEI: escolher o porte MEI já marca "Só presta serviços", grava o porte e a empresa abre no jeito do profissional
+  await page.evaluate(() => { location.hash = '#cadastros'; }); await page.waitForSelector('#cm-pre'); await page.click('#cm-pre'); await page.waitForSelector('dialog[open] #pc-porte');
+  await page.fill('#pc-cnpj', '11.222.333/0001-81'); await page.fill('#pc-nome', 'Profissional Zeta'); await page.selectOption('#pc-porte', 'MEI');
+  const t9 = await page.$eval('#pc-tipo', e => e.value); await clicar();
+  await page.waitForFunction(() => document.querySelector('dialog[open]') && /pré-cadastrada/.test(document.querySelector('dialog[open] h2').innerText), null, { timeout: 6000 });
+  const s9 = await srv(), id9 = Object.keys(s9).find(k => /^empresas\/[^/]+$/.test(k) && s9[k].nome === 'Profissional Zeta').split('/')[1];
+  await page.click('dialog[open] [data-dlg-b="1"]');
+  await page.waitForSelector('#menu-alt', { timeout: 8000 });
+  const m9 = await page.evaluate(() => ({ alt: document.getElementById('menu-alt').innerText, nomes: Array.from(document.querySelectorAll('#menu [data-mod] span')).map(x => x.innerText) }));
+  ok('P9 porte MEI: marca "Só presta serviços", grava o porte e a empresa abre no menu simples do profissional (Notas a emitir, A receber)',
+    t9 === 'prestador' && s9['empresas/' + id9].tipo === 'prestador' && s9['empresas/' + id9 + '/privado/cadastro'].dados.porte === 'MEI' && /Ver todas as telas/.test(m9.alt) && m9.nomes.includes('Notas a emitir'), JSON.stringify({ t9, m9 }));
+
+  // P10 empresa pré-cadastrada sem porte abre no menu completo; a equipe muda para MEI na análise e o menu simples aparece
+  await page.evaluate(() => CW.sessao.entrarEm('master')); await page.waitForSelector('#menu [data-mod="cadastros"]', { timeout: 6000 });
+  await page.evaluate(() => { location.hash = '#cadastros'; }); await page.waitForSelector('#cm-pre'); await page.click('#cm-pre'); await page.waitForSelector('dialog[open] #pc-porte');
+  await page.fill('#pc-cnpj', '33.000.167/0001-01'); await page.fill('#pc-nome', 'Profissional Eta'); await page.selectOption('#pc-tipo', 'prestador'); await clicar();
+  await page.waitForFunction(() => document.querySelector('dialog[open]') && /pré-cadastrada/.test(document.querySelector('dialog[open] h2').innerText), null, { timeout: 6000 });
+  const id10 = Object.entries(await srv()).find(([k, v]) => /^empresas\/[^/]+$/.test(k) && v.nome === 'Profissional Eta')[0].split('/')[1];
+  await page.click('dialog[open] [data-dlg-b="1"]'); await page.waitForSelector('#menu [data-mod]', { timeout: 8000 }); await H.dorme(500);
+  const antes10 = !!(await page.$('#menu-alt'));
+  await page.evaluate(() => CW.sessao.entrarEm('master')); await page.waitForSelector('#menu [data-mod="cadastros"]', { timeout: 6000 });
+  await page.evaluate(id => { location.hash = '#cadastros/analise/' + id; }, id10); await page.waitForSelector('#cm-porte', { timeout: 6000 });
+  await page.selectOption('#cm-porte', 'MEI'); await page.click('#cm-salvar'); await H.dorme(500);
+  const s10 = await srv();
+  await page.evaluate(id => CW.sessao.entrarEm('empresa:' + id), id10); await page.waitForSelector('#menu-alt', { timeout: 8000 }).catch(() => {});
+  ok('P10 sem porte abre no menu completo; a equipe põe MEI na análise e a empresa passa a abrir no menu simples (com histórico)',
+    !antes10 && s10['empresas/' + id10 + '/privado/cadastro'].dados.porte === 'MEI' && !!(await page.$('#menu-alt')) && Object.values(s10).some(x => x.acao === 'empresa.plano' && /Porte: MEI/.test(x.texto)), JSON.stringify({ antes10, d: s10['empresas/' + id10 + '/privado/cadastro'].dados }));
+  await page.evaluate(() => CW.sessao.entrarEm('master')); await page.waitForSelector('#menu [data-mod="cadastros"]', { timeout: 6000 });
+  await page.evaluate(() => { location.hash = '#cadastros'; }); await page.waitForSelector('#cm-pre');
+
   // P8 celular: a janela cabe sem rolar para o lado
   await page.setViewportSize({ width: 390, height: 844 }); await page.click('#cm-pre'); await page.waitForSelector('dialog[open] #pc-cnpj'); await H.dorme(200);
   ok('P8 celular: a janela do pré-cadastro cabe na tela', !(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)));

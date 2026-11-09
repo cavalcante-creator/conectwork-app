@@ -59,13 +59,16 @@
         try {
           let a = analisar(img), fonte = img;
           /* selo: depois de cortar a margem, a borda do desenho é de uma cor só (ex.: retângulo preto com o nome
-             em branco dentro de uma margem branca): o quadradinho todo fica na cor do selo */
-          const [bx, by, bw, bh] = a.caixa;
-          if (bw < a.w || bh < a.h) {
-            const cc = document.createElement('canvas'); cc.width = bw; cc.height = bh; cc.getContext('2d').drawImage(img, bx, by, bw, bh, 0, 0, bw, bh);
+             em branco dentro de uma margem branca): o quadradinho todo fica na cor do selo. Repete até 3 camadas
+             (margem transparente › placa branca › selo preto). */
+          const longe = (p, q) => !p || !q || Math.abs(p[0] - q[0]) + Math.abs(p[1] - q[1]) + Math.abs(p[2] - q[2]) > 90;
+          for (let v = 0; v < 3; v++) {
+            const [bx, by, bw, bh] = a.caixa;
+            if (bw >= a.w && bh >= a.h) break;
+            const cc = document.createElement('canvas'); cc.width = bw; cc.height = bh; cc.getContext('2d').drawImage(fonte, bx, by, bw, bh, 0, 0, bw, bh);
             const b2 = analisar(cc);
-            const longe = (p, q) => !p || !q || Math.abs(p[0] - q[0]) + Math.abs(p[1] - q[1]) + Math.abs(p[2] - q[2]) > 90;
-            if (b2.fundo && longe(b2.fundo, a.fundo) && b2.caixa[2] * b2.caixa[3] < bw * bh * 0.9) { a = b2; fonte = cc; }
+            if (!(b2.fundo && longe(b2.fundo, a.fundo) && b2.caixa[2] * b2.caixa[3] < bw * bh * 0.9)) break;
+            a = b2; fonte = cc;
           }
           const [cx, cy, cw, ch] = a.caixa;
           const fundo = a.fundo ? `rgb(${a.fundo.join(',')})` : a.claro ? '#0B1A45' : '#FFFFFF';

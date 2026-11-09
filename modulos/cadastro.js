@@ -486,7 +486,7 @@
     desenhar(); window.scrollTo(0, 0);
   }
 
-  CW.cadastro = { TIPOS, docsReq, tamanho: b => tamanho(b), AUTORIZACOES, VERSAO_TEXTOS, mostrarTexto, AVISO, forcaSenha, senhaOk, erroConta };
+  CW.cadastro = { TIPOS, PORTES, docsReq, tamanho: b => tamanho(b), AUTORIZACOES, VERSAO_TEXTOS, mostrarTexto, AVISO, forcaSenha, senhaOk, erroConta };
   CW.entrada.cadastrarEmpresa = comecar;
   CW.entrada.continuarCadastro = continuar;
   CW.entrada.cadastroAberto = aberto;
