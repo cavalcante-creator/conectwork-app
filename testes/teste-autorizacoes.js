@@ -44,8 +44,8 @@ const { ok, fim } = H.placar('autorizacoes');
   // M1 profissional MEI: menu enxuto com os nomes do dia a dia
   await entrarComo('lia@lia.com.br'); await page.waitForFunction(() => !!document.getElementById('menu-alt'), null, { timeout: 8000 });
   const m2 = await menu();
-  ok('M1 profissional MEI vê o menu enxuto: Início, Meu negócio, Demandas, Notas a emitir, A receber, Contratos, Documentos e Minha empresa',
-    m2.map(x => x.split(':')[0]).join() === 'inicio,negocio,ordens,espelhos,titulos,contratos,documentos,empresa' && m2.includes('ordens:Demandas') && m2.includes('espelhos:Notas a emitir') && m2.includes('titulos:A receber'), JSON.stringify(m2));
+  ok('M1 profissional MEI vê o menu enxuto: Início, Agenda, Demandas, A receber, Meu negócio, Notas a emitir, Assistente, Contratos, Documentos e Minha empresa',
+    m2.map(x => x.split(':')[0]).join() === 'inicio,agenda,ordens,titulos,negocio,espelhos,assistentemei,contratos,documentos,empresa' && m2.includes('ordens:Demandas') && m2.includes('espelhos:Notas a emitir') && m2.includes('titulos:A receber'), JSON.stringify(m2));
 
   // M1b quem só presta serviço não abre ordem de serviço: recebe as da empresa que contrata
   await page.evaluate(() => { location.hash = '#ordens'; }); await page.waitForSelector('#os-lista', { timeout: 8000 });
@@ -65,7 +65,7 @@ const { ok, fim } = H.placar('autorizacoes');
   // M3 celular: a barra de baixo segue o menu enxuto
   await page.setViewportSize({ width: 390, height: 844 }); await H.dorme(400);
   const bn = await page.$$eval('#bnav button', x => x.map(b => b.innerText.trim().split('\n')[0]));
-  ok('M3 celular: a barra de baixo usa o menu enxuto', bn[0] === 'Início' && bn[1] === 'Negócio' && bn.includes('Mais'), JSON.stringify(bn));
+  ok('M3 celular: a barra de baixo usa o menu enxuto (Início, Agenda, Demandas, A receber e Mais)', bn.join() === 'Início,Agenda,Demandas,A receber,Mais', JSON.stringify(bn));
 
   // M4 celular: com a tela ainda vazia (carregando), a barra de cima fica no alto e do tamanho dela (antes ia para o meio da tela)
   const m4 = await page.evaluate(() => { document.getElementById('view').innerHTML = ''; const r = document.querySelector('.side').getBoundingClientRect(), a = document.querySelector('.appbar').getBoundingClientRect(); return { top: Math.round(r.top), h: Math.round(r.height), ap: Math.round(a.top) }; });

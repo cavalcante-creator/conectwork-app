@@ -211,5 +211,6 @@
     },
     telas: { painel: { nome: 'Meu negócio', sub: 'Faturamento do ano, limite do MEI, de quem vem o seu faturamento, outros clientes e o que você tem a receber.', render } }
   });
-  CW.negocio = { contas, LIMITE_MEI, situacaoFiscal, vencDas };
+  /* agenda e assistente do MEI (10/11/2026): leem a situação fiscal que esta tela já calculou, e carregar/contas sob pedido */
+  CW.negocio = { contas, carregar, LIMITE_MEI, situacaoFiscal, vencDas, fiscal: () => fiscalPend };
 })();

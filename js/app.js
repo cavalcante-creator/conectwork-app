@@ -28,7 +28,7 @@
 
   /* ---------- menu: módulos com menu:false abrem pela rota, mas não aparecem no menu (ex.: Minhas autorizações).
      Profissional MEI (empresa só prestadora, porte MEI): menu enxuto, com nomes do dia a dia dele e "Ver todas as telas". */
-  const ENXUTO = ['inicio', 'negocio', 'ordens', 'espelhos', 'titulos', 'contratos', 'documentos', 'empresa'];
+  const ENXUTO = ['inicio', 'agenda', 'ordens', 'titulos', 'negocio', 'espelhos', 'assistentemei', 'contratos', 'documentos', 'empresa'];
   const NOMES_MEI = { ordens: 'Demandas', espelhos: 'Notas a emitir', titulos: 'A receber' };
   const ctxEmp = () => { const c = CW.sessao.contexto(); return c && c.tipo === 'empresa' ? c : null; };
   const chaveCompleto = () => 'cw.menu.completo.' + ((ctxEmp() || {}).empresaId || '');
@@ -62,8 +62,8 @@
     documentos: 'Empresa', empresa: 'Empresa', usuarios: 'Empresa', historico: 'Empresa', meucadastro: 'Empresa',
     cadastros: 'Rede', redeempresas: 'Rede', mensalidades: 'Rede', emissores: 'Rede', avisos: 'Rede', equipecw: 'Equipe' };
   function menuHtml(mods) {
-    const { ic, esc } = U(); let ult = null;
-    return mods.map(m => { const g = GRUPO[m.id] || null, rot = g && g !== ult ? `<div class="navgrupo">${esc(g)}</div>` : ''; ult = g;
+    const { ic, esc } = U(); let ult = null, semGrupos = enxuto();   /* menu simples do MEI: lista curta, sem títulos de grupo */
+    return mods.map(m => { const g = semGrupos ? null : GRUPO[m.id] || null, rot = g && g !== ult ? `<div class="navgrupo">${esc(g)}</div>` : ''; ult = g;
       return rot + `<button data-mod="${esc(m.id)}">${ic(m.icone)}<span>${esc(m.nome)}</span></button>`; }).join('');
   }
 

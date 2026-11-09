@@ -733,6 +733,27 @@ service cloud.firestore {
     }
 
     // ---------- Histórico de alterações ----------
+    // ---------- Agenda e lembretes da empresa (10/11/2026): compromissos e lembretes; nada se apaga (removido:true) ----------
+    function agendaOk(d) {
+      return d.keys().hasOnly(['empresaId','tipo','titulo','data','hora','cliente','local','obs','repete','avisar','feito','feitos','removido','criadoPor','criadoPorNome','criadoEm','atualizadoEm'])
+        && d.tipo in ['compromisso','lembrete']
+        && d.titulo is string && d.titulo.size() >= 2 && d.titulo.size() <= 120
+        && d.data is string && d.data.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+        && d.repete in ['','semana','mes','ano']
+        && (d.avisar == '' || d.avisar in [0,15,60,1440])
+        && d.feito is bool && d.feitos is list && d.feitos.size() <= 60 && d.removido is bool
+        && (!('obs' in d) || (d.obs is string && d.obs.size() <= 300));
+    }
+    match /agenda/{id} {
+      allow read: if master() || membro(resource.data.empresaId);
+      allow create: if cargoEm(request.resource.data.empresaId, ['admin','financeiro','operacional'])
+        && agendaOk(request.resource.data) && request.resource.data.criadoPor == request.auth.uid && request.resource.data.removido == false;
+      allow update: if cargoEm(resource.data.empresaId, ['admin','financeiro','operacional'])
+        && agendaOk(request.resource.data)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['empresaId','criadoPor','criadoPorNome','criadoEm']);
+      allow delete: if false;
+    }
+
     match /log/{id} {
       allow create: if logado()
         && request.resource.data.uid == request.auth.uid

@@ -198,6 +198,21 @@ async function deve(nome, permitido, op) {
   await deve('Membro lê a área privada da própria empresa (Minha empresa)', true, () => getDoc(doc(db('ana'), 'empresas', 'alfa', 'privado', 'cadastro')));
   await deve('Equipe master grava no histórico como "master"', true, () => addDoc(collection(db('master'), 'log'), reg('master', { empresaId: 'master' })));
 
+  /* ---------- agenda e lembretes (10/11/2026) ---------- */
+  const ag = extra => Object.assign({ empresaId: 'alfa', tipo: 'compromisso', titulo: 'Visita técnica', data: '2026-11-20', hora: '09:00', cliente: 'Cliente X', local: '', obs: '', repete: '', avisar: 60,
+    feito: false, feitos: [], removido: false, criadoPor: P.ana, criadoPorNome: 'Ana', criadoEm: serverTimestamp(), atualizadoEm: serverTimestamp() }, extra || {});
+  await deve('Agenda: admin marca compromisso da própria empresa', true, () => setDoc(doc(db('ana'), 'agenda', 'a1'), ag()));
+  await deve('Agenda: membro lê a agenda da empresa', true, () => getDocs(query(collection(db('bruno'), 'agenda'), where('empresaId', '==', 'alfa'))));
+  await deve('Agenda: quem não é da empresa NÃO lê', false, () => getDoc(doc(db('carla'), 'agenda', 'a1')));
+  await deve('Agenda: NÃO marca na agenda de outra empresa', false, () => setDoc(doc(db('ana'), 'agenda', 'a2'), ag({ empresaId: 'beta' })));
+  await deve('Agenda: NÃO com campo a mais', false, () => setDoc(doc(db('ana'), 'agenda', 'a3'), ag({ cpf: '123' })));
+  await deve('Agenda: NÃO com data inválida', false, () => setDoc(doc(db('ana'), 'agenda', 'a4'), ag({ data: '20/11/2026' })));
+  await deve('Agenda: NÃO em nome de outra pessoa', false, () => setDoc(doc(db('ana'), 'agenda', 'a5'), ag({ criadoPor: P.bruno })));
+  await deve('Agenda: marca como feito', true, () => updateDoc(doc(db('ana'), 'agenda', 'a1'), { feito: true, atualizadoEm: serverTimestamp() }));
+  await deve('Agenda: tira da agenda (removido), sem apagar', true, () => updateDoc(doc(db('ana'), 'agenda', 'a1'), { removido: true }));
+  await deve('Agenda: NÃO muda a empresa do item', false, () => updateDoc(doc(db('ana'), 'agenda', 'a1'), { empresaId: 'beta' }));
+  await deve('Agenda: ninguém apaga', false, () => deleteDoc(doc(db('ana'), 'agenda', 'a1')));
+
   /* ---------- contratos (equipe contínua) ---------- */
   await semear();
   P.beto = 'uBETO'; EM.beto = 'beto@beta.com.br';
