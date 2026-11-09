@@ -59,16 +59,17 @@
   }
 
   function moldura(conteudo) {
-    const { ic, LOGO, CURVES } = U();
+    const { ic, LOGO, FUNDO } = U();
     document.documentElement.classList.remove('wizpg');
     document.documentElement.classList.add('entrada');
-    app().innerHTML = `<div class="login">${CURVES}
+    app().innerHTML = `<div class="login">${FUNDO}
       <section class="brandpanel">
-        <div class="bp-topo">${LOGO(120)}<div><h1>Conect<span>work</span></h1><div class="slogan">Conectando empresas, pessoas e oportunidades.</div></div></div>
-        <p class="tagline">Toda papelada e burocracia em um só lugar, na palma da sua mão.</p>
+        <div class="bp-topo">${LOGO(120)}<div><h1>Conect<span>work</span></h1></div></div>
+        <i class="bp-traco" aria-hidden="true"></i>
+        <p class="tagline"><span>Conectando empresas.</span> <b>Simplificando negócios.</b></p>
         <ul class="beneficios">
-          <li>${ic('file')}<span>Contratos, entregas e notas organizados</span></li>
-          <li>${ic('wallet')}<span>Pagamentos com data e comprovante</span></li>
+          <li>${ic('handshake')}<span>Contratos, entregas e notas organizados</span></li>
+          <li>${ic('chart')}<span>Pagamentos com data e comprovante</span></li>
           <li>${ic('shield')}<span>Documentos e conformidade em dia</span></li>
         </ul>
         <div class="selos"><span>Empresas que contratam</span><span>Prestadoras</span><span>Profissionais MEI</span></div>
@@ -107,8 +108,8 @@
     } else {
       card = `<form class="lform" id="lg-form" novalidate>
         <div class="lg-cab"><h2>Acesse sua conta</h2><p class="sub">Que bom ter você de volta.</p></div>
-        <label class="f"><span>E-mail</span><input id="lg-email" type="email" autocomplete="username" placeholder="voce@empresa.com.br" value="${esc(email)}"></label>
-        <label class="f"><span>Senha</span><span class="lg-pw"><input id="lg-senha" type="password" autocomplete="current-password"><button type="button" class="lg-olho" id="lg-ver" aria-label="Mostrar a senha" aria-pressed="false">${ic('eye')}</button></span></label>
+        <label class="f"><span>${ic('mail')}E-mail</span><input id="lg-email" type="email" autocomplete="username" placeholder="voce@empresa.com.br" value="${esc(email)}"></label>
+        <label class="f"><span>${ic('lock')}Senha</span><span class="lg-pw"><input id="lg-senha" type="password" autocomplete="current-password" placeholder="Digite sua senha"><button type="button" class="lg-olho" id="lg-ver" aria-label="Mostrar a senha" aria-pressed="false">${ic('eyeoff')}</button></span></label>
         <div class="lg-linha"><label class="lg-manter"><input type="checkbox" id="lg-manter" ${manterConectado() ? 'checked' : ''}><span>Manter conectado</span></label>
           <button class="linkbtn" type="button" id="lg-esqueci" data-lg-modo="esqueci">Esqueci minha senha</button></div>
         <p class="err" id="lg-erro" role="alert">${esc(msg || '')}</p>
@@ -131,7 +132,7 @@
     if (vincular && modo !== 'esqueci') { const er = document.getElementById('lg-erro'); if (er && !msg) er.textContent = `Esse e-mail já entra no Conectwork com senha. Entre com a senha uma vez para ligar também o login ${vincular.nome}.`; const em = document.getElementById('lg-email'); if (em && !em.value) em.value = vincular.email || ''; }
     const ver = document.getElementById('lg-ver');
     if (ver) ver.onclick = () => { const se = document.getElementById('lg-senha'), mostra = se.type === 'password';
-      se.type = mostra ? 'text' : 'password'; ver.innerHTML = ic(mostra ? 'eyeoff' : 'eye');
+      se.type = mostra ? 'text' : 'password'; ver.innerHTML = ic(mostra ? 'eye' : 'eyeoff');
       ver.setAttribute('aria-label', mostra ? 'Esconder a senha' : 'Mostrar a senha'); ver.setAttribute('aria-pressed', String(mostra)); se.focus(); };
     const fe = document.getElementById('lg-form-esq'); if (fe) fe.onsubmit = ev => { ev.preventDefault(); esqueci(); };
     const foco = document.getElementById(modo === 'esqueci' ? 'lg-esq-email' : (email ? 'lg-senha' : 'lg-email')); if (foco) foco.focus();

@@ -46,11 +46,26 @@
     sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
     moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
     grid: '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',
+    handshake: '<path d="M11 17l2 2a1.4 1.4 0 0 0 2-2"/><path d="m14 14 2.5 2.5a1.4 1.4 0 0 0 2-2L15 11"/><path d="M21 9 18 6l-4 1-3-1-3 3 1 1a2 2 0 0 0 3 0l1-1 4 4"/><path d="M3 9l3-3 2 1M3 9l5 6 2 2a1.4 1.4 0 0 0 2-2"/>',
+    chart: '<path d="M4 20h16"/><rect x="5" y="13" width="3" height="5" rx=".6"/><rect x="10.5" y="10" width="3" height="8" rx=".6"/><rect x="16" y="7" width="3" height="11" rx=".6"/><path d="m5 9 5-4 3 2 5-4M15 3h3v3"/>',
     star: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>'
   };
   const ic = (n, c) => `<svg class="i ${c || ''}" viewBox="0 0 24 24" aria-hidden="true">${I[n] || I.grid}</svg>`;
   /* símbolo da marca (identidade de 11/2026): faixa azul em losango arredondado + folha verde-água */
   const LOGO = (w = 34) => `<svg width="${w}" height="${w}" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="lga${w}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1F63FF"/><stop offset="1" stop-color="#0733C4"/></linearGradient><linearGradient id="lgb${w}" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0A4C8A"/><stop offset=".5" stop-color="#0FA394"/><stop offset="1" stop-color="#24DFB3"/></linearGradient></defs><path d="M70.5 40.1 61.3 30.9Q50 19.6 38.7 30.9L30.9 38.7Q19.6 50 30.9 61.3L38.7 69.1Q50 80.4 61.3 69.1L63.5 66.9" fill="none" stroke="url(#lga${w})" stroke-width="21"/><path d="M49.6 66 71 44.6Q74 41.6 78.5 41.2L85.5 40.7Q88.6 40.5 88.4 43.6L87.9 50.6Q87.6 54.8 84.8 57.6L64.4 80.8Z" fill="url(#lgb${w})" fill-opacity=".94"/></svg>`;
+  /* fundo da tela de entrar (11/2026): faixas diagonais em azul e ciano nos cantos e uma linha contínua que liga os dois lados */
+  const FUNDO = `<svg class="curves lg-fundo" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs>
+    <linearGradient id="lgf1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1769FF" stop-opacity=".55"/><stop offset="1" stop-color="#12366D" stop-opacity="0"/></linearGradient>
+    <linearGradient id="lgf2" x1="1" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#12C7E8" stop-opacity=".75"/><stop offset=".45" stop-color="#1769FF" stop-opacity=".35"/><stop offset="1" stop-color="#12366D" stop-opacity="0"/></linearGradient>
+    <linearGradient id="lgf3" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#12C7E8" stop-opacity="0"/><stop offset=".45" stop-color="#3F8CFF" stop-opacity=".9"/><stop offset="1" stop-color="#12C7E8" stop-opacity=".2"/></linearGradient>
+    <radialGradient id="lgf4" cx=".72" cy=".55" r=".55"><stop offset="0" stop-color="#1769FF" stop-opacity=".22"/><stop offset="1" stop-color="#1769FF" stop-opacity="0"/></radialGradient></defs>
+    <rect width="1600" height="900" fill="url(#lgf4)"/>
+    <path d="M0 0H330L0 330Z" fill="url(#lgf1)"/><path d="M380 0H470L0 470V380Z" fill="url(#lgf1)" opacity=".7"/>
+    <path d="M1600 900H1180L1600 480Z" fill="url(#lgf2)"/><path d="M1600 410V350L1050 900H1110Z" fill="url(#lgf2)" opacity=".8"/>
+    <path d="M1600 0H1520L1430 90" fill="none" stroke="#1769FF" stroke-opacity=".5" stroke-width="2"/>
+    <path d="M0 175C140 120 230 115 330 112S520 70 600 0" fill="none" stroke="#3F8CFF" stroke-opacity=".55" stroke-width="2.5"/>
+    <path d="M300 900C470 800 620 690 760 520S960 330 1110 305" fill="none" stroke="url(#lgf3)" stroke-width="2.5"/>
+  </svg>`;
   const CURVES = `<svg class="curves" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g fill="none" stroke="#2F6BEA" stroke-opacity=".25" stroke-width="1"><path d="M-40 420C80 380 160 300 220 200S380 40 460 20"/><path d="M-40 470C90 430 180 350 240 250S390 90 470 70"/><path d="M-40 520C100 480 200 400 260 300S400 140 480 120"/><circle cx="420" cy="580" r="160"/><circle cx="420" cy="580" r="230"/></g></svg>`;
   const GRADS = ['linear-gradient(135deg,#1A5CF0,#22D3A6)', 'linear-gradient(135deg,#0D2152,#3B7BFF)', 'linear-gradient(135deg,#0A7F8C,#22D3A6)', 'linear-gradient(135deg,#3B3FD8,#2F7BFF)', 'linear-gradient(135deg,#0A5E8E,#1763E6)'];
   const iniciais = n => String(n || '?').replace(/\b(MEI|Ltda|S\.?A\.?)\b/gi, '').trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase() || '?';
@@ -186,7 +201,7 @@
     microsoft: '<svg class="mk" viewBox="0 0 24 24" aria-hidden="true"><path fill="#F25022" d="M1 1h10.5v10.5H1z"/><path fill="#7FBA00" d="M12.5 1H23v10.5H12.5z"/><path fill="#00A4EF" d="M1 12.5h10.5V23H1z"/><path fill="#FFB900" d="M12.5 12.5H23V23H12.5z"/></svg>'
   };
 
-  CW.ui = { MARCA, esc, $, $$, dig, ic, LOGO, CURVES, avatar, iniciais, toast, dialogo, confirmar, painelLateral,
+  CW.ui = { MARCA, esc, $, $$, dig, ic, LOGO, CURVES, FUNDO, avatar, iniciais, toast, dialogo, confirmar, painelLateral,
     mascara, aplicarMascaras, validarCNPJ, validarCPF, validarEmail, validarCelular, validarData, lerData, dataISO,
     formatarDinheiro, lerDinheiro, formatarData, formatarDataHora, tema, trocarTema };
 })();

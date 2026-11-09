@@ -24,8 +24,8 @@ const { ok, fim } = H.placar('login');
       novos: txt('.lg-novos button'), termos: txt('#lg-termos')[0], pilares: document.querySelectorAll('.pillars,.pillar').length,
       velhos: /Cada pessoa entra com o próprio login|Integração que conecta empresas/i.test(tudo) };
   });
-  ok('L1b painel: slogan, frase de destaque, 3 benefícios e 3 selos (sem os ícones antigos)',
-    l1b.slogan === 'Conectando empresas, pessoas e oportunidades.' && l1b.tag === 'Toda papelada e burocracia em um só lugar, na palma da sua mão.'
+  ok('L1b painel (identidade de 09/11): frase "Conectando empresas. Simplificando negócios.", 3 benefícios e 3 selos',
+    !l1b.slogan && l1b.tag.replace(/\s+/g, ' ') === 'Conectando empresas. Simplificando negócios.'
     && JSON.stringify(l1b.ben) === JSON.stringify(['Contratos, entregas e notas organizados', 'Pagamentos com data e comprovante', 'Documentos e conformidade em dia'])
     && JSON.stringify(l1b.selos) === JSON.stringify(['Empresas que contratam', 'Prestadoras', 'Profissionais MEI']) && l1b.pilares === 0, JSON.stringify(l1b));
   ok('L1c cartão: subtítulo, placeholder, divisória, dois botões e aviso de termos; frases antigas removidas',
@@ -49,9 +49,9 @@ const { ok, fim } = H.placar('login');
       cartao: getComputedStyle(c).backgroundColor, raio: getComputedStyle(c).borderRadius, larg: Math.round(c.getBoundingClientRect().width), sombra: getComputedStyle(c).boxShadow !== 'none' };
   });
   const transp = v => v === 'rgba(0, 0, 0, 0)' || v === 'transparent';
-  ok('L1h fundo azul e curvas na tela inteira, sem divisão; cartão de 440px (escuro por padrão), cantos de 20px e sombra',
+  ok('L1h fundo azul e faixas na tela inteira, sem divisão; cartão azul de 480px, cantos de 24px e sombra',
     l1h.fundo === 'rgb(8, 22, 56)' && transp(l1h.ladoDir) && transp(l1h.painel) && l1h.cheia && l1h.curvas
-    && l1h.cartao === 'rgb(19, 40, 90)' && l1h.raio === '20px' && l1h.larg === 440 && l1h.sombra, JSON.stringify(l1h));
+    && l1h.cartao === 'rgb(16, 39, 90)' && l1h.raio === '24px' && l1h.larg === 480 && l1h.sombra, JSON.stringify(l1h));
 
   // L1e "Tenho um convite" avisa que chega na próxima parte; "Cadastrar empresa" abre o cadastro (testado em teste-cadastro.js)
   const toast = () => page.evaluate(() => document.getElementById('toast').classList.contains('show') ? document.getElementById('toast').innerText : '');
@@ -106,8 +106,8 @@ const { ok, fim } = H.placar('login');
   const cor = () => page.evaluate(() => ({ c: getComputedStyle(document.getElementById('lg')).backgroundColor, b: getComputedStyle(document.getElementById('lg-email')).borderColor }));
   const escuro = await cor(); await page.evaluate(() => { document.documentElement.dataset.theme = 'light'; }); const claro = await cor(); await page.evaluate(() => { document.documentElement.dataset.theme = 'dark'; });
   const rgb = v => (v.match(/\d+/g) || []).slice(0, 3).map(Number), soma = v => rgb(v).reduce((a, b) => a + b, 0);
-  ok('L1g escuro por padrão: cartão azul-escuro mais claro que o fundo (não preto) e campos com borda visível; tema claro = cartão branco',
-    claro.c === 'rgb(255, 255, 255)' && soma(escuro.c) > soma('rgb(8, 22, 56)') + 30 && rgb(escuro.c)[2] > rgb(escuro.c)[0] && soma(escuro.b) > soma(escuro.c) + 40, JSON.stringify({ claro, escuro }));
+  ok('L1g cartão azul (o mesmo nos temas claro e escuro), mais claro que o fundo e com campos de borda visível',
+    claro.c === escuro.c && soma(escuro.c) > soma('rgb(8, 22, 56)') + 30 && rgb(escuro.c)[2] > rgb(escuro.c)[0] && soma(escuro.b) > soma(escuro.c) + 40, JSON.stringify({ claro, escuro }));
 
   // L1k olho da senha: mostra e esconde
   await page.fill('#lg-senha', 'abc123');
@@ -116,8 +116,8 @@ const { ok, fim } = H.placar('login');
   ok('L1k "ver senha": o olho mostra e esconde a senha (com nome para leitor de tela)', k0.t === 'password' && k1.t === 'text' && k1.a === 'Esconder a senha' && k2.t === 'password' && k2.a === 'Mostrar a senha', JSON.stringify([k0, k1, k2]));
   await page.fill('#lg-senha', '');
   // L1l "Manter conectado" vem marcado e o botão Entrar é azul-marinho como o fundo
-  const l1l = await page.evaluate(() => ({ m: document.getElementById('lg-manter').checked, txt: document.querySelector('.lg-manter').innerText.trim(), bt: getComputedStyle(document.getElementById('lg-entrar')).backgroundColor }));
-  ok('L1l "Manter conectado" marcado por padrão e botão Entrar azul-marinho (#081638)', l1l.m && l1l.txt === 'Manter conectado' && l1l.bt === 'rgb(8, 22, 56)', JSON.stringify(l1l));
+  const l1l = await page.evaluate(() => ({ m: document.getElementById('lg-manter').checked, txt: document.querySelector('.lg-manter').innerText.trim(), bt: getComputedStyle(document.getElementById('lg-entrar')).backgroundImage }));
+  ok('L1l "Manter conectado" marcado por padrão e botão Entrar em degradê azul → ciano', l1l.m && l1l.txt === 'Manter conectado' && /linear-gradient/.test(l1l.bt) && /23, 105, 255/.test(l1l.bt) && /18, 199, 232/.test(l1l.bt), JSON.stringify(l1l));
 
   // L2 campos vazios
   await page.click('#lg-entrar'); let e = await erro();
