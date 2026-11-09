@@ -720,6 +720,34 @@ tr.click:hover td{background:var(--surface2)}
   .login #lg label.f input{padding:0 14px}
 }
 
+
+/* tela de entrar menor no computador (pedido de 09/11: "está muito grande na tela") */
+@media (min-width:861px){
+  .login .bp-topo>svg{width:clamp(48px,4vw,72px)}
+  .login .brandpanel h1{font-size:clamp(32px,3vw,52px)}
+  .login .bp-traco{margin-top:clamp(14px,2.4vh,24px)}
+  .login .brandpanel .tagline{font-size:clamp(21px,1.9vw,32px);margin-top:clamp(14px,2.2vh,22px)}
+  .login .beneficios{margin-top:clamp(18px,3.2vh,32px);gap:clamp(10px,1.6vh,16px)}
+  .login .beneficios li{font-size:clamp(13px,.95vw,15.5px);gap:clamp(12px,1.1vw,16px)}
+  .login .beneficios svg.i{width:clamp(34px,2.5vw,42px);height:clamp(34px,2.5vw,42px);padding:clamp(7px,.55vw,9px)}
+  .login .selos{margin-top:clamp(22px,5vh,56px)}
+  .login .selos span{font-size:clamp(11.5px,.78vw,13px);padding:6px clamp(12px,1.1vw,16px)}
+  .lg-bloco>#lg.logincard,:root[data-theme="dark"] .lg-bloco>#lg.logincard,:root[data-theme="light"] .lg-bloco>#lg.logincard,.loginside>.lg-bloco{max-width:420px}
+  .login.login #lg.logincard .card-b{padding:clamp(20px,3vh,28px) clamp(20px,1.8vw,26px)}
+  .login.login #lg.logincard .lform{gap:clamp(10px,1.6vh,14px)}
+  .login.login #lg.logincard label.f{gap:6px}
+  .login.login #lg.logincard label.f>span{font-size:13px}
+  .login.login #lg.logincard .lg-cab h2{font-size:24px}
+  .login.login #lg.logincard .lg-cab .sub{font-size:13.5px}
+  .login.login #lg.logincard label.f input{height:44px}
+  .login.login #lg.logincard .lg-principal{height:46px;font-size:15.5px}
+  .login.login #lg.logincard .lg-social .btn{height:40px;font-size:14px}
+  .login.login #lg.logincard .lg-ou{margin:clamp(10px,1.8vh,16px) 0 clamp(8px,1.2vh,12px)}
+  .login.login #lg.logincard .lg-rodape{margin-top:clamp(10px,1.8vh,16px)}
+  .login.login #lg.logincard .lg-linha,.login.login #lg.logincard .lg-linha .linkbtn{font-size:13px}
+  .login.login #lg.logincard .lg-novos .linkbtn{font-size:13.5px;min-height:32px}
+}
+
 /* ---------- Celular: sem zoom automático ao tocar nos campos ----------
    O iPhone dá zoom em todo campo com letra menor que 16px. No celular, todos os campos usam 16px. */
 @media (max-width:860px){

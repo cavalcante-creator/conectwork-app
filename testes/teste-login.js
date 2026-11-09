@@ -49,9 +49,9 @@ const { ok, fim } = H.placar('login');
       cartao: getComputedStyle(c).backgroundColor, raio: getComputedStyle(c).borderRadius, larg: Math.round(c.getBoundingClientRect().width), sombra: getComputedStyle(c).boxShadow !== 'none' };
   });
   const transp = v => v === 'rgba(0, 0, 0, 0)' || v === 'transparent';
-  ok('L1h fundo azul e faixas na tela inteira, sem divisão; cartão azul de 480px, cantos de 24px e sombra',
+  ok('L1h fundo azul e faixas na tela inteira, sem divisão; cartão azul de 420px, cantos de 24px e sombra',
     l1h.fundo === 'rgb(8, 22, 56)' && transp(l1h.ladoDir) && transp(l1h.painel) && l1h.cheia && l1h.curvas
-    && l1h.cartao === 'rgb(16, 39, 90)' && l1h.raio === '24px' && l1h.larg === 480 && l1h.sombra, JSON.stringify(l1h));
+    && l1h.cartao === 'rgb(16, 39, 90)' && l1h.raio === '24px' && l1h.larg === 420 && l1h.sombra, JSON.stringify(l1h));
 
   // L1e "Tenho um convite" avisa que chega na próxima parte; "Cadastrar empresa" abre o cadastro (testado em teste-cadastro.js)
   const toast = () => page.evaluate(() => document.getElementById('toast').classList.contains('show') ? document.getElementById('toast').innerText : '');
