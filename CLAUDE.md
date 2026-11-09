@@ -116,3 +116,6 @@ A **equipe Conectwork** (master) não é cargo: é quem tem o documento `master/
 - **Combinado com a usuária (07/11/2026):** com os testes passando, pode subir direto para a `main` (além do branch de trabalho), sem pedir de novo.
 - Ao terminar: resumo do que mudou, arquivos criados ou alterados, testes feitos, e o que a pessoa precisa fazer no console do Firebase (se houver).
 - Se algo do pedido conflitar com este arquivo, este arquivo vence. Pergunte antes de inventar regra de negócio.
+
+## Login com Microsoft desligado (09/11/2026)
+- O botão Microsoft só aparece com `loginMicrosoft: true` no `config.js` (hoje `false`): a conta pessoal da usuária não registra apps no Azure sem assinatura. Para ligar: criar a conta gratuita do Azure, registrar o app (README › Login com Google e Microsoft), colar ID e segredo no Firebase e trocar para `true`. Os testes ligam a chave pelo `harness.js` (`H.abrir({ microsoft:false })` testa desligado; `teste-social.js` S9).

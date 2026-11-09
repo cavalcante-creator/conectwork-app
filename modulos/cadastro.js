@@ -122,7 +122,8 @@
     const d = W.d, { esc, ic } = U();
     if (W.passo === 'acesso') {
       const f = forcaSenha(d.acesso.senha), { MARCA } = U();
-      return `<div class="lg-social" id="cad-social">${[['google', 'Google'], ['microsoft', 'Microsoft']].map(([k, n]) => `<button class="btn sec" type="button" id="cad-${k}" data-social="${k}">${MARCA[k]}<span>Continuar com ${n}</span></button>`).join('')}</div>
+      const sociais = [['google', 'Google'], ['microsoft', 'Microsoft']].filter(([k]) => k !== 'microsoft' || (window.CONECTWORK_CONFIG || {}).loginMicrosoft === true);
+      return `<div class="lg-social${sociais.length < 2 ? ' um' : ''}" id="cad-social">${sociais.map(([k, n]) => `<button class="btn sec" type="button" id="cad-${k}" data-social="${k}">${MARCA[k]}<span>Continuar com ${n}</span></button>`).join('')}</div>
         <div class="lg-ou" style="margin:18px 0"><span>ou crie com e-mail e senha</span></div>
         <div class="fgrid">
         ${campo('acesso.nome', 'Seu nome completo', { w: 12, ac: 'name' })}

@@ -74,6 +74,13 @@ const { ok, fim } = H.placar('social');
     return { emPe: b.top >= a.bottom - 1, vaza: [g, m].some(x => x.scrollWidth > x.clientWidth + 1), fonte: parseFloat(getComputedStyle(document.getElementById('cad-acesso-nome')).fontSize), lado: document.documentElement.scrollWidth > innerWidth }; });
   ok('S8 celular: "Continuar com Google/Microsoft" um embaixo do outro, sem vazar; campos com letra 16px (sem zoom)', s8.emPe && !s8.vaza && s8.fonte >= 16 && !s8.lado, JSON.stringify(s8));
 
+  // S9 com loginMicrosoft desligado no config.js (como está no ar): só o Google, na largura toda, no login e no cadastro
+  const b2 = await H.abrir({ microsoft: false });
+  await H.preparar(b2.page, d); await b2.page.goto(H.BASE); await b2.page.waitForSelector('#lg-google', { timeout: 8000 });
+  const s9 = await b2.page.evaluate(() => { const g = document.getElementById('lg-google'), c = g.parentElement; return { ms: !!document.getElementById('lg-microsoft'), larg: Math.round(g.getBoundingClientRect().width), caixa: Math.round(c.getBoundingClientRect().width) }; });
+  ok('S9 sem a Microsoft ligada: só o botão Google, ocupando a largura toda', !s9.ms && s9.larg >= s9.caixa - 2, JSON.stringify(s9));
+  await b2.browser.close();
+
   ok('Sem erros de JavaScript na página', !erros.length, erros.join(' | '));
   await browser.close(); fim();
 })().catch(e => { console.error('ERRO NO TESTE', e); process.exit(1); });

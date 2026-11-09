@@ -20,6 +20,7 @@ async function abrir(op) {
       const p = decodeURIComponent(new URL(u).pathname.slice(1)) || 'index.html';
       if (p === 'vazio.html') return route.fulfill({ contentType: 'text/html', body: '<html><body>vazio</body></html>' });
       if (p === 'config.js' && op.config !== undefined) return route.fulfill({ contentType: 'text/javascript', body: op.config });
+      if (p === 'config.js') return route.fulfill({ contentType: 'text/javascript', body: fs.readFileSync(path.join(RAIZ, p), 'utf8') + (op.microsoft === false ? '' : '\nwindow.CONECTWORK_CONFIG.loginMicrosoft = true;') });
       const f = path.join(RAIZ, p);
       if (fs.existsSync(f) && fs.statSync(f).isFile()) return route.fulfill({ body: fs.readFileSync(f), contentType: TIPOS[path.extname(p)] });
       return route.fulfill({ status: 404, body: '' });

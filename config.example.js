@@ -10,5 +10,6 @@ window.CONECTWORK_CONFIG = {
     appId: "COLE_AQUI"
   },
   ambiente: "producao",            // "producao" ou "teste"
-  urlApp: "https://conectwork.com.br/"
+  urlApp: "https://conectwork.com.br/",
+  loginMicrosoft: false            // true quando o app estiver registrado no Azure e ligado no Firebase
 };

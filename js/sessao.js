@@ -140,11 +140,13 @@
 
   /* ---------- Google e Microsoft ---------- */
   const PROV = { google: 'Google', microsoft: 'Microsoft' };
+  /* login com Microsoft só aparece com loginMicrosoft:true no config.js (falta registrar o app no Azure) */
+  const provAtivos = () => Object.keys(PROV).filter(k => k !== 'microsoft' || (window.CONECTWORK_CONFIG || {}).loginMicrosoft === true);
   let vincular = null;                 /* login com Microsoft/Google de um e-mail que já entra com senha: liga depois da senha */
   function botoesSociais(prefixo, verbo) {
     const { MARCA } = U();
     return `<div class="lg-ou"><span>ou ${(verbo || 'Entrar').toLowerCase()} com</span></div>
-      <div class="lg-social">${Object.keys(PROV).map(k => `<button class="btn sec" type="button" id="${prefixo}-${k}" data-social="${k}" aria-label="${verbo || 'Entrar'} com ${PROV[k]}">${MARCA[k]}<span>${PROV[k]}</span></button>`).join('')}</div>`;
+      <div class="lg-social${provAtivos().length < 2 ? ' um' : ''}">${provAtivos().map(k => `<button class="btn sec" type="button" id="${prefixo}-${k}" data-social="${k}" aria-label="${verbo || 'Entrar'} com ${PROV[k]}">${MARCA[k]}<span>${PROV[k]}</span></button>`).join('')}</div>`;
   }
   function erroSocial(e, qual) {
     const c = e && e.code || '', n = PROV[qual] || '';
