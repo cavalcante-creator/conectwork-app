@@ -102,7 +102,7 @@
       <aside class="side">${CURVES}
         <div class="logo">${LOGO(32)}<span>Conect<b>work</b></span></div>
         ${ctx.tipo === 'empresa' ? `<div class="empbloco">${avatar(ctx.nome, 'sm', ctx.empresaId)}<div class="t"><small>Empresa</small><strong title="${esc(ctx.nome)}">${esc(ctx.nome)}</strong></div>${CW.sessao.podeTrocar() ? `<button class="iconbtn" id="trocar-empresa" title="Trocar de empresa" aria-label="Trocar de empresa">${ic('swap')}</button>` : ''}</div>`
-          : `<div class="empbloco"><span class="avatar sm" style="background:var(--grad)">CW</span><div class="t"><small>Você está na</small><strong>Equipe Conectwork</strong></div>${CW.sessao.podeTrocar() ? `<button class="iconbtn" id="trocar-empresa" title="Trocar de empresa" aria-label="Trocar de empresa">${ic('swap')}</button>` : ''}</div>`}
+          : `<div class="empbloco"><span class="avatar sm avatar-cw" title="Equipe Conectwork">${LOGO(26)}</span><div class="t"><small>Você está na</small><strong>Equipe Conectwork</strong></div>${CW.sessao.podeTrocar() ? `<button class="iconbtn" id="trocar-empresa" title="Trocar de empresa" aria-label="Trocar de empresa">${ic('swap')}</button>` : ''}</div>`}
         <nav class="nav" id="menu" aria-label="Principal">${menuHtml(mods)}
           ${mei ? `<button class="nav-alt" id="menu-alt">${ic(enxuto() ? 'grid' : 'star')}<span>${enxuto() ? 'Ver todas as telas' : 'Menu simples'}</span></button>` : ''}</nav>
         <div class="usercard">${avatar(nome, 'sm')}<div class="t"><strong id="quem-nome">${esc(nome)}</strong><small id="quem-sub">${esc(sub)}</small></div>

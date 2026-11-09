@@ -262,7 +262,7 @@
     const { esc, ic, avatar, LOGO } = U();
     return st.opcoes.map(o => {
       const status = o.tipo === 'empresa' && o.empresa.status !== 'aprovado' ? ' ' + pillStatus(o.empresa.status) : '';
-      const av = o.tipo === 'master' ? `<span class="avatar sm" style="background:var(--grad)">CW</span>` : avatar(o.nome, 'sm', o.tipo === 'empresa' ? (o.empresaId || (o.empresa && o.empresa._id)) : '');
+      const av = o.tipo === 'master' ? `<span class="avatar sm avatar-cw" title="Equipe Conectwork">${LOGO(26)}</span>` : avatar(o.nome, 'sm', o.tipo === 'empresa' ? (o.empresaId || (o.empresa && o.empresa._id)) : '');
       const sub = o.tipo === 'master' ? 'Equipe Conectwork' : CW.permissoes.nomeCargo(o.acesso.cargo);
       const eh = atual && atual.chave === o.chave;
       return `<button class="maisbtn" data-ctx="${esc(o.chave)}" ${eh ? 'aria-current="true"' : ''}>${av}<span>${esc(o.nome)}${status}<br><small>${esc(sub)}</small></span>${eh ? '<span class="pill ok">Atual</span>' : ic('chev')}</button>`;

@@ -1211,3 +1211,8 @@ table.resp th,table th{font-size:11px;font-weight:600;letter-spacing:.06em;text-
 /* lista "Trocar de empresa" e "Mais": só o nome estica; a logo, as iniciais e o selo "Atual" ficam do tamanho deles */
 .maisbtn .avatar,.maisbtn .pill,.maisbtn svg.i{flex:none}
 .maisbtn .avatar{width:44px;height:44px;font-size:13px}
+/* Equipe Conectwork: o símbolo da marca no lugar das iniciais */
+.avatar.avatar-cw{background:#fff;border:1px solid var(--line);display:grid;place-items:center;padding:0}
+.avatar.avatar-cw svg{width:70%;height:70%}
+:root[data-theme="dark"] .avatar.avatar-cw{background:#081936;border-color:rgba(120,160,230,.3)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .avatar.avatar-cw{background:#081936;border-color:rgba(120,160,230,.3)}}
