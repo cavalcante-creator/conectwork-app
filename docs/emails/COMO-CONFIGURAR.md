@@ -6,7 +6,7 @@ Console → projeto **conectwork** → **Authentication** → aba **Modelos** (T
 ## 1. Link dos e-mails abre o próprio Conectwork
 Em qualquer modelo, clique no lápis e depois em **Personalizar URL de ação** e cole:
 
-    https://cavalcante-creator.github.io/conectwork-app/
+    https://conectwork.com.br/
 
 Salve. Vale para todos os modelos (senha nova, confirmar e-mail, trocar e-mail). O app já sabe abrir esses links.
 

@@ -26,7 +26,7 @@ Este repositório começa com o **kit de partida**: regras do projeto, requisito
    - console.firebase.google.com › Adicionar projeto › nome `conectwork` › pode desligar o Google Analytics.
    - Na página do projeto, clique no ícone `</>` (app da Web) › apelido `conectwork-web` › copie o bloco `firebaseConfig`.
    - **Authentication** › Começar › Método de login › ative **E-mail/senha**.
-   - Authentication › Configurações › **Domínios autorizados** › adicione `cavalcante-creator.github.io`.
+   - Authentication › Configurações › **Domínios autorizados** › adicione `cavalcante-creator.github.io`, `conectwork.com.br` e `www.conectwork.com.br`.
    - **Firestore Database** › Criar banco › modo **produção** › local `southamerica-east1 (São Paulo)`.
    - Firestore › Regras › cole o conteúdo de `firestore.rules` › Publicar.
 2. **GitHub**: crie o repositório `conectwork-app` e suba estes arquivos.
@@ -41,7 +41,7 @@ Este repositório começa com o **kit de partida**: regras do projeto, requisito
 6. Depois que a Iasmyn criar o login dela no app, pegue o **UID** dela em Authentication › Usuários e crie no Firestore o documento `master/<UID>` com o campo `nome: "Iasmyn"`. É isso que dá o acesso de equipe Conectwork.
 
 ## Publicar
-GitHub Pages: Settings › Pages › Deploy from a branch › `main` › `/ (root)`. O app fica em `https://cavalcante-creator.github.io/conectwork-app/`.
+GitHub Pages: Settings › Pages › Deploy from a branch › `main` › `/ (root)`. O app fica em `https://conectwork.com.br/` (domínio próprio: arquivo `CNAME` e, no Registro.br, 4 entradas A para 185.199.108-111.153 e CNAME `www` → `cavalcante-creator.github.io`). O endereço antigo do GitHub leva sozinho para o novo.
 O protótipo continua separado, no repositório `conectwork`.
 
 **A cada publicação, troque a `VERSAO` no começo do `sw.js`** (ex.: `conectwork-v1` → `conectwork-v2`). É assim que os aparelhos percebem que há versão nova: o navegador instala a nova e apaga os arquivos guardados da anterior. Se esquecer, quem já usa o app continua recebendo os arquivos novos quando estiver com internet (o app busca na rede primeiro), mas o cache antigo não é limpo.

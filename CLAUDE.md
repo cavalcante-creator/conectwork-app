@@ -92,6 +92,10 @@ testes/               testes automatizados
 - No computador (≥901px) a empresa (`.empbloco`, com `#trocar-empresa`), o botão de tema e o cartão da pessoa (`.usercard`: nome, cargo, Minhas autorizações e **Sair**) ficam no canto de cima, à direita (`#topo-dir` na `.appbar`); `posicionarTopo()` em `js/app.js` move os elementos (os mesmos ids) entre o topo e o menu do celular quando a largura muda. No celular continua tudo no menu de cima.
 - O conteúdo ocupa a largura toda (sem o limite de 1280px); a partir de 1400px, letra 15px, menu de 260px, títulos e números maiores e a coluna da direita do Início com 400px.
 
+## Domínio próprio (09/11/2026)
+- O app está em **https://conectwork.com.br/** (arquivo `CNAME`; DNS no Registro.br: 4 entradas A 185.199.108.153/109/110/111 e CNAME `www` → `cavalcante-creator.github.io`). `config.js` `urlApp` = `https://conectwork.com.br/` (links de convite, e-mails de confirmação e de senha nova). O endereço antigo do GitHub redireciona para o novo.
+- No Firebase: domínios autorizados `conectwork.com.br` e `www.conectwork.com.br`; URL de ação dos modelos = `https://conectwork.com.br/`.
+
 ## Cargos (dentro de cada empresa)
 | Cargo | O que vê |
 |---|---|

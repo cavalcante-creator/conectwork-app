@@ -169,7 +169,7 @@ const { ok, fim } = H.placar('login');
   await page.fill('#lg-esq-email', ' Ana@Alfa.com.br '); await page.click('#lg-esq-enviar'); await H.dorme(300);
   const e9 = await page.evaluate(() => ({ ok: document.getElementById('lg-ok').hidden ? '' : document.getElementById('lg-ok').textContent, er: document.getElementById('lg-erro').textContent, reset: window.__mockLog.filter(x => x[0] === 'reset') }));
   const r = e9.reset[0] || [];
-  ok('L10 envia o e-mail de redefinição (sendPasswordResetEmail) em português, com o endereço do app, e confirma', r[1] === 'ana@alfa.com.br' && r[2] && r[2].url === 'https://cavalcante-creator.github.io/conectwork-app/' && r[3] === 'pt-BR' && /enviamos um link/.test(e9.ok) && !e9.er, JSON.stringify(e9));
+  ok('L10 envia o e-mail de redefinição (sendPasswordResetEmail) em português, com o endereço do app, e confirma', r[1] === 'ana@alfa.com.br' && r[2] && r[2].url === 'https://conectwork.com.br/' && r[3] === 'pt-BR' && /enviamos um link/.test(e9.ok) && !e9.er, JSON.stringify(e9));
   await H.ctlSet(page, { enumProt: false });
   await page.fill('#lg-esq-email', 'ninguem@alfa.com.br'); await page.click('#lg-esq-enviar'); await H.dorme(300);
   const e11 = await page.evaluate(() => ({ ok: document.getElementById('lg-ok').hidden ? '' : document.getElementById('lg-ok').textContent, er: document.getElementById('lg-erro').textContent }));

@@ -10,5 +10,5 @@ window.CONECTWORK_CONFIG = {
     appId: "1:468863538962:web:55a0bc24e1ed4a8a69c5cb"
   },
   ambiente: "producao",            // "producao" ou "teste"
-  urlApp: "https://cavalcante-creator.github.io/conectwork-app/"
+  urlApp: "https://conectwork.com.br/"
 };
