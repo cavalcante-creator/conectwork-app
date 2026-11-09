@@ -838,7 +838,8 @@ html.entrada .login{height:100%;min-height:0}
 .pv-it{min-width:0}
 .pv-it strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media (max-width:520px){.pv-it .tag{display:none}}
-.avatar.com-logo{border:1px solid var(--line);overflow:hidden;padding:2px}
+.avatar.com-logo{border:1px solid var(--line);overflow:hidden;padding:0}
+.avatar.com-logo.logo-escura{border-color:transparent}
 .avatar.com-logo img{width:100%;height:100%;object-fit:contain;display:block}
 .rl-barra{margin-bottom:18px}
 .rl-res{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px 20px}
