@@ -129,7 +129,12 @@ service cloud.firestore {
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cargo','extras','sem','ativo','atualizadoEm'])
             && request.resource.data.cargo in cargos()
             && request.resource.data.extras is list && request.resource.data.sem is list
-            && request.resource.data.ativo is bool);
+            && request.resource.data.ativo is bool)
+        // a própria pessoa acerta o nome e o e-mail de acesso no acesso dela (Meus dados; e-mail = o do login)
+        || (resource.data.uid == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nome','email','atualizadoEm'])
+            && request.resource.data.email == meuEmail()
+            && request.resource.data.nome is string && request.resource.data.nome.size() >= 3 && request.resource.data.nome.size() <= 120);
       allow delete: if false;
     }
 

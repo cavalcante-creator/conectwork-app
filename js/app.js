@@ -105,14 +105,17 @@
           : `<div class="empbloco"><span class="avatar sm avatar-cw" title="Equipe Conectwork">${LOGO(26)}</span><div class="t"><small>Você está na</small><strong>Equipe Conectwork</strong></div>${CW.sessao.podeTrocar() ? `<button class="iconbtn" id="trocar-empresa" title="Trocar de empresa" aria-label="Trocar de empresa">${ic('swap')}</button>` : ''}</div>`}
         <nav class="nav" id="menu" aria-label="Principal">${menuHtml(mods)}
           ${mei ? `<button class="nav-alt" id="menu-alt">${ic(enxuto() ? 'grid' : 'star')}<span>${enxuto() ? 'Ver todas as telas' : 'Menu simples'}</span></button>` : ''}</nav>
-        <div class="usercard">${avatar(nome, 'sm')}<div class="t"><strong id="quem-nome">${esc(nome)}</strong><small id="quem-sub">${esc(sub)}</small></div>
+        <div class="usercard"><button class="uc-eu" id="meus-dados" type="button" title="Meus dados" aria-label="Meus dados: ${esc(nome)}">${avatar(nome, 'sm')}<span class="t"><strong id="quem-nome">${esc(nome)}</strong><small id="quem-sub">${esc(sub)}</small></span></button>
+          <button class="iconbtn so-cel" id="busca-cel" aria-label="Buscar" title="Buscar">${ic('busca')}</button>
           <button class="iconbtn so-cel" id="tema-cel" aria-label="Tema claro ou escuro" title="Tema claro ou escuro"></button>
           <button class="iconbtn" id="minhas-aut" aria-label="Minhas autorizações" title="Minhas autorizações">${ic('shield')}</button>
           <button class="iconbtn" id="sair" aria-label="Sair" title="Sair">${ic('logout')}</button></div>
       </aside>
       <div class="content">
         ${ctx.verComo ? `<div class="vercomo" id="vercomo">${ic('eye')}<span>Vendo como <b>${esc(ctx.nome)}</b> · só consulta</span><button class="btn sm" id="vercomo-sair">${ic('back')}Voltar para a equipe</button></div>` : ''}
-        <div class="appbar"><div class="crumbs" id="crumbs"></div><div class="topo-dir" id="topo-dir"></div>
+        <div class="appbar"><div class="crumbs" id="crumbs"></div>
+          <button class="busca-top" id="busca-abrir" type="button" aria-label="Buscar (Ctrl+K)">${ic('busca')}<span>Buscar empresa, contrato, nota…</span><kbd>Ctrl K</kbd></button>
+          <div class="topo-dir" id="topo-dir"></div>
           ${CW.sessao.podeTrocar() ? `<button class="topobtn" id="trocar-empresa-top" title="Trocar de empresa">${ic('swap')}<span>${esc(ctx.nome)}</span></button>` : ''}
           <button class="topobtn tema" id="tema" title="Tema claro ou escuro">${ic('sun')}<span></span></button>${teste}</div>
         <div class="topbar"><div class="grow"><small class="eyebrow" id="eyebrow"></small><h1 id="titulo"></h1><p class="sub" id="subtitulo"></p></div><div id="acoes"></div></div>
@@ -123,6 +126,8 @@
     posicionarTopo();
     const vc = document.getElementById('vercomo-sair'); if (vc) vc.onclick = () => CW.sessao.voltarEquipe('redeempresas/ver/' + ctx.empresaId);
     document.getElementById('minhas-aut').onclick = () => ir('autorizacoes');
+    document.getElementById('meus-dados').onclick = () => ir('meusdados');
+    document.getElementById('busca-abrir').onclick = document.getElementById('busca-cel').onclick = () => buscar();
     const ma = document.getElementById('menu-alt'); if (ma) ma.onclick = alternarMenu;
     ['trocar-empresa', 'trocar-empresa-top'].forEach(id => { const tr = document.getElementById(id); if (tr) tr.onclick = () => CW.sessao.trocar(); });
     const tb = document.getElementById('tema'), tc = document.getElementById('tema-cel');   /* tc: o mesmo botão na barra de cima do celular */
@@ -135,12 +140,14 @@
     const cbase = baseCtx();
     mods.forEach(m => { if (typeof m.iniciar !== 'function') return; try { const f = m.iniciar(Object.assign({ modulo: m.id }, cbase)); if (typeof f === 'function') limpezas.push(f); } catch (e) { console.error('iniciar ' + m.id, e); } });
     window.addEventListener('hashchange', desenhar);
+    document.addEventListener('keydown', atalhoBusca);
     desenhar();
     conferirPorte();
   }
 
   function desmontar() {
     window.removeEventListener('hashchange', desenhar);
+    document.removeEventListener('keydown', atalhoBusca);
     limpezas.forEach(f => { try { f(); } catch (e) { console.error(e); } }); limpezas = [];
     Object.values(ouvintes).forEach(f => { try { f(); } catch (e) { /* já desligado */ } }); ouvintes = {};
     document.querySelectorAll('dialog[open]').forEach(d => d.close());
@@ -224,6 +231,63 @@
     catch (e) { console.error(e); view.innerHTML = `<div class="banner danger">${ic('alert')}<span><strong>Não foi possível abrir esta tela.</strong>${esc(CW.fb.mensagemErro(e))}</span></div>`; }
   }
 
+  /* ---------- busca do topo (09/11/2026): telas, empresas para trocar e o que as telas já carregaram ----------
+     Cada módulo pode ter buscar(ctx) → [{ t, s, rota, txt }] com os dados que ele já tem na memória (nenhuma leitura nova).
+     Todas as palavras digitadas precisam aparecer (sem acento, maiúscula ou minúscula). Abre com Ctrl+K ou "/". */
+  const norm = v => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  function atalhoBusca(e) {
+    if (!montado || document.querySelector('dialog[open]')) return;
+    const campo = /^(input|textarea|select)$/i.test((e.target && e.target.tagName) || '') || (e.target && e.target.isContentEditable);
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); buscar(); }
+    else if (e.key === '/' && !campo) { e.preventDefault(); buscar(); }
+  }
+  function fontesBusca() {
+    const c = baseCtx(), out = [], s = CW.sessao.estado();
+    const telas = menuMods().concat(visiveis().filter(m => ['meusdados', 'autorizacoes'].includes(m.id)));
+    telas.forEach(m => out.push({ g: 'Telas', t: m.nome, s: GRUPO[m.id] || 'Conectwork', rota: m.id, icone: m.icone, txt: m.nome + ' ' + (m.nomeCurto || '') }));
+    if (CW.sessao.podeTrocar()) (s.opcoes || []).filter(o => o.chave !== (c.contexto || {}).chave)
+      .forEach(o => out.push({ g: 'Trocar de empresa', t: o.nome, s: o.tipo === 'master' ? 'Voltar para a equipe Conectwork' : 'Entrar nesta empresa', chave: o.chave, icone: 'swap', txt: o.nome + ' ' + ((o.empresa || {}).cnpj || '') }));
+    visiveis().forEach(m => { if (typeof m.buscar !== 'function') return;
+      try { (m.buscar(Object.assign({ modulo: m.id }, c)) || []).forEach(x => out.push(Object.assign({ g: m.nome, icone: m.icone }, x))); } catch (e) { console.error('buscar ' + m.id, e); } });
+    out.forEach(x => { x.h = norm([x.t, x.s, x.txt].join(' ')); x.hd = x.h.replace(/\D/g, ''); });
+    return out;
+  }
+  function filtrar(itens, q) {
+    const ws = norm(q).split(/\s+/).filter(Boolean);
+    if (!ws.length) return itens.filter(x => x.g === 'Telas').slice(0, 9);
+    const casa = x => ws.every(w => x.h.includes(w) || (/^\d{3,}$/.test(w.replace(/\D/g, '')) && x.hd.includes(w.replace(/\D/g, ''))));
+    const por = {}; itens.filter(casa).forEach(x => { (por[x.g] = por[x.g] || []).push(x); });
+    return Object.values(por).reduce((a, xs) => a.concat(xs.slice(0, 6)), []).slice(0, 30);
+  }
+  function buscar() {
+    if (!montado || document.getElementById('busca-dlg')) return;
+    const { ic, esc } = U(), itens = fontesBusca();
+    const d = document.createElement('dialog'); d.id = 'busca-dlg'; d.className = 'busca-dlg';
+    d.innerHTML = `<div class="bq-in"><label class="bq-campo">${ic('busca')}<input id="bq-q" type="search" autocomplete="off" placeholder="Empresa, contrato, nota, OS, valor…" aria-label="Buscar no Conectwork" aria-controls="bq-lista"><kbd>Esc</kbd></label>
+      <div class="bq-lista" id="bq-lista" role="listbox" aria-label="Resultados"></div>
+      <p class="bq-dica">Procura no que você já pode ver: telas, empresas, contratos, medições, notas, contas a pagar e receber e ordens de serviço.</p></div>`;
+    let res = [], sel = 0;
+    const lista = d.querySelector('#bq-lista'), q = d.querySelector('#bq-q');
+    const pinta = () => {
+      res = filtrar(itens, q.value); sel = Math.min(sel, Math.max(res.length - 1, 0)); let g = null;
+      lista.innerHTML = res.length ? res.map((x, i) => { const cab = x.g !== g ? `<div class="bq-g">${esc(q.value.trim() ? x.g : 'Ir para')}</div>` : ''; g = x.g;
+        return cab + `<button type="button" class="bq-it" role="option" data-i="${i}" aria-selected="${i === sel}">${ic(x.icone || 'grid')}<span><strong>${esc(x.t)}</strong><small>${esc(x.s || '')}</small></span></button>`; }).join('')
+        : `<div class="bq-vazio" id="bq-vazio"><strong>Nada encontrado para "${esc(q.value.trim())}"</strong><span>Confira a grafia ou procure por outra parte: o nome da empresa, o número da nota ou o valor.</span></div>`;
+      const at = lista.querySelector('[aria-selected="true"]'); if (at) at.scrollIntoView({ block: 'nearest' });
+    };
+    const abre = i => { const x = res[i]; if (!x) return; d.close(); if (x.chave) CW.sessao.entrarEm(x.chave); else ir(x.rota); };
+    q.addEventListener('input', () => { sel = 0; pinta(); });
+    q.addEventListener('keydown', e => {
+      if (e.key === 'ArrowDown') { e.preventDefault(); sel = Math.min(sel + 1, res.length - 1); pinta(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); sel = Math.max(sel - 1, 0); pinta(); }
+      else if (e.key === 'Enter') { e.preventDefault(); abre(sel); }
+      else if (e.key === 'Escape') { e.preventDefault(); d.close(); } });
+    lista.addEventListener('click', e => { const b = e.target.closest('[data-i]'); if (b) abre(+b.dataset.i); });
+    d.addEventListener('click', e => { if (e.target === d) d.close(); });
+    d.addEventListener('close', () => d.remove());
+    document.body.appendChild(d); d.showModal(); pinta(); q.focus();
+  }
+
   /* ---------- partida ---------- */
   function iniciar() { CW.sessao.iniciar(); }
 
@@ -231,5 +295,5 @@
   CW.inscrever = inscrever;
   CW.ir = ir;
   CW.iniciar = iniciar;
-  CW.app = { montar, desmontar, desenhar, modulos: () => MODULOS.slice(), visiveis, atual: () => atual, pendencias, pendenciasMudaram };
+  CW.app = { montar, desmontar, desenhar, modulos: () => MODULOS.slice(), visiveis, atual: () => atual, pendencias, pendenciasMudaram, buscar };
 })();

@@ -296,6 +296,13 @@
       CW.inscrever('titulos-p', () => db.collection('titulos').where('prestadorId', '==', emp), s => { tP = CW.fb.lista(s); ok.p = true; redesenha(); });
       return () => { pronto = false; };
     },
+    /* busca do topo: só o que esta tela já carregou */
+    buscar(ctx) {
+      const vistos = {};
+      return tT.concat(tP).filter(t => !vistos[t._id] && (vistos[t._id] = 1)).map(t => { const l = lado(t, ctx), v = vencimento(t);
+        return { t: `${l === 'tomador' ? 'A pagar' : 'A receber'} · ${l === 'tomador' ? t.prestadorNome : t.tomadorNome}`, s: `${brl(t.liquidoCentavos)}${v ? ' · vence ' + dataTxt(v) : ''}${t.notaNumero ? ' · nota ' + t.notaNumero : ''}`,
+          rota: 'titulos/ver/' + t._id, txt: [t.tomadorNome, t.prestadorNome, t.notaNumero ? 'nota ' + t.notaNumero : '', l === 'tomador' ? 'pagar pagamento' : 'receber', periodoTxt(t.periodo), brl(t.liquidoCentavos)].join(' ') }; });
+    },
     pendencias(ctx) {
       if (!pronto) return [];
       return tT.concat(tP).map(t => ({ t, v: minhaVez(t, ctx) })).filter(x => x.v).map(({ t, v }) => ({ txt: v, rota: 'titulos/ver/' + t._id,

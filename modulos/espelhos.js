@@ -459,6 +459,13 @@
       else ok.m = true;
       return () => { pronto = false; };
     },
+    /* busca do topo: só o que esta tela já carregou (número da nota, empresa, período, valor) */
+    buscar(ctx) {
+      const vistos = {};
+      return espT.concat(espP).filter(x => !vistos[x._id] && (vistos[x._id] = 1)).map(x => { const l = lado(x, ctx), n = x.nota && x.nota.numero;
+        return { t: n ? `Nota ${n}` : `Espelho de ${periodoTxt(x.periodo)}`, s: `${l === 'tomador' ? x.prestadorNome : x.tomadorNome} · ${periodoTxt(x.periodo)} · ${(ST[x.status] || [, ''])[1]} · ${brl(x.valorCentavos || 0)}`,
+          rota: 'espelhos/ver/' + x._id, txt: [x.tomadorNome, x.prestadorNome, n ? 'nota ' + n : 'espelho', x.periodo, brl(x.valorCentavos || 0)].join(' ') }; });
+    },
     pendencias(ctx) {
       if (!pronto) return [];
       const comEsp = new Set(espT.map(x => x._id)), out = [];

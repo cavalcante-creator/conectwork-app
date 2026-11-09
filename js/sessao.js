@@ -347,6 +347,7 @@
     catch (e) { if (minha !== geracao) return; st = vazio(); st.usuario = { uid: u.uid, email: u.email }; telaErro(CW.fb.mensagemErro(e)); return; }
     if (minha !== geracao) return;
     st = s;
+    if (CW.meusDados) CW.meusDados.sincronizar(st);   /* e-mail de acesso ou nome mudou: acerta o perfil e os acessos (modulos/meusdados.js) */
     if (!st.opcoes.length) {
       /* estava no meio do cadastro da empresa (acabou de criar a conta, ou recarregou a página): continua nele */
       if (CW.entrada.continuarCadastro && CW.entrada.cadastroAberto && CW.entrada.cadastroAberto()) { CW.entrada.continuarCadastro(); return; }

@@ -275,6 +275,11 @@
       CW.inscrever('medicoes-p', () => db.collection('medicoes').where('prestadorId', '==', emp), s => { porP = CW.fb.lista(s); b = true; if (a) junta(); });
       return () => { lista = null; };
     },
+    /* busca do topo: só o que esta tela já carregou */
+    buscar(ctx) {
+      return (lista || []).map(m => ({ t: `Medição de ${periodoTxt(m.periodo)}`, s: `${outraParte(m, ctx)} · ${brl(m.valorCentavos || 0)}`, rota: 'medicoes/ver/' + m._id,
+        txt: [m.tomadorNome, m.prestadorNome, m.periodo, m.status, brl(m.valorCentavos || 0)].join(' ') }));
+    },
     pendencias(ctx) {
       return (lista || []).filter(m => precisaDeMim(m, ctx)).map(m => ({ rota: 'medicoes/ver/' + m._id, sub: `${outraParte(m, ctx)} · ${periodoTxt(m.periodo)} · ${brl(m.valorCentavos)}`,
         txt: lado(m, ctx) === 'prestador' ? 'Conferir a medição' : m.status === 'divergencia' ? 'Corrigir a medição (divergência)' : 'Aprovar a medição' }));

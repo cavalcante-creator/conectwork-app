@@ -236,6 +236,12 @@
       CW.inscrever('ordens-p', () => db.collection('ordens').where('prestadorId', '==', emp), s => { osP = CW.fb.lista(s); ok.p = true; re(); }, () => { ok.p = true; re(); });
       return () => { pronto = false; };
     },
+    /* busca do topo: só o que esta tela já carregou */
+    buscar(ctx) {
+      const vistos = {};
+      return osT.concat(osP).filter(o => !vistos[o._id] && (vistos[o._id] = 1)).map(o => ({ t: `OS ${o.numero} · ${o.titulo || ''}`, s: `${outro(o, ctx)} · ${brl(o.valorCentavos || 0)}`, rota: 'ordens/ver/' + o._id,
+        txt: ['os ' + o.numero, 'ordem de serviço', o.titulo, o.tomadorNome, o.prestadorNome].join(' ') }));
+    },
     pendencias(ctx) {
       if (!pronto) return [];
       return osT.concat(osP).map(o => ({ o, v: minhaVez(o, ctx) })).filter(x => x.v).map(({ o, v }) => ({ txt: v, sub: `OS ${o.numero} · ${o.titulo} · ${outro(o, ctx)} · prazo ${dataTxt(o.prazo)}`, rota: 'ordens/ver/' + o._id }));

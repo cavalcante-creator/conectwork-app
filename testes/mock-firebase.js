@@ -62,6 +62,10 @@
   const cbs = [];
   let atual = L.get(KEY, null);
   const User = r => r ? { uid: r.uid, email: r.email, displayName: r.nome || null, emailVerified: !!r.verificado,
+    providerData: [{ providerId: r.prov || 'password' }],
+    /* Meus dados: confirma a senha e manda o link para o e-mail novo (__ctl.trocaEmail = { erro: 'auth/…' }) */
+    reauthenticateWithCredential: async c => { await espera(); window.__mockLog.push(['reautentica', c && c.email]); const u = srv().users[r.email]; if (!u || u.pass !== c.senha) throw err('auth/invalid-credential'); return { user: User(r) }; },
+    verifyBeforeUpdateEmail: async (novo, op) => { await espera(); window.__mockLog.push(['trocaEmail', r.email, novo, op || null]); const t = ctl().trocaEmail || {}; if (t.erro) throw err(t.erro); if (srv().users[novo]) throw err('auth/email-already-in-use'); },
     linkWithCredential: async c => { window.__mockLog.push(['vincula', r.email, c && c.providerId]); return { user: User(r) }; },
     sendEmailVerification: async op => { window.__mockLog.push(['verificacao', r.email, op || null]); } } : null;
   const muda = r => { atual = r; if (r) L.set(KEY, r); else localStorage.removeItem(KEY); cbs.forEach(cb => setTimeout(() => cb(User(r)), 0)); };
@@ -79,7 +83,7 @@
       const sv = srv(), em = cfg.email.toLowerCase();
       if (cfg.conflito) { const e = err('auth/account-exists-with-different-credential'); e.email = em; e.credential = { providerId: id }; throw e; }
       if (!sv.users[em]) { sv.users[em] = { uid: 'u' + Math.random().toString(36).slice(2, 10).toUpperCase(), pass: null }; salva(sv); }
-      muda({ uid: sv.users[em].uid, email: em, nome: cfg.nome || null, verificado: true }); return { user: User(atual) }; },
+      muda({ uid: sv.users[em].uid, email: em, nome: cfg.nome || null, verificado: true, prov: id }); return { user: User(atual) }; },
     signInWithRedirect: async p => { window.__mockLog.push(['redirect', p.providerId]); },
     getRedirectResult: async () => ({ user: null }),
     createUserWithEmailAndPassword: async (em, p) => { await espera(); const c = ctl(); window.__mockLog.push(['criaConta', em]);
@@ -120,4 +124,5 @@
   class Provedor { constructor(id) { this.providerId = id; this.params = {}; } setCustomParameters(p) { this.params = p; return this; } }
   firebase.auth.GoogleAuthProvider = class extends Provedor { constructor() { super('google.com'); } };
   firebase.auth.OAuthProvider = class extends Provedor { constructor(id) { super(id); } };
+  firebase.auth.EmailAuthProvider = { credential: (email, senha) => ({ providerId: 'password', email, senha }) };
 })();

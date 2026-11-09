@@ -126,6 +126,13 @@ async function deve(nome, permitido, op) {
   await deve('Pessoa lista os próprios acessos (consulta do login: where uid == meu uid)', true, () => getDocs(query(collection(db('bruno'), 'acessos'), where('uid', '==', P.bruno))));
   await deve('Pessoa NÃO lista acessos de outra pessoa', false, () => getDocs(query(collection(db('carla'), 'acessos'), where('uid', '==', P.bruno))));
   await deve('Pessoa NÃO cria acesso para si sem convite', false, () => setDoc(doc(db('carla'), 'acessos', 'alfa_' + P.carla), { uid: P.carla, empresaId: 'alfa', cargo: 'admin', ativo: true }));
+  /* Meus dados (09/11/2026): a pessoa acerta nome e e-mail no próprio acesso; o e-mail tem que ser o do login */
+  await deve('Pessoa acerta o próprio nome no acesso (Meus dados)', true, () => updateDoc(doc(db('bruno'), 'acessos', 'alfa_' + P.bruno), { nome: 'Bruno Lima', atualizadoEm: serverTimestamp() }));
+  await deve('Pessoa grava no acesso o e-mail do próprio login', true, () => updateDoc(doc(db('bruno'), 'acessos', 'alfa_' + P.bruno), { email: EM.bruno }));
+  await deve('Pessoa NÃO põe no acesso um e-mail que não é o do login', false, () => updateDoc(doc(db('bruno'), 'acessos', 'alfa_' + P.bruno), { email: 'outro@x.com.br' }));
+  await deve('Pessoa NÃO muda o cargo junto com o nome', false, () => updateDoc(doc(db('bruno'), 'acessos', 'alfa_' + P.bruno), { nome: 'Bruno Lima', cargo: 'admin' }));
+  await deve('Pessoa NÃO se reativa mudando o nome (acesso bloqueado)', false, () => updateDoc(doc(db('duda'), 'acessos', 'alfa_' + P.duda), { nome: 'Duda Reis', ativo: true }));
+  await deve('Pessoa NÃO muda o nome no acesso de outra pessoa', false, () => updateDoc(doc(db('bruno'), 'acessos', 'alfa_' + P.ana), { nome: 'Outra' }));
   await deve('Ninguém apaga acesso (bloqueio é por ativo=false)', false, () => deleteDoc(doc(db('ana'), 'acessos', 'alfa_' + P.bruno)));
 
   /* ---------- convites ---------- */

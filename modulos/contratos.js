@@ -250,6 +250,12 @@
       }
       return () => { lista = null; };
     },
+    /* busca do topo (09/11/2026): só o que esta tela já carregou */
+    buscar(ctx) {
+      return (lista || []).map(c => { const l = ladoDe(c, ctx);
+        return { t: nomeOutro(c, ctx), s: `Contrato · ${MODAL[c.modalidade] || 'Equipe contínua'} · ${c.objeto || ''}`, rota: 'contratos/ver/' + c._id,
+          txt: [c.objeto, c.tomadorNome, c.prestadorNome, l === 'tomador' ? 'contrato a pagar' : 'contrato a receber', c.status].join(' ') }; });
+    },
     pendencias(ctx) {
       if (!lista) return [];
       const out = [], adm = admin(ctx);
