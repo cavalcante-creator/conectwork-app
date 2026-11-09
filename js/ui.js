@@ -67,7 +67,8 @@
     <path d="M300 900C470 800 620 690 760 520S960 330 1110 305" fill="none" stroke="url(#lgf3)" stroke-width="2.5"/>
   </svg>`;
   const CURVES = `<svg class="curves" viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g fill="none" stroke="#2F6BEA" stroke-opacity=".25" stroke-width="1"><path d="M-40 420C80 380 160 300 220 200S380 40 460 20"/><path d="M-40 470C90 430 180 350 240 250S390 90 470 70"/><path d="M-40 520C100 480 200 400 260 300S400 140 480 120"/><circle cx="420" cy="580" r="160"/><circle cx="420" cy="580" r="230"/></g></svg>`;
-  const GRADS = ['linear-gradient(135deg,#1A5CF0,#22D3A6)', 'linear-gradient(135deg,#0D2152,#3B7BFF)', 'linear-gradient(135deg,#0A7F8C,#22D3A6)', 'linear-gradient(135deg,#3B3FD8,#2F7BFF)', 'linear-gradient(135deg,#0A5E8E,#1763E6)'];
+  /* cores das iniciais: só azuis e azul-marinho (sem verde, pedido de 09/11/2026) */
+  const GRADS = ['linear-gradient(135deg,#1A5CF0,#4D93FF)', 'linear-gradient(135deg,#0D2152,#3B7BFF)', 'linear-gradient(135deg,#12366D,#1F63FF)', 'linear-gradient(135deg,#3B3FD8,#2F7BFF)', 'linear-gradient(135deg,#0A5E8E,#1763E6)'];
   const iniciais = n => String(n || '?').replace(/\b(MEI|Ltda|S\.?A\.?)\b/gi, '').trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase() || '?';
   /* empId: quando a empresa tem logo (logos/{empId}), modulos/logos.js troca as iniciais pela logo */
   const avatar = (nome, cls, empId) => { let h = 0; for (const ch of String(nome || '')) h = (h * 31 + ch.charCodeAt(0)) >>> 0;

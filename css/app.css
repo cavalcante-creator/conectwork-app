@@ -1,7 +1,7 @@
 /* Conectwork · estilos do app. Cores, fonte e componentes seguem docs/prototipo-referencia.html. */
 :root{
-  --navy:#081638;--navy2:#0D2152;--blue:#1A5CF0;--blue2:#3B7BFF;--cyan:#22D3A6;--teal:#12B394;
-  --grad:linear-gradient(120deg,#0F45E0 0%,#1F63FF 55%,#22D3A6 100%);
+  --navy:#081638;--navy2:#0D2152;--blue:#1A5CF0;--blue2:#3B7BFF;--cyan:#4D93FF;--teal:#1F63FF;
+  --grad:linear-gradient(120deg,#0F45E0 0%,#1F63FF 55%,#4D93FF 100%);
   --bg:#F0F3F9;--surface:#FFFFFF;--surface2:#F6F8FC;--ink:#0A1838;--muted:#5E6A88;--faint:#8F9AB5;--line:#E1E7F1;
   --ok:#0A7B55;--okbg:#DEF5EA;--warn:#9A5B00;--warnbg:#FFF0D6;--info:#1450C0;--infobg:#E3ECFE;--danger:#B42D24;--dangerbg:#FCE8E6;
   --shadow:0 1px 2px rgba(8,22,56,.04),0 6px 20px -12px rgba(8,22,56,.14);
@@ -154,7 +154,7 @@ h1,h2,h3{letter-spacing:-.015em}
 .nav{display:flex;flex-direction:column;gap:3px;position:relative}
 .nav button{display:flex;align-items:center;gap:12px;background:none;border:0;padding:11px 12px;border-radius:10px;color:#AFC0E6;cursor:pointer;text-align:left;font-weight:500;position:relative}
 .nav button:hover{background:rgba(255,255,255,.05);color:#fff}
-.nav button[aria-current="page"]{background:linear-gradient(90deg,rgba(47,123,255,.28),rgba(34,211,166,.06));color:#fff}
+.nav button[aria-current="page"]{background:linear-gradient(90deg,rgba(47,123,255,.28),rgba(47,123,255,.06));color:#fff}
 .nav button[aria-current="page"]::before{content:"";position:absolute;left:-16px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--cyan)}
 .usercard{margin-top:auto;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:10px;position:relative}
 .usercard .t{min-width:0;flex:1}
