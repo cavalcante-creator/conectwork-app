@@ -27,9 +27,18 @@
     const lista = pref.map(id => mods.find(m => m.id === id)).filter(Boolean).slice(0, 4);
     if (!lista.length) return '';
     return lista.map(m => { const n = por[m.id] || 0;
-      return `<button class="ini-num ${n ? 'tem' : ''}" data-ir="${esc(m.id)}"><span class="ic">${ic(m.icone)}</span><b>${n}</b><span>${esc(m.nome)}</span><small>${n ? (n === 1 ? 'pendência para você' : 'pendências para você') : 'nada pendente'}</small></button>`; }).join('');
+      return `<button class="ini-num ${n ? 'tem' : ''}" data-ir="${esc(m.id)}" data-cor="${n ? 'atencao' : 'ok'}"><span class="ic">${ic(m.icone)}</span><b>${n}</b><span>${esc(m.nome)}</span><small>${n ? (n === 1 ? 'pendência para você' : 'pendências para você') : 'nada pendente'}</small></button>`; }).join('');
+  }
+  function vencHtml() {
+    const { esc } = U(), ctx = Object.assign({}, { contexto: CW.sessao.contexto(), sessao: CW.sessao.estado() });
+    const l = CW.titulos && CW.titulos.proximos(ctx, 5);
+    if (l === null || l === undefined) return `<div class="ini-vz">Carregando…</div>`;
+    if (!l.length) return `<div class="ini-vz">Nenhum vencimento em aberto.</div>`;
+    return l.map(t => `<button class="ini-vc" data-vc="${esc(t.id)}"><span>${esc(t.nome)}<small>${esc(t.venc)} · ${t.lado === 'tomador' ? 'a pagar' : 'a receber'}${t.vencido ? ' · <b class="ini-atr">vencido</b>' : ''}</small></span><b>${esc(t.valor)}</b></button>`).join('');
   }
   function pvDesenha(ps) {
+    const vc = document.getElementById('ini-venc-b');
+    if (vc) { vc.innerHTML = vencHtml(); vc.querySelectorAll('[data-vc]').forEach(x => x.onclick = () => CW.ir('titulos/ver/' + x.dataset.vc)); }
     const b = document.getElementById('ini-pv-b');
     if (b) {
       const abertos = Array.from(b.querySelectorAll('details[open]')).map(d => d.dataset.pvg);
@@ -70,6 +79,7 @@
                 ${pv ? `<div class="ini-nums" id="ini-nums"></div>` : ''}${pv}
               </div>
               <aside class="ini-lado">
+                ${!master && CW.titulos && CW.app.visiveis().some(m => m.id === 'titulos') ? `<section class="card" id="ini-venc"><div class="card-h"><h3>Próximos vencimentos</h3><a class="linkbtn" href="#titulos" style="margin-left:auto;font-size:13px">Ver todos</a></div><div class="card-b" id="ini-venc-b"></div></section>` : ''}
                 <section class="card" id="ini-quem"><div class="card-b">
                   <div class="ini-eu">${avatar(nome, '')}<div class="t"><h2 id="ini-nome">${esc(nome)}</h2><small>${esc(s.usuario.email)}</small></div></div>
                   <dl class="ini-dl">
@@ -82,7 +92,7 @@
                 </div></section>
               </aside>
             </div>`;
-          if (pv) pvDesenha(CW.app.pendencias());
+          pvDesenha(CW.app.pendencias());
           if (CW.avisos) CW.avisos.bloco(document.getElementById('ini-avisos'), ctx);
         }
       }

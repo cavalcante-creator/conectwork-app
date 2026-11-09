@@ -13,7 +13,7 @@ const { ok, fim } = H.placar('login');
   const l1 = await page.evaluate(() => ({ marca: !!document.querySelector('.brandpanel h1') && document.querySelector('.brandpanel h1').innerText,
     titulo: (document.querySelector('#lg h2') || {}).innerText, senha: (document.getElementById('lg-senha') || {}).type, esq: !!document.getElementById('lg-esqueci'),
     shell: !!document.querySelector('.shell'), fonte: getComputedStyle(document.body).fontFamily }));
-  ok('L1 sem login abre a tela de entrar (marca, e-mail, senha e "Esqueci minha senha"), sem o app por trás', l1.marca === 'Conectwork' && l1.titulo === 'Acesse sua conta' && l1.senha === 'password' && l1.esq && !l1.shell && /Sora/.test(l1.fonte), JSON.stringify(l1));
+  ok('L1 sem login abre a tela de entrar (marca, e-mail, senha e "Esqueci minha senha"), sem o app por trás', l1.marca === 'Conectwork' && l1.titulo === 'Acesse sua conta' && l1.senha === 'password' && l1.esq && !l1.shell && /Red Hat Text/.test(l1.fonte), JSON.stringify(l1));
 
   // L1b textos da página de entrada (produto para o cliente final)
   const l1b = await page.evaluate(() => {

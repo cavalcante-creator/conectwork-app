@@ -57,6 +57,9 @@ const { ok, fim } = H.placar('pendencias');
   /* P1c números do dia: quantas pendências cada tela tem, e tocar leva para ela */
   const nums = await page.$$eval('#ini-nums .ini-num', x => x.map(b => b.dataset.ir + ':' + b.querySelector('b').textContent));
   ok('P1c números do dia no Início: medições 1, espelhos 1, pagar e receber 1, contratos 3', ['medicoes:1', 'espelhos:1', 'titulos:1'].every(t => nums.includes(t)), JSON.stringify(nums));
+  /* P1d próximos vencimentos (de Pagar e receber, sem leitura nova): nome, data e valor; tocar abre o título */
+  const vc = await page.$$eval('#ini-venc-b .ini-vc', x => x.map(b => b.textContent.replace(/\s+/g, ' ').trim()));
+  ok('P1d Início mostra os próximos vencimentos em aberto (de Pagar e receber)', vc.length >= 1 && vc.every(t => /R\$/.test(t) && /a pagar|a receber/.test(t)), JSON.stringify(vc));
   await page.click('#ini-pv .pv-it:has-text("Aprovar a medição")'); await page.waitForSelector('#md-aprovar', { timeout: 8000 });
   ok('P3 tocar no item abre a tela para fazer', (await page.evaluate(() => location.hash)) === '#medicoes/ver/cz_2026-09-2');
 

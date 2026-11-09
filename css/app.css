@@ -888,9 +888,9 @@ a.ng-link:hover{background:var(--surface2)}
 #abertura .ab-faixa{stroke-dasharray:100;stroke-dashoffset:100;animation:ab-traco .9s cubic-bezier(.65,0,.35,1) .1s forwards}
 #abertura .ab-folha{opacity:0;transform-box:fill-box;transform-origin:0% 100%;transform:translate(-14px,14px) scale(.6);animation:ab-folha .55s cubic-bezier(.2,.9,.3,1.25) .8s forwards}
 #abertura .ab-sim{filter:drop-shadow(0 10px 30px rgba(26,92,240,.35))}
-#abertura .ab-nome{font-family:Sora,system-ui,sans-serif;font-size:34px;font-weight:600;letter-spacing:-.02em;color:#fff;opacity:0;transform:translateY(10px);animation:ab-sobe .5s ease-out 1s forwards}
+#abertura .ab-nome{font-family:"Red Hat Display",system-ui,sans-serif;font-size:34px;font-weight:600;letter-spacing:-.02em;color:#fff;opacity:0;transform:translateY(10px);animation:ab-sobe .5s ease-out 1s forwards}
 #abertura .ab-nome b{color:#3B7BFF;font-weight:600}
-#abertura .ab-frase{font-family:Sora,system-ui,sans-serif;font-size:14px;color:#B9C8EC;opacity:0;transform:translateY(8px);animation:ab-sobe .5s ease-out 1.2s forwards;text-align:center;padding:0 24px}
+#abertura .ab-frase{font-family:"Red Hat Display",system-ui,sans-serif;font-size:14px;color:#B9C8EC;opacity:0;transform:translateY(8px);animation:ab-sobe .5s ease-out 1.2s forwards;text-align:center;padding:0 24px}
 @keyframes ab-traco{to{stroke-dashoffset:0}}
 @keyframes ab-folha{to{opacity:1;transform:none}}
 @keyframes ab-sobe{to{opacity:1;transform:none}}
@@ -992,3 +992,100 @@ a.pv-it{text-decoration:none;color:inherit}
 /* espaço entre os blocos: a tela já separa com 22px (gap); a margem própria de alguns blocos dobrava o espaço */
 main#view>*{margin-bottom:0!important}
 main#view>.grid-2:not(:has(*)){display:none}
+
+/* ==========================================================================
+   Visual corporativo · versão 3 escolhida em 09/11/2026 ("Gostei da 3")
+   Menu azul-marinho com a marca numa faixa mais escura, barra branca no alto, conteúdo cinza-claro, cartões brancos
+   com borda fina e cantos de 10px, títulos e números em Red Hat Display, texto em Red Hat Text, selos quadrados,
+   números do Início com faixa de cor pela urgência. Claro e escuro.
+   ========================================================================== */
+:root{--fd:"Red Hat Display",system-ui,-apple-system,"Segoe UI",sans-serif;--ft:"Red Hat Text",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --bg:#F1F3F7;--surface:#FFFFFF;--surface2:#F7F8FB;--line:#DEE3EC;--ink:#101B30;--muted:#5E6A84;--faint:#8A95AB;
+  --blue:#1769FF;--blue2:#3F8CFF;--infobg:#E8EEF9;--info:#1453E0;--side:#0B1A3A;--side2:#081430;--barra:#FFFFFF;
+  --shadow:0 1px 2px rgba(16,27,48,.04)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0A1226;--surface:#111C36;--surface2:#0D1730;--line:#22304F;--ink:#E6ECF8;--muted:#9AA8C4;--faint:#7383A6;--infobg:#16295A;--info:#8DB8FF;--side:#070F24;--side2:#050B1C;--barra:#0E1833;--shadow:none}}
+:root[data-theme="dark"]{--bg:#0A1226;--surface:#111C36;--surface2:#0D1730;--line:#22304F;--ink:#E6ECF8;--muted:#9AA8C4;--faint:#7383A6;--infobg:#16295A;--info:#8DB8FF;--side:#070F24;--side2:#050B1C;--barra:#0E1833;--shadow:none}
+body{font-family:var(--ft);font-size:14.5px}
+h1,h2,h3,.card-h h3,.topbar h1,.profile h2,.dlg-h h2{font-family:var(--fd)}
+
+/* menu */
+@media (min-width:901px){.shell{grid-template-columns:240px 1fr}}
+.shell .side{background:var(--side);padding:0 0 14px}
+.shell .side>.curves{display:none}
+.shell .logo{height:64px;margin:0;padding:0 20px;background:var(--side2);font-family:var(--fd);font-weight:700;font-size:19px}
+.shell .logo b{color:#5A9BFF;font-weight:700}
+.shell .empbloco{margin:14px 12px 4px;border-radius:8px;background:rgba(255,255,255,.06);border:0}
+.shell .navgrupo{font-family:var(--ft);font-weight:600;color:#6E81AA;padding:16px 20px 6px;font-size:11px;letter-spacing:.08em}
+.shell .nav{gap:0}
+.shell .nav button{border-radius:0;padding:9px 20px;border-left:3px solid transparent;color:#C2CDE3;font-weight:500;font-size:14px}
+.shell .nav button svg.i{width:18px;height:18px}
+.shell .nav button:hover{background:rgba(255,255,255,.04)}
+.shell .nav button[aria-current="page"]{background:rgba(90,155,255,.14);color:#fff;border-left-color:#5A9BFF;font-weight:600}
+.shell .nav button[aria-current="page"]::before{display:none}
+.shell .nav button .badge{border-radius:4px;background:#D93F3F;font-family:var(--ft)}
+.shell .usercard{margin:0 12px;border-radius:8px}
+/* barra branca no alto e título */
+.content{background:var(--bg)}
+.appbar{height:64px;padding-block:0;background:var(--barra);border-bottom:1px solid var(--line)}
+.appbar .topobtn{border-radius:8px;background:var(--surface2);color:var(--ink);border:1px solid var(--line)}
+.topbar{padding-top:26px}
+.topbar .eyebrow{display:block;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.topbar .eyebrow:empty{display:none}
+.topbar h1{font-size:30px;font-weight:700;letter-spacing:-.015em}
+main#view{gap:18px}
+/* peças */
+.card{border-radius:10px;border-color:var(--line);box-shadow:var(--shadow)}
+.card-h{padding:13px 18px}
+.card-h h3{font-size:15px;font-weight:700}
+.card-h .ic{width:28px;height:28px;border-radius:7px}
+.card-b{padding:16px 18px}
+.btn,.btn.sec,.btn.sm{border-radius:8px;box-shadow:none}
+.btn:not(.sec):not(.ghost):not(.dangerous):not(.light):not(.ok):not(.warn){background:var(--blue)}
+.btn:not(.sec):not(.ghost):not(.dangerous):not(.light):not(.ok):not(.warn):hover{background:#0F5BE8}
+.pill,.tag,.count{border-radius:4px}
+.pill{font-weight:600}
+.avatar{border-radius:8px}
+label.f input,label.f select,label.f textarea,.sel{border-radius:8px}
+dialog .dlg-in,dialog{border-radius:12px}
+table.resp th,table th{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--surface2)}
+/* Início */
+.ini-grade{gap:18px}
+@media (min-width:1101px){.ini-grade{grid-template-columns:minmax(0,1fr) 340px}}
+.ini-principal,.ini-lado{gap:18px}
+.ini-nums{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
+.ini-num{display:block;border-radius:10px;border-top:4px solid #1769FF;padding:14px 18px 16px;box-shadow:var(--shadow)}
+.ini-num[data-cor="atencao"]{border-top-color:#D98E04}
+.ini-num[data-cor="ok"]{border-top-color:#B9C4D6}
+.ini-num .ic{display:none}
+.ini-num>span:not(.ic){display:block;margin:0;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.ini-num b{display:block;font-family:var(--fd);font-size:32px;font-weight:700;margin:6px 0 2px;color:var(--ink);justify-self:auto}
+.ini-num[data-cor="ok"] b{color:var(--faint)}
+.ini-num small{font-size:12.5px}
+.pv-it,.pv-g{border-radius:8px}
+.pv-it .ic,.pv-g .ic{border-radius:8px}
+.ini-vc{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;padding:11px 0;border:0;border-bottom:1px solid var(--line);background:none;color:var(--ink);font:inherit;font-size:13.5px;text-align:left;cursor:pointer}
+.ini-vc:last-child{border-bottom:0}
+.ini-vc:hover span{color:var(--blue)}
+.ini-vc small{display:block;color:var(--muted);font-size:12px}
+.ini-vc b{font-family:var(--fd);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ini-atr{color:#D93F3F;font-weight:600}
+.ini-vz{color:var(--muted);font-size:13px}
+#ini-venc .card-b{padding-block:4px}
+.vz-passos li{border-radius:8px}
+.vz-passos b{border-radius:6px}
+/* celular */
+@media (max-width:900px){
+  .shell .side{padding:10px 12px}
+  .shell .logo{height:auto;background:none;padding:0 4px 0 2px}
+  .shell .nav button{border-left:0;border-radius:8px;padding:9px 11px}
+  .shell .nav button[aria-current="page"]{border-left:0}
+  .appbar{height:auto;padding-block:10px}
+  .topbar{padding-top:18px}.topbar h1{font-size:24px}
+}
+.ini-num{display:flex;flex-direction:column}
+.ini-num>span:not(.ic){order:-1;white-space:normal;overflow:visible;line-height:1.35;min-height:2.7em}
+.ini-num{text-align:left;align-items:stretch}
+/* a tela de entrar continua como aprovada (botão Entrar em degradê) */
+.login #lg .btn.lg-principal:not(.sec){background:linear-gradient(90deg,#1769FF 0%,#1E86FF 55%,#12C7E8 100%);border-radius:14px;box-shadow:0 12px 26px -12px rgba(23,105,255,.85)}
+.login #lg .btn.lg-principal:not(.sec):hover{background:linear-gradient(90deg,#1769FF 0%,#1E86FF 55%,#12C7E8 100%);filter:brightness(1.07)}
+.login #lg .lg-social .btn,.login #lg label.f input{border-radius:14px}

@@ -105,7 +105,7 @@
         <div class="appbar"><div class="crumbs" id="crumbs"></div>
           ${CW.sessao.podeTrocar() ? `<button class="topobtn" id="trocar-empresa-top" title="Trocar de empresa">${ic('swap')}<span>${esc(ctx.nome)}</span></button>` : ''}
           <button class="topobtn tema" id="tema" title="Tema claro ou escuro">${ic('sun')}<span></span></button>${teste}</div>
-        <div class="topbar"><div class="grow"><h1 id="titulo"></h1><p class="sub" id="subtitulo"></p></div><div id="acoes"></div></div>
+        <div class="topbar"><div class="grow"><small class="eyebrow" id="eyebrow"></small><h1 id="titulo"></h1><p class="sub" id="subtitulo"></p></div><div id="acoes"></div></div>
         <main id="view"></main>
       </div></div>
       <nav class="bnav" id="bnav" aria-label="Navegação"></nav>`;
@@ -204,6 +204,7 @@
     document.getElementById('crumbs').innerHTML = `Conectwork ${ic('chev')} ${ids.length > 1 && telaId !== ids[0] ? `<span>${esc(m.nome)}</span> ${ic('chev')} <b>${esc(tela.nome)}</b>` : `<b>${esc(m.nome)}</b>`}`;
     document.getElementById('titulo').textContent = tela.titulo ? tela.titulo(baseCtx()) : (tela.nome || m.nome);
     document.getElementById('subtitulo').textContent = tela.sub || '';
+    const eb = document.getElementById('eyebrow'); if (eb) eb.textContent = m.id === 'inicio' ? new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }) : (GRUPO[m.id] || 'Conectwork');
     document.getElementById('acoes').innerHTML = '';
     const view = document.getElementById('view'); view.innerHTML = '';
     document.title = (tela.nome || m.nome) + ' · Conectwork';

@@ -26,7 +26,7 @@ As duas usam o **mesmo motor**: aceite ou medição aprovada → **espelho de fa
 - JavaScript puro, **sem etapa de build**, publicado no **GitHub Pages**.
 - **Firebase**: Authentication (e-mail e senha, Google e Microsoft) e Firestore. Projeto `conectwork`, **separado** do projeto do painel da Colafix.
 - Use o repositório irmão `../painel-colafix` como **referência de padrão**: como os módulos são registrados, como o login é tratado, como os testes são feitos. Copie o jeito, não copie dados nem regras de negócio da Colafix.
-- Visual e textos: siga `docs/prototipo-referencia.html` (cores, fonte, componentes, modo claro e escuro). **Tema escuro é o padrão** (07/11/2026); a pessoa troca no botão do topo: escuro → claro → automático. O protótipo é a referência visual e de fluxo; o código dele é só ilustrativo e **não** deve ser copiado como base (ele guarda tudo em localStorage).
+- Visual e textos: siga `docs/prototipo-referencia.html` (cores, componentes, modo claro e escuro), com o visual corporativo da versão 3 (abaixo). **Tema escuro é o padrão** (07/11/2026); a pessoa troca no botão do topo: escuro → claro → automático. O protótipo é a referência visual e de fluxo; o código dele é só ilustrativo e **não** deve ser copiado como base (ele guarda tudo em localStorage).
 
 ## Estrutura de pastas
 ```
@@ -80,6 +80,12 @@ testes/               testes automatizados
 - **Telas vazias com os passos** (`CW.ui.passos([...])`): Pagar e receber, Espelhos, Medições, Contratos, Ordens de serviço.
 - Conteúdo com no máximo 1280px; `main#view>*` sem margem própria (a tela já separa os blocos com 22px; antes dobrava).
 - Testes que leem o "Precisa de você" usam `textContent` e `state:'attached'` (itens agrupados ficam fechados). `teste-pendencias.js` (P1b, P1c).
+
+## Visual corporativo · versão 3 (escolhida em 09/11/2026 entre três versões do Início)
+- Letra: **Red Hat Display** (títulos e números, `--fd`) e **Red Hat Text** (texto, `--ft`), no app inteiro, inclusive na entrada e na abertura (a Sora saiu).
+- Bloco "Visual corporativo · versão 3" no fim do `css/app.css`: menu `--side #0B1A3A` com a marca numa faixa de 64px mais escura (`--side2`), item aberto com borda azul à esquerda, contadores vermelhos quadrados; barra branca de 64px no alto (`--barra`); título com a linha pequena em cima (`#eyebrow`: a data no Início, o grupo nas outras telas); fundo `#F1F3F7`; cartões brancos com borda fina e cantos de 10px; botões, selos e campos com cantos de 8/4px; cabeçalho de tabela em maiúsculas. Escuro: `#0A1226`/`#111C36`.
+- Início: números com faixa de cor em cima (amarelo = tem pendência, cinza = nada pendente) e **Próximos vencimentos** (`#ini-venc`, `CW.titulos.proximos(ctx, n)`: os títulos que Pagar e receber já carrega, sem leitura nova; tocar abre o título).
+- A tela de entrar continua como aprovada (Entrar em degradê; regra `.login #lg .btn.lg-principal`).
 
 ## Cargos (dentro de cada empresa)
 | Cargo | O que vê |

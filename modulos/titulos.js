@@ -274,6 +274,14 @@
     log(b, ctx, 'titulo.criar', `Título a pagar para ${x.prestadorNome} (${periodoTxt(x.periodo)}): ${brl(x.liquidoCentavos)}, vence ${x.vencimentoDias} dia(s) depois da nota válida.`, x._id);
   }
 
+  /* Início (09/11/2026): os próximos vencimentos em aberto, com os títulos que esta tela já carrega (nenhuma leitura nova) */
+  const proximos = function (ctx, n) {
+    if (!pronto || !ctx || !ctx.contexto) return null;
+    const vistos = {}, todos = tT.concat(tP).filter(t => !vistos[t._id] && (vistos[t._id] = 1));
+    return todos.filter(t => ABERTO.includes(t.status) && vencimento(t)).sort((a, b) => vencimento(a).localeCompare(vencimento(b))).slice(0, n || 5)
+      .map(t => { const l = lado(t, ctx); return { id: t._id, nome: l === 'tomador' ? t.prestadorNome : t.tomadorNome, lado: l, valor: brl(t.liquidoCentavos), venc: dataTxt(vencimento(t)), vencido: vencido(t) }; });
+  };
+
   CW.registrarModulo({
     id: 'titulos', nome: 'Pagar e receber', nomeCurto: 'Pagar/receber', icone: 'wallet', ordem: 28,
     para: ['empresa'], contrato: ['cobrancas', 'contratos'],
@@ -298,5 +306,5 @@
       ver: { nome: 'Título', sub: 'Vencimento, liberação, agendamento, pagamento com comprovante e baixa.', render: (el, ctx) => desenharVer(el, ctx, ctx.params[0]) }
     }
   });
-  CW.titulos = { criarNoLote, vencimento };
+  CW.titulos = { criarNoLote, vencimento, proximos };
 })();

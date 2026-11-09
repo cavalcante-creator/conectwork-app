@@ -65,7 +65,7 @@ const { ok, fim } = H.placar('ui');
 
   // U13 tema: escuro por padrão; escuro → claro → automático → escuro
   const u13 = await ev(() => { const ini = CW.ui.tema(), bg0 = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(), a = CW.ui.trocarTema(), bg1 = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(), b = CW.ui.trocarTema(), sb = localStorage.getItem('cw.tema'), c = CW.ui.trocarTema(); return [ini, bg0, a, bg1, b, sb, c, localStorage.getItem('cw.tema')]; });
-  ok('U13 tema: escuro por padrão; escuro → claro → automático → escuro (e o fundo muda)', u13[0] === 'dark' && u13[1].toUpperCase() === '#050D24' && u13[2] === 'light' && u13[3].toUpperCase() === '#F0F3F9' && u13[4] === 'auto' && u13[5] === 'auto' && u13[6] === 'dark' && u13[7] === null, JSON.stringify(u13));
+  ok('U13 tema: escuro por padrão; escuro → claro → automático → escuro (e o fundo muda)', u13[0] === 'dark' && u13[1].toUpperCase() === '#0A1226' && u13[2] === 'light' && u13[3].toUpperCase() === '#F1F3F7' && u13[4] === 'auto' && u13[5] === 'auto' && u13[6] === 'dark' && u13[7] === null, JSON.stringify(u13));
 
   const code = fim(erros); await browser.close(); process.exit(code);
 })().catch(e => { console.error('ERRO NO TESTE', e); process.exit(1); });
