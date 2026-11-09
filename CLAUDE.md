@@ -95,6 +95,7 @@ testes/               testes automatizados
 ## Domínio próprio (09/11/2026)
 - O app está em **https://conectwork.com.br/** (arquivo `CNAME`; DNS no Registro.br: 4 entradas A 185.199.108.153/109/110/111 e CNAME `www` → `cavalcante-creator.github.io`). `config.js` `urlApp` = `https://conectwork.com.br/` (links de convite, e-mails de confirmação e de senha nova). O endereço antigo do GitHub redireciona para o novo.
 - No Firebase: domínios autorizados `conectwork.com.br` e `www.conectwork.com.br`; URL de ação dos modelos = `https://conectwork.com.br/`.
+- **Prévia do link** (WhatsApp, LinkedIn, e-mail): etiquetas `og:*` e `twitter:*` no `index.html` com a imagem `icons/og-conectwork.jpg` (1200×630, visual da tela de entrar, ~65 KB) e a frase da marca. Mudou a imagem? Troque o nome do arquivo, porque o WhatsApp guarda a prévia antiga.
 
 ## Cargos (dentro de cada empresa)
 | Cargo | O que vê |
