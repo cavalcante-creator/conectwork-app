@@ -117,7 +117,7 @@ const { ok, fim } = H.placar('login');
   await page.fill('#lg-senha', '');
   // L1l "Manter conectado" vem marcado e o botão Entrar é azul-marinho como o fundo
   const l1l = await page.evaluate(() => ({ m: document.getElementById('lg-manter').checked, txt: document.querySelector('.lg-manter').innerText.trim(), bt: getComputedStyle(document.getElementById('lg-entrar')).backgroundImage }));
-  ok('L1l "Manter conectado" marcado por padrão e botão Entrar em azul (sem verde)', l1l.m && l1l.txt === 'Manter conectado' && /linear-gradient/.test(l1l.bt) && /23, 105, 255/.test(l1l.bt) && !/18, 199, 232/.test(l1l.bt), JSON.stringify(l1l));
+  ok('L1l "Manter conectado" marcado por padrão e botão Entrar em degradê azul → ciano', l1l.m && l1l.txt === 'Manter conectado' && /linear-gradient/.test(l1l.bt) && /23, 105, 255/.test(l1l.bt) && /18, 199, 232/.test(l1l.bt), JSON.stringify(l1l));
 
   // L2 campos vazios
   await page.click('#lg-entrar'); let e = await erro();
