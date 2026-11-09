@@ -91,8 +91,8 @@
       <div class="content">
         ${ctx.verComo ? `<div class="vercomo" id="vercomo">${ic('eye')}<span>Vendo como <b>${esc(ctx.nome)}</b> · só consulta</span><button class="btn sm" id="vercomo-sair">${ic('back')}Voltar para a equipe</button></div>` : ''}
         <header class="hero"><svg class="hero-fx" viewBox="0 0 900 220" preserveAspectRatio="xMaxYMid slice" aria-hidden="true"><defs>
-          <linearGradient id="hfx1" x1="1" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#12C7E8" stop-opacity=".55"/><stop offset=".5" stop-color="#1769FF" stop-opacity=".3"/><stop offset="1" stop-color="#1769FF" stop-opacity="0"/></linearGradient>
-          <linearGradient id="hfx2" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#12C7E8" stop-opacity="0"/><stop offset=".55" stop-color="#3F8CFF" stop-opacity=".8"/><stop offset="1" stop-color="#12C7E8" stop-opacity=".15"/></linearGradient></defs>
+          <linearGradient id="hfx1" x1="1" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#3F8CFF" stop-opacity=".45"/><stop offset=".5" stop-color="#1769FF" stop-opacity=".3"/><stop offset="1" stop-color="#1769FF" stop-opacity="0"/></linearGradient>
+          <linearGradient id="hfx2" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#3F8CFF" stop-opacity="0"/><stop offset=".55" stop-color="#3F8CFF" stop-opacity=".8"/><stop offset="1" stop-color="#6AA6FF" stop-opacity=".15"/></linearGradient></defs>
           <path d="M900 220H700L900 20Z" fill="url(#hfx1)"/><path d="M900 0V-40L640 220H690Z" fill="url(#hfx1)" opacity=".7"/>
           <path d="M330 230C470 170 560 120 640 70S790 10 900 4" fill="none" stroke="url(#hfx2)" stroke-width="2"/></svg>
         <div class="appbar"><div class="crumbs" id="crumbs"></div>

@@ -932,7 +932,7 @@ a.pv-it{text-decoration:none;color:inherit}
    linha contínua; o conteúdo sobe um pouco sobre a faixa; cartões brancos com ícone em moldura; botão principal em
    degradê azul → ciano. Só aparência: nada de função mudou.
    ========================================================================== */
-:root{--blue:#1769FF;--blue2:#3F8CFF;--cyan:#12C7E8;--grad:linear-gradient(90deg,#1769FF 0%,#1E86FF 55%,#12C7E8 100%);
+:root{--blue:#1769FF;--blue2:#3F8CFF;--cyan:#3F8CFF;--grad:linear-gradient(180deg,#2A78FF 0%,#1769FF 100%);
   --bg:#EEF2F8;--line:#E2E8F2;--ink:#0B1A35;--muted:#5B6A86;--infobg:#E6EEFF;--info:#1659E0;
   --shadow:0 1px 2px rgba(8,25,54,.04),0 10px 28px -18px rgba(8,25,54,.28);--hero:#081936}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#050D24;--line:#1E3060;--ink:#E8EEFC;--muted:#9EACCB;--infobg:#132C64;--info:#8DB8FF;--hero:#0A1C46}}
@@ -1000,3 +1000,9 @@ main#view{margin-top:-40px;position:relative;z-index:1}
   main#view{margin-top:-32px}
 }
 #ini-avisos:empty{display:none}
+
+/* sem verde nas telas internas (pedido de 09/11: "não gostei do degradê verde"): traços, faixas e destaques só em azul */
+.side-traco,.hero .topbar h1::after{background:#3F8CFF}
+.shell .nav button[aria-current="page"]::before{background:#3F8CFF}
+.shell .side{background-image:linear-gradient(135deg,transparent 0 72%,rgba(23,105,255,.22) 72% 80%,transparent 80% 84%,rgba(63,140,255,.12) 84% 88%,transparent 88%),linear-gradient(180deg,#071533 0%,#081936 55%,#0A1D47 100%)}
+:focus-visible{outline-color:#3F8CFF}
