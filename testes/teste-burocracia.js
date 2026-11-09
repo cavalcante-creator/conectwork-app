@@ -50,7 +50,7 @@ const txtMes = m => MESES[+m.slice(5, 7) - 1] + '/' + m.slice(0, 4);
 
   // B3 empresa em dia: DAS dos 3 meses anteriores; o mais antigo já venceu e aparece no Início
   await page.evaluate(() => { location.hash = '#inicio'; }); await page.waitForSelector('#ini-pv', { timeout: 8000 }); await H.dorme(800);
-  const pv = await page.$$eval('#ini-pv .pv-it strong', x => x.map(e => e.innerText));
+  const pv = await page.$$eval('#ini-pv .pv-it strong', x => x.map(e => e.textContent));
   await page.evaluate(() => { location.hash = '#negocio'; }); await page.waitForSelector('#ng-agenda', { timeout: 8000 });
   const ag = await page.$eval('#ng-agenda', e => e.innerText);
   ok('B3 a agenda do MEI mostra o DAS dos meses anteriores (vence dia 20) e o vencido entra no "Precisa de você"',
@@ -60,7 +60,7 @@ const txtMes = m => MESES[+m.slice(5, 7) - 1] + '/' + m.slice(0, 4);
   await page.click(`[data-pagou="${mes(3)}"]`); await H.dorme(800);
   const fi = (await srv())['fiscal/lia'];
   await page.evaluate(() => { location.hash = '#inicio'; }); await page.waitForSelector('#ini-pv', { timeout: 8000 }); await H.dorme(800);
-  const pv4 = await page.$$eval('#ini-pv .pv-it strong', x => x.map(e => e.innerText));
+  const pv4 = await page.$$eval('#ini-pv .pv-it strong', x => x.map(e => e.textContent));
   ok('B4 "Já paguei" grava o DAS como pago e o aviso sai do Início', fi && fi.das[mes(3)].pago && !pv4.includes(`DAS de ${txtMes(mes(3))} vencido`), JSON.stringify(pv4));
 
   // B5 relatório mensal das receitas brutas em PDF, com as notas do mês

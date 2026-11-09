@@ -58,7 +58,7 @@
     const tabela = (xs, id) => `<div class="scroll"><table class="resp" id="${id}"><thead><tr><th>Período</th><th class="r">Valor</th><th>Situação</th></tr></thead><tbody>${xs.map(linha).join('')}</tbody></table></div>`;
     el.innerHTML = `${minhas.length ? `<section class="card" id="md-minhas" style="margin-bottom:22px"><div class="card-h"><span class="ic">${ic('alert')}</span><h3>Precisa de você</h3><span class="count">${minhas.length}</span></div>${tabela(minhas, 'md-tab-minhas')}</section>` : ''}
       <section class="card" id="md-lista"><div class="card-h"><span class="ic">${ic('list')}</span><h3>Medições</h3><span class="count">${lista.length}</span></div>
-      ${lista.length ? tabela(lista, 'md-tab') : `<div class="empty"><div class="ic">${ic('list')}</div><strong>Nenhuma medição ainda.</strong><span>${pode(ctx, LANCA) ? 'Lance a medição do período ou envie do painel do RH com o botão "Enviar ao Conectwork".' : 'Quando houver medição de um contrato da sua empresa, ela aparece aqui.'}</span></div>`}</section>`;
+      ${lista.length ? tabela(lista, 'md-tab') : `<div class="empty"><div class="ic">${ic('list')}</div><strong>Nenhuma medição ainda.</strong><span>${pode(ctx, LANCA) ? 'Lance a medição do período ou envie do painel do RH com o botão "Enviar ao Conectwork".' : 'Quando houver medição de um contrato da sua empresa, ela aparece aqui.'}</span>${U().passos(['Contrato de equipe contínua ativo', 'Lance a medição do período (ou envie do painel do RH)', 'O aprovador confere e aprova a medição'])}</div>`}</section>`;
     const n = document.getElementById('md-nova'); if (n) n.onclick = () => formulario(ctx, null, null);
     el.querySelectorAll('[data-abrir]').forEach(r => { const ir = () => CW.ir('medicoes/ver/' + r.dataset.abrir); r.onclick = ir; r.onkeydown = e => { if (e.key === 'Enter') ir(); }; });
   }
@@ -258,7 +258,7 @@
   }
 
   CW.registrarModulo({
-    id: 'medicoes', nome: 'Medições', icone: 'list', ordem: 25,
+    id: 'medicoes', nome: 'Medições', icone: 'ruler', ordem: 25,
     para: ['empresa'], contrato: ['contratos', 'cobrancas'],
     iniciar(ctx) {
       lista = null; porT = []; porP = [];

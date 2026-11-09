@@ -194,7 +194,7 @@
   }
 
   CW.registrarModulo({
-    id: 'documentos', nome: 'Documentos e certidões', nomeCurto: 'Documentos', icone: 'shield', ordem: 65,
+    id: 'documentos', nome: 'Documentos e certidões', nomeCurto: 'Documentos', icone: 'folder', ordem: 65,
     para: ['empresa'], semAprovacao: true,
     iniciar(ctx) {
       meus = null; parceiros = {}; meuPorte = '';

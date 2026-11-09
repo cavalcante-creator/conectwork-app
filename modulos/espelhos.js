@@ -95,7 +95,7 @@
         <div class="card-b" style="padding-bottom:0"><div class="banner ok">${ic('check')}<span><strong>Serviço aprovado: confira os dados e envie sua nota fiscal</strong>Abra o espelho: o botão leva ao emissor da nota e, quando você voltar, o Conectwork pede o PDF da nota.</span></div></div>
         ${tab(emitir, 'es-tab-emitir')}</section>` : ''}
       <section class="card" id="es-lista"><div class="card-h"><span class="ic">${ic('receipt')}</span><h3>Espelhos da nota</h3><span class="count">${todos.length}</span></div>
-        ${todos.length ? tab(todos, 'es-tab') : `<div class="empty"><div class="ic">${ic('receipt')}</div><strong>Nenhum espelho ainda.</strong><span>Quando uma medição for aprovada, o financeiro de quem contrata prepara o espelho com os dados da nota.</span></div>`}</section>`;
+        ${todos.length ? tab(todos, 'es-tab') : `<div class="empty"><div class="ic">${ic('receipt')}</div><strong>Nenhum espelho ainda.</strong><span>Quando uma medição for aprovada, o financeiro de quem contrata prepara o espelho com os dados da nota.</span>${U().passos(['Contrato ativo entre as duas empresas', 'Medição ou entrega aprovada', 'O financeiro prepara o espelho e a prestadora emite a nota'])}</div>`}</section>`;
     el.querySelectorAll('[data-preparar]').forEach(b => b.onclick = () => CW.ir('espelhos/preparar/' + b.dataset.preparar));
     el.querySelectorAll('[data-abrir]').forEach(r => { const ir = () => CW.ir('espelhos/ver/' + r.dataset.abrir); r.onclick = ir; r.onkeydown = e => { if (e.key === 'Enter') ir(); }; });
   }

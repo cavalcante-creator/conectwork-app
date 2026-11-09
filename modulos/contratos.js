@@ -39,7 +39,7 @@
         <td>${pill(c.status)}${falta ? '<br><small class="hint" style="color:var(--warn)">falta a sua assinatura</small>' : c.proposta && c.proposta.lado !== l ? '<br><small class="hint" style="color:var(--warn)">proposta de vencimento</small>' : ''}</td></tr>`; }).join('');
     el.innerHTML = `<section class="card" id="ct-lista"><div class="card-h"><span class="ic">${ic('file')}</span><h3>Contratos</h3><span class="count">${lista.length}</span></div>
       ${lista.length ? `<div class="scroll"><table class="resp"><thead><tr><th>Com quem</th><th>Medição</th><th>Vencimento</th><th>Início</th><th>Situação</th></tr></thead><tbody>${linhas}</tbody></table></div>`
-        : `<div class="empty"><div class="ic">${ic('file')}</div><strong>Nenhum contrato ainda.</strong><span>${pode ? 'Use "Novo contrato" para contratar uma prestadora aprovada no Conectwork.' : 'Quando a sua empresa tiver um contrato, ele aparece aqui.'}</span></div>`}</section>
+        : `<div class="empty"><div class="ic">${ic('file')}</div><strong>Nenhum contrato ainda.</strong><span>${pode ? 'Use "Novo contrato" para contratar uma prestadora aprovada no Conectwork.' : 'Quando a sua empresa tiver um contrato, ele aparece aqui.'}</span>${U().passos(['Escolha a prestadora aprovada no Conectwork', 'Responda a triagem (7 perguntas)', 'As duas empresas assinam e o contrato fica ativo'])}</div>`}</section>
       <p class="hint" style="margin:14px 0 0;font-size:12px">${esc(AVISO)}</p>`;
     const n = document.getElementById('ct-novo'); if (n) n.onclick = () => formulario(ctx, null);
     el.querySelectorAll('[data-abrir]').forEach(r => { const ir = () => CW.ir('contratos/ver/' + r.dataset.abrir); r.onclick = ir; r.onkeydown = e => { if (e.key === 'Enter') ir(); }; });

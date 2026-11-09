@@ -56,6 +56,17 @@
   }
   function alternarMenu() { try { if (enxuto()) localStorage.setItem(chaveCompleto(), '1'); else localStorage.removeItem(chaveCompleto()); } catch (e) {} montar(); }
 
+  /* grupos do menu (09/11/2026): títulos pequenos separando o que é contratação, financeiro e empresa */
+  const GRUPO = { contratos: 'Contratação', ordens: 'Contratação', medicoes: 'Contratação', negocio: 'Contratação',
+    espelhos: 'Financeiro', titulos: 'Financeiro', relatorios: 'Financeiro',
+    documentos: 'Empresa', empresa: 'Empresa', usuarios: 'Empresa', historico: 'Empresa', meucadastro: 'Empresa',
+    cadastros: 'Rede', redeempresas: 'Rede', mensalidades: 'Rede', emissores: 'Rede', avisos: 'Rede', equipecw: 'Equipe' };
+  function menuHtml(mods) {
+    const { ic, esc } = U(); let ult = null;
+    return mods.map(m => { const g = GRUPO[m.id] || null, rot = g && g !== ult ? `<div class="navgrupo">${esc(g)}</div>` : ''; ult = g;
+      return rot + `<button data-mod="${esc(m.id)}">${ic(m.icone)}<span>${esc(m.nome)}</span></button>`; }).join('');
+  }
+
   /* listener do Firestore que é desligado sozinho ao sair ou trocar de empresa */
   function inscrever(chave, consulta, aoMudar, aoErro) {
     if (ouvintes[chave]) ouvintes[chave]();
@@ -80,8 +91,9 @@
     document.getElementById('app').innerHTML = `<div class="shell">
       <aside class="side">${CURVES}
         <div class="logo">${LOGO(32)}<span>Conect<b>work</b></span></div>
-        <div class="navlabel">MENU</div>
-        <nav class="nav" id="menu" aria-label="Principal">${mods.map(m => `<button data-mod="${esc(m.id)}">${ic(m.icone)}<span>${esc(m.nome)}</span></button>`).join('')}
+        ${ctx.tipo === 'empresa' ? `<div class="empbloco">${avatar(ctx.nome, 'sm', ctx.empresaId)}<div class="t"><small>Empresa</small><strong title="${esc(ctx.nome)}">${esc(ctx.nome)}</strong></div>${CW.sessao.podeTrocar() ? `<button class="iconbtn" id="trocar-empresa" title="Trocar de empresa" aria-label="Trocar de empresa">${ic('swap')}</button>` : ''}</div>`
+          : `<div class="empbloco"><span class="avatar sm" style="background:var(--grad)">CW</span><div class="t"><small>Você está na</small><strong>Equipe Conectwork</strong></div>${CW.sessao.podeTrocar() ? `<button class="iconbtn" id="trocar-empresa" title="Trocar de empresa" aria-label="Trocar de empresa">${ic('swap')}</button>` : ''}</div>`}
+        <nav class="nav" id="menu" aria-label="Principal">${menuHtml(mods)}
           ${mei ? `<button class="nav-alt" id="menu-alt">${ic(enxuto() ? 'grid' : 'star')}<span>${enxuto() ? 'Ver todas as telas' : 'Menu simples'}</span></button>` : ''}</nav>
         <div class="usercard">${avatar(nome, 'sm')}<div class="t"><strong id="quem-nome">${esc(nome)}</strong><small id="quem-sub">${esc(sub)}</small></div>
           <button class="iconbtn so-cel" id="tema-cel" aria-label="Tema claro ou escuro" title="Tema claro ou escuro"></button>
@@ -91,7 +103,7 @@
       <div class="content">
         ${ctx.verComo ? `<div class="vercomo" id="vercomo">${ic('eye')}<span>Vendo como <b>${esc(ctx.nome)}</b> · só consulta</span><button class="btn sm" id="vercomo-sair">${ic('back')}Voltar para a equipe</button></div>` : ''}
         <div class="appbar"><div class="crumbs" id="crumbs"></div>
-          ${CW.sessao.podeTrocar() ? `<button class="topobtn" id="trocar-empresa" title="Trocar de empresa">${ic('swap')}<span>${esc(ctx.nome)}</span></button>` : ''}
+          ${CW.sessao.podeTrocar() ? `<button class="topobtn" id="trocar-empresa-top" title="Trocar de empresa">${ic('swap')}<span>${esc(ctx.nome)}</span></button>` : ''}
           <button class="topobtn tema" id="tema" title="Tema claro ou escuro">${ic('sun')}<span></span></button>${teste}</div>
         <div class="topbar"><div class="grow"><h1 id="titulo"></h1><p class="sub" id="subtitulo"></p></div><div id="acoes"></div></div>
         <main id="view"></main>
@@ -101,7 +113,7 @@
     const vc = document.getElementById('vercomo-sair'); if (vc) vc.onclick = () => CW.sessao.voltarEquipe('redeempresas/ver/' + ctx.empresaId);
     document.getElementById('minhas-aut').onclick = () => ir('autorizacoes');
     const ma = document.getElementById('menu-alt'); if (ma) ma.onclick = alternarMenu;
-    const tr = document.getElementById('trocar-empresa'); if (tr) tr.onclick = () => CW.sessao.trocar();
+    ['trocar-empresa', 'trocar-empresa-top'].forEach(id => { const tr = document.getElementById(id); if (tr) tr.onclick = () => CW.sessao.trocar(); });
     const tb = document.getElementById('tema'), tc = document.getElementById('tema-cel');   /* tc: o mesmo botão na barra de cima do celular */
     const rotTema = () => { const t = U().tema(), nm = t === 'dark' ? 'Escuro' : t === 'light' ? 'Claro' : 'Automático'; tb.innerHTML = ic(t === 'dark' ? 'moon' : 'sun') + `<span>${nm}</span>`; tc.innerHTML = ic(t === 'dark' ? 'moon' : 'sun'); tc.title = 'Tema: ' + nm; };
     tb.onclick = tc.onclick = () => { U().trocarTema(); rotTema(); }; rotTema();

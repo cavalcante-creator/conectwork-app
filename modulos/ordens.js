@@ -57,7 +57,7 @@
     const todas = osT.concat(osP).sort((a, b) => String(b.prazo).localeCompare(String(a.prazo))), minhas = todas.filter(o => minhaVez(o, ctx));
     el.innerHTML = `${minhas.length ? `<section class="card" id="os-minhas" style="margin-bottom:22px"><div class="card-h"><span class="ic">${ic('alert')}</span><h3>Precisa de você</h3><span class="count">${minhas.length}</span></div>${tabela(minhas, ctx, 'os-tab-minhas')}</section>` : ''}
       <section class="card" id="os-lista"><div class="card-h"><span class="ic">${ic('list')}</span><h3>Ordens de serviço</h3><span class="count">${todas.length}</span></div>
-        ${todas.length ? tabela(todas, ctx, 'os-tab') : `<div class="empty"><div class="ic">${ic('list')}</div><strong>Nenhuma ordem de serviço.</strong><span>Com um contrato de serviço por entrega ativo, cada trabalho vira uma ordem de serviço: o que entregar, o prazo e o valor da entrega.</span></div>`}</section>
+        ${todas.length ? tabela(todas, ctx, 'os-tab') : `<div class="empty"><div class="ic">${ic('list')}</div><strong>Nenhuma ordem de serviço.</strong><span>Com um contrato de serviço por entrega ativo, cada trabalho vira uma ordem de serviço: o que entregar, o prazo e o valor da entrega.</span>${U().passos(['Contrato de serviço por entrega ativo', 'Abra a ordem: o que entregar, prazo e valor', 'A prestadora entrega e você dá o aceite'])}</div>`}</section>
       <p class="hint" style="margin:14px 0 0;font-size:12px">Pagamento por entrega aceita, nunca por hora. O profissional decide como, quando e onde faz o trabalho e pode recusar uma OS sem nenhuma punição.</p>`;
     ligarLinhas(el);
   }
@@ -224,7 +224,7 @@
   }
 
   CW.registrarModulo({
-    id: 'ordens', nome: 'Ordens de serviço', nomeCurto: 'OS', icone: 'list', ordem: 24,
+    id: 'ordens', nome: 'Ordens de serviço', nomeCurto: 'OS', icone: 'clipboard', ordem: 24,
     para: ['empresa'], contrato: ['contratos', 'cobrancas'],
     iniciar(ctx) {
       osT = []; osP = []; pronto = false;

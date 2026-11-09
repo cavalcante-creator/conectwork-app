@@ -46,6 +46,9 @@
     sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
     moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
     grid: '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',
+    clipboard: '<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 10h6M9 14h6M9 18h3"/>',
+    ruler: '<path d="M3 16 16 3l5 5L8 21z"/><path d="m7 12 2 2M10 9l2 2M13 6l2 2"/>',
+    folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="m9 13 2 2 4-4"/>',
     handshake: '<path d="M11 17l2 2a1.4 1.4 0 0 0 2-2"/><path d="m14 14 2.5 2.5a1.4 1.4 0 0 0 2-2L15 11"/><path d="M21 9 18 6l-4 1-3-1-3 3 1 1a2 2 0 0 0 3 0l1-1 4 4"/><path d="M3 9l3-3 2 1M3 9l5 6 2 2a1.4 1.4 0 0 0 2-2"/>',
     chart: '<path d="M4 20h16"/><rect x="5" y="13" width="3" height="5" rx=".6"/><rect x="10.5" y="10" width="3" height="8" rx=".6"/><rect x="16" y="7" width="3" height="11" rx=".6"/><path d="m5 9 5-4 3 2 5-4M15 3h3v3"/>',
     star: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>'
@@ -73,6 +76,9 @@
   /* empId: quando a empresa tem logo (logos/{empId}), modulos/logos.js troca as iniciais pela logo */
   const avatar = (nome, cls, empId) => { let h = 0; for (const ch of String(nome || '')) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
     return `<span class="avatar ${cls || ''}" style="background:${GRADS[h % GRADS.length]}" aria-hidden="true"${empId ? ` data-logo="${esc(empId)}"` : ''}>${esc(iniciais(nome))}</span>`; };
+
+  /* tela vazia que ensina (09/11/2026): os passos até aparecer algo ali */
+  const passos = l => `<ol class="vz-passos">${l.map((t, i) => `<li><b>${i + 1}</b><span>${esc(t)}</span></li>`).join('')}</ol>`;
 
   /* ---------- aviso rápido ---------- */
   function toast(msg, tipo) {
@@ -202,7 +208,7 @@
     microsoft: '<svg class="mk" viewBox="0 0 24 24" aria-hidden="true"><path fill="#F25022" d="M1 1h10.5v10.5H1z"/><path fill="#7FBA00" d="M12.5 1H23v10.5H12.5z"/><path fill="#00A4EF" d="M1 12.5h10.5V23H1z"/><path fill="#FFB900" d="M12.5 12.5H23V23H12.5z"/></svg>'
   };
 
-  CW.ui = { MARCA, esc, $, $$, dig, ic, LOGO, CURVES, FUNDO, avatar, iniciais, toast, dialogo, confirmar, painelLateral,
+  CW.ui = { MARCA, passos, esc, $, $$, dig, ic, LOGO, CURVES, FUNDO, avatar, iniciais, toast, dialogo, confirmar, painelLateral,
     mascara, aplicarMascaras, validarCNPJ, validarCPF, validarEmail, validarCelular, validarData, lerData, dataISO,
     formatarDinheiro, lerDinheiro, formatarData, formatarDataHora, tema, trocarTema };
 })();

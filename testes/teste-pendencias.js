@@ -36,8 +36,8 @@ const { ok, fim } = H.placar('pendencias');
 
   // P1 admin do tomador: tudo junto no Início
   await entrarComo('ana@alfa.com.br');
-  await page.waitForSelector('#ini-pv .pv-it', { timeout: 8000 }); await H.dorme(800);
-  const pv = await page.$$eval('#ini-pv .pv-it', x => x.map(e => e.querySelector('strong').innerText));
+  await page.waitForSelector('#ini-pv .pv-it', { timeout: 8000, state: 'attached' }); await H.dorme(800);
+  const pv = await page.$$eval('#ini-pv .pv-it', x => x.map(e => e.querySelector('strong').textContent));
   const esperado = ['Fazer a triagem do contrato', 'Avaliar o serviço do período', 'Aprovar a medição', 'Conferir a nota fiscal', 'Liberar para pagamento'];
   ok('P1 o Início do admin junta: triagem do contrato, avaliar o serviço, aprovar medição, conferir nota e liberar pagamento',
     esperado.every(t => pv.includes(t)) && !pv.includes('Conferir a medição'), JSON.stringify(pv));
@@ -49,13 +49,21 @@ const { ok, fim } = H.placar('pendencias');
     badges.contratos === '3' && badges.medicoes === '1' && badges.espelhos === '1' && badges.titulos === '1' && !badges.inicio && badge === pv.length && titulo.startsWith(`(${pv.length})`), JSON.stringify({ badges, titulo, badge }));
 
   // P3 tocar no item abre a tela certa
+  /* P1b 3 ou mais pendências do mesmo módulo viram um item só, que abre a lista */
+  const g = await page.$$eval('#ini-pv details.pv-g', x => x.map(d => ({ m: d.dataset.pvg, t: d.querySelector('summary strong').textContent, n: d.querySelectorAll('.pv-it').length, aberto: d.open })));
+  const gc = g.find(x => x.m === 'contratos');
+  await page.click('#ini-pv details[data-pvg="contratos"] summary'); const abriu = await page.$eval('#ini-pv details[data-pvg="contratos"]', d => d.open && d.querySelector('.pv-it').getBoundingClientRect().height > 0);
+  ok('P1b as 3 pendências de Contratos viram "3 pendências em Contratos", fechado, e abrem a lista ao tocar', !!gc && gc.t === '3 pendências em Contratos' && gc.n === 3 && !gc.aberto && abriu, JSON.stringify(g));
+  /* P1c números do dia: quantas pendências cada tela tem, e tocar leva para ela */
+  const nums = await page.$$eval('#ini-nums .ini-num', x => x.map(b => b.dataset.ir + ':' + b.querySelector('b').textContent));
+  ok('P1c números do dia no Início: medições 1, espelhos 1, pagar e receber 1, contratos 3', ['medicoes:1', 'espelhos:1', 'titulos:1'].every(t => nums.includes(t)), JSON.stringify(nums));
   await page.click('#ini-pv .pv-it:has-text("Aprovar a medição")'); await page.waitForSelector('#md-aprovar', { timeout: 8000 });
   ok('P3 tocar no item abre a tela para fazer', (await page.evaluate(() => location.hash)) === '#medicoes/ver/cz_2026-09-2');
 
   // P4 resolver tira do "Precisa de você"
   await page.click('#md-aprovar'); await page.waitForSelector('dialog[open]'); await page.click('dialog[open] [data-dlg-b="1"]'); await H.dorme(800);
   await page.evaluate(() => { location.hash = '#inicio'; }); await page.waitForSelector('#ini-pv', { timeout: 8000 }); await H.dorme(500);
-  const pv4 = await page.$$eval('#ini-pv .pv-it', x => x.map(e => e.querySelector('strong').innerText));
+  const pv4 = await page.$$eval('#ini-pv .pv-it', x => x.map(e => e.querySelector('strong').textContent));
   const b4 = await page.$eval('#menu [data-mod="medicoes"]', b => !!b.querySelector('.badge'));
   ok('P4 depois de aprovar, a medição sai do "Precisa de você" e o contador some; o espelho para preparar entra', !pv4.includes('Aprovar a medição') && !pv4.includes('Assinar o contrato') && !b4 && pv4.includes('Preparar o espelho da nota'), JSON.stringify(pv4));
 
@@ -68,8 +76,8 @@ const { ok, fim } = H.placar('pendencias');
 
   // P6 prestadora: as dela, e tem o botão para avisar quem contrata
   await entrarComo('zeca@zeta.com.br');
-  await page.waitForSelector('#ini-pv .pv-it', { timeout: 8000 }); await H.dorme(800);
-  const pv6 = await page.$$eval('#ini-pv .pv-it', x => x.map(e => e.querySelector('strong').innerText));
+  await page.waitForSelector('#ini-pv .pv-it', { timeout: 8000, state: 'attached' }); await H.dorme(800);
+  const pv6 = await page.$$eval('#ini-pv .pv-it', x => x.map(e => e.querySelector('strong').textContent));
   await page.evaluate(() => { location.hash = '#espelhos/ver/cz_2026-08-2'; }); await page.waitForSelector('#es-nf', { timeout: 8000 });
   const comZap = /Avisar no WhatsApp/.test(await page.$eval('#es-zap', e => e.innerText).catch(() => ''));
   await page.evaluate(() => { location.hash = '#medicoes/ver/cz_2026-10-1'; }); await page.waitForSelector('#md-confirmar', { timeout: 8000 });

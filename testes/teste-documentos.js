@@ -30,8 +30,8 @@ const futuro = d => { const x = new Date(); x.setDate(x.getDate() + d); return `
 
   // D1 prestadora: o que falta, no Documentos e no Início
   await entrarComo('zeca@zeta.com.br');
-  await page.waitForSelector('#ini-pv .pv-it', { timeout: 8000 }); await H.dorme(500);
-  const pv1 = await page.$$eval('#ini-pv .pv-it strong', x => x.map(e => e.innerText));
+  await page.waitForSelector('#ini-pv .pv-it', { timeout: 8000, state: 'attached' }); await H.dorme(500);
+  const pv1 = await page.$$eval('#ini-pv .pv-it strong', x => x.map(e => e.textContent));
   await page.evaluate(() => { location.hash = '#documentos'; }); await page.waitForSelector('#dc-certidao', { timeout: 8000 });
   const av1 = await page.$eval('#dc-aviso', e => e.innerText);
   ok('D1 a prestadora vê o que falta (cadastro, certidões, PGR e PCMSO) no Documentos e no "Precisa de você"',
@@ -63,7 +63,7 @@ const futuro = d => { const x = new Date(); x.setDate(x.getDate() + d); return `
   // D5 quem contrata: situação no contrato, no Início e no pagamento
   await entrarComo('bruno@alfa.com.br');
   await page.waitForSelector('#ini-pv', { timeout: 8000 }); await H.dorme(1200);
-  const pv5 = await page.$$eval('#ini-pv .pv-it strong', x => x.map(e => e.innerText));
+  const pv5 = await page.$$eval('#ini-pv .pv-it strong', x => x.map(e => e.textContent));
   await page.evaluate(() => { location.hash = '#contratos/ver/cz'; }); await page.waitForSelector('#dc-prest', { timeout: 8000 });
   const ct = await page.$eval('#dc-prest', e => e.innerText);
   await page.evaluate(() => { location.hash = '#titulos/ver/t1'; }); await page.waitForSelector('#dc-alerta', { timeout: 8000 });

@@ -223,7 +223,7 @@ main{padding:22px clamp(16px,3.5vw,40px) 48px;display:flex;flex-direction:column
   .side .iconbtn{width:40px;height:40px}
   .so-cel{display:grid}
   .appbar .crumbs,.appbar .topobtn.tema{display:none}
-  .appbar:not(:has(#trocar-empresa,.env)){display:none}
+  .appbar:not(:has(#trocar-empresa-top,.env)){display:none}
   .topbar{padding-top:18px}
   .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))!important}
   .appbar .crumbs{font-size:12px}
@@ -926,3 +926,69 @@ a.pv-it{text-decoration:none;color:inherit}
 #ini-avisos:empty{display:none}
 #ini-avisos:not(:empty){margin-bottom:16px}
 #ini-avisos:empty{display:none}
+
+/* ==========================================================================
+   Organização das telas (09/11/2026): menu em grupos, empresa no topo do menu, Início com números do dia e
+   "Precisa de você" agrupado, telas vazias com os passos e conteúdo com largura máxima. Só organização: cores e letra
+   continuam as de antes.
+   ========================================================================== */
+/* menu */
+.side .logo{padding-bottom:18px}
+.empbloco{position:relative;display:flex;align-items:center;gap:10px;padding:10px;margin:0 0 16px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)}
+.empbloco .t{flex:1;min-width:0}
+.empbloco small{display:block;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#8FA3D3}
+.empbloco strong{display:block;color:#fff;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.navgrupo{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#6C80B3;padding:14px 12px 4px;position:relative}
+.side .nav{overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent;min-height:0;flex:1 1 auto;margin-bottom:12px}
+.side .nav button{padding:9px 12px}
+@media (min-width:901px){.appbar #trocar-empresa-top{display:none}}
+@media (max-width:900px){.empbloco,.navgrupo{display:none}.side .nav{margin-bottom:0}}
+/* conteúdo com largura máxima (telas grandes) */
+.topbar,main#view{width:100%;max-width:1280px}
+/* Início */
+.ini-grade{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:22px;align-items:start}
+.ini-principal{display:flex;flex-direction:column;gap:22px;min-width:0}
+.ini-lado{display:flex;flex-direction:column;gap:22px;min-width:0;position:sticky;top:20px}
+@media (max-width:1100px){.ini-grade{grid-template-columns:minmax(0,1fr)}.ini-lado{position:static}}
+.ini-nums{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.ini-num{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"ic n" "nome nome" "sub sub";align-items:center;gap:2px 10px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;cursor:pointer;color:var(--ink);font:inherit;box-shadow:var(--shadow);transition:border-color .15s}
+.ini-num:hover{border-color:var(--blue)}
+.ini-num .ic{grid-area:ic;width:32px;height:32px;border-radius:9px;background:var(--surface2);color:var(--muted);display:grid;place-items:center}
+.ini-num .ic svg.i{width:16px;height:16px}
+.ini-num b{grid-area:n;font-size:26px;font-weight:600;line-height:1;justify-self:end;font-variant-numeric:tabular-nums;color:var(--faint)}
+.ini-num>span:not(.ic){grid-area:nome;margin-top:10px;font-weight:600;font-size:13.5px}
+.ini-num small{grid-area:sub;color:var(--muted);font-size:12px}
+.ini-num.tem .ic{background:var(--infobg);color:var(--info)}
+.ini-num.tem b{color:var(--ink)}
+.ini-eu{display:flex;align-items:center;gap:12px}
+.ini-eu .t{min-width:0}
+.ini-eu h2{margin:0;font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ini-eu small{display:block;color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ini-dl{margin:16px 0 0;display:grid;gap:10px}
+.ini-dl div{display:flex;justify-content:space-between;gap:12px;font-size:13px;border-top:1px solid var(--line);padding-top:10px}
+.ini-dl dt{color:var(--muted)}.ini-dl dd{margin:0;font-weight:500;text-align:right;min-width:0}
+.ini-pode{margin:12px 0;color:var(--muted);font-size:12.5px;line-height:1.5}
+#ini-aut{font-size:13px}
+/* "Precisa de você" agrupado */
+.pv-g{border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.pv-g>summary{list-style:none;display:flex;align-items:center;gap:12px;padding:11px 14px;cursor:pointer}
+.pv-g>summary::-webkit-details-marker{display:none}
+.pv-g>summary:hover{background:var(--surface2);border-radius:12px}
+.pv-g .ic{width:36px;height:36px;border-radius:10px;background:var(--infobg);color:var(--info);display:grid;place-items:center;flex:none}
+.pv-g .t{flex:1;min-width:0}
+.pv-g .t strong{display:block;font-size:14px;font-weight:600}
+.pv-g .t small{display:block;color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv-ver{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;font-weight:600;color:var(--blue);flex:none}
+.pv-ver svg.i{width:14px;height:14px;transition:transform .15s}
+.pv-g[open] .pv-ver svg.i{transform:rotate(90deg)}
+.pv-sub{display:grid;gap:6px;padding:0 10px 10px}
+.pv-sub .pv-it{padding:8px 12px}
+.pv-sub .pv-it .tag{display:none}
+/* telas vazias com os passos */
+.vz-passos{list-style:none;margin:14px auto 0;padding:0;display:flex;flex-wrap:wrap;justify-content:center;gap:10px;max-width:760px}
+.vz-passos li{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--line);border-radius:999px;padding:6px 14px 6px 6px;font-size:12.5px;color:var(--ink);text-align:left}
+.vz-passos b{width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;font-size:11.5px;font-weight:600;flex:none}
+.ini-num>span:not(.ic){white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* espaço entre os blocos: a tela já separa com 22px (gap); a margem própria de alguns blocos dobrava o espaço */
+main#view>*{margin-bottom:0!important}
+main#view>.grid-2:not(:has(*)){display:none}

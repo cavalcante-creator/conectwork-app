@@ -55,8 +55,8 @@ const futuro = d => { const x = new Date(); x.setDate(x.getDate() + d); return `
 
   // O4 o profissional vê no Início, entende que pode recusar sem punição e aceita
   await entrarComo('lia@lia.com.br');
-  await page.waitForSelector('#ini-pv .pv-it', { timeout: 8000 }); await H.dorme(500);
-  const pv4 = await page.$$eval('#ini-pv .pv-it strong', x => x.map(e => e.innerText));
+  await page.waitForSelector('#ini-pv .pv-it', { timeout: 8000, state: 'attached' }); await H.dorme(500);
+  const pv4 = await page.$$eval('#ini-pv .pv-it strong', x => x.map(e => e.textContent));
   await vai('#ordens/ver/' + o._id); await page.waitForSelector('#os-aceitar', { timeout: 8000 });
   const livre = await page.$eval('#os-livre', e => e.innerText);
   await page.click('#os-aceitar'); await page.waitForSelector('dialog[open]'); await dlgOk(); await page.waitForSelector('#os-entregar', { timeout: 8000 });

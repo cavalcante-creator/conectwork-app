@@ -73,6 +73,14 @@ testes/               testes automatizados
 ## Links dos e-mails (09/11/2026)
 - O link dos e-mails do Firebase aponta para o app (Authentication › Modelos › Personalizar URL de ação = endereço do app). `js/sessao.js` (`lerAcao`/`telaAcao`) lê `?mode=…&oobCode=…` e mostra, no visual da entrada: **Crie uma senha nova** (`verifyPasswordResetCode` → `confirmPasswordReset`, depois já entra), **E-mail confirmado** (`applyActionCode`), **E-mail de acesso devolvido** (`checkActionCode` + `applyActionCode`) e **Link fora da validade** ("Pedir um link novo"). O código sai do endereço depois. Modelos de e-mail em `docs/emails/` (HTML para colar no console, com `%LINK%`/`%EMAIL%`) e o passo a passo em `docs/emails/COMO-CONFIGURAR.md`. Teste: `teste-linkemail.js`.
 
+## Organização das telas (09/11/2026, "pode fazer tudo")
+- Só organização, cores e letra de antes (o visual novo das telas internas foi desfeito a pedido; o verde saiu: `--cyan #4D93FF`, iniciais em azul).
+- **Menu em grupos** (`GRUPO`/`menuHtml` em `js/app.js`): Contratação · Financeiro · Empresa (equipe: Rede · Equipe), títulos `.navgrupo`; ícones diferentes (Ordens `clipboard`, Medições `ruler`, Relatórios `chart`, Documentos `folder`). **Empresa no topo do menu** (`.empbloco`, botão `#trocar-empresa`); no celular o botão continua na barra de cima (`#trocar-empresa-top`).
+- **Início** (`modulos/inicio.js`): números do dia (`#ini-nums`, pendências por tela, toque abre a tela), "Precisa de você" com **3+ pendências do mesmo módulo num item só** (`details.pv-g`, "N documentos para enviar"/"N pendências em …", abre a lista) e, ao lado, o cartão da pessoa (`#ini-quem`: nome, empresa, cargo, situação, Minhas autorizações). Saíram o cartão grande do nome e "Telas liberadas".
+- **Telas vazias com os passos** (`CW.ui.passos([...])`): Pagar e receber, Espelhos, Medições, Contratos, Ordens de serviço.
+- Conteúdo com no máximo 1280px; `main#view>*` sem margem própria (a tela já separa os blocos com 22px; antes dobrava).
+- Testes que leem o "Precisa de você" usam `textContent` e `state:'attached'` (itens agrupados ficam fechados). `teste-pendencias.js` (P1b, P1c).
+
 ## Cargos (dentro de cada empresa)
 | Cargo | O que vê |
 |---|---|

@@ -157,7 +157,7 @@
   }
 
   CW.registrarModulo({
-    id: 'relatorios', nome: 'Relatórios', icone: 'grid', ordem: 60,
+    id: 'relatorios', nome: 'Relatórios', icone: 'chart', ordem: 60,
     para: ['empresa'], contrato: ['cobrancas', 'contratos'],
     telas: { mes: { nome: 'Relatório do mês', sub: 'Notas, retenções, pagamentos, em aberto e medições do mês, para o financeiro e o contador. Baixe em Excel ou PDF.', render } }
   });
