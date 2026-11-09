@@ -31,12 +31,14 @@
         <td class="m-full"><div class="cell">${avatar(nomeEmp(e), '', e._id)}<div style="min-width:0"><strong>${esc(nomeEmp(e))}</strong><small>${esc(e.razao || '')}</small></div></div></td>
         <td class="m-hide">${esc(e.cnpj || '')}</td><td class="m-hide">${esc(C().TIPOS[e.tipo] || '')}</td>
         <td class="m-hide">${esc([e.cidade, e.uf].filter(Boolean).join('/'))}</td><td class="m-hide">${esc(tempo(e.enviadoEm || e.criadoEm))}</td>
-        <td>${CW.sessao.pillStatus(e.status)}</td>
+        <td>${CW.sessao.pillStatus(e.status)}${e.preCadastro ? ' <span class="pill warn">Documentos pendentes</span>' : ''}</td>
         <td class="r"><button class="btn ${e.status === 'analise' ? '' : 'sec'} sm" data-abrir="${esc(e._id)}">${e.status === 'analise' ? 'Analisar' : 'Abrir'}</button></td></tr>`).join('');
-    el.innerHTML = `<div class="card" id="cm-lista"><div class="card-h"><div class="filters">${CHIPS.map(([k, l]) => `<button class="chip" data-filtro="${k}" aria-pressed="${filtro === k}">${l}<b>${conta(k)}</b></button>`).join('')}</div></div>
+    el.innerHTML = `<div class="card" id="cm-lista"><div class="card-h"><div class="filters">${CHIPS.map(([k, l]) => `<button class="chip" data-filtro="${k}" aria-pressed="${filtro === k}">${l}<b>${conta(k)}</b></button>`).join('')}</div>
+        <button class="btn sm" id="cm-pre" style="margin-left:auto">${ic('plus')}Pré-cadastrar empresa</button></div>
       ${lista.length ? `<div class="scroll"><table class="resp"><thead><tr><th>Empresa</th><th>CNPJ</th><th>Uso</th><th>Cidade</th><th>Enviado em</th><th>Situação</th><th></th></tr></thead><tbody>${linhas}</tbody></table></div>`
         : `<div class="empty"><div class="ic">${ic('building')}</div><strong>Nenhum cadastro nesta situação.</strong></div>`}</div>`;
     el.querySelectorAll('[data-filtro]').forEach(b => b.onclick = () => { filtro = b.dataset.filtro; desenharLista(el); });
+    document.getElementById('cm-pre').onclick = () => preCadastro();
     el.querySelectorAll('[data-abrir]').forEach(r => { const ir = ev => { ev.stopPropagation(); CW.ir('cadastros/analise/' + r.dataset.abrir); };
       r.onclick = ir; if (r.tagName === 'TR') r.onkeydown = ev => { if (ev.key === 'Enter') ir(ev); }; });
   }
@@ -101,7 +103,10 @@
     const mods = `<div class="f"><span style="font-size:12.5px;color:var(--muted);font-weight:500">Módulos liberados</span><div class="mods" id="cm-mods">${P().MODULOS_CONTRATAVEIS.map(m => `<label class="check"><input type="checkbox" data-mod="${m.id}" ${(e.modulos || []).includes(m.id) ? 'checked' : ''}><span>${esc(m.nome)}${m.fase > 1 ? `<span class="tag gray">fase ${m.fase}</span>` : ''}<small>${esc(m.desc)}</small></span></label>`).join('')}</div></div>`;
     let corpo;
     if (st === 'aprovado') corpo = `<div class="banner ok">${ic('check')}<span><strong>Aprovada em ${esc(tempo(e.avaliadoEm))}</strong>Empresa ativa na rede${e.avaliadoPor ? ' · por ' + esc(e.avaliadoPor) : ''}.</span></div>
-      ${planoSel}${mods}<button class="btn" id="cm-salvar">${ic('check')}Salvar plano e módulos</button>`;
+      ${e.preCadastro ? `<div class="banner warn" id="cm-pre-aviso">${ic('alert')}<span><strong>Pré-cadastro: dados e documentos pendentes</strong>A empresa foi liberada só com o CNPJ. Quando tiver o responsável e os documentos, peça para a empresa completar o cadastro: ela preenche em "Meu cadastro", envia, e você confere e aprova de novo.</span></div>` : ''}
+      ${planoSel}${mods}<button class="btn" id="cm-salvar">${ic('check')}Salvar plano e módulos</button>
+      ${e.preCadastro ? `<label class="f"><span>Mensagem para a empresa</span><textarea id="cm-motivo" rows="2" maxlength="500">Complete os dados da empresa e envie os documentos para conferência.</textarea><em class="ferr" id="cm-motivo-erro"></em></label>
+      <div><button class="btn warn" id="cm-ajuste">${ic('edit')}Pedir para a empresa completar o cadastro</button></div>` : ''}`;
     else if (st === 'recusado') corpo = `<div class="banner danger">${ic('x')}<span><strong>Recusada em ${esc(tempo(e.avaliadoEm))}</strong>${esc(e.motivo || '')}</span></div>`;
     else corpo = `${st === 'pendencia' ? `<div class="banner warn">${ic('alert')}<span><strong>Esperando a correção da empresa</strong>${esc(e.motivo || '')}</span></div>` : ''}
       ${planoSel}${mods}
@@ -175,7 +180,7 @@
       const plano = sel.value, mods = lerMods();
       if (!plano) { U().toast('Escolha o plano antes de aprovar.', 'erro'); sel.focus(); return; }
       if (!mods.length && !(await U().confirmar('Aprovar sem nenhum módulo?', 'A empresa vai entrar, mas não verá nenhuma tela além do Início. Você pode liberar os módulos depois.', 'Aprovar assim'))) return;
-      decidir('aprovado', { plano, modulos: mods, motivo: '' }, 'empresa.aprovar',
+      decidir('aprovado', Object.assign({ plano, modulos: mods, motivo: '' }, e.preCadastro ? { preCadastro: false } : {}), 'empresa.aprovar',
         `Cadastro de ${nomeEmp(e)} aprovado no plano ${P().nomePlano(plano)}. Módulos: ${nomesMods(mods)}.`, `${nomeEmp(e)} aprovada e liberada na rede.`);
     };
     const motivo = () => { const t = document.getElementById('cm-motivo'), m = t.value.trim();
@@ -199,6 +204,68 @@
       sv.disabled = true;
       try { await b.commit(); U().toast(`Plano e módulos de ${nomeEmp(e)} salvos.`); refazer(); } catch (err) { falhou(err); }
     };
+  }
+
+
+  /* ---------- pré-cadastro pela equipe (09/11/2026) ----------
+     Para começar a usar antes de ter o responsável e os documentos: só CNPJ, nome, uso e plano. A empresa já nasce
+     aprovada (preCadastro: true, documentos pendentes) e, se marcado, quem está logado vira administrador(a) dela
+     para configurar tudo. Depois: "Pedir para a empresa completar o cadastro" → a empresa preenche e envia → análise. */
+  function preCadastro() {
+    const { esc, ic, dig } = U(), st = CW.sessao.estado(), u = st.usuario;
+    const planos = Object.entries(P().PLANOS);
+    let dados = null;
+    U().dialogo({ titulo: 'Pré-cadastrar empresa', sub: 'Só o CNPJ para começar. A empresa já fica liberada e os dados e documentos ficam pendentes.',
+      corpo: `<div class="stack" style="gap:14px" id="pc-form">
+        <label class="f"><span>CNPJ <b aria-hidden="true">*</b></span><input id="pc-cnpj" data-mascara="cnpj" inputmode="numeric" placeholder="00.000.000/0000-00" autocomplete="off"></label>
+        <label class="f"><span>Nome da empresa <b aria-hidden="true">*</b></span><input id="pc-nome" maxlength="120" autocomplete="off" placeholder="Nome fantasia ou razão social"></label>
+        <label class="f"><span>Uso</span><select id="pc-tipo">${Object.entries(C().TIPOS).map(([k, t]) => `<option value="${k}">${esc(t)}</option>`).join('')}</select></label>
+        <label class="f"><span>Plano</span><select id="pc-plano">${planos.map(([k, p]) => `<option value="${k}" ${k === 'profissional' ? 'selected' : ''}>${esc(p.nome)}</option>`).join('')}</select>
+          <em class="hint" id="pc-plano-desc">${esc(P().PLANOS.profissional.desc)} Os módulos do plano já vêm ligados; dá para mudar depois.</em></label>
+        <label class="check"><input type="checkbox" id="pc-admin" checked><span>Me colocar como administrador(a) desta empresa<small>Para você configurar a empresa agora. Depois, convide as pessoas com o e-mail delas.</small></span></label>
+        <p class="err" id="pc-erro" role="alert"></p></div>`,
+      botoes: [{ texto: 'Voltar', valor: null, classe: 'sec' }, { texto: 'Pré-cadastrar', valor: 'ok', icone: 'check', antes: d => {
+        const v = id => d.querySelector('#' + id).value.trim(), er = d.querySelector('#pc-erro');
+        const cnpj = v('pc-cnpj'), nome = v('pc-nome').replace(/\s+/g, ' ');
+        if (!U().validarCNPJ(cnpj)) { er.textContent = dig(cnpj).length ? 'CNPJ inválido. Confira os números.' : 'Informe o CNPJ.'; d.querySelector('#pc-cnpj').focus(); return false; }
+        if (nome.length < 2) { er.textContent = 'Informe o nome da empresa.'; d.querySelector('#pc-nome').focus(); return false; }
+        if ((empresas || []).some(e => dig(e.cnpj) === dig(cnpj))) { er.textContent = 'Este CNPJ já tem cadastro no Conectwork. Procure a empresa na lista "Todas".'; return false; }
+        dados = { cnpj, nome, tipo: d.querySelector('#pc-tipo').value, plano: d.querySelector('#pc-plano').value, admin: d.querySelector('#pc-admin').checked };
+        return true; } }],
+      aoAbrir: d => { U().aplicarMascaras(d); const sp = d.querySelector('#pc-plano');
+        sp.onchange = () => { d.querySelector('#pc-plano-desc').textContent = (P().PLANOS[sp.value] || {}).desc + ' Os módulos do plano já vêm ligados; dá para mudar depois.'; };
+        d.querySelector('#pc-cnpj').focus(); }
+    }).then(async v => {
+      if (v !== 'ok' || !dados) return;
+      const db = CW.fb.db(), agora = CW.fb.agora, num = dig(dados.cnpj), empRef = db.collection('empresas').doc(), id = empRef.id;
+      const quem = (st.perfil && st.perfil.nome) || u.email, mods = (P().PLANOS[dados.plano] || { modulos: [] }).modulos.slice();
+      let protocolo = '';
+      try {
+        await db.runTransaction(async tx => {
+          const cRef = db.doc('contadores/protocolo'), nRef = db.doc('cnpjs/' + num);
+          const c = await tx.get(cRef), n = await tx.get(nRef);
+          if (n.exists) { const e = new Error('cnpj'); e.code = 'cw/cnpj-repetido'; throw e; }
+          const ano = new Date().getFullYear(), atual = c.exists ? c.data() : null, seq = atual && atual.ano === ano ? atual.n + 1 : 1;
+          protocolo = `CW-${ano}-${String(seq).padStart(4, '0')}`;
+          tx.set(cRef, { ano, n: seq });
+          tx.set(nRef, { empresaId: id, criadoEm: agora() });
+          tx.set(empRef, { tipo: dados.tipo, status: 'aprovado', nome: dados.nome, razao: '', cnpj: dados.cnpj, cnpjNum: num, cidade: '', uf: '', protocolo,
+            criadoPor: u.uid, criadoEm: agora(), enviadoEm: agora(), plano: dados.plano, modulos: mods, preCadastro: true, avaliadoEm: agora(), avaliadoPor: quem });
+          tx.set(db.doc('empresas/' + id + '/privado/cadastro'), { dados: {}, end: {}, resp: {}, banco: {}, docs: {}, preCadastro: true });
+          if (dados.admin) tx.set(db.doc('acessos/' + id + '_' + u.uid), { uid: u.uid, empresaId: id, nome: quem, email: (u.email || '').toLowerCase(), cargo: 'admin', extras: [], sem: [], ativo: true, criadoEm: agora() });
+          tx.set(db.collection('log').doc(), { em: agora(), uid: u.uid, quem, empresaId: id, acao: 'empresa.precadastro',
+            texto: `Pré-cadastro de ${dados.nome} (CNPJ ${dados.cnpj}) pela equipe Conectwork, no plano ${P().nomePlano(dados.plano)}. Dados e documentos pendentes.${dados.admin ? ` ${quem} entrou como administrador(a).` : ''}`, ref: id });
+        });
+      } catch (err) {
+        U().toast(err && err.code === 'cw/cnpj-repetido' ? 'Este CNPJ já tem cadastro no Conectwork.' : 'O pré-cadastro não foi feito. ' + CW.fb.mensagemErro(err), 'erro');
+        return;
+      }
+      if (!dados.admin) { U().toast(`${dados.nome} pré-cadastrada (protocolo ${protocolo}).`); return; }
+      const ir = await U().confirmar(`${dados.nome} pré-cadastrada`, `Protocolo ${protocolo}. Você já é administrador(a) dela. Quer entrar na empresa agora para configurar?`, 'Entrar na empresa');
+      if (!ir) { await CW.sessao.recarregar(); return; }
+      await CW.sessao.recarregar();
+      CW.sessao.entrarEm('empresa:' + id);
+    });
   }
 
   CW.registrarModulo({

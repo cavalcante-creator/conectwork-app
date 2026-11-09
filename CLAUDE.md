@@ -65,6 +65,11 @@ testes/               testes automatizados
 9. **Sem dados fictícios em produção.** Dados de exemplo só no ambiente `teste`.
 10. **Testes antes de subir:** cada pedido termina com os testes passando e a lista do que foi testado.
 
+## Pré-cadastro pela equipe Conectwork (09/11/2026)
+- Em **Cadastros** (equipe master), "Pré-cadastrar empresa": só CNPJ (validado e reservado em `cnpjs/`), nome, uso e plano. A empresa nasce `status:'aprovado'` com `preCadastro:true`, os módulos do plano, protocolo e `privado/cadastro` vazio; marcando "me colocar como administrador(a)", cria `acessos/{empresa}_{uid}` admin para quem cadastrou, que entra na empresa e configura tudo (convida as pessoas com o e-mail delas quando tiver).
+- Na lista aparece "Documentos pendentes"; na análise, "Pedir para a empresa completar o cadastro" (vira `pendencia`; a empresa preenche em "Meu cadastro" e reenvia; aprovar de novo grava `preCadastro:false`).
+- Regra: `empresas` create aceita, só para `master()`, `status 'aprovado'` com `preCadastro == true`, plano, módulos e avaliação. Testes: `teste-precadastro.js` e `teste-regras.js`.
+
 ## Cargos (dentro de cada empresa)
 | Cargo | O que vê |
 |---|---|

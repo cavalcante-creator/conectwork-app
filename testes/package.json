@@ -4,7 +4,7 @@
   "description": "Testes do Conectwork: regras do Firestore no emulador e testes de tela com Firebase simulado.",
   "scripts": {
     "regras": "firebase emulators:exec --only firestore --project demo-conectwork \"node teste-regras.js\"",
-    "telas": "node teste-ui.js && node teste-login.js && node teste-sessao.js && node teste-cadastro.js && node teste-analise.js && node teste-usuarios.js && node teste-convite.js && node teste-social.js && node teste-historico.js && node teste-contratos.js && node teste-medicoes.js && node teste-espelhos.js && node teste-notas.js && node teste-titulos.js && node teste-pendencias.js && node teste-relatorios.js && node teste-documentos.js && node teste-dossie.js && node teste-ordens.js && node teste-negocio.js && node teste-burocracia.js && node teste-autorizacoes.js && node teste-rede.js && node teste-pwa.js",
+    "telas": "node teste-ui.js && node teste-login.js && node teste-sessao.js && node teste-cadastro.js && node teste-analise.js && node teste-precadastro.js && node teste-usuarios.js && node teste-convite.js && node teste-social.js && node teste-historico.js && node teste-contratos.js && node teste-medicoes.js && node teste-espelhos.js && node teste-notas.js && node teste-titulos.js && node teste-pendencias.js && node teste-relatorios.js && node teste-documentos.js && node teste-dossie.js && node teste-ordens.js && node teste-negocio.js && node teste-burocracia.js && node teste-autorizacoes.js && node teste-rede.js && node teste-pwa.js",
     "test": "npm run telas && npm run regras"
   },
   "devDependencies": {

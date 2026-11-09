@@ -53,9 +53,15 @@ service cloud.firestore {
         || (logado() && resource.data.status == 'aprovado');
       // cadastro novo sempre entra em análise, sem módulos nem plano (o plano e os módulos quem define é a equipe master).
       // O CNPJ é reservado em cnpjs/{número} na mesma operação: CNPJ repetido não entra.
+      // pré-cadastro pela equipe master (09/11/2026): só CNPJ, já aprovada, plano e módulos escolhidos; os documentos ficam pendentes
       allow create: if logado()
-        && request.resource.data.keys().hasOnly(['tipo','status','nome','razao','cnpj','cnpjNum','cidade','uf','protocolo','criadoPor','criadoEm','enviadoEm'])
-        && request.resource.data.status == 'analise'
+        && ((request.resource.data.keys().hasOnly(['tipo','status','nome','razao','cnpj','cnpjNum','cidade','uf','protocolo','criadoPor','criadoEm','enviadoEm'])
+             && request.resource.data.status == 'analise')
+          || (master()
+             && request.resource.data.keys().hasOnly(['tipo','status','nome','razao','cnpj','cnpjNum','cidade','uf','protocolo','criadoPor','criadoEm','enviadoEm','plano','modulos','preCadastro','avaliadoEm','avaliadoPor'])
+             && request.resource.data.status == 'aprovado'
+             && request.resource.data.preCadastro == true
+             && request.resource.data.modulos is list))
         && request.resource.data.criadoPor == request.auth.uid
         && request.resource.data.tipo in ['contratante','ambos','prestador']
         && request.resource.data.cnpjNum is string && request.resource.data.cnpjNum.matches('[0-9]{14}')

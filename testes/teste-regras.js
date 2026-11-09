@@ -107,6 +107,12 @@ async function deve(nome, permitido, op) {
   await deve('Equipe master pede ajuste com motivo', true, () => updateDoc(doc(db('master'), 'empresas', 'alfa'), { status: 'pendencia', motivo: 'Comprovante ilegível.' }));
   await deve('Equipe master aprova empresa com plano e módulos', true, () => updateDoc(doc(db('master'), 'empresas', 'alfa'), { status: 'aprovado', plano: 'essencial', modulos: ['equipe', 'cobrancas'], motivo: '' }));
   await deve('Equipe master lista os cadastros de todas as empresas', true, () => getDocs(collection(db('master'), 'empresas')));
+  /* pré-cadastro pela equipe (09/11/2026): só CNPJ, já aprovada, documentos pendentes */
+  const pre = { status: 'aprovado', preCadastro: true, plano: 'essencial', modulos: ['equipe', 'cobrancas'], avaliadoEm: serverTimestamp(), avaliadoPor: 'Iasmyn', razao: '', cidade: '', uf: '' };
+  await deve('Equipe master pré-cadastra empresa já aprovada (CNPJ reservado, ela como admin e histórico)', true, () => cadastro('master', 'pre1', pre, { num: '12345678000195' }));
+  await deve('Empresa comum NÃO se pré-cadastra aprovada', false, () => cadastro('edu', 'pre2', pre, { num: '60746948000112' }));
+  await deve('Equipe master NÃO cria empresa aprovada sem marcar o pré-cadastro', false, () => cadastro('master', 'pre3', Object.assign({}, pre, { preCadastro: false }), { num: '60746948000112' }));
+  await deve('Pré-cadastro NÃO entra sem reservar o CNPJ', false, () => cadastro('master', 'pre4', pre, { num: '60746948000112', semCnpj: true }));
   await deve('Empresa NÃO lista os cadastros das outras', false, () => getDocs(collection(db('ana'), 'empresas')));
   await semear();
 
