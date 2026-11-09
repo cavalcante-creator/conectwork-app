@@ -26,8 +26,10 @@
     const pref = ['medicoes', 'espelhos', 'titulos', 'documentos', 'ordens', 'contratos'];
     const lista = pref.map(id => mods.find(m => m.id === id)).filter(Boolean).slice(0, 4);
     if (!lista.length) return '';
-    return lista.map(m => { const n = por[m.id] || 0;
-      return `<button class="ini-num ${n ? 'tem' : ''}" data-ir="${esc(m.id)}" data-cor="${n ? 'atencao' : 'ok'}"><span class="ic">${ic(m.icone)}</span><b>${n}</b><span>${esc(m.nome)}</span><small>${n ? (n === 1 ? 'pendência para você' : 'pendências para você') : 'nada pendente'}</small></button>`; }).join('');
+    const maior = Math.max(0, ...lista.map(m => por[m.id] || 0));
+    let marcou = false;   /* o número com mais pendências ganha destaque (tema escuro, versão 2) */
+    return lista.map(m => { const n = por[m.id] || 0, dest = n && n === maior && !marcou ? (marcou = true) : false;
+      return `<button class="ini-num ${n ? 'tem' : ''}${dest ? ' dest' : ''}" data-ir="${esc(m.id)}" data-cor="${n ? 'atencao' : 'ok'}"><span class="ic">${ic(m.icone)}</span><b>${n}</b><span>${esc(m.nome)}</span><small>${n ? (n === 1 ? 'pendência para você' : 'pendências para você') : 'nada pendente'}</small></button>`; }).join('');
   }
   function vencHtml() {
     const { esc } = U(), ctx = Object.assign({}, { contexto: CW.sessao.contexto(), sessao: CW.sessao.estado() });

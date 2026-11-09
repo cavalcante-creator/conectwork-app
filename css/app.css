@@ -1089,3 +1089,87 @@ table.resp th,table th{font-size:11px;font-weight:600;letter-spacing:.06em;text-
 .login #lg .btn.lg-principal:not(.sec){background:linear-gradient(90deg,#1769FF 0%,#1E86FF 55%,#12C7E8 100%);border-radius:14px;box-shadow:0 12px 26px -12px rgba(23,105,255,.85)}
 .login #lg .btn.lg-principal:not(.sec):hover{background:linear-gradient(90deg,#1769FF 0%,#1E86FF 55%,#12C7E8 100%);filter:brightness(1.07)}
 .login #lg .lg-social .btn,.login #lg label.f input{border-radius:14px}
+
+/* ==========================================================================
+   Tema escuro = versão 2 "escura premium" (09/11/2026: "gostei da 2 também" → escuro 2, claro 3)
+   Azul profundo como a tela de entrar, cartões translúcidos com borda clara, o número com mais pendências em
+   destaque azul, ícones em moldura. Sem verde. O claro continua a versão 3.
+   ========================================================================== */
+:root[data-theme="dark"] .content{background-color:#071533;background-image:radial-gradient(70% 80% at 100% 100%,rgba(23,105,255,.2),transparent 60%),linear-gradient(135deg,transparent 0 80%,rgba(23,105,255,.1) 80% 87%,transparent 87%);background-attachment:fixed}
+:root[data-theme="dark"] .shell .side{background:#071533;border-right:1px solid rgba(120,160,230,.14)}
+:root[data-theme="dark"] .shell .logo{background:transparent;font-weight:600}
+:root[data-theme="dark"] .shell .logo b{color:#3D8BFF}
+:root[data-theme="dark"] .shell .empbloco{background:rgba(16,39,90,.6);border:1px solid rgba(120,160,230,.25);border-radius:14px}
+:root[data-theme="dark"] .shell .nav{padding:0 12px}
+:root[data-theme="dark"] .shell .nav button{border-left:0;border-radius:11px;padding:8px 10px;color:#B9C7E3}
+:root[data-theme="dark"] .shell .nav button:hover{background:rgba(255,255,255,.05)}
+:root[data-theme="dark"] .shell .nav button[aria-current="page"]{background:rgba(23,105,255,.2);box-shadow:inset 0 0 0 1px rgba(95,160,255,.35);color:#fff}
+:root[data-theme="dark"] .shell .nav button .badge{border-radius:99px;background:#1769FF}
+:root[data-theme="dark"] .shell .navgrupo{padding:14px 22px 6px}
+:root[data-theme="dark"] .shell .usercard{background:transparent;border:1px solid rgba(120,160,230,.2);border-radius:14px}
+:root[data-theme="dark"] .appbar{background:transparent;border-bottom-color:rgba(120,160,230,.14)}
+:root[data-theme="dark"] .appbar .topobtn{background:rgba(16,39,90,.6);border-color:rgba(120,160,230,.3);color:#E9EEF9}
+:root[data-theme="dark"] .topbar .eyebrow{color:#8FA3CC;letter-spacing:.04em;text-transform:none;font-weight:500;font-size:13px}
+:root[data-theme="dark"] .topbar h1{font-weight:500;font-size:34px;letter-spacing:-.025em}
+:root[data-theme="dark"] .topbar .sub{color:#A8B8D8}
+:root[data-theme="dark"] .card{background:rgba(16,39,90,.55);border-color:rgba(120,160,230,.24);border-radius:18px}
+:root[data-theme="dark"] .card-h{border-bottom-color:rgba(120,160,230,.16)}
+:root[data-theme="dark"] .card-h .ic{background:transparent;border:1.5px solid rgba(95,160,255,.5);color:#7FB2FF;border-radius:9px}
+:root[data-theme="dark"] .btn:not(.sec):not(.ghost):not(.dangerous):not(.light):not(.ok):not(.warn){background:linear-gradient(135deg,#1769FF,#2E7BFF 70%,#4D93FF);border-radius:11px}
+:root[data-theme="dark"] .btn.sec{background:rgba(16,39,90,.6);border-color:rgba(120,160,230,.3);color:#E9EEF9;border-radius:11px}
+:root[data-theme="dark"] table.resp th,:root[data-theme="dark"] table th{background:transparent;color:#8FA3CC}
+:root[data-theme="dark"] label.f input,:root[data-theme="dark"] label.f select,:root[data-theme="dark"] label.f textarea,:root[data-theme="dark"] .sel{background:rgba(7,21,51,.6);border-color:rgba(120,160,230,.3)}
+:root[data-theme="dark"] .ini-num{background:rgba(16,39,90,.55);border:1px solid rgba(120,160,230,.24);border-top:1px solid rgba(120,160,230,.24);border-radius:18px;padding:16px 18px}
+:root[data-theme="dark"] .ini-num>span:not(.ic){text-transform:none;letter-spacing:0;font-size:12.5px;font-weight:500;color:#A8B8D8;min-height:0}
+:root[data-theme="dark"] .ini-num b{font-size:34px;font-weight:600;color:#fff}
+:root[data-theme="dark"] .ini-num[data-cor="ok"] b{color:#6F86B3}
+:root[data-theme="dark"] .ini-num small{color:#8FA3CC}
+:root[data-theme="dark"] .ini-num.dest{background:linear-gradient(135deg,#1769FF,#2E7BFF 70%,#4D93FF);border-color:transparent}
+:root[data-theme="dark"] .ini-num.dest>span:not(.ic){color:#DCE8FF}
+:root[data-theme="dark"] .pv-it,:root[data-theme="dark"] .pv-g{background:rgba(7,21,51,.55);border-color:rgba(120,160,230,.14);border-radius:14px}
+:root[data-theme="dark"] .pv-it .ic,:root[data-theme="dark"] .pv-g .ic{background:transparent;border:1.5px solid rgba(95,160,255,.5);color:#7FB2FF;border-radius:10px}
+:root[data-theme="dark"] .pv-ver{color:#7FB2FF}
+:root[data-theme="dark"] .ini-vc{border-bottom-color:rgba(120,160,230,.14)}
+:root[data-theme="dark"] .ini-dl div{border-top-color:rgba(120,160,230,.14)}
+:root[data-theme="dark"] .vz-passos li{background:rgba(7,21,51,.55);border-color:rgba(120,160,230,.2)}
+@media (prefers-color-scheme:dark){
+:root:not([data-theme="light"]) .content{background-color:#071533;background-image:radial-gradient(70% 80% at 100% 100%,rgba(23,105,255,.2),transparent 60%),linear-gradient(135deg,transparent 0 80%,rgba(23,105,255,.1) 80% 87%,transparent 87%);background-attachment:fixed}
+:root:not([data-theme="light"]) .shell .side{background:#071533;border-right:1px solid rgba(120,160,230,.14)}
+:root:not([data-theme="light"]) .shell .logo{background:transparent;font-weight:600}
+:root:not([data-theme="light"]) .shell .logo b{color:#3D8BFF}
+:root:not([data-theme="light"]) .shell .empbloco{background:rgba(16,39,90,.6);border:1px solid rgba(120,160,230,.25);border-radius:14px}
+:root:not([data-theme="light"]) .shell .nav{padding:0 12px}
+:root:not([data-theme="light"]) .shell .nav button{border-left:0;border-radius:11px;padding:8px 10px;color:#B9C7E3}
+:root:not([data-theme="light"]) .shell .nav button:hover{background:rgba(255,255,255,.05)}
+:root:not([data-theme="light"]) .shell .nav button[aria-current="page"]{background:rgba(23,105,255,.2);box-shadow:inset 0 0 0 1px rgba(95,160,255,.35);color:#fff}
+:root:not([data-theme="light"]) .shell .nav button .badge{border-radius:99px;background:#1769FF}
+:root:not([data-theme="light"]) .shell .navgrupo{padding:14px 22px 6px}
+:root:not([data-theme="light"]) .shell .usercard{background:transparent;border:1px solid rgba(120,160,230,.2);border-radius:14px}
+:root:not([data-theme="light"]) .appbar{background:transparent;border-bottom-color:rgba(120,160,230,.14)}
+:root:not([data-theme="light"]) .appbar .topobtn{background:rgba(16,39,90,.6);border-color:rgba(120,160,230,.3);color:#E9EEF9}
+:root:not([data-theme="light"]) .topbar .eyebrow{color:#8FA3CC;letter-spacing:.04em;text-transform:none;font-weight:500;font-size:13px}
+:root:not([data-theme="light"]) .topbar h1{font-weight:500;font-size:34px;letter-spacing:-.025em}
+:root:not([data-theme="light"]) .topbar .sub{color:#A8B8D8}
+:root:not([data-theme="light"]) .card{background:rgba(16,39,90,.55);border-color:rgba(120,160,230,.24);border-radius:18px}
+:root:not([data-theme="light"]) .card-h{border-bottom-color:rgba(120,160,230,.16)}
+:root:not([data-theme="light"]) .card-h .ic{background:transparent;border:1.5px solid rgba(95,160,255,.5);color:#7FB2FF;border-radius:9px}
+:root:not([data-theme="light"]) .btn:not(.sec):not(.ghost):not(.dangerous):not(.light):not(.ok):not(.warn){background:linear-gradient(135deg,#1769FF,#2E7BFF 70%,#4D93FF);border-radius:11px}
+:root:not([data-theme="light"]) .btn.sec{background:rgba(16,39,90,.6);border-color:rgba(120,160,230,.3);color:#E9EEF9;border-radius:11px}
+:root:not([data-theme="light"]) table.resp th,:root:not([data-theme="light"]) table th{background:transparent;color:#8FA3CC}
+:root:not([data-theme="light"]) label.f input,:root:not([data-theme="light"]) label.f select,:root:not([data-theme="light"]) label.f textarea,:root:not([data-theme="light"]) .sel{background:rgba(7,21,51,.6);border-color:rgba(120,160,230,.3)}
+:root:not([data-theme="light"]) .ini-num{background:rgba(16,39,90,.55);border:1px solid rgba(120,160,230,.24);border-top:1px solid rgba(120,160,230,.24);border-radius:18px;padding:16px 18px}
+:root:not([data-theme="light"]) .ini-num>span:not(.ic){text-transform:none;letter-spacing:0;font-size:12.5px;font-weight:500;color:#A8B8D8;min-height:0}
+:root:not([data-theme="light"]) .ini-num b{font-size:34px;font-weight:600;color:#fff}
+:root:not([data-theme="light"]) .ini-num[data-cor="ok"] b{color:#6F86B3}
+:root:not([data-theme="light"]) .ini-num small{color:#8FA3CC}
+:root:not([data-theme="light"]) .ini-num.dest{background:linear-gradient(135deg,#1769FF,#2E7BFF 70%,#4D93FF);border-color:transparent}
+:root:not([data-theme="light"]) .ini-num.dest>span:not(.ic){color:#DCE8FF}
+:root:not([data-theme="light"]) .pv-it,:root:not([data-theme="light"]) .pv-g{background:rgba(7,21,51,.55);border-color:rgba(120,160,230,.14);border-radius:14px}
+:root:not([data-theme="light"]) .pv-it .ic,:root:not([data-theme="light"]) .pv-g .ic{background:transparent;border:1.5px solid rgba(95,160,255,.5);color:#7FB2FF;border-radius:10px}
+:root:not([data-theme="light"]) .pv-ver{color:#7FB2FF}
+:root:not([data-theme="light"]) .ini-vc{border-bottom-color:rgba(120,160,230,.14)}
+:root:not([data-theme="light"]) .ini-dl div{border-top-color:rgba(120,160,230,.14)}
+:root:not([data-theme="light"]) .vz-passos li{background:rgba(7,21,51,.55);border-color:rgba(120,160,230,.2)}
+}
+:root[data-theme="dark"] .ini-num.dest small{color:#E6EEFF}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .ini-num.dest small{color:#E6EEFF}}
