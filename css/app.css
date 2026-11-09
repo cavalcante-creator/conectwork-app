@@ -1216,3 +1216,27 @@ table.resp th,table th{font-size:11px;font-weight:600;letter-spacing:.06em;text-
 .avatar.avatar-cw svg{width:70%;height:70%}
 :root[data-theme="dark"] .avatar.avatar-cw{background:#081936;border-color:rgba(120,160,230,.3)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .avatar.avatar-cw{background:#081936;border-color:rgba(120,160,230,.3)}}
+
+/* Painel da equipe: os números iguais aos do Início das empresas (claro = versão 3, escuro = versão 2) */
+.rd-k{border-radius:10px;border-top:4px solid #1769FF;padding:14px 18px 16px}
+.rd-k.warn{border-top-color:#D98E04}.rd-k.danger{border-top-color:#D93F3F}
+.rd-k span{order:-1;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.rd-k b{font-family:var(--fd);font-size:32px;font-weight:700;margin:6px 0 2px;color:var(--ink)}
+.rd-k small{font-size:12.5px;color:var(--muted)}
+@media (min-width:1400px){.rd-k b{font-size:38px}}
+:root[data-theme="dark"] .rd-k{background:rgba(16,39,90,.55);border:1px solid rgba(120,160,230,.24);border-radius:18px}
+:root[data-theme="dark"] .rd-k span{text-transform:none;letter-spacing:0;font-weight:500;font-size:12.5px;color:#A8B8D8}
+:root[data-theme="dark"] .rd-k b{color:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .rd-k{background:rgba(16,39,90,.55);border:1px solid rgba(120,160,230,.24);border-radius:18px}
+  :root:not([data-theme="light"]) .rd-k span{text-transform:none;letter-spacing:0;font-weight:500;font-size:12.5px;color:#A8B8D8}
+  :root:not([data-theme="light"]) .rd-k b{color:#fff}}
+.rd-k.warn b{color:#B87400}.rd-k.danger b{color:#C93636}
+
+/* bloco da empresa no topo mais enxuto: só a logo e o nome */
+@media (min-width:901px){
+  .topo-dir .empbloco{height:40px;max-width:260px;gap:8px}
+  .topo-dir .empbloco small{display:none}
+  .topo-dir .empbloco strong{font-size:13.5px}
+  .topo-dir .empbloco .avatar{width:28px;height:28px;font-size:11px}
+  .topo-dir .usercard,.topo-dir .topobtn.tema{height:40px}
+}
