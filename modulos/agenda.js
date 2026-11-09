@@ -203,9 +203,11 @@
     });
   }
 
+  /* telas da gestão do MEI liberadas também no cadastro rápido (status 'mei') e enquanto o cadastro completo é analisado */
+  const meiSemAprov = ctx => ehMei(ctx) && ['mei', 'analise', 'pendencia'].includes(((ctx.empresa) || {}).status);
   CW.registrarModulo({
     id: 'agenda', nome: 'Agenda e lembretes', nomeCurto: 'Agenda', icone: 'clock', ordem: 27,
-    para: ['empresa'], livre: true,
+    para: ['empresa'], livre: true, semAprovacao: ctx => meiSemAprov(ctx),
     mostrar: ctx => ['prestador', 'ambos'].includes((ctx.empresa || {}).tipo) && ehMei(ctx),   /* perfil MEI (10/11/2026) */
     iniciar(ctx) {
       itens = null; sel = null; mesVis = null;

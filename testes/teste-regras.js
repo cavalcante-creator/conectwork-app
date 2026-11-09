@@ -198,6 +198,12 @@ async function deve(nome, permitido, op) {
   await deve('Membro lê a área privada da própria empresa (Minha empresa)', true, () => getDoc(doc(db('ana'), 'empresas', 'alfa', 'privado', 'cadastro')));
   await deve('Equipe master grava no histórico como "master"', true, () => addDoc(collection(db('master'), 'log'), reg('master', { empresaId: 'master' })));
 
+  /* ---------- cadastro rápido do MEI (10/11/2026) ---------- */
+  await deve('MEI: cadastro rápido nasce com status mei (só presta serviço)', true, () => cadastro('edu', 'mei1', { status: 'mei', tipo: 'prestador' }, { num: '33000167000101' }));
+  await deve('MEI: status mei NÃO para quem também contrata', false, () => cadastro('carla', 'mei2', { status: 'mei', tipo: 'ambos' }, { num: '11222333000181' }));
+  await deve('MEI: NÃO nasce aprovado por conta própria', false, () => cadastro('carla', 'mei3', { status: 'aprovado', tipo: 'prestador' }, { num: '11222333000181' }));
+  await deve('MEI: o dono completa o cadastro (mei → em análise)', true, () => updateDoc(doc(db('edu'), 'empresas', 'mei1'), { status: 'analise', enviadoEm: serverTimestamp() }));
+
   /* ---------- dinheiro do MEI (10/11/2026) ---------- */
   const mv = extra => Object.assign({ empresaId: 'alfa', tipo: 'entrada', valorCentavos: 20000, data: '2026-11-09', descricao: 'Venda de bolos', categoria: 'Venda', forma: 'pix', situacao: 'pago', vencimento: '', cliente: '',
     origem: 'manual', removido: false, pagoEm: '2026-11-09', criadoPor: P.ana, criadoPorNome: 'Ana', criadoEm: serverTimestamp(), atualizadoEm: serverTimestamp() }, extra || {});

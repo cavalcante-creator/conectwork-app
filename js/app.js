@@ -28,7 +28,7 @@
 
   /* ---------- menu: módulos com menu:false abrem pela rota, mas não aparecem no menu (ex.: Minhas autorizações).
      Profissional MEI (empresa só prestadora, porte MEI): menu enxuto, com nomes do dia a dia dele e "Ver todas as telas". */
-  const ENXUTO = ['inicio', 'dinheiro', 'agenda', 'ordens', 'titulos', 'negocio', 'espelhos', 'assistentemei', 'contratos', 'documentos', 'empresa'];
+  const ENXUTO = ['inicio', 'dinheiro', 'agenda', 'ordens', 'titulos', 'negocio', 'espelhos', 'assistentemei', 'contratos', 'documentos', 'empresa', 'meucadastro'];
   const NOMES_MEI = { ordens: 'Demandas', espelhos: 'Notas a emitir', titulos: 'A receber' };
   const ctxEmp = () => { const c = CW.sessao.contexto(); return c && c.tipo === 'empresa' ? c : null; };
   const chaveCompleto = () => 'cw.menu.completo.' + ((ctxEmp() || {}).empresaId || '');

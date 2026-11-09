@@ -67,10 +67,11 @@ Barra de baixo (celular) e menu simples: **Início · Dinheiro · Agenda · Dema
 ## 7. Decisões (10/11/2026)
 
 - **Planos do MEI:** a definir depois. Nada de plano ou cobrança no app por enquanto; tudo liberado no perfil MEI.
-- **Cadastro rápido:** o MEI entra na hora com CNPJ, nome e atividade e já usa a gestão do próprio negócio; para receber demandas e contratos de empresas da rede, passa pela análise e envia os documentos. *(próximo passo)*
+- **Cadastro rápido:** o MEI entra na hora com CNPJ, nome e atividade e já usa a gestão do próprio negócio; para receber demandas e contratos de empresas da rede, passa pela análise e envia os documentos. *(feito: `modulos/cadastromei.js`)*
 - **Público:** todos os MEIs. Demandas e contratos para quem presta serviço; estoque só para quem vende (etapa 3).
 - **Cor:** sem verde. Entrada em azul, saída em laranja.
 
 ## 8. Feito na etapa 1
 
 - `movimentos` com regras e testes (`teste-regras.js`), tela **Dinheiro** (`modulos/dinheiro.js`), botão **Registrar** sempre à mão, assistente que lança por frase com confirmação, Início com "Este mês", faturamento do ano e relatório mensal das receitas somando as vendas e serviços lançados, relatório do mês em PDF e Excel. Teste: `teste-dinheiro.js`.
+- **Cadastro rápido do MEI** (`modulos/cadastromei.js`): "Sou MEI" na tela de entrar; conta + MEI numa tela só; empresa com status `mei` (só gestão, fora da rede, não pode ser contratada); "Completar cadastro para receber pedidos" leva ao cadastro completo e à análise. Teste: `teste-cadastromei.js`.

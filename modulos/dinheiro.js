@@ -238,9 +238,11 @@
   }
 
   const ehMei = ctx => { let p = ''; try { p = sessionStorage.getItem('cw.porte.' + ctx.empresaId) || ''; } catch (e) {} return String(p).startsWith('MEI'); };
+  /* telas da gestão do MEI liberadas também no cadastro rápido (status 'mei') e enquanto o cadastro completo é analisado */
+  const meiSemAprov = ctx => ehMei(ctx) && ['mei', 'analise', 'pendencia'].includes(((ctx.empresa) || {}).status);
   CW.registrarModulo({
     id: 'dinheiro', nome: 'Dinheiro', icone: 'bank', ordem: 26.5,
-    para: ['empresa'], livre: true,
+    para: ['empresa'], livre: true, semAprovacao: ctx => meiSemAprov(ctx),
     mostrar: ctx => ehMei(ctx),
     iniciar(ctx) {
       movs = null; mes = null;

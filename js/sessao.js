@@ -81,6 +81,7 @@
   /* "Cadastrar empresa" e "Tenho um convite": a Etapa 1 liga CW.entrada; até lá, um aviso */
   const naoPronto = () => U().toast('Essa opção chega na próxima etapa do Conectwork. Por enquanto, fale com a equipe Conectwork.');
   const cadastrarEmpresa = () => (CW.entrada.cadastrarEmpresa || naoPronto)();
+  const cadastrarMei = () => (CW.entrada.cadastrarMei || naoPronto)();   /* cadastro rápido do MEI (modulos/cadastromei.js) */
   const abrirConvite = () => (CW.entrada.abrirConvite || naoPronto)();
 
   function telaCarregando(msg) {
@@ -118,6 +119,7 @@
         ${botoesSociais('lg', 'Entrar')}
         <div class="lg-rodape"><p class="lg-novo-t" id="lg-novo">Ainda não usa o Conectwork?</p>
           <div class="lg-novos">
+            <button class="linkbtn" type="button" id="lg-mei">${ic('star')}Sou MEI</button>
             <button class="linkbtn" type="button" id="lg-cadastrar">${ic('building')}Cadastrar empresa</button>
             <button class="linkbtn" type="button" id="lg-convite">${ic('mail')}Tenho um convite</button>
           </div></div>`;
@@ -125,6 +127,7 @@
     moldura(`<div class="lg-bloco"><div class="logincard card" id="lg"><div class="card-b">${card}</div></div>
       <p class="lg-termos" id="lg-termos">Ao entrar, você concorda com os <b>Termos de uso</b> e a <b>Política de privacidade</b>.</p></div>`);
     const bc = document.getElementById('lg-cadastrar'); if (bc) bc.onclick = cadastrarEmpresa;
+    const bm = document.getElementById('lg-mei'); if (bm) bm.onclick = cadastrarMei;
     const bv = document.getElementById('lg-convite'); if (bv) bv.onclick = abrirConvite;
     app().querySelectorAll('[data-lg-modo]').forEach(b => b.onclick = () => telaLogin(b.dataset.lgModo === 'esqueci' ? 'esqueci' : 'login'));
     const f = document.getElementById('lg-form'); if (f) f.onsubmit = ev => { ev.preventDefault(); entrar(); };
@@ -251,11 +254,13 @@
         <p class="sub">Você entrou como <b>${esc(st.usuario.email)}</b>. Para usar o Conectwork, cadastre a sua empresa ou abra o convite que recebeu.</p></div>
       ${bloq}
       <div class="escolhas">
+        <button class="maisbtn" id="sa-mei">${ic('star')}<span>Sou MEI<br><small>Cadastro rápido, em 2 minutos: só o CNPJ e o que você faz. Já dá para organizar o dinheiro, a agenda e os impostos.</small></span>${ic('chev')}</button>
         <button class="maisbtn" id="sa-cadastrar">${ic('building')}<span>Cadastrar minha empresa<br><small>O cadastro leva cerca de 10 minutos. Tenha em mãos o contrato social, o cartão CNPJ e os dados bancários.</small></span>${ic('chev')}</button>
         <button class="maisbtn" id="sa-convite">${ic('mail')}<span>Tenho um convite<br><small>Recebeu um link de convite por WhatsApp ou e-mail? Use-o para entrar na empresa que te convidou.</small></span>${ic('chev')}</button>
       </div>
       <div><button class="linkbtn" id="sa-sair">${ic('logout')}Sair</button></div>`);
     document.getElementById('sa-cadastrar').onclick = cadastrarEmpresa;
+    document.getElementById('sa-mei').onclick = cadastrarMei;
     document.getElementById('sa-convite').onclick = abrirConvite;
     document.getElementById('sa-sair').onclick = sair;
   }
@@ -290,7 +295,7 @@
   }
 
   /* ---------- dados ---------- */
-  const STATUS = { analise: ['warn', 'Em análise'], pendencia: ['warn', 'Ajuste pedido'], aprovado: ['ok', 'Aprovada'], recusado: ['danger', 'Recusada'], suspenso: ['danger', 'Suspensa'] };
+  const STATUS = { mei: ['info', 'MEI · gestão liberada'], analise: ['warn', 'Em análise'], pendencia: ['warn', 'Ajuste pedido'], aprovado: ['ok', 'Aprovada'], recusado: ['danger', 'Recusada'], suspenso: ['danger', 'Suspensa'] };
   const pillStatus = s => { const x = STATUS[s] || ['info', s || 'Sem situação']; return `<span class="pill ${x[0]}">${U().esc(x[1])}</span>`; };
   const nomeEmpresa = id => { const e = st.empresas[id]; return (e && (e.nome || e.razao)) || 'uma empresa'; };
   const primeiroNome = () => String((st.perfil && st.perfil.nome) || st.usuario.email || '').split(/[\s@]/)[0];

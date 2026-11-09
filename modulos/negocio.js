@@ -193,10 +193,13 @@
     doc.save(`Relatorio-receitas-brutas-${m}.pdf`); U().toast('Relatório baixado. Assine e guarde com as notas.');
   }
 
+  const ehMeiN = ctx => { let p = ''; try { p = sessionStorage.getItem('cw.porte.' + ctx.empresaId) || ''; } catch (e) {} return String(p).startsWith('MEI'); };
   CW.registrarModulo({
     id: 'negocio', nome: 'Meu negócio', nomeCurto: 'Negócio', icone: 'star', ordem: 26,
-    para: ['empresa'], contrato: ['contratos', 'cobrancas'],
-    mostrar: ctx => ['prestador', 'ambos'].includes((ctx.empresa || {}).tipo),
+    para: ['empresa'],
+    /* MEI: sempre (também no cadastro rápido); outras prestadoras: com o módulo de contratos ou cobranças ligado */
+    semAprovacao: ctx => ehMeiN(ctx) && ['mei', 'analise', 'pendencia'].includes((ctx.empresa || {}).status),
+    mostrar: ctx => ['prestador', 'ambos'].includes((ctx.empresa || {}).tipo) && (ehMeiN(ctx) || ['contratos', 'cobrancas'].some(m => ((ctx.empresa || {}).modulos || []).includes(m))),
     iniciar(ctx) {
       fiscalPend = null;
       if (ctx.soLeitura || !VE.includes(cargo(ctx))) return;

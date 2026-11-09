@@ -116,16 +116,23 @@
     const { esc, ic } = U(), s = ctx.sessao, nome = String((s.perfil && s.perfil.nome) || '').split(' ')[0];
     const tb = document.querySelector('.topbar'); if (tb) tb.hidden = true;
     const data = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+    /* cadastro rápido do MEI: convite para completar o cadastro e receber pedidos da rede */
+    const CONV = { mei: ['star', 'Quer receber pedidos de empresas?', 'Complete o cadastro com os documentos. A equipe Conectwork confere e você passa a receber demandas e contratos pela rede.', 'Completar cadastro'],
+      analise: ['clock', 'Seu cadastro completo está em análise', 'A equipe Conectwork está conferindo os documentos. Enquanto isso, o dinheiro, a agenda e os impostos continuam liberados.', 'Ver situação'],
+      pendencia: ['alert', 'A equipe pediu um ajuste no cadastro', 'Veja o que falta e reenvie. O resto do Conectwork continua liberado.', 'Ver o ajuste'] }[(ctx.contexto.empresa || {}).status];
+    const convite = CONV ? `<button class="mei-convite" id="mei-rede"><span class="mei-bola ceu">${ic(CONV[0])}</span><span class="t"><b>${esc(CONV[1])}</b><small>${esc(CONV[2])}</small></span><span class="mei-convite-bt">${esc(CONV[3])}</span></button>` : '';
     el.innerHTML = `<div id="ini-avisos" class="stack" style="gap:10px"></div>
       <div class="mei-home" id="mei-home">
         <div class="mei-topo"><h2>Oi${nome ? ', ' + esc(nome) : ''}!</h2><p>${esc(data[0].toUpperCase() + data.slice(1))}</p></div>
         <button class="mei-hoje" id="mei-hoje" data-ir="agenda"></button>
+        ${convite}
         <div class="mei-grade" id="mei-grade"></div>
         <button class="mei-mes" id="mei-mes" hidden></button>
         <button class="mei-lim" id="mei-lim" hidden></button>
         <section class="card" id="ini-pv" hidden><div class="card-h"><span class="ic">${ic('alert')}</span><h3>Para fazer</h3><span class="count" id="ini-pv-n" hidden></span></div><div class="card-b" id="ini-pv-b"></div></section>
       </div>`;
     document.getElementById('mei-hoje').onclick = () => CW.ir('agenda');
+    const rede = document.getElementById('mei-rede'); if (rede) rede.onclick = () => CW.ir('meucadastro');
     const ps = CW.app.pendencias(); meiAtualiza(ps); pvDesenha(ps); mostraPv(ps);
     meiLimite(ctx);
     if (CW.avisos) CW.avisos.bloco(document.getElementById('ini-avisos'), ctx);
@@ -143,7 +150,7 @@
         titulo: ctx => { const p = ctx.sessao.perfil; const n = String((p && p.nome) || '').split(' ')[0]; return saudacao() + (n ? ', ' + n : ''); },
         render(el, ctx) {
           if (ctx.contexto.tipo === 'master' && CW.rede) return CW.rede.painel(el, ctx);   /* equipe Conectwork: Painel da rede */
-          if (CW.app.mei && CW.app.mei() && ctx.contexto.empresa && ctx.contexto.empresa.status === 'aprovado') return meiInicio(el, ctx);   /* perfil MEI */
+          if (CW.app.mei && CW.app.mei() && ctx.contexto.empresa && ['aprovado', 'mei', 'analise', 'pendencia'].includes(ctx.contexto.empresa.status)) return meiInicio(el, ctx);   /* perfil MEI (também no cadastro rápido) */
           const { esc, ic, avatar } = CW.ui, s = ctx.sessao, c = ctx.contexto;
           const nome = (s.perfil && s.perfil.nome) || s.usuario.email;
           const master = c.tipo === 'master';

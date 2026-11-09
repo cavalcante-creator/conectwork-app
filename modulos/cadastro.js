@@ -493,6 +493,7 @@
 
   /* ---------- módulo "Meu cadastro" (empresa ainda não aprovada) ---------- */
   const SIT = {
+    mei: ['now', 'Cadastro rápido do MEI', 'gestão do negócio liberada'],
     analise: ['now', 'Conferência dos dados e documentos', 'em andamento'],
     pendencia: ['now', 'Ajuste pedido pela equipe', 'corrija e reenvie'],
     recusado: ['now', 'Cadastro recusado', 'veja o motivo'],
@@ -509,10 +510,11 @@
           const { esc, ic, formatarData } = U(), c = ctx.contexto, db = CW.fb.db();
           const e = CW.fb.dados(await db.doc('empresas/' + c.empresaId).get()) || c.empresa;
           const st = e.status || 'analise', x = SIT[st] || SIT.analise;
-          const podeCorrigir = st === 'pendencia' && !ctx.soLeitura && (c.acesso.cargo === 'admin' || e.criadoPor === ctx.sessao.usuario.uid);
+          const podeCorrigir = ['pendencia', 'mei'].includes(st) && !ctx.soLeitura && (c.acesso.cargo === 'admin' || e.criadoPor === ctx.sessao.usuario.uid);
           const banner = st === 'pendencia'
             ? `<div class="banner warn" id="mc-motivo">${ic('alert')}<span><strong>A equipe Conectwork pediu um ajuste</strong>${esc(e.motivo || 'Confira os dados e reenvie.')}</span></div>`
             : st === 'suspenso' ? `<div class="banner danger" id="mc-motivo">${ic('lock')}<span><strong>O acesso da empresa está suspenso</strong>${esc(e.motivo || '')} Os dados continuam guardados. Para voltar a usar, fale com a equipe Conectwork.</span></div>`
+            : st === 'mei' ? `<div class="banner info" id="mc-motivo">${ic('star')}<span><strong>Seu MEI já usa o Conectwork</strong>Dinheiro, agenda, impostos e assistente estão liberados. Para receber pedidos e contratos de empresas da rede, complete o cadastro com os documentos: a equipe Conectwork confere e libera.</span></div>`
             : st === 'recusado' ? `<div class="banner danger" id="mc-motivo">${ic('alert')}<span><strong>O cadastro foi recusado</strong>${esc(e.motivo || '')} Se tiver dúvida, fale com a equipe Conectwork.</span></div>`
               : `<div class="banner info">${ic('clock')}<span><strong>Cadastro em análise</strong>A equipe Conectwork está conferindo os dados e os documentos. Quando terminar, as telas da empresa são liberadas.</span></div>`;
           el.innerHTML = `${banner}
@@ -522,7 +524,7 @@
                 <ul class="tl"><li class="done"><span class="dot">${ic('check')}</span>Cadastro enviado<small>${esc(formatarData(e.criadoEm) || '')}</small></li>
                   <li class="${x[0]}"><span class="dot"></span>${x[1]}<small>${x[2]}</small></li>
                   <li><span class="dot"></span>Aprovação e liberação dos módulos<small>pendente</small></li></ul>
-                ${podeCorrigir ? `<button class="btn" id="mc-corrigir" style="margin-top:18px">${ic('edit')}Corrigir cadastro</button>` : ''}
+                ${podeCorrigir ? `<button class="btn" id="mc-corrigir" style="margin-top:18px">${ic('edit')}${st === 'mei' ? 'Completar cadastro para receber pedidos' : 'Corrigir cadastro'}</button>` : ''}
               </div></section>
               <section class="card"><div class="card-h"><span class="ic">${ic('building')}</span><h3>Empresa</h3></div><div class="card-b"><dl class="dl">
                 <div class="full"><dt>Razão social</dt><dd>${esc(e.razao || '—')}</dd></div>

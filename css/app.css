@@ -1431,3 +1431,24 @@ html.mei .topbar h1{letter-spacing:-.01em}
 .mei-mes-n b{font-family:var(--fd);font-size:clamp(17px,3.2vw,21px);font-variant-numeric:tabular-nums}
 .mei-mes-n b.ent{color:var(--dn-ent)}.mei-mes-n b.sai{color:var(--dn-sai)}
 .mei-mes:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+
+/* ---------- Cadastro rápido do MEI (10/11/2026) ---------- */
+.mcad{min-height:100%;background:var(--bg);padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+.mcad-topo{max-width:680px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding-block:16px}
+.mcad-logo{display:flex;align-items:center;gap:8px;font-family:var(--fd);font-size:19px;color:var(--ink)}.mcad-logo b span{color:var(--blue)}
+.mcad-form{max-width:680px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.mcad-head h1{margin:8px 0 6px;font-family:var(--fd);font-size:clamp(24px,5vw,32px);letter-spacing:-.02em;text-wrap:balance}
+.mcad-head .sub{margin:0;color:var(--muted)}
+.mcad-tag{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--blue);background:var(--mei-ceu-bg);border-radius:99px;padding:4px 12px}
+.mcad-tag svg.i{width:14px;height:14px}
+.mcad-form .card{border-radius:20px}
+.mcad-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.mcad-chip{border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:99px;padding:8px 14px;font:inherit;font-size:14px;cursor:pointer}
+.mcad-chip[aria-pressed="true"]{border-color:var(--blue);background:var(--mei-ceu-bg);color:var(--blue);font-weight:600}
+.mcad-chip:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.mcad-ir{height:54px;border-radius:16px;font-size:16px;font-family:var(--fd);font-weight:700;justify-content:center}
+.mei-convite{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--mei-tile);color:var(--ink);border:1.5px dashed var(--blue);border-radius:22px;padding:16px;cursor:pointer;font:inherit}
+.mei-convite .t{flex:1;min-width:0;display:flex;flex-direction:column}
+.mei-convite b{font-family:var(--fd);font-size:16px}.mei-convite small{color:var(--muted);font-size:13px}
+.mei-convite-bt{flex:none;font-weight:700;color:var(--blue);font-size:14px}
+@media (max-width:560px){.mei-convite{flex-wrap:wrap}.mei-convite-bt{width:100%;padding-left:60px}}

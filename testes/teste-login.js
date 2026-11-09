@@ -28,9 +28,9 @@ const { ok, fim } = H.placar('login');
     !l1b.slogan && l1b.tag.replace(/\s+/g, ' ') === 'Conectando empresas. Simplificando negócios.'
     && JSON.stringify(l1b.ben) === JSON.stringify(['Contratos, entregas e notas organizados', 'Pagamentos com data e comprovante', 'Documentos e conformidade em dia'])
     && JSON.stringify(l1b.selos) === JSON.stringify(['Empresas que contratam', 'Prestadoras', 'Profissionais MEI']) && l1b.pilares === 0, JSON.stringify(l1b));
-  ok('L1c cartão: subtítulo, placeholder, divisória, dois botões e aviso de termos; frases antigas removidas',
+  ok('L1c cartão: subtítulo, placeholder, divisória, três botões (Sou MEI, Cadastrar empresa, convite) e aviso de termos; frases antigas removidas',
     l1b.sub === 'Que bom ter você de volta.' && l1b.ph === 'voce@empresa.com.br' && l1b.div === 'Ainda não usa o Conectwork?'
-    && JSON.stringify(l1b.novos) === JSON.stringify(['Cadastrar empresa', 'Tenho um convite'])
+    && JSON.stringify(l1b.novos) === JSON.stringify(['Sou MEI', 'Cadastrar empresa', 'Tenho um convite'])
     && l1b.termos === 'Ao entrar, você concorda com os Termos de uso e a Política de privacidade.' && !l1b.velhos, JSON.stringify(l1b));
 
   // L1d cartão centralizado na vertical; botões lado a lado

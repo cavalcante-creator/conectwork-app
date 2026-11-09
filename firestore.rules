@@ -56,7 +56,9 @@ service cloud.firestore {
       // pré-cadastro pela equipe master (09/11/2026): só CNPJ, já aprovada, plano e módulos escolhidos; os documentos ficam pendentes
       allow create: if logado()
         && ((request.resource.data.keys().hasOnly(['tipo','status','nome','razao','cnpj','cnpjNum','cidade','uf','protocolo','criadoPor','criadoEm','enviadoEm'])
-             && request.resource.data.status == 'analise')
+             && (request.resource.data.status == 'analise'
+                 // cadastro rápido do MEI (10/11/2026): só a gestão do próprio negócio; não aparece para a rede nem pode ser contratado
+                 || (request.resource.data.status == 'mei' && request.resource.data.tipo == 'prestador')))
           || (master()
              && request.resource.data.keys().hasOnly(['tipo','status','nome','razao','cnpj','cnpjNum','cidade','uf','protocolo','criadoPor','criadoEm','enviadoEm','plano','modulos','preCadastro','avaliadoEm','avaliadoPor'])
              && request.resource.data.status == 'aprovado'
@@ -72,7 +74,7 @@ service cloud.firestore {
       // equipe master decide; a empresa só reenvia o cadastro quando foi pedido ajuste
       allow update: if master()
         || ((admin(emp) || fundador(emp))
-            && resource.data.status == 'pendencia'
+            && resource.data.status in ['pendencia','mei']   // o MEI do cadastro rápido completa o cadastro para receber demandas
             && request.resource.data.status == 'analise'
             && request.resource.data.diff(resource.data).affectedKeys()
                  .hasOnly(['status','nome','razao','cidade','uf','tipo','enviadoEm']));   // o CNPJ não muda na correção
