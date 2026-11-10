@@ -61,6 +61,20 @@ const { ok, fim } = H.placar('cadastromei');
   await page.setViewportSize({ width: 390, height: 844 }); await H.dorme(300);
   ok('C8 celular: o cadastro rápido cabe na tela', !(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)));
 
+  // C9 "Continuar com Google" no cadastro do MEI: o que já foi preenchido fica, a parte do acesso some e o MEI é criado na conta Google
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.click('#mc-sair'); await page.waitForSelector('#lg-mei', { timeout: 6000 }); await page.click('#lg-mei'); await page.waitForSelector('#mc-google', { timeout: 6000 });
+  await page.fill('#mc-cnpj', '11.222.333/0001-81'); await page.fill('#mc-atividade', 'Pintor'); await page.click('[data-seg="Serviços"]'); await page.fill('#mc-cidade', 'Gravataí');
+  await H.ctlSet(page, { social: { 'google.com': { email: 'Gui.Pinto@gmail.com', nome: 'Gui Pinto' } } });
+  await page.click('#mc-google'); await page.waitForSelector('#mc-conta', { timeout: 10000 });
+  const c9 = await page.evaluate(() => ({ conta: document.getElementById('mc-conta').innerText, semAcesso: !document.getElementById('mc-senha'), cnpj: document.getElementById('mc-cnpj').value, ativ: document.getElementById('mc-atividade').value }));
+  await page.evaluate(() => document.querySelectorAll('[data-cons]').forEach(c => { if (['operacional', 'contrato', 'cobranca'].includes(c.dataset.cons)) c.checked = true; }));
+  await page.check('#mc-termos'); await page.click('#mc-enviar'); await page.waitForSelector('#mei-servicos .mh-serv', { timeout: 10000 });
+  const S9 = await srv(), uid9 = S9.users['gui.pinto@gmail.com'].uid, id9 = (S9.docs['cnpjs/11222333000181'] || {}).empresaId, ac9 = S9.docs['acessos/' + id9 + '_' + uid9];
+  ok('C9 "Continuar com Google": guarda o que foi preenchido, some a parte da senha e cria o MEI na conta Google (admin), entrando no Início do MEI',
+    /gui\.pinto@gmail\.com/.test(c9.conta) && c9.semAcesso && c9.cnpj === '11.222.333/0001-81' && c9.ativ === 'Pintor' && id9 && S9.docs['empresas/' + id9].status === 'mei' && ac9 && ac9.cargo === 'admin'
+    && (await page.$eval('#mh-ola', e => e.innerText)) === 'Olá, Gui', JSON.stringify({ c9, id9 }));
+
   ok('Sem erros de JavaScript na página', !erros.filter(x => !/ERR_NAME_NOT_RESOLVED/.test(x)).length, erros.join(' | '));
   await browser.close(); fim();
 })().catch(e => { console.error('ERRO NO TESTE', e); process.exit(1); });

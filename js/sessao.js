@@ -161,6 +161,9 @@
     if (/network-request-failed/.test(c)) return 'Não foi possível conectar ao servidor. Confira sua internet e tente de novo.';
     return `Não foi possível entrar com ${n} agora${c ? ' (' + c + ')' : ''}. Tente de novo ou use e-mail e senha.`;
   }
+  /* para outras telas de entrada (ex.: cadastro rápido do MEI) usarem os mesmos botões */
+  CW.entrada.provAtivos = () => provAtivos(); CW.entrada.PROV = PROV;
+  CW.entrada.ligarSociais = (prefixo, aoErro) => ligarSociais(prefixo, aoErro);
   /* liga os botões data-social dentro da tela; aoErro(mensagem) mostra o problema onde a tela preferir */
   function ligarSociais(prefixo, aoErro) {
     app().querySelectorAll('[data-social]').forEach(b => b.onclick = async () => {

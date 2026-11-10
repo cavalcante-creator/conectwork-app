@@ -1585,3 +1585,10 @@ html.mei .shell .side,html.mei .shell .logo{background:#13265E}
 .pc-bar i{display:block;height:12px;border-radius:99px;background:var(--blue)}
 .pc-bar .r{text-align:right;font-variant-numeric:tabular-nums}
 .pc-filtros{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+/* cadastro rápido do MEI: "Continuar com Google" (10/11/2026) */
+.mcad-social{display:flex;flex-direction:column;gap:8px}
+.mcad-social .btn{width:100%;min-height:48px;justify-content:center;gap:10px;font-weight:600}
+.mcad-social .btn svg{width:20px;height:20px}
+.mcad-social .err:empty{display:none}
+.mcad .lg-ou{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:13px;margin:4px 0}
+.mcad .lg-ou::before,.mcad .lg-ou::after{content:"";flex:1;height:1px;background:var(--line)}

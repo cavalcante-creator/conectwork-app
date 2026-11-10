@@ -43,7 +43,8 @@
         <div class="mcad-head"><span class="mcad-tag">${ic('star')}Para quem é MEI</span><h1>Comece a organizar o seu negócio</h1>
           <p class="sub">Leva 2 minutos e é de graça. Depois, se quiser receber pedidos de empresas pelo Conectwork, você completa o cadastro com os documentos.</p></div>
         ${msg ? `<div class="banner danger" role="alert" id="mc-erro">${ic('alert')}<span>${esc(msg)}</span></div>` : Object.keys(e).length ? `<div class="banner danger" role="alert" id="mc-erro">${ic('alert')}<span>Confira ${Object.keys(e).length === 1 ? 'o campo marcado' : 'os campos marcados'}.</span></div>` : ''}
-        ${u ? '' : `<section class="card"><div class="card-h"><span class="ic">${ic('user')}</span><h3>Seu acesso</h3></div><div class="card-b fgrid">
+        ${u ? `<div class="banner info" id="mc-conta">${ic('user')}<span><strong>Você entrou como ${esc(u.email || '')}</strong>Agora é só preencher os dados do seu MEI.</span></div>` : `<section class="card"><div class="card-h"><span class="ic">${ic('user')}</span><h3>Seu acesso</h3></div><div class="card-b fgrid">
+          ${sociais()}
           ${campo('nome', 'Seu nome completo', `<input id="mc-nome" autocomplete="name" maxlength="120" value="${esc(F.nome)}">`)}
           ${campo('email', 'E-mail', `<input id="mc-email" type="email" autocomplete="email" maxlength="120" value="${esc(F.email)}">`, 'c12', 'Vai ser o seu login.')}
           ${campo('senha', 'Crie uma senha', `<input id="mc-senha" type="password" autocomplete="new-password" maxlength="100">`, 'c12', '8 ou mais caracteres, com letras e números.')}
@@ -64,6 +65,15 @@
         <button type="submit" class="btn mcad-ir" id="mc-enviar" ${enviando ? 'disabled' : ''}>${enviando ? 'Preparando o seu Conectwork…' : ic('arrow') + 'Começar a usar'}</button>
       </form></div>`;
     ligar();
+  }
+
+  /* entrar com Google (ou Microsoft, se ligado) direto daqui: o que já foi preenchido fica guardado e, na volta, a tela
+     continua sem a parte do acesso (a sessão chama CW.entrada.continuarCadastro) */
+  function sociais() {
+    const E = CW.entrada || {}, ps = E.provAtivos ? E.provAtivos() : [], { MARCA, esc } = U();
+    if (!ps.length || !E.ligarSociais) return '';
+    return `<div class="c12 mcad-social">${ps.map(k => `<button class="btn sec" type="button" id="mc-${k}" data-social="${k}" aria-label="Continuar com ${esc(E.PROV[k])}">${MARCA[k]}<span>Continuar com ${esc(E.PROV[k])}</span></button>`).join('')}
+      <p class="err" id="mc-erro-social" role="alert"></p></div><div class="lg-ou c12"><span>ou crie com e-mail e senha</span></div>`;
   }
 
   function ler() {
@@ -138,13 +148,17 @@
     document.querySelectorAll('[data-seg]').forEach(b => b.onclick = () => { ler(); F.segmento = b.dataset.seg; guardar(); document.querySelectorAll('[data-seg]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); });
     document.getElementById('mc-sair').onclick = () => { ler(); marcar(false); if (usuario()) CW.sessao.sair(); else CW.sessao.recarregar(); };
     const l = document.getElementById('mc-login'); if (l) l.onclick = () => { ler(); marcar(false); CW.sessao.telaLogin('login'); };
+    if (document.querySelector('#mei-cad [data-social]') && CW.entrada.ligarSociais) {
+      document.getElementById('mc-form').addEventListener('click', ev => { if (ev.target.closest('[data-social]')) ler(); }, true);   /* guarda o que já foi preenchido antes de abrir a janela */
+      CW.entrada.ligarSociais('mc', m => { const x = document.getElementById('mc-erro-social'); if (x) x.textContent = m; });
+    }
     const p = document.querySelector('#mei-cad input'); if (p && !enviando) p.focus();
   }
 
   /* a sessão (js/sessao.js) volta para cá quando a conta acabou de ser criada e a empresa ainda não existe */
   const origAberto = CW.entrada.cadastroAberto, origCont = CW.entrada.continuarCadastro;
   CW.entrada.cadastroAberto = () => aberto() || (origAberto ? origAberto() : false);
-  CW.entrada.continuarCadastro = () => { if (aberto()) { if (!F) abrir(); else desenhar(); } else if (origCont) origCont(); };
+  CW.entrada.continuarCadastro = () => { if (aberto()) { if (!F) abrir(); else { const u = usuario(); if (u) { F.email = (u.email || '').toLowerCase(); if (!F.nome) F.nome = u.displayName || ''; } desenhar(); } } else if (origCont) origCont(); };
   CW.entrada.cadastrarMei = abrir;
   CW.cadastroMei = { abrir, SEGMENTOS };
 })();
