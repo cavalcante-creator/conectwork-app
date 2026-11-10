@@ -239,9 +239,9 @@
     if (l === 'prestador' && x.status === 'aguardando_nota') {
       const E = emissorCache || { origem: 'padrao', nome: 'Emissor Nacional' }, onde = E.cidade ? E.cidade + '/' + E.uf : '';
       const porque = E.origem === 'empresa' ? 'Site definido pela sua empresa.' : E.origem === 'cidade' ? `Site da prefeitura de ${onde}, escolhido pela cidade da sua empresa.` : `Emissor Nacional (gov.br)${onde ? ', o padrão para ' + onde : ''}.`;
-      return recTxt + `<div class="banner ok" id="es-aviso">${ic('check')}<span><strong>Serviço aprovado: confira os dados e envie sua nota fiscal</strong>1. Toque em "Emitir a nota" e preencha com os dados abaixo (use os botões de copiar). 2. Volte para o Conectwork e anexe o PDF da nota (ou o XML).</span></div>
+      return recTxt + `<div class="banner ok" id="es-aviso">${ic('check')}<span><strong>Serviço aprovado: confira os dados e envie sua nota fiscal</strong>1. Toque em "Emitir a nota": o emissor abre numa janela por cima do Conectwork. Preencha com os dados abaixo (use os botões de copiar). 2. Feche a janela e anexe o PDF da nota (ou o XML).</span></div>
         ${podeEnviar(ctx) ? `<section class="card" id="es-passos" style="margin:14px 0 22px"><div class="card-b stack" style="gap:12px">
-          ${x.emissao ? `<p style="margin:0;font-size:13.5px" id="es-voltou">${ic('clock')} Emissor aberto ${esc(formatarDataHora(x.emissao.em))} por ${esc(x.emissao.nome)}. <b>Já emitiu? Anexe a nota.</b></p>` : ''}
+          ${x.emissao ? `<p style="margin:0;font-size:13.5px" id="es-voltou">${ic('clock')} Emissor aberto ${esc(formatarDataHora(x.emissao.em))} por ${esc(x.emissao.nome)}. <b>${janAberta() ? 'O emissor está aberto numa janela por cima. Quando terminar, feche a janela: o Conectwork pede a nota.' : 'Já emitiu? Anexe a nota.'}</b>${janAberta() ? ` <button class="linkbtn" id="es-jan-frente" style="display:inline">Mostrar a janela do emissor</button>` : ''}</p>` : ''}
           <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ${x.emissao ? 'sec' : ''}" id="es-emitir-bt">${ic('send')}Emitir a nota ${E.origem === 'padrao' ? 'no Emissor Nacional' : 'no site da prefeitura'}</button>
             <button class="btn ${x.emissao ? '' : 'sec'}" id="es-anexar">${ic('upload')}Anexar a nota (PDF ou XML)</button></div>
           <p class="hint" style="margin:0;font-size:12.5px" id="es-site">${esc(porque)} <button class="linkbtn" id="es-outro-site" style="font-size:12.5px;display:inline">Não é esse o site?</button></p></div></section>` : ''}`;
@@ -284,12 +284,13 @@
     const em = $('es-emitir-bt');
     if (em) em.onclick = () => {
       const url = emissorDe(ctx);
-      try { window.open(url, '_blank', 'noopener'); } catch (e) {}
+      abrirJanelaEmissor(url, x, ctx);
       try { sessionStorage.setItem('cw.emissao', JSON.stringify({ id: x._id, em: Date.now() })); } catch (e) {}
       const b = db.batch(); b.update(ref, { emissao: { uid: ctx.sessao.usuario.uid, nome: quem(ctx), em: agora() }, atualizadoEm: agora() });
       log(b, ctx, 'espelho.emissao', `Emissor da nota aberto para o espelho de ${periodoTxt(x.periodo)} (${x.tomadorNome}).`, x._id);
       b.commit().then(() => desenharVer(el, ctx, x._id)).catch(() => {});
     };
+    const jf = $('es-jan-frente'); if (jf) jf.onclick = () => { try { janEmissor.focus(); } catch (e) {} };
     const os = $('es-outro-site');
     if (os) os.onclick = async () => {
       const E = emissorCache || {}, admin = cargo(ctx) === 'admin' && !ctx.soLeitura;
@@ -418,9 +419,36 @@
     desenharVer(el, ctx, x._id);
   }
 
+  /* emissor numa janela por cima do Conectwork (como o login do Google): ao fechar a janela, o app já pede a nota.
+     No celular (ou se o navegador bloquear a janela) abre numa aba, e a volta ao app pede a nota (visibilitychange). */
+  let janEmissor = null, vigiaJan = null;
+  function abrirJanelaEmissor(url, x, ctx) {
+    const cel = window.matchMedia && window.matchMedia('(max-width:760px), (pointer:coarse)').matches;
+    let w = null;
+    if (!cel) {
+      const L = Math.min(1180, screen.availWidth - 40), A = Math.min(860, screen.availHeight - 60);
+      const esq = Math.max(0, (window.screenX || 0) + (window.outerWidth - L) / 2), topo = Math.max(0, (window.screenY || 0) + (window.outerHeight - A) / 2);
+      try { w = window.open('about:blank', 'cw-emissor', `popup=yes,width=${Math.round(L)},height=${Math.round(A)},left=${Math.round(esq)},top=${Math.round(topo)}`); } catch (e) { w = null; }
+      if (w) { try { w.opener = null; } catch (e) {} try { w.location.href = url; } catch (e) {} }
+    }
+    if (!w) { try { window.open(url, '_blank', 'noopener'); } catch (e) {} return; }
+    janEmissor = w; try { w.focus(); } catch (e) {}
+    try { sessionStorage.setItem('cw.emissao.jan', '1'); } catch (e) {}
+    clearInterval(vigiaJan);
+    vigiaJan = setInterval(() => {
+      let fechou = true; try { fechou = !janEmissor || janEmissor.closed; } catch (e) { fechou = true; }
+      if (!fechou) return;
+      clearInterval(vigiaJan); janEmissor = null;
+      try { sessionStorage.removeItem('cw.emissao.jan'); sessionStorage.removeItem('cw.emissao'); } catch (e) {}
+      if (location.hash !== '#espelhos/ver/' + x._id || document.querySelector('dialog[open]')) return;
+      CW.fb.db().doc('espelhos/' + x._id).get().then(sn => { const y = CW.fb.dados(sn); if (y && y.status === 'aguardando_nota') { y._id = x._id; anexar(document.getElementById('view'), Object.assign({}, ultimoCtx || ctx, { sessao: CW.sessao.estado() }), y, true); } }).catch(() => {});
+    }, 700);
+  }
+  const janAberta = () => { try { return !!janEmissor && !janEmissor.closed; } catch (e) { return false; } };
+
   /* ao voltar do emissor (aba ou app de novo na frente), pede a nota */
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState !== 'visible' || !ultimoCtx) return;
+    if (document.visibilityState !== 'visible' || !ultimoCtx || janAberta()) return;
     let v = null; try { v = JSON.parse(sessionStorage.getItem('cw.emissao') || 'null'); } catch (e) {}
     if (!v || Date.now() - v.em < 2000 || location.hash !== '#espelhos/ver/' + v.id) return;
     if (document.querySelector('dialog[open]')) return;

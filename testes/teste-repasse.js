@@ -71,6 +71,15 @@ const { ok, fim } = H.placar('repasse');
   const e5 = (await srv())[RID];
   ok('R5 "Emitir a nota" registra que o MEI abriu o emissor', e5.emissao && e5.emissao.uid === 'uCARL', JSON.stringify(e5.emissao));
 
+  // R5b o emissor abre numa janela por cima (como o login do Google); fechar a janela já pede a nota
+  await page.evaluate(() => { window.__jan = { closed: false, opener: 1, location: {}, focus() {} }; window.open = (u, n, f) => { window.__janArgs = [u, n, f]; return window.__jan; }; });
+  await page.click('#es-emitir-bt'); await page.waitForSelector('#es-jan-frente', { timeout: 8000 });
+  const r5b = await page.evaluate(() => ({ args: window.__janArgs, href: window.__jan.location.href, opener: window.__jan.opener, txt: document.getElementById('es-voltou').innerText }));
+  await page.evaluate(() => { window.__jan.closed = true; }); await page.waitForSelector('dialog[open] #an-arq', { state: 'attached', timeout: 8000 });
+  ok('R5b "Emitir a nota" abre o emissor numa janela por cima (sem acesso de volta ao Conectwork) e, ao fechar a janela, pede a nota',
+    r5b.args[0] === 'about:blank' && /popup=yes/.test(r5b.args[2]) && /width=/.test(r5b.args[2]) && /nfse\.gov\.br/.test(r5b.href) && r5b.opener === null && /janela por cima/.test(r5b.txt), JSON.stringify(r5b));
+  await page.click('dialog[open] [data-dlg-b="0"]').catch(() => {}); await H.dorme(200);
+
   // R6 celular: a tela das notas dos profissionais cabe sem rolar para o lado
   await entrarComo('dono@nexo.com.br');
   await page.setViewportSize({ width: 390, height: 844 });

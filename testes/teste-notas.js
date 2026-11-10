@@ -37,7 +37,7 @@ const TEXTO_PDF = `DANFSe v1.0 Documento Auxiliar da NFS-e\nChave de Acesso da N
 
   await H.preparar(page, d); await page.goto(H.BASE);
   await entrarComo('zeca@zeta.com.br');
-  await page.evaluate(() => { window.__abriu = []; window.open = u => { window.__abriu.push(u); return null; }; });
+  await page.evaluate(() => { window.__abriu = []; window.open = u => { if (u !== 'about:blank') window.__abriu.push(u); return null; }; });
 
   // N1 emitir: o site vem sozinho pela cidade da empresa; registra e, na volta, pede a nota
   await abrirEsp('cz_2026-10-2');
