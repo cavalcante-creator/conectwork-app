@@ -121,7 +121,6 @@
           <div class="lg-novos">
             <button class="linkbtn" type="button" id="lg-mei">${ic('star')}Sou MEI</button>
             <button class="linkbtn" type="button" id="lg-cadastrar">${ic('building')}Cadastrar empresa</button>
-            <button class="linkbtn" type="button" id="lg-convite">${ic('mail')}Tenho um convite</button>
           </div></div>`;
     }
     moldura(`<div class="lg-bloco"><div class="logincard card" id="lg"><div class="card-b">${card}</div></div>

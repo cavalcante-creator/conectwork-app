@@ -72,8 +72,8 @@ const T = { edu: 'tokEDU1234567890abcd', carla: 'tokCARLA1234567890ab', usado: '
   ok('V6 convite já usado avisa; convite de uma empresa onde já tem acesso leva direto para dentro', v6a === 'Este convite já foi usado' && v6b === 'Você já tem acesso a esta empresa', JSON.stringify([v6a, v6b]));
 
   // V7 "Tenho um convite" na tela de login: cola o link
-  await page.click('#sair'); await page.waitForSelector('#lg-convite');
-  await page.click('#lg-convite'); await page.waitForSelector('#tc-link');
+  await page.click('#sair'); await page.waitForSelector('#lg-email');
+  await page.evaluate(() => CW.entrada.abrirConvite()); await page.waitForSelector('#tc-link');   /* o botão saiu da tela de entrar; continua em "sem acesso" */
   await page.fill('#tc-link', 'https://exemplo.com/qualquer'); await page.click('dialog[open] [data-dlg-b="1"]'); const e7 = await page.$eval('#tc-erro', e => e.innerText);
   await page.fill('#tc-link', 'Oi! Abra o link: https://app.exemplo/#convite/' + T.edu); await page.click('dialog[open] [data-dlg-b="1"]');
   await page.waitForSelector('#cv-boasvindas', { timeout: 8000 });

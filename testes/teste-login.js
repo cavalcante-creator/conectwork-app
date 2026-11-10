@@ -30,7 +30,7 @@ const { ok, fim } = H.placar('login');
     && JSON.stringify(l1b.selos) === JSON.stringify(['Empresas que contratam', 'Prestadoras', 'Profissionais MEI']) && l1b.pilares === 0, JSON.stringify(l1b));
   ok('L1c cartão: subtítulo, placeholder, divisória, três botões (Sou MEI, Cadastrar empresa, convite) e aviso de termos; frases antigas removidas',
     l1b.sub === 'Que bom ter você de volta.' && l1b.ph === 'voce@empresa.com.br' && l1b.div === 'Ainda não usa o Conectwork?'
-    && JSON.stringify(l1b.novos) === JSON.stringify(['Sou MEI', 'Cadastrar empresa', 'Tenho um convite'])
+    && JSON.stringify(l1b.novos) === JSON.stringify(['Sou MEI', 'Cadastrar empresa'])
     && l1b.termos === 'Ao entrar, você concorda com os Termos de uso e a Política de privacidade.' && !l1b.velhos, JSON.stringify(l1b));
 
   // L1d cartão centralizado na vertical; botões lado a lado
@@ -55,10 +55,10 @@ const { ok, fim } = H.placar('login');
 
   // L1e "Tenho um convite" avisa que chega na próxima parte; "Cadastrar empresa" abre o cadastro (testado em teste-cadastro.js)
   const toast = () => page.evaluate(() => document.getElementById('toast').classList.contains('show') ? document.getElementById('toast').innerText : '');
-  await page.click('#lg-convite'); await page.waitForSelector('dialog[open] #tc-link', { timeout: 5000 }); const t2 = await page.$eval('dialog[open] h2', e => e.innerText); await page.click('dialog[open] [data-dlg-b="0"]');
+  const t2 = await page.evaluate(() => document.getElementById('lg-convite') ? 'tem' : 'saiu');   /* 10/11/2026: "Tenho um convite" saiu da tela de entrar (o convite chega pelo link) */
   await page.click('#lg-cadastrar'); await page.waitForSelector('#cad-titulo', { timeout: 5000 }); const t1 = await page.$eval('#cad-titulo', e => e.innerText);
   await page.click('#cad-login'); await page.waitForSelector('#lg-email', { timeout: 5000 });
-  ok('L1e "Cadastrar empresa" abre "Crie seu acesso" (e volta ao login); "Tenho um convite" pede o link recebido', t1 === 'Crie seu acesso' && t2 === 'Tenho um convite' && !(await log()).some(x => x[0] === 'signIn'), t1 + ' · ' + t2);
+  ok('L1e "Cadastrar empresa" abre "Crie seu acesso" (e volta ao login); "Tenho um convite" não aparece mais na tela de entrar', t1 === 'Crie seu acesso' && t2 === 'saiu' && !(await log()).some(x => x[0] === 'signIn'), t1 + ' · ' + t2);
 
   // L1f celular: painel vira cabeçalho compacto e o cartão vem logo abaixo
   await page.setViewportSize({ width: 390, height: 800 }); await H.dorme(250);
