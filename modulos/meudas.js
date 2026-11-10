@@ -83,7 +83,7 @@
     catch (e) { el.innerHTML = `<div class="banner danger">${ic('alert')}<span><strong>Não deu para fazer o check-up.</strong>${esc(CW.fb.mensagemErro(e))}</span></div>`; return; }
     const itens = checkup(ctx, K), probs = itens.filter(x => x.st === 'ruim').length, avisos = itens.filter(x => x.st === 'aviso').length;
     el.innerHTML = `<section class="ck-topo ${probs ? 'ruim' : avisos ? 'aviso' : 'bom'}" id="ck-res"><span class="ck-ic">${ic(probs ? 'alert' : 'shield')}</span>
-        <div><b>${probs ? (probs === 1 ? '1 ponto para resolver' : probs + ' pontos para resolver') : 'Seu MEI está em dia'}</b><small>${probs ? 'Resolva e o seu MEI fica em dia.' : avisos ? 'Tudo certo por enquanto. Fique de olho nos avisos.' : 'Continue assim: DAS pago, declaração entregue e faturamento dentro do limite.'}</small></div></section>
+        <div><b>${probs ? (probs === 1 ? '1 ponto para resolver' : probs + ' pontos para resolver') : 'Seu MEI está em dia'}</b>${situacaoEm(D.fiscal, D.inicio, hoje()).emDia ? `<span class="selo-dia" id="ck-selo">${ic('shield')}Prestador em dia</span>` : ''}<small>${probs ? 'Resolva e o seu MEI fica em dia.' : avisos ? 'Tudo certo por enquanto. Fique de olho nos avisos.' : 'Continue assim: DAS pago, declaração entregue e faturamento dentro do limite.'}</small></div></section>
       <div class="ck-lista" id="ck-lista">${itens.map(x => `<div class="ck-it ${x.st}" data-ck="${x.k}"><span class="ck-dot">${ic(x.st === 'bom' ? 'check' : x.st === 'info' ? 'star' : 'alert')}</span>
         <div class="t"><b>${esc(x.t)}</b><small>${esc(x.s)}</small></div>${x.ir ? `<button class="btn sm ${x.st === 'ruim' ? '' : 'sec'}" data-ir="${esc(x.ir[1])}">${esc(x.ir[0])}</button>` : ''}</div>`).join('')}</div>
       <p class="hint" style="margin:14px 0 0;font-size:12.5px">O check-up usa o que está registrado no Conectwork. Ele não substitui a consulta oficial na Receita nem o seu contador.</p>`;
@@ -125,5 +125,19 @@
     }
   });
   /* para o alerta do Início: os mesmos vencidos desta tela, desde a abertura do MEI */
-  CW.meuDas = { vencidosDe: (f, inicio) => { const ant = D; D = { fiscal: f || { das: {} }, inicio: inicio || hoje().slice(0, 4) + '-01' }; const v = vencidos(); D = ant; return v; } };
+  /* situação fiscal numa data (para o selo e o painel da cidade): DAS vencidos e declaração atrasada em "ref" (AAAA-MM-DD).
+     Selo "Prestador em dia" = nenhum DAS vencido e nenhuma declaração anual atrasada (limite e documentos não entram). */
+  function situacaoEm(f, inicio, ref) {
+    f = f || {}; const das = f.das || {}, dasn = f.dasn || {}, ini = inicio || ref.slice(0, 4) + '-01', venc = [];
+    for (let a = +ini.slice(0, 4); a <= +ref.slice(0, 4); a++) for (let i = 1; i <= 12; i++) {
+      const m = `${a}-${String(i).padStart(2, '0')}`; if (m < ini || m > ref.slice(0, 7)) continue;
+      const p = das[m], pago = !!(p && p.pago && (!p.data || p.data <= ref));
+      if (!pago && CW.negocio.vencDas(m) < ref) venc.push(m);
+    }
+    const ano = +ref.slice(0, 4) - 1, dn = dasn[ano], prazo = `${ano + 1}-05-31`;
+    const precisa = +ini.slice(0, 4) <= ano, entregue = !!(dn && dn.entregue && (!dn.data || dn.data <= ref));
+    const dasnAtrasada = precisa && !entregue && prazo < ref;
+    return { venc, dasn: { ano, precisa, entregue, atrasada: dasnAtrasada }, emDia: !venc.length && !dasnAtrasada };
+  }
+  CW.meuDas = { situacaoEm, selo: (f, inicio) => situacaoEm(f, inicio, hoje()).emDia, vencidosDe: (f, inicio) => { const ant = D; D = { fiscal: f || { das: {} }, inicio: inicio || hoje().slice(0, 4) + '-01' }; const v = vencidos(); D = ant; return v; } };
 })();

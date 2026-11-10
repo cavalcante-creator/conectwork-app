@@ -113,7 +113,7 @@ const MODS_TESTE = () => {
   await H.entrar(page, 'iasmyn@conectwork.com.br', 'senha123'); await page.waitForSelector('#rd-numeros', { timeout: 8000 });
   q = { sub: await page.$eval('#quem-sub', e => e.innerText) };
   await page.evaluate(MODS_TESTE); await H.dorme(200); m = await menu();
-  ok('S22 equipe Conectwork (master/{uid}): entra como "Equipe Conectwork", o Início é o Painel da rede e vê só as telas da equipe, nenhuma de empresa', q.sub === 'Equipe Conectwork' && JSON.stringify(m) === '["inicio","cadastros","redeempresas","mensalidades","emissores","avisos","equipecw","historico"]', JSON.stringify(q) + ' menu=' + m);
+  ok('S22 equipe Conectwork (master/{uid}): entra como "Equipe Conectwork", o Início é o Painel da rede e vê só as telas da equipe, nenhuma de empresa', q.sub === 'Equipe Conectwork' && JSON.stringify(m) === '["inicio","cadastros","redeempresas","mensalidades","emissores","painelcidade","avisos","equipecw","historico"]', JSON.stringify(q) + ' menu=' + m);
   const s23 = await page.evaluate(async () => { const r = await CW.registrarLog('teste', 'Teste master.'); return JSON.parse(localStorage.getItem('__srv')).docs[r.path].empresaId; });
   ok('S23 histórico gravado pela equipe master vai com empresaId "master"', s23 === 'master', s23);
   await sair();

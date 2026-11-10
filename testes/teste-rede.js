@@ -30,7 +30,7 @@ const { ok, fim } = H.placar('rede');
   const r1 = { cad: await txt('#rd-k-cad b'), emp: await txt('#rd-k-emp b'), atr: await txt('#rd-k-atr b'), precisa: await txt('#rd-precisa'), menu: await page.$$eval('#menu [data-mod]', x => x.map(b => b.dataset.mod).join()) };
   ok('R1 Início da equipe = Painel da rede: cadastros esperando, empresas ativas, atrasadas e "Precisa de você" (cadastro e valores dos planos)',
     r1.cad === '1' && r1.emp === '2' && r1.atr === '1' && /1 cadastro esperando a sua análise/.test(r1.precisa) && /Gama Logística/.test(r1.precisa) && /Defina o valor da mensalidade dos planos/.test(r1.precisa) && /1 mensalidade atrasada/.test(r1.precisa), JSON.stringify(r1));
-  ok('R2 menu da equipe: Início, Cadastros, Empresas, Mensalidades, Sites de emissão, Avisos, Equipe e Histórico', r1.menu === 'inicio,cadastros,redeempresas,mensalidades,emissores,avisos,equipecw,historico', r1.menu);
+  ok('R2 menu da equipe: Início, Cadastros, Empresas, Mensalidades, Sites de emissão, Painel da cidade, Avisos, Equipe e Histórico', r1.menu === 'inicio,cadastros,redeempresas,mensalidades,emissores,painelcidade,avisos,equipecw,historico', r1.menu);
 
   // R3 sem valores: não dá para gerar; Planos e valores: grava valores e o dia do vencimento (com histórico)
   await ir('#mensalidades', '#mn-lista');

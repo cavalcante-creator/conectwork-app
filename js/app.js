@@ -60,7 +60,7 @@
   const GRUPO = { contratos: 'Contratação', ordens: 'Contratação', medicoes: 'Contratação', negocio: 'Contratação',
     espelhos: 'Financeiro', titulos: 'Financeiro', relatorios: 'Financeiro',
     documentos: 'Empresa', empresa: 'Empresa', usuarios: 'Empresa', historico: 'Empresa', meucadastro: 'Empresa',
-    cadastros: 'Rede', redeempresas: 'Rede', mensalidades: 'Rede', emissores: 'Rede', avisos: 'Rede', equipecw: 'Equipe' };
+    cadastros: 'Rede', redeempresas: 'Rede', mensalidades: 'Rede', emissores: 'Rede', avisos: 'Rede', painelcidade: 'Rede', equipecw: 'Equipe' };
   function menuHtml(mods) {
     const { ic, esc } = U(); let ult = null, semGrupos = enxuto();   /* menu simples do MEI: lista curta, sem títulos de grupo */
     return mods.map(m => { const g = semGrupos ? null : GRUPO[m.id] || null, rot = g && g !== ult ? `<div class="navgrupo">${esc(g)}</div>` : ''; ult = g;

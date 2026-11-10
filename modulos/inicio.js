@@ -104,6 +104,9 @@
     if (al) { al.hidden = !v || !vis.includes('mei'); al.innerHTML = `<span class="mh-alerta-ic">${ic('alert')}</span><span class="t"><b>Você tem ${v === 1 ? 'DAS vencido' : v + ' DAS vencidos'}</b><small>Regularize e fique em dia</small></span><span class="mh-num est">${v}</span>${ic('chev')}`; }
     const dm = document.getElementById('mh-demandas'); if (dm) { const n = por.ordens || 0;
       dm.innerHTML = `<span class="t"><b>Acompanhe suas demandas</b><small>${n ? (n === 1 ? 'Você tem 1 demanda para responder' : `Você tem ${n} demandas para responder`) : 'Nenhuma demanda esperando você'}</small></span>${n ? `<span class="mh-num est">${n}</span>` : ''}${ic('chev')}`; }
+    /* selo "Prestador em dia": nenhum DAS vencido e nenhuma declaração anual atrasada (CW.meuDas.selo) */
+    const se = document.getElementById('mh-selo'), fdoc = CW.negocio && CW.negocio.fiscalDoc && CW.negocio.fiscalDoc();
+    if (se) se.hidden = !(fdoc && CW.meuDas && CW.meuDas.selo(fdoc, CW.negocio.inicioMei()));
     const sino = document.getElementById('mh-sino-n'); if (sino) { sino.textContent = lista.length > 9 ? '9+' : String(lista.length); sino.hidden = !lista.length; }
     meiMes();
   }
@@ -138,7 +141,7 @@
     const vis = CW.app.visiveis().map(m => m.id);
     el.innerHTML = `<div id="ini-avisos" class="stack" style="gap:10px"></div>
       <div class="mei-home mh" id="mei-home">
-        <div class="mh-topo"><div class="t"><h2 id="mh-ola">Olá${nome ? ', ' + esc(nome) : ''}</h2>${cnpj ? `<p id="mh-cnpj">${esc(cnpj)}</p>` : ''}</div>
+        <div class="mh-topo"><div class="t"><h2 id="mh-ola">Olá${nome ? ', ' + esc(nome) : ''}</h2>${cnpj ? `<p id="mh-cnpj">${esc(cnpj)}</p>` : ''}<span class="selo-dia mh-selo" id="mh-selo" hidden>${ic('shield')}Prestador em dia</span></div>
           <button class="mh-sino" id="mh-sino" type="button" aria-label="O que precisa de você">${ic('bolt')}<span class="mh-num" id="mh-sino-n" hidden></span></button></div>
         <button class="mh-alerta" id="mh-alerta" type="button" hidden></button>
         ${convite}
