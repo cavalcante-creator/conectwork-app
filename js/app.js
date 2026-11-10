@@ -139,7 +139,8 @@
     montado = true;
     /* liga os módulos visíveis */
     const cbase = baseCtx();
-    mods.forEach(m => { if (typeof m.iniciar !== 'function') return; try { const f = m.iniciar(Object.assign({ modulo: m.id }, cbase)); if (typeof f === 'function') limpezas.push(f); } catch (e) { console.error('iniciar ' + m.id, e); } });
+    /* também os módulos visíveis que ficam fora do menu (ex.: Notas dos profissionais, aberto pelo "Precisa de você") */
+    mods.concat(visiveis().filter(m => m.menu === false && !mods.includes(m))).forEach(m => { if (typeof m.iniciar !== 'function') return; try { const f = m.iniciar(Object.assign({ modulo: m.id }, cbase)); if (typeof f === 'function') limpezas.push(f); } catch (e) { console.error('iniciar ' + m.id, e); } });
     window.addEventListener('hashchange', desenhar);
     document.addEventListener('keydown', atalhoBusca);
     desenhar();

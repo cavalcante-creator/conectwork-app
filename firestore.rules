@@ -278,6 +278,7 @@ service cloud.firestore {
     }
     function medicaoConfirmar(r, d) {
       return cargoEm(r.prestadorId, ['admin','financeiro']) && r.status == 'enviada' && d.status == 'confirmada_prestadora'
+        && request.auth.uid != r.criadoPor   // quem lançou pela empresa que contrata não confirma pela prestadora
         && d.confirmacao.uid == request.auth.uid && mudou().hasOnly(['status','confirmacao','atualizadoEm']);
     }
     function medicaoDivergir(r, d) {
@@ -287,7 +288,8 @@ service cloud.firestore {
     }
     function medicaoAprovar(r, d) {
       return cargoEm(r.tomadorId, ['admin','aprovador']) && r.status == 'confirmada_prestadora' && d.status == 'aprovada'
-        && d.aprovacao.uid == request.auth.uid && request.auth.uid != r.criadoPor && mudou().hasOnly(['status','aprovacao','atualizadoEm']);
+        && d.aprovacao.uid == request.auth.uid && request.auth.uid != r.criadoPor && request.auth.uid != r.confirmacao.uid
+        && mudou().hasOnly(['status','aprovacao','atualizadoEm']);
     }
     function medicaoCancelar(r, d) {
       return cargoEm(r.tomadorId, ['admin','rh']) && r.status in ['enviada','divergencia','confirmada_prestadora'] && d.status == 'cancelada'
@@ -313,7 +315,7 @@ service cloud.firestore {
     // Valor = o da medição; vencimento = o do contrato (não muda no espelho); líquido = valor − retenções. A prestadora lê. Nada se apaga.
     function camposEspelho() { return ['medicaoId','contratoId','tomadorId','prestadorId','partes','tomadorNome','prestadorNome','prestadorCnpj','tomador',
       'periodo','competencia','descricao','valorCentavos','retencoes','liquidoCentavos','vencimentoDias','obs','status','versao',
-      'criadoPor','criadoPorNome','criadoEm','atualizadoPor','atualizadoPorNome','atualizadoEm','emissao','nota','recusadas','conferenciaNota','origem','osNumero']; }
+      'criadoPor','criadoPorNome','criadoEm','atualizadoPor','atualizadoPorNome','atualizadoEm','emissao','nota','recusadas','conferenciaNota','origem','osNumero','item','horas','prestadorCnpjNum']; }
     function centavos(v) { return v is int && v >= 0; }
     function espelhoValores(d) {
       let r = d.retencoes;
@@ -324,7 +326,26 @@ service cloud.firestore {
         && d.obs is string && d.obs.size() <= 300;
     }
     function espelhoCriar(id, d) {
-      return (('origem' in d && d.origem == 'os') && espelhoCriarOs(id, d)) || (!('origem' in d && d.origem == 'os') && espelhoCriarMed(id, d));
+      let o = 'origem' in d ? d.origem : 'medicao';
+      return (o == 'os' && espelhoCriarOs(id, d)) || (o == 'repasse' && espelhoCriarRep(id, d)) || (o != 'os' && o != 'repasse' && espelhoCriarMed(id, d));
+    }
+    // Repasse ao MEI (10/11/2026): com a medição aprovada, a prestadora (admin ou financeiro) prepara o espelho da nota de cada
+    // profissional MEI da memória. Id = medição_CNPJ do MEI (um por profissional e período). Quem toma = a prestadora;
+    // quem emite = a empresa do MEI no Conectwork (achada pelo CNPJ em cnpjs/). Valor = o da linha da memória.
+    function espelhoCriarRep(id, d) {
+      let m = get(caminho('medicoes', d.medicaoId)).data;
+      let it = m.memoria[d.item];
+      return cargoEm(m.prestadorId, ['admin','financeiro'])
+        && d.keys().hasOnly(camposEspelho()) && m.status == 'aprovada'
+        && d.item is int && d.item >= 0 && d.item < m.memoria.size()
+        && it.cnpj is string && d.prestadorCnpjNum == it.cnpj && id == d.medicaoId + '_' + it.cnpj
+        && d.tomadorId == m.prestadorId && d.prestadorId == get(caminho('cnpjs', it.cnpj)).data.empresaId && d.prestadorId != d.tomadorId
+        && d.partes == [d.tomadorId, d.prestadorId] && d.contratoId == null
+        && d.periodo == m.periodo && d.competencia == m.periodo[0:7] && d.valorCentavos == it.valorCentavos
+        && vencOk(d.vencimentoDias) && espelhoValores(d)
+        && d.tomador.cnpj is string && d.tomador.razao is string
+        && d.status == 'aguardando_nota' && d.versao == 1
+        && d.criadoPor == request.auth.uid && d.criadoEm == request.time && d.atualizadoPor == request.auth.uid;
     }
     // ordem de serviço aceita: valor = valor aceito; competência = mês do aceite (período AAAA-MM)
     function espelhoCriarOs(id, d) {

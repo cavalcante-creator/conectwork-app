@@ -375,6 +375,42 @@ async function deve(nome, permitido, op) {
   await deve('Nota: quem não é das duas empresas NÃO consulta a chave da nota', false, () => getDoc(doc(db('carla'), 'notaschave', '2'.repeat(50))));
   await deve('Nota: conferida, o espelho NÃO é mais corrigido', false, () => updateDoc(doc(db('bruno'), 'espelhos', 'cm_2026-11-1'), { obs: 'x', versao: 3, atualizadoPor: P.bruno, atualizadoEm: serverTimestamp() }));
 
+  /* ---------- nota do profissional MEI para a prestadora (repasse, 10/11/2026) ---------- */
+  P.zeca = 'uZECA'; EM.zeca = 'zeca@zeca.com.br';
+  await env.withSecurityRulesDisabled(async c => { const d = c.firestore();
+    await setDoc(doc(d, 'empresas', 'meiz'), { nome: 'Zeca Elétrica', razao: 'Zeca Souza 33000167000101', cnpj: '33.000.167/0001-01', status: 'mei', tipo: 'prestador', criadoPor: P.zeca, modulos: [] });
+    await setDoc(doc(d, 'acessos', 'meiz_' + P.zeca), { uid: P.zeca, empresaId: 'meiz', nome: 'Zeca', email: EM.zeca, cargo: 'admin', extras: [], sem: [], ativo: true });
+    await setDoc(doc(d, 'cnpjs', '33000167000101'), { empresaId: 'meiz', criadoEm: serverTimestamp() });
+    await setDoc(doc(d, 'medicoes', 'cm_2026-12-1'), med('rita', { periodo: '2026-12-1', status: 'aprovada', valorCentavos: 300000,
+      memoria: [{ nome: 'Zeca Souza', horas: 40, valorCentavos: 200000, cnpj: '33000167000101' }, { nome: 'Sem Conta Ainda', horas: 20, valorCentavos: 100000, cnpj: '44000000000144' }] })); });
+  const rep = (k, extra) => Object.assign(esp(k, { medicaoId: 'cm_2026-12-1', contratoId: null, tomadorId: 'beta', prestadorId: 'meiz', partes: ['beta', 'meiz'], tomadorNome: 'Beta', prestadorNome: 'Zeca Souza',
+    prestadorCnpj: '33.000.167/0001-01', prestadorCnpjNum: '33000167000101', item: 0, horas: 40, origem: 'repasse', osNumero: null,
+    tomador: { razao: 'Beta Indústria Ltda', cnpj: '45.723.174/0001-10', im: '', endereco: '', cidade: '', uf: '' }, periodo: '2026-12-1', competencia: '2026-12',
+    descricao: 'Prestação de serviços à Beta: 40 horas.', valorCentavos: 200000, retencoes: { iss: 0, inss: 0, ir: 0, pcc: 0 }, liquidoCentavos: 200000, vencimentoDias: 5 }), extra || {});
+  const RID = 'cm_2026-12-1_33000167000101';
+  await deve('Repasse: o tomador da medição NÃO prepara a nota do MEI (é a prestadora)', false, () => setDoc(doc(db('bruno'), 'espelhos', RID), rep('bruno')));
+  await deve('Repasse: NÃO com valor diferente da linha da medição', false, () => setDoc(doc(db('beto'), 'espelhos', RID), rep('beto', { valorCentavos: 250000, liquidoCentavos: 250000 })));
+  await deve('Repasse: NÃO para outra empresa que não é a do CNPJ da linha', false, () => setDoc(doc(db('beto'), 'espelhos', RID), rep('beto', { prestadorId: 'alfa', partes: ['beta', 'alfa'] })));
+  await deve('Repasse: NÃO com id diferente de medição_CNPJ', false, () => setDoc(doc(db('beto'), 'espelhos', 'outro'), rep('beto')));
+  await deve('Repasse: NÃO para CNPJ que ainda não tem conta no Conectwork', false, () => setDoc(doc(db('beto'), 'espelhos', 'cm_2026-12-1_44000000000144'), rep('beto', { item: 1, prestadorCnpjNum: '44000000000144', valorCentavos: 100000, liquidoCentavos: 100000 })));
+  await deve('Repasse: NÃO com medição que não está aprovada', false, () => setDoc(doc(db('beto'), 'espelhos', 'cm_2026-10-2_33000167000101'), rep('beto', { medicaoId: 'cm_2026-10-2', periodo: '2026-10-2', competencia: '2026-10' })));
+  await deve('Repasse: a prestadora (admin) prepara a nota do MEI pela linha da medição, com o prazo dela', true, () => setDoc(doc(db('beto'), 'espelhos', RID), rep('beto')));
+  await deve('Repasse: o MEI lê a nota dele', true, () => getDoc(doc(db('zeca'), 'espelhos', RID)));
+  await deve('Repasse: o MEI lista as notas dele (prestadorId)', true, () => getDocs(query(collection(db('zeca'), 'espelhos'), where('prestadorId', '==', 'meiz'))));
+  await deve('Repasse: o MEI NÃO lê a medição (é das duas empresas)', false, () => getDoc(doc(db('zeca'), 'medicoes', 'cm_2026-12-1')));
+  await deve('Repasse: a empresa que contrata NÃO lê a nota do MEI', false, () => getDoc(doc(db('bruno'), 'espelhos', RID)));
+  await deve('Repasse: o MEI registra que abriu o emissor', true, () => updateDoc(doc(db('zeca'), 'espelhos', RID), { emissao: { uid: P.zeca, nome: 'Zeca', em: serverTimestamp() }, atualizadoEm: serverTimestamp() }));
+  await deve('Repasse: o MEI NÃO muda o valor', false, () => updateDoc(doc(db('zeca'), 'espelhos', RID), { valorCentavos: 900000, liquidoCentavos: 900000, versao: 2, atualizadoPor: P.zeca, atualizadoEm: serverTimestamp() }));
+  /* funções separadas entre as duas empresas: a mesma pessoa pode estar nas duas (ex.: RH da Colafix que também emite pela prestadora) */
+  await env.withSecurityRulesDisabled(async c => { const d = c.firestore();
+    await setDoc(doc(d, 'acessos', 'beta_' + P.rita), { uid: P.rita, empresaId: 'beta', nome: 'Rita', email: EM.rita, cargo: 'financeiro', extras: [], sem: [], ativo: true });
+    await setDoc(doc(d, 'acessos', 'beta_' + P.aldo), { uid: P.aldo, empresaId: 'beta', nome: 'Aldo', email: EM.aldo, cargo: 'financeiro', extras: [], sem: [], ativo: true });
+    await setDoc(doc(d, 'medicoes', 'cm_2027-01-1'), med('rita', { periodo: '2027-01-1' })); });
+  await deve('Medição: quem lançou pelo tomador NÃO confirma pela prestadora', false, () => updateDoc(doc(db('rita'), 'medicoes', 'cm_2027-01-1'), { status: 'confirmada_prestadora', confirmacao: { uid: P.rita, nome: 'Rita', em: serverTimestamp() }, atualizadoEm: serverTimestamp() }));
+  await deve('Medição: outra pessoa da prestadora confirma', true, () => updateDoc(doc(db('aldo'), 'medicoes', 'cm_2027-01-1'), { status: 'confirmada_prestadora', confirmacao: { uid: P.aldo, nome: 'Aldo', em: serverTimestamp() }, atualizadoEm: serverTimestamp() }));
+  await deve('Medição: quem confirmou pela prestadora NÃO aprova pelo tomador', false, () => updateDoc(doc(db('aldo'), 'medicoes', 'cm_2027-01-1'), { status: 'aprovada', aprovacao: { uid: P.aldo, nome: 'Aldo', em: serverTimestamp() }, atualizadoEm: serverTimestamp() }));
+  await env.withSecurityRulesDisabled(async c => { const d = c.firestore(); await deleteDoc(doc(d, 'acessos', 'beta_' + P.rita)); await deleteDoc(doc(d, 'acessos', 'beta_' + P.aldo)); });
+
   /* ---------- títulos (contas a pagar e a receber) ---------- */
   P.tito = 'uTITO'; EM.tito = 'tito@alfa.com.br';
   await env.withSecurityRulesDisabled(async c => { await setDoc(doc(c.firestore(), 'acessos', 'alfa_' + P.tito), { uid: P.tito, empresaId: 'alfa', nome: 'Tito', email: EM.tito, cargo: 'tesouraria', extras: [], sem: [], ativo: true }); });

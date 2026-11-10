@@ -34,8 +34,8 @@ const { ok, fim } = H.placar('cadastromei');
 
   // C4 a gestão está liberada sem esperar a análise; as telas da rede (demandas, contratos, notas) não aparecem; convite para completar
   const c4 = await page.evaluate(() => ({ menu: Array.from(document.querySelectorAll('#menu [data-mod]')).map(b => b.dataset.mod), convite: (document.getElementById('mei-rede') || {}).innerText || '', ola: document.getElementById('mh-ola').innerText }));
-  ok('C4 "Olá, Zeca" com Agenda, Assistente e Meu negócio liberados (Dinheiro desligado); sem Demandas, Contratos e Notas; convite para completar o cadastro',
-    c4.ola === 'Olá, Zeca' && ['agenda', 'assistentemei', 'negocio'].every(m => c4.menu.includes(m)) && !['dinheiro', 'ordens', 'contratos', 'espelhos', 'titulos'].some(m => c4.menu.includes(m)) && /receber pedidos de empresas/.test(c4.convite), JSON.stringify(c4));
+  ok('C4 "Olá, Zeca" com Agenda, Assistente e Meu negócio liberados (Dinheiro desligado), Notas a emitir e A receber (notas para a prestadora); sem Demandas e Contratos; convite para completar o cadastro',
+    c4.ola === 'Olá, Zeca' && ['agenda', 'assistentemei', 'negocio', 'espelhos', 'titulos'].every(m => c4.menu.includes(m)) && !['dinheiro', 'ordens', 'contratos'].some(m => c4.menu.includes(m)) && /receber pedidos de empresas/.test(c4.convite), JSON.stringify(c4));
 
   // C5 o Dinheiro está desligado (pedido de 10/11/2026): sem o botão "Registrar" e sem o cartão "Este mês"
   await H.dorme(1200);

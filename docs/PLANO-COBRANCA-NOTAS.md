@@ -81,3 +81,21 @@ Divergência bloqueia o título e explica o motivo; a Colafix pode recusar a not
 
 ## Pendente
 - **Triagem** (Lei 6.019, arts. 5º-C e 5º-D): **feita (07/11)** no contrato contínuo, antes de o tomador assinar. Falta o parecer jurídico geral sobre o modelo antes do piloto.
+
+## Etapa 3 · Nota do profissional MEI para a prestadora (10/11/2026)
+Exemplo: o Carlos (MEI) trabalhou na Colafix pela Nexus. Ele emite a nota dele para a Nexus; a Nexus emite uma nota para a Colafix pelo total (Etapa 2, já pronta).
+
+Decisões da usuária (10/11/2026):
+- **CNPJ do MEI vem do painel do RH** no "Enviar ao Conectwork" (campo `c` de cada linha, só números). Por enquanto **só a Nexus** manda (painel: `rh/config.conectworkMei`, padrão `['NEXUS']`). Nunca CPF.
+- **Quem confere as notas dos MEIs na Nexus é o dono** (admin ou financeiro da Nexus), não quem lançou a medição pela Colafix.
+- **Prazo para a Nexus pagar o MEI: definir depois.** Por enquanto a Nexus escolhe ao preparar (padrão = prazo do contrato com a Colafix).
+
+Como ficou:
+1. A medição guarda o CNPJ do MEI em cada linha da memória (`memoria[i].cnpj`).
+2. Com a medição aprovada, a Nexus vê "Preparar as notas dos profissionais MEI" (Precisa de você e botão na medição) → tela `#repasse/ver/<medição>` (`modulos/repasse.js`): cada MEI com conta no Conectwork (achado em `cnpjs/`) ganha o espelho `espelhos/{medição}_{CNPJ}` com `origem:'repasse'`, tomador = a Nexus, prestador = a empresa do MEI, valor = o da linha, sem retenções, `contratoId:null`. Quem não tem conta recebe o convite ("Sou MEI" com o CNPJ), por cópia ou WhatsApp.
+3. O MEI (mesmo no cadastro rápido, status `mei`) vê em "Notas a emitir" e "A receber"; emite no Emissor Nacional e anexa; a Nexus confere; vira conta a pagar da Nexus / a receber do MEI (mesmo motor da Etapa 2).
+4. **Funções separadas entre as duas empresas** (a mesma pessoa pode estar nas duas, como a RH da Colafix que também emite pela Nexus): quem lançou a medição pelo tomador não confirma pela prestadora, e quem confirmou não aprova (regras + aviso na tela).
+
+Regras: `espelhoCriarRep` no `firestore.rules` (só admin/financeiro da prestadora, medição aprovada, linha com CNPJ, empresa do CNPJ, valor da linha, id = medição_CNPJ). Testes: `teste-regras.js` (repasse e funções separadas), `teste-repasse.js` (8); no painel, `teste-rhpjpag.js`.
+
+Falta: a Nexus pagar com 3 pessoas diferentes (quem confere a nota, quem libera e quem paga) é a regra de hoje dos títulos; numa empresa pequena pode ser preciso combinar quem faz cada passo.

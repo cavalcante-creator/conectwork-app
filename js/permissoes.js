@@ -45,7 +45,8 @@
     if (ac.ativo !== true) return false;
     const semAprov = typeof mod.semAprovacao === 'function' ? mod.semAprovacao(ctx) : mod.semAprovacao;   /* função: ex. telas do MEI no cadastro rápido */
     if (emp.status !== 'aprovado' && !semAprov) return false;
-    if (mod.contrato && ![].concat(mod.contrato).some(c => (emp.modulos || []).includes(c))) return false;   /* um ou vários: basta ter um */
+    const semCont = typeof mod.semContrato === 'function' && mod.semContrato(ctx);   /* ex.: MEI recebe as notas de repasse sem os módulos da rede */
+    if (mod.contrato && !semCont && ![].concat(mod.contrato).some(c => (emp.modulos || []).includes(c))) return false;   /* um ou vários: basta ter um */
     if (typeof mod.mostrar === 'function' && !mod.mostrar(ctx)) return false;
     if (mod.soAdmin) return ac.cargo === 'admin';   /* ex.: Usuários e acessos (as regras do banco também exigem admin) */
     if (mod.livre) return true;

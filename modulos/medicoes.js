@@ -73,12 +73,12 @@
     let cts;
     try { cts = m ? null : await contratosAtivos(ctx); } catch (e) { U().toast(CW.fb.mensagemErro(e), 'erro'); return; }
     if (cts && !cts.length) { await U().dialogo({ titulo: 'Nenhum contrato ativo', corpo: '<p style="margin:0">Para lançar uma medição, a sua empresa precisa de um contrato de equipe contínua ativo (assinado pelas duas empresas). Veja em Contratos.</p>' }); return; }
-    let itens = (m ? m.memoria : pre ? pre.itens : []).map(x => ({ nome: x.nome, horas: x.horas, valorCentavos: x.valorCentavos }));
+    let itens = (m ? m.memoria : pre ? pre.itens : []).map(x => Object.assign({ nome: x.nome, horas: x.horas, valorCentavos: x.valorCentavos }, x.cnpj ? { cnpj: x.cnpj } : {}));
     if (!itens.length) itens = [{ nome: '', horas: '', valorCentavos: 0 }];
     const ctSel = m ? m.contratoId : pre ? pre.contratoId : (cts.length === 1 ? cts[0]._id : '');
     const per = id => (m ? m.periodicidade : ((cts || []).find(c => c._id === id) || {}).periodicidade) || 'quinzena';
     let dados = null;
-    const linhaItem = (x, i) => `<div class="md-it" data-i="${i}"><input class="md-it-nome" placeholder="Nome do profissional" maxlength="120" value="${esc(x.nome || '')}" aria-label="Nome do profissional ${i + 1}">
+    const linhaItem = (x, i) => `<div class="md-it" data-i="${i}" data-cnpj="${esc(x.cnpj || '')}"><input class="md-it-nome" placeholder="Nome do profissional" maxlength="120" value="${esc(x.nome || '')}" aria-label="Nome do profissional ${i + 1}">
       <input class="md-it-horas" placeholder="Horas" inputmode="decimal" maxlength="8" value="${esc(x.horas === '' || x.horas == null ? '' : String(x.horas).replace('.', ','))}" aria-label="Horas ${i + 1}">
       <input class="md-it-valor" data-mascara="dinheiro" placeholder="0,00" value="${x.valorCentavos ? formatarDinheiro(x.valorCentavos, false) : ''}" aria-label="Valor ${i + 1}">
       <button type="button" class="iconbtn md-it-x" aria-label="Tirar esta linha">${ic('x')}</button></div>`;
@@ -123,7 +123,7 @@
   function ler(d) {
     return Array.from(d.querySelectorAll('.md-it')).map(r => {
       const nome = r.querySelector('.md-it-nome').value.trim().replace(/\s+/g, ' '), h = r.querySelector('.md-it-horas').value.trim().replace(',', '.'), v = U().lerDinheiro(r.querySelector('.md-it-valor').value);
-      return { nome, horas: h === '' ? null : Number(h), valorCentavos: v || 0 };
+      return Object.assign({ nome, horas: h === '' ? null : Number(h), valorCentavos: v || 0 }, /^\d{14}$/.test(r.dataset.cnpj || '') ? { cnpj: r.dataset.cnpj } : {});   /* CNPJ do MEI (vem do painel) segue junto */
     }).filter(x => x.nome || x.valorCentavos);
   }
 
@@ -160,9 +160,12 @@
     const passo = (feito, agoraAqui, txt, info) => `<li class="${feito ? 'done' : agoraAqui ? 'now' : ''}"><span class="dot">${feito ? ic('check') : ''}</span>${esc(txt)}<small>${esc(info || '')}</small></li>`;
     const st = m.status;
     let acoes = '';
-    if (l === 'prestador' && st === 'enviada' && pode(ctx, CONFIRMA)) acoes = `<button class="btn ok" id="md-confirmar">${ic('check')}Confirmar a medição</button><button class="btn dangerous" id="md-divergir">${ic('alert')}Apontar divergência</button>`;
+    const separa = t => `<div class="banner info" id="md-separa">${ic('shield')}<span><strong>Outra pessoa ${t}</strong>Você está nas duas empresas desta medição. Funções separadas: quem lança pela empresa que contrata não confere pela prestadora, e quem confere não aprova.</span></div>`;
+    if (l === 'prestador' && st === 'enviada' && pode(ctx, CONFIRMA) && m.criadoPor === eu) acoes = separa('confere pela prestadora');
+    else if (l === 'prestador' && st === 'enviada' && pode(ctx, CONFIRMA)) acoes = `<button class="btn ok" id="md-confirmar">${ic('check')}Confirmar a medição</button><button class="btn dangerous" id="md-divergir">${ic('alert')}Apontar divergência</button>`;
     if (l === 'tomador' && (st === 'enviada' || st === 'divergencia') && pode(ctx, LANCA)) acoes = `<button class="btn ${st === 'divergencia' ? '' : 'sec'}" id="md-corrigir">${ic('edit')}Corrigir${st === 'divergencia' ? ' e reenviar' : ''}</button><button class="btn ghost" id="md-cancelar">Cancelar medição</button>`;
-    if (l === 'tomador' && st === 'confirmada_prestadora' && pode(ctx, APROVA)) acoes = m.criadoPor === eu
+    if (l === 'tomador' && st === 'confirmada_prestadora' && pode(ctx, APROVA) && m.confirmacao && m.confirmacao.uid === eu && m.criadoPor !== eu) acoes = separa('aprova');
+    else if (l === 'tomador' && st === 'confirmada_prestadora' && pode(ctx, APROVA)) acoes = m.criadoPor === eu
       ? `<div class="banner info">${ic('shield')}<span><strong>Outra pessoa aprova</strong>Você lançou esta medição. Funções separadas: quem lança não aprova sozinho. Peça ao aprovador técnico.</span></div>`
       : `<button class="btn ok" id="md-aprovar">${ic('check')}Aprovar a medição</button>`;
     const temHoras = (m.memoria || []).some(x => x.horas != null);
@@ -181,7 +184,7 @@
           ${m.obs ? `<div class="full"><dt>Observação</dt><dd>${esc(m.obs)}</dd></div>` : ''}</dl></div></section>
         <section class="card" id="md-memoria"><div class="card-h"><span class="ic">${ic('users')}</span><h3>Memória da medição</h3><span class="count">${(m.memoria || []).length}</span></div>
           <div class="scroll"><table><thead><tr><th>Profissional</th>${temHoras ? '<th class="r">Horas</th>' : ''}<th class="r">Valor</th></tr></thead><tbody>
-          ${(m.memoria || []).map(x => `<tr><td>${esc(x.nome)}</td>${temHoras ? `<td class="r">${x.horas == null ? '—' : esc(String(x.horas).replace('.', ',')) + ' h'}</td>` : ''}<td class="r">${esc(brl(x.valorCentavos))}</td></tr>`).join('')}
+          ${(m.memoria || []).map(x => `<tr><td>${esc(x.nome)}${x.cnpj ? `<br><small class="hint">MEI ${esc(U().mascara.cnpj(x.cnpj))}</small>` : ''}</td>${temHoras ? `<td class="r">${x.horas == null ? '—' : esc(String(x.horas).replace('.', ',')) + ' h'}</td>` : ''}<td class="r">${esc(brl(x.valorCentavos))}</td></tr>`).join('')}
           <tr><td><b>Total</b></td>${temHoras ? `<td class="r"><b>${esc(String(Math.round((m.memoria || []).reduce((s, x) => s + (x.horas || 0), 0) * 100) / 100).replace('.', ','))} h</b></td>` : ''}<td class="r"><b>${esc(brl(m.valorCentavos))}</b></td></tr></tbody></table></div></section>
       </div><div class="stack">
         <section class="card" id="md-passos"><div class="card-h"><span class="ic">${ic('clock')}</span><h3>Andamento</h3></div><div class="card-b stack" style="gap:16px">
@@ -190,9 +193,11 @@
             ${passo(!!m.aprovacao, st === 'confirmada_prestadora', 'Aprovada pelo aprovador técnico', m.aprovacao ? formatarDataHora(m.aprovacao.em) + ' · ' + m.aprovacao.nome : 'esperando')}</ul>
           ${acoes ? `<div style="display:flex;gap:8px;flex-wrap:wrap" id="md-acoes">${acoes}</div>` : ''}
           ${zap ? `<div id="md-zap">${zap}</div>` : ''}
+          ${st === 'aprovada' && l === 'prestador' && (m.memoria || []).some(x => x.cnpj) ? `<div><button class="btn" id="md-repasse">${ic('users')}Notas dos profissionais MEI</button><p class="hint" style="margin:6px 0 0;font-size:12.5px">Cada profissional MEI emite a nota dele para a sua empresa pelo valor da linha.</p></div>` : ''}
           ${st === 'aprovada' ? `<div id="md-espelho"><p class="hint" style="margin:0;font-size:12.5px">Próximo passo: o espelho da nota fiscal, com os dados para a prestadora emitir.</p></div>` : ''}
         </div></section></div></div>`;
     ligarDetalhe(el, ctx, m);
+    const rp = document.getElementById('md-repasse'); if (rp) rp.onclick = () => CW.ir('repasse/ver/' + id);
     if (CW.avisar) CW.avisar.ligar(el);
     if (CW.documentos && l === 'tomador' && st !== 'cancelada') CW.documentos.alerta(document.getElementById('md-docs'), m.prestadorId, m.prestadorNome);
     if (st === 'aprovada' && CW.espelhos) CW.espelhos.blocoMedicao(document.getElementById('md-espelho'), ctx, m);
@@ -233,7 +238,8 @@
       const r = JSON.parse(json);
       if (r.v !== 1 || !/^\d{14}$/.test(String(r.cnpj || '')) || !Array.isArray(r.itens) || !r.itens.length || !Number.isInteger(r.total) || !/^\d{4}-\d{2}(-[12])?$/.test(r.periodo || '')) return null;
       return { periodo: r.periodo, cnpj: r.cnpj, prestadorNome: String(r.nome || ''), total: r.total, ref: String(r.ref || '').slice(0, 80),
-        itens: r.itens.slice(0, 300).map(x => ({ nome: String(x.n || '').slice(0, 120), horas: x.h == null ? null : Number(x.h), valorCentavos: Math.round(Number(x.v) || 0) })) };
+        itens: r.itens.slice(0, 300).map(x => Object.assign({ nome: String(x.n || '').slice(0, 120), horas: x.h == null ? null : Number(x.h), valorCentavos: Math.round(Number(x.v) || 0) },
+          /^\d{14}$/.test(String(x.c || '')) && U().validarCNPJ(String(x.c)) ? { cnpj: String(x.c) } : {})) };   /* c = CNPJ do MEI (10/11/2026): cada um recebe o espelho da nota dele */
     } catch (e) { return null; }
   }
   async function importar(el, ctx, payload) {

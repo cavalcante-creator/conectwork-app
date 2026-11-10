@@ -110,13 +110,15 @@
     try {
       const [a, b] = await Promise.all([db.doc('medicoes/' + id).get().catch(() => null), db.doc('espelhos/' + id).get()]);
       m = a ? CW.fb.dados(a) : null; e = CW.fb.dados(b);
+      if (!m && e && e.origem === 'repasse') m = { origem: 'repasse', contratoId: null, tomadorId: e.tomadorId, prestadorId: e.prestadorId, tomadorNome: e.tomadorNome, prestadorNome: e.prestadorNome,
+        periodo: e.periodo, valorCentavos: e.valorCentavos, status: 'aprovada', memoria: [{ nome: e.prestadorNome, valorCentavos: e.valorCentavos }] };
       if (!m) { const o = CW.fb.dados(await db.doc('ordens/' + id).get().catch(() => null) || { exists: false, data: () => null }); if (o) { m = deOs(o, id); if (e) m.periodo = e.periodo; } }
       if (!m) return fim('danger', 'Medição ou ordem de serviço não encontrada', 'Ela pode ter sido aberta por um link antigo.');
       if (m.tomadorId !== ctx.contexto.empresaId) return fim('warn', 'Esta medição não é para a sua empresa pagar', 'Só quem contrata prepara o espelho.');
       if (!e && m.status !== 'aprovada') return fim('warn', m.origem === 'os' ? 'A entrega ainda não foi aceita' : 'A medição ainda não foi aprovada', m.origem === 'os' ? 'O espelho só é preparado depois que quem contrata aceita a entrega da OS.' : 'O espelho só é preparado depois que o aprovador técnico aprova a medição.');
       if (e && e.status !== 'aguardando_nota') return fim('warn', 'Este espelho não pode mais ser corrigido', 'A nota já foi enviada.');
-      const [cc, ee, pp] = await Promise.all([db.doc('contratos/' + m.contratoId).get(), db.doc('empresas/' + m.tomadorId).get(), db.doc('empresas/' + m.tomadorId + '/privado/cadastro').get()]);
-      c = CW.fb.dados(cc) || {}; emp = CW.fb.dados(ee) || ctx.contexto.empresa || {}; pv = CW.fb.dados(pp) || {};
+      const [cc, ee, pp] = await Promise.all([m.contratoId ? db.doc('contratos/' + m.contratoId).get() : Promise.resolve(null), db.doc('empresas/' + m.tomadorId).get(), db.doc('empresas/' + m.tomadorId + '/privado/cadastro').get()]);
+      c = (cc && CW.fb.dados(cc)) || {}; emp = CW.fb.dados(ee) || ctx.contexto.empresa || {}; pv = CW.fb.dados(pp) || {};
     } catch (err) { return fim('danger', 'Não foi possível abrir a medição', CW.fb.mensagemErro(err)); }
     m._id = id; ja = e;
     document.getElementById('titulo').textContent = (ja ? 'Corrigir espelho · ' : 'Espelho · ') + periodoTxt(m.periodo);
@@ -139,7 +141,7 @@
             <div class="fgrid">${RET.map(([k, n]) => `<label class="f c6"><span>${n}</span><input id="es-r-${k}" data-mascara="dinheiro" inputmode="numeric" placeholder="0,00" value="${r0[k] ? formatarDinheiro(r0[k], false) : ''}"></label>`).join('')}</div></div>
           <div class="md-total"><span>Líquido a pagar</span><b id="es-liq">${esc(brl(m.valorCentavos))}</b></div>
           <dl class="dl"><div class="full"><dt>Vencimento previsto</dt><dd id="es-venc">${esc(vencTxt(venc))}</dd></div></dl>
-          <p class="hint" style="margin:-6px 0 0;font-size:12.5px">O vencimento vem do contrato e não muda no espelho. Para mudar, proponha no contrato: só vale com o aceite da prestadora.</p>
+          <p class="hint" style="margin:-6px 0 0;font-size:12.5px">${m.origem === 'repasse' ? 'Prazo escolhido quando a nota do profissional foi preparada.' : 'O vencimento vem do contrato e não muda no espelho. Para mudar, proponha no contrato: só vale com o aceite da prestadora.'}</p>
           <label class="f"><span>Observação para a prestadora <i>(opcional)</i></span><input id="es-obs" maxlength="300" value="${esc((ja && ja.obs) || '')}"></label>
           <p class="err" id="es-erro" role="alert"></p>
           <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="submit" class="btn" id="es-salvar">${ic('send')}${ja ? 'Salvar correção' : 'Enviar para a prestadora'}</button></div>
@@ -213,10 +215,11 @@
           ${temRet ? '' : '<p class="hint" style="margin:0;font-size:12.5px">Sem retenções informadas.</p>'}
           <div class="md-total"><span>Líquido a pagar</span><b id="es-liq">${esc(brl(x.liquidoCentavos))}</b></div>
           <dl class="dl"><div class="full"><dt>Vencimento previsto</dt><dd id="es-venc">${esc(vencTxt(x.vencimentoDias))}</dd></div></dl>
-          <p class="hint" style="margin:0;font-size:12.5px">Vem do contrato. O dinheiro sai de quem contrata direto para a prestadora; não passa pelo Conectwork.</p>
+          <p class="hint" style="margin:0;font-size:12.5px">${x.origem === 'repasse' ? `Prazo da ${esc(x.tomadorNome)}. O dinheiro sai da ${esc(x.tomadorNome)} direto para você; não passa pelo Conectwork.` : 'Vem do contrato. O dinheiro sai de quem contrata direto para a prestadora; não passa pelo Conectwork.'}</p>
         </div></section>
         <section class="card" id="es-andamento"><div class="card-h"><span class="ic">${ic('clock')}</span><h3>Andamento</h3></div><div class="card-b stack" style="gap:14px">
-          <ul class="tl"><li class="done"><span class="dot">${ic('check')}</span>${x.origem === 'os' ? 'Entrega aceita (OS ' + esc(x.osNumero) + ')' : 'Medição aprovada'}<small><a href="#${x.origem === 'os' ? 'ordens' : 'medicoes'}/ver/${esc(x.medicaoId)}" class="linkbtn" style="font-size:12px">${x.origem === 'os' ? 'ver a OS' : 'ver a medição'}</a></small></li>
+          <ul class="tl">${x.origem === 'repasse' ? `<li class="done"><span class="dot">${ic('check')}</span>Horas aprovadas${x.horas != null ? ': ' + esc(String(x.horas).replace('.', ',')) + ' h' : ''}<small>${l === 'tomador' ? `<a href="#medicoes/ver/${esc(x.medicaoId)}" class="linkbtn" style="font-size:12px">ver a medição</a>` : 'medição aprovada pela empresa onde você trabalhou'}</small></li>`
+            : `<li class="done"><span class="dot">${ic('check')}</span>${x.origem === 'os' ? 'Entrega aceita (OS ' + esc(x.osNumero) + ')' : 'Medição aprovada'}<small><a href="#${x.origem === 'os' ? 'ordens' : 'medicoes'}/ver/${esc(x.medicaoId)}" class="linkbtn" style="font-size:12px">${x.origem === 'os' ? 'ver a OS' : 'ver a medição'}</a></small></li>`}
             <li class="done"><span class="dot">${ic('check')}</span>Espelho preparado${x.versao > 1 ? ` (versão ${x.versao})` : ''}<small>${esc(formatarDataHora(x.criadoEm))} · ${esc(x.criadoPorNome || '')}${x.versao > 1 ? ` · corrigido ${esc(formatarDataHora(x.atualizadoEm))} por ${esc(x.atualizadoPorNome || '')}` : ''}</small></li>
             <li class="${x.nota ? 'done' : x.status === 'aguardando_nota' ? 'now' : ''}"><span class="dot">${x.nota ? ic('check') : ''}</span>Nota fiscal enviada pela prestadora<small>${x.nota ? esc(formatarDataHora(x.nota.enviadoEm) + ' · ' + (x.nota.enviadoPorNome || '')) : x.emissao ? 'emissor aberto ' + esc(formatarDataHora(x.emissao.em)) : 'esperando'}</small></li>
             <li class="${x.status === 'nota_ok' ? 'done' : x.status === 'nota_enviada' ? 'now' : ''}"><span class="dot">${x.status === 'nota_ok' ? ic('check') : ''}</span>Conferência: contrato + medição + nota<small>${x.conferenciaNota ? esc(formatarDataHora(x.conferenciaNota.em) + ' · ' + x.conferenciaNota.nome) : ''}</small></li></ul>
@@ -261,7 +264,7 @@
     const { esc, ic, formatarDataHora } = U(), n = x.nota, cf = n.conferencia || {}, N = CW.nfse;
     const itens = (cf.itens || []).map(i => `<li class="${i.ok ? 'ok' : 'no'}">${ic(i.ok ? 'check' : 'alert')}<span>${esc(i.txt)}</span></li>`).join('');
     const pr = N ? N.fmtCnpj(x.prestadorCnpj) : x.prestadorCnpj;
-    const tripla = `<ul class="es-cf" id="es-tripla"><li class="ok">${ic('check')}<span>Contrato ativo com ${esc(x.prestadorNome)} (${esc(pr)})</span></li><li class="ok">${ic('check')}<span>Medição aprovada: ${esc(brl(x.valorCentavos))}</span></li>
+    const tripla = `<ul class="es-cf" id="es-tripla"><li class="ok">${ic('check')}<span>${x.origem === 'repasse' ? `Profissional MEI da medição: ${esc(x.prestadorNome)} (${esc(pr)})` : `Contrato ativo com ${esc(x.prestadorNome)} (${esc(pr)})`}</span></li><li class="ok">${ic('check')}<span>${x.origem === 'repasse' ? 'Linha da medição aprovada' : 'Medição aprovada'}: ${esc(brl(x.valorCentavos))}</span></li>
       <li class="${cf.ok ? 'ok' : 'no'}">${ic(cf.ok ? 'check' : 'alert')}<span>${cf.ok ? 'A nota bate com o espelho' : cf.manual ? 'Nota para conferir à mão' : 'A nota tem diferenças'}</span></li></ul>`;
     const botoes = lado(x, ctx) === 'tomador' && x.status === 'nota_enviada' && pode(ctx)
       ? `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ok" id="es-nf-ok">${ic('check')}Nota conferida</button><button class="btn dangerous" id="es-nf-recusar">${ic('x')}Recusar a nota</button></div>` : '';
@@ -442,7 +445,7 @@
 
   CW.registrarModulo({
     id: 'espelhos', nome: 'Espelhos da nota', nomeCurto: 'Espelhos', icone: 'receipt', ordem: 27,
-    para: ['empresa'], contrato: ['contratos', 'cobrancas'],
+    para: ['empresa'], contrato: ['contratos', 'cobrancas'], semContrato: ctx => CW.repasse ? CW.repasse.ehMei(ctx) : false, semAprovacao: ctx => CW.repasse ? CW.repasse.meiSemAprov(ctx) : false,
     iniciar(ctx) {
       espT = []; espP = []; medsAprov = []; osAprov = []; pronto = false; emissorCache = null;
       const db = CW.fb.db(), emp = ctx.contexto.empresaId, ok = { t: false, p: false, m: false };

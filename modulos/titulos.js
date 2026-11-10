@@ -121,7 +121,7 @@
         <section class="card" id="tt-dados"><div class="card-h"><span class="ic">${ic('wallet')}</span><h3>${l === 'tomador' ? 'Conta a pagar' : 'Conta a receber'}</h3><span style="margin-left:auto">${pill(t)}</span></div><div class="card-b"><dl class="dl">
           <div><dt>Quem paga</dt><dd>${esc(t.tomadorNome)}</dd></div><div><dt>Quem recebe</dt><dd>${esc(t.prestadorNome)}</dd></div>
           <div><dt>Valor da nota</dt><dd>${esc(brl(t.valorCentavos))}</dd></div><div><dt>Líquido a pagar</dt><dd style="font-size:20px" id="tt-liq">${esc(brl(t.liquidoCentavos))}</dd></div>
-          <div><dt>Vencimento</dt><dd id="tt-vencimento">${esc(dataTxt(v))}</dd></div><div><dt>Regra do contrato</dt><dd>${t.vencimentoDias} dia${t.vencimentoDias === 1 ? '' : 's'} depois da nota válida</dd></div>
+          <div><dt>Vencimento</dt><dd id="tt-vencimento">${esc(dataTxt(v))}</dd></div><div><dt>${t.contratoId ? "Regra do contrato" : "Prazo combinado"}</dt><dd>${t.vencimentoDias} dia${t.vencimentoDias === 1 ? '' : 's'} depois da nota válida</dd></div>
           <div><dt>Período</dt><dd>${esc(periodoTxt(t.periodo))}</dd></div><div><dt>Nota fiscal</dt><dd>${t.notaNumero ? 'nº ' + esc(t.notaNumero) : '—'} · <a href="#espelhos/ver/${esc(t.espelhoId)}" class="linkbtn" style="font-size:13px">ver o espelho</a></dd></div>
           ${t.agendamento ? `<div><dt>Pagamento agendado para</dt><dd id="tt-agenda">${esc(dataTxt(t.agendamento.data))}</dd></div>` : ''}
           ${t.liquidacao ? `<div><dt>Pago em</dt><dd>${esc(dataTxt(t.liquidacao.data))}</dd></div>` : ''}</dl></div></section>
@@ -284,7 +284,7 @@
 
   CW.registrarModulo({
     id: 'titulos', nome: 'Pagar e receber', nomeCurto: 'Pagar/receber', icone: 'wallet', ordem: 28,
-    para: ['empresa'], contrato: ['cobrancas', 'contratos'],
+    para: ['empresa'], contrato: ['cobrancas', 'contratos'], semContrato: ctx => CW.repasse ? CW.repasse.ehMei(ctx) : false, semAprovacao: ctx => CW.repasse ? CW.repasse.meiSemAprov(ctx) : false,
     iniciar(ctx) {
       tT = []; tP = []; pronto = false;
       const db = CW.fb.db(), emp = ctx.contexto.empresaId, ok = { t: false, p: false };
