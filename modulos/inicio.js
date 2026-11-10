@@ -110,7 +110,7 @@
   /* "Este mês": entrou, saiu e sobrou (as mesmas contas da tela Dinheiro) */
   function meiMes() {
     const b = document.getElementById('mei-mes'); if (!b) return;
-    if (!CW.dinheiro || !CW.dinheiro.pronto()) { b.hidden = true; return; }
+    if (!CW.dinheiro || !CW.dinheiro.ligado() || !CW.dinheiro.pronto()) { b.hidden = true; return; }
     const { esc } = U(), r = CW.dinheiro.doMes(ctxAgora(), isoHoje().slice(0, 7)), brl = c => U().formatarDinheiro(c).replace(/,00$/, '');
     b.innerHTML = `<p class="mei-rot">Este mês</p><div class="mei-mes-n"><div><small>Entrou</small><b class="ent">${esc(brl(r.entrou))}</b></div><div><small>Saiu</small><b class="sai">${esc(brl(r.saiu))}</b></div><div><small>${r.sobrou < 0 ? 'Faltou' : 'Sobrou'}</small><b>${esc(brl(Math.abs(r.sobrou)))}</b></div></div>`;
     b.hidden = false; b.onclick = () => CW.ir('dinheiro');

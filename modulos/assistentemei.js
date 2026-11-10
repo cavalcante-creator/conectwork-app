@@ -67,11 +67,13 @@
   const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const SUGESTOES = ['registrar', 'faturei', 'limite', 'das', 'receber', 'semana', 'obrig', 'impostos'];
 
+  const dinOn = () => !!(CW.dinheiro && CW.dinheiro.ligado && CW.dinheiro.ligado());
+  const RV = () => R.filter(x => x.id !== 'registrar' || dinOn());   /* sem o Dinheiro, não oferece registrar venda/gasto */
   function achar(texto) {
     const q = norm(texto), pal = q.split(/[^a-z0-9]+/).filter(Boolean);
     const tem = w => pal.some(x => x.startsWith(w));   /* palavra inteira ou começo dela ("das" não casa com "todas") */
     let melhor = null, nota = 0;
-    R.forEach(x => {
+    RV().forEach(x => {
       if (x.p.some(p => norm(p) === q)) { melhor = x; nota = 999; return; }
       x.k.forEach(grp => { const n = grp.length * 10 + grp.join('').length; if (grp.every(tem) && n > nota) { melhor = x; nota = n; } });
     });
@@ -79,7 +81,7 @@
   }
   async function responder(texto, ctx) {
     /* frase de lançamento ("vendi R$ 200 no pix"): prepara e pede confirmação; só grava depois do "Confirmar" */
-    const lanc = CW.dinheiro && CW.dinheiro.interpretar && CW.dinheiro.interpretar(texto);
+    const lanc = CW.dinheiro && CW.dinheiro.ligado && CW.dinheiro.ligado() && CW.dinheiro.interpretar && CW.dinheiro.interpretar(texto);
     if (lanc) return { id: 'lanc', t: `Entendi assim: ${CW.dinheiro.resumoTxt(lanc)}. Posso registrar?`, lanc };
     const x = achar(texto);
     if (x) return Object.assign({ id: x.id }, await x.r(ctx));
@@ -92,7 +94,7 @@
     el.innerHTML = `<div class="as-wrap"><section class="card as-card" id="as-chat"><div class="as-msgs" id="as-msgs" aria-live="polite">
         ${msgs.map((m, i) => `<div class="as-m ${m.de === 'eu' ? 'eu' : ''}" ${m.id ? `data-resp="${esc(m.id)}"` : ''}><p>${esc(m.t)}</p>${(m.ir || []).length ? `<div class="as-ir">${m.ir.map(([t, r]) => `<button class="btn sm sec" data-ir="${esc(r)}">${esc(t)}</button>`).join('')}</div>` : ''}
           ${m.lanc && !m.feito ? `<div class="as-ir"><button class="btn sm" data-lanc-ok="${i}">${ic('check')}Confirmar</button><button class="btn sm sec" data-lanc-mudar="${i}">Mudar</button><button class="btn sm ghost" data-lanc-nao="${i}">Cancelar</button></div>` : ''}</div>`).join('')}</div>
-        <div class="as-sug" id="as-sug">${SUGESTOES.map(id => R.find(x => x.id === id)).map(x => `<button class="as-chip" data-p="${esc(x.p[0])}">${esc(x.p[0])}</button>`).join('')}</div>
+        <div class="as-sug" id="as-sug">${SUGESTOES.map(id => RV().find(x => x.id === id)).filter(Boolean).map(x => `<button class="as-chip" data-p="${esc(x.p[0])}">${esc(x.p[0])}</button>`).join('')}</div>
         <form class="as-form" id="as-form"><input id="as-q" maxlength="200" autocomplete="off" placeholder="Pergunte ou registre: vendi R$ 200 no Pix" aria-label="Sua pergunta ou o que quer registrar"><button class="btn" type="submit">${ic('send')}Perguntar</button></form></section>
       <p class="hint" style="margin:12px 0 0;font-size:12px">${esc(AVISO)} O assistente com inteligência artificial, que conversa sobre qualquer assunto, chega numa próxima etapa.</p></div>`;
     const box = document.getElementById('as-msgs'); box.scrollTop = box.scrollHeight;

@@ -34,14 +34,13 @@ const { ok, fim } = H.placar('cadastromei');
 
   // C4 a gestão está liberada sem esperar a análise; as telas da rede (demandas, contratos, notas) não aparecem; convite para completar
   const c4 = await page.evaluate(() => ({ menu: Array.from(document.querySelectorAll('#menu [data-mod]')).map(b => b.dataset.mod), convite: (document.getElementById('mei-rede') || {}).innerText || '', ola: document.getElementById('mh-ola').innerText }));
-  ok('C4 "Olá, Zeca" com Dinheiro, Agenda, Assistente e Meu negócio liberados; sem Demandas, Contratos e Notas; convite para completar o cadastro',
-    c4.ola === 'Olá, Zeca' && ['dinheiro', 'agenda', 'assistentemei', 'negocio'].every(m => c4.menu.includes(m)) && !['ordens', 'contratos', 'espelhos', 'titulos'].some(m => c4.menu.includes(m)) && /receber pedidos de empresas/.test(c4.convite), JSON.stringify(c4));
+  ok('C4 "Olá, Zeca" com Agenda, Assistente e Meu negócio liberados (Dinheiro desligado); sem Demandas, Contratos e Notas; convite para completar o cadastro',
+    c4.ola === 'Olá, Zeca' && ['agenda', 'assistentemei', 'negocio'].every(m => c4.menu.includes(m)) && !['dinheiro', 'ordens', 'contratos', 'espelhos', 'titulos'].some(m => c4.menu.includes(m)) && /receber pedidos de empresas/.test(c4.convite), JSON.stringify(c4));
 
-  // C5 dá para registrar dinheiro já no cadastro rápido
-  await page.click('#mei-registrar'); await page.waitForSelector('dialog[open] #dn-valor'); await page.type('#dn-valor', '15000'); await page.fill('#dn-desc', 'Troca de chuveiro');
-  await page.click('dialog[open] [data-dlg-b="1"]'); await H.dorme(500);
-  const m5 = Object.values((await srv()).docs).find(x => x.descricao === 'Troca de chuveiro');
-  ok('C5 já registra dinheiro no cadastro rápido', m5 && m5.empresaId === id && m5.valorCentavos === 15000, JSON.stringify(m5));
+  // C5 o Dinheiro está desligado (pedido de 10/11/2026): sem o botão "Registrar" e sem o cartão "Este mês"
+  await H.dorme(1200);
+  const c5 = await page.evaluate(() => ({ fab: !!document.getElementById('mei-registrar'), mes: !(document.getElementById('mei-mes') || { hidden: true }).hidden }));
+  ok('C5 sem o botão "Registrar" e sem o cartão "Este mês" (Dinheiro desligado)', !c5.fab && !c5.mes, JSON.stringify(c5));
 
   // C6 o convite abre "Meu cadastro" com "Completar cadastro para receber pedidos"
   await page.click('#mei-rede'); await page.waitForSelector('#mc-corrigir', { timeout: 6000 });

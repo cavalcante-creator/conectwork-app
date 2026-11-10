@@ -11,5 +11,6 @@ window.CONECTWORK_CONFIG = {
   },
   ambiente: "producao",            // "producao" ou "teste"
   urlApp: "https://conectwork.com.br/",
+  meiDinheiro: false,              // true liga o Dinheiro do MEI (entradas, saídas e o botão Registrar)
   loginMicrosoft: false            // true quando o app estiver registrado no Azure e ligado no Firebase
 };

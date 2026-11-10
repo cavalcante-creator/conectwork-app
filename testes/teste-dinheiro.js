@@ -5,7 +5,7 @@ const H = require('./harness');
 const { ok, fim } = H.placar('dinheiro');
 
 (async () => {
-  const { browser, page, erros } = await H.abrir();
+  const { browser, page, erros } = await H.abrir({ dinheiro: true });
   const { d } = H.seed(d => {
     d.users['lia@lia.com.br'] = { uid: 'uLIA', pass: 'senha123' }; d.docs['usuarios/uLIA'] = { nome: 'Lia Lima', email: 'lia@lia.com.br' };
     d.docs['acessos/lia_uLIA'] = { uid: 'uLIA', empresaId: 'lia', nome: 'Lia Lima', email: 'lia@lia.com.br', cargo: 'admin', extras: [], sem: [], ativo: true };

@@ -1557,3 +1557,14 @@ html.mei .mh-serv.prim{background:var(--blue);color:#fff}
 html.mei .das-it.pago{background:var(--mei-ok-bg);border-color:transparent}
 html.mei .das-selo.pago{background:var(--mei-ok);color:#fff}
 html.mei .ck-it.bom .ck-dot{background:var(--mei-ok-bg);color:var(--mei-ok)}
+
+/* MEI (10/11/2026, foto da usuária): o Início ocupa a largura toda e a lateral tem o mesmo azul da faixa da marca */
+html.mei .mei-home{max-width:none}
+@media (min-width:1100px){html.mei .mh{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 18px;align-items:start}
+  html.mei .mh>*{grid-column:1/-1}
+  html.mei .mh>#mh-demandas,html.mei .mh>#mh-demandas+.mei-hoje{grid-column:auto;height:100%}
+  html.mei .mh>#mei-lim:not([hidden]),html.mei .mh>#mei-lim:not([hidden])+#mh-dados{grid-column:auto}
+  html.mei .mh>#mei-lim:not([hidden]){align-self:end}}
+html.mei .shell .side,html.mei .shell .logo{background:#13265E}
+:root.mei[data-theme="dark"] .shell .side,:root.mei[data-theme="dark"] .shell .logo{background:#0B1A45}
+@media (prefers-color-scheme:dark){:root.mei:not([data-theme="light"]) .shell .side,:root.mei:not([data-theme="light"]) .shell .logo{background:#0B1A45}}

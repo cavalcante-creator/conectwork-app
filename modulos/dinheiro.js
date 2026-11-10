@@ -237,15 +237,17 @@
     document.body.appendChild(b);
   }
 
+  /* Dinheiro desligado (10/11/2026, pedido da usuária: "pode tirar a parte de controle de dinheiro e o botão de registro"); liga com meiDinheiro:true no config.js */
+  const ligado = () => (window.CONECTWORK_CONFIG || {}).meiDinheiro === true;
   const ehMei = ctx => { let p = ''; try { p = sessionStorage.getItem('cw.porte.' + ctx.empresaId) || ''; } catch (e) {} return String(p).startsWith('MEI'); };
   /* telas da gestão do MEI liberadas também no cadastro rápido (status 'mei') e enquanto o cadastro completo é analisado */
   const meiSemAprov = ctx => ehMei(ctx) && ['mei', 'analise', 'pendencia'].includes(((ctx.empresa) || {}).status);
   CW.registrarModulo({
     id: 'dinheiro', nome: 'Dinheiro', icone: 'bank', ordem: 26.5,
     para: ['empresa'], livre: true, semAprovacao: ctx => meiSemAprov(ctx),
-    mostrar: ctx => ehMei(ctx),
+    mostrar: ctx => ligado() && ehMei(ctx),
     iniciar(ctx) {
-      movs = null; mes = null;
+      movs = null; mes = null; if (!ligado()) return () => {};
       const db = CW.fb.db(), emp = ctx.contexto.empresaId;
       const redesenha = () => { const el = document.getElementById('view'), at = CW.app.atual(); if (el && at && at.modulo === 'dinheiro') desenhar(el, Object.assign({}, ctx, { sessao: CW.sessao.estado() }));
         window.dispatchEvent(new CustomEvent('cw:dinheiro')); CW.app.pendenciasMudaram(); };
@@ -263,5 +265,5 @@
     buscar() { return ativos().map(m => ({ t: m.descricao, s: `${m.tipo === 'entrada' ? 'Entrou' : 'Saiu'} ${brl(m.valorCentavos)} · ${dataBR(dataConta(m) || m.data)}`, rota: 'dinheiro', txt: [m.categoria, m.cliente, brl(m.valorCentavos)].join(' ') })); },
     telas: { mes: { nome: 'Dinheiro', sub: 'O que entrou e o que saiu no mês, o que falta receber e pagar. Registre em segundos.', render: desenhar } }
   });
-  CW.dinheiro = { interpretar, registrar, gravar, resumoTxt, doMes, abertos, faturamentoPorMes, pronto: () => !!movs, hoje, FORMA, CAT };
+  CW.dinheiro = { interpretar, registrar, gravar, resumoTxt, doMes, abertos, faturamentoPorMes, pronto: () => !!movs, ligado, hoje, FORMA, CAT };
 })();
