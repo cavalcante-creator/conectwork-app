@@ -21,7 +21,7 @@
   const anoAtual = () => new Date().getFullYear();
   const mesesAtras = n => { const out = [], d = new Date(); d.setDate(1); for (let i = 0; i < n; i++) { out.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`); d.setMonth(d.getMonth() - 1); } return out; };
 
-  let D = null, fiscalPend = null;   /* D: { esp, tit, os, fat, ind, porte, fiscal } */
+  let D = null, fiscalPend = null, fiscalDoc = null, inicioMei = null;   /* fiscalDoc/inicioMei: DAS do ano e alerta do Início do MEI */   /* D: { esp, tit, os, fat, ind, porte, fiscal } */
 
   async function carregar(ctx) {
     const db = CW.fb.db(), emp = ctx.contexto.empresaId, q = col => db.collection(col).where('prestadorId', '==', emp).get().then(s => CW.fb.lista(s)).catch(() => []);
@@ -205,8 +205,11 @@
       if (ctx.soLeitura || !VE.includes(cargo(ctx))) return;
       const db = CW.fb.db(), emp = ctx.contexto.empresaId;
       Promise.all([db.doc('empresas/' + emp + '/privado/cadastro').get().catch(() => null), db.doc('fiscal/' + emp).get().catch(() => null)]).then(([pv, fi]) => {
-        const porte = (((pv && CW.fb.dados(pv)) || {}).dados || {}).porte || '';
-        fiscalPend = String(porte).startsWith('MEI') ? situacaoFiscal((fi && CW.fb.dados(fi)) || {}) : null; CW.app.pendenciasMudaram(); });
+        const dd = (((pv && CW.fb.dados(pv)) || {}).dados || {}), porte = dd.porte || '';
+        fiscalDoc = (fi && CW.fb.dados(fi)) || { das: {}, dasn: {} };
+        const cr = (ctx.contexto.empresa || {}).criadoEm, crMs = cr && (typeof cr.toMillis === 'function' ? cr.toMillis() : cr.seconds ? cr.seconds * 1000 : Date.parse(cr));
+        inicioMei = dd.abertura ? String(dd.abertura).slice(0, 7) : crMs ? new Date(crMs).toISOString().slice(0, 7) : hojeIso().slice(0, 4) + '-01';
+        fiscalPend = String(porte).startsWith('MEI') ? situacaoFiscal(fiscalDoc) : null; CW.app.pendenciasMudaram(); });
       return () => { fiscalPend = null; };
     },
     pendencias(ctx) {
@@ -220,5 +223,5 @@
     telas: { painel: { nome: 'Meu negócio', sub: 'Faturamento do ano, limite do MEI, de quem vem o seu faturamento, outros clientes e o que você tem a receber.', render } }
   });
   /* agenda e assistente do MEI (10/11/2026): leem a situação fiscal que esta tela já calculou, e carregar/contas sob pedido */
-  CW.negocio = { contas, carregar, LIMITE_MEI, situacaoFiscal, vencDas, fiscal: () => fiscalPend };
+  CW.negocio = { contas, carregar, LIMITE_MEI, situacaoFiscal, vencDas, fiscal: () => fiscalPend, fiscalDoc: () => fiscalDoc, inicioMei: () => inicioMei, PGMEI, DASN, recalcular: f => { fiscalDoc = f; fiscalPend = situacaoFiscal(f); CW.app.pendenciasMudaram(); } };
 })();

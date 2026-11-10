@@ -54,43 +54,57 @@
   }
   window.addEventListener('cw:pendencias', e => { pvDesenha(e.detail || []); meiAtualiza(e.detail || []); });
 
-  /* ---------- Início do MEI (opção A, escolhida em 10/11/2026): saudação, o que tem hoje, botões grandes e o limite ---------- */
-  const TILES = [
-    { id: 'agenda', t: 'Minha agenda', ic: 'clock', cor: 'sol' },
-    { id: 'ordens', t: 'Demandas', ic: 'clipboard', cor: 'ceu' },
-    { id: 'dinheiro', t: 'Dinheiro', ic: 'bank', cor: 'agua' },
-    { id: 'espelhos', t: 'Emitir nota', ic: 'receipt', cor: 'coral' },
-    { id: 'negocio', t: 'Meu MEI', ic: 'chart', cor: 'lilas' },
-    { id: 'assistentemei', t: 'Tire uma dúvida', ic: 'help', cor: 'ceu' }
+  /* ---------- Início do MEI (10/11/2026): faixa azul com nome e CNPJ, alerta do DAS, demandas, "Serviços pra você",
+     o mês, o limite e "Dados do seu MEI" (layout inspirado na referência que a usuária aprovou; marca e cores do Conectwork) ---------- */
+  const SERV = [
+    { id: 'das', mod: 'mei', rota: 'mei/das', t: 'DAS', ic: 'receipt', prim: true },
+    { id: 'checkup', mod: 'mei', rota: 'mei/checkup', t: 'Check-up', ic: 'shield' },
+    { id: 'negocio', mod: 'negocio', rota: 'negocio', t: 'Declaração', ic: 'file' },
+    { id: 'dinheiro', mod: 'dinheiro', rota: 'dinheiro', t: 'Dinheiro', ic: 'bank' },
+    { id: 'agenda', mod: 'agenda', rota: 'agenda', t: 'Agenda', ic: 'clock' },
+    { id: 'espelhos', mod: 'espelhos', rota: 'espelhos', t: 'Emitir nota', ic: 'receipt' },
+    { id: 'assistentemei', mod: 'assistentemei', rota: 'assistentemei', t: 'Dúvidas', ic: 'help' }
   ];
+  const MES3 = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+  const CARTAO_CNPJ = 'https://solucoes.receita.fazenda.gov.br/Servicos/cnpjreva/Cnpjreva_Solicitacao.asp';
   const isoHoje = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
   const ctxAgora = () => Object.assign({}, { contexto: CW.sessao.contexto(), sessao: CW.sessao.estado(), soLeitura: CW.permissoes.soLeitura(CW.sessao.contexto()) });
   function hojeLinhas() { const h = isoHoje(); return CW.agenda ? CW.agenda.linhas(ctxAgora(), h, h).filter(l => !l.feito) : []; }
-  function subTile(id, n) {
+  const fiscal = () => CW.negocio && CW.negocio.fiscal && CW.negocio.fiscal();
+  const dasVencidos = () => { const fd = CW.negocio && CW.negocio.fiscalDoc && CW.negocio.fiscalDoc();
+    if (fd && CW.meuDas) return CW.meuDas.vencidosDe(fd, CW.negocio.inicioMei());   /* desde a abertura do MEI, igual à tela DAS do ano */
+    const f = fiscal(); return f ? f.das.filter(x => !x.pago && x.vencido) : []; };
+  function subServ(id, n) {
     const ctx = ctxAgora();
-    if (id === 'agenda') { const k = hojeLinhas().length; return k ? `${k} ${k === 1 ? 'coisa' : 'coisas'} hoje` : 'Nada para hoje'; }
-    if (id === 'ordens') return n ? `${n} ${n === 1 ? 'para responder' : 'para responder'}` : 'Nenhuma nova';
-    if (id === 'titulos') { const l = (CW.titulos && CW.titulos.proximos(ctx, 50) || []).filter(t => t.lado === 'prestador'); const tot = l.reduce((a, t) => a + (t.centavos || 0), 0); return tot ? U().formatarDinheiro(tot) : 'Nada em aberto'; }
+    if (id === 'das') { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1); const v = dasVencidos().length; return v ? (v === 1 ? '1 vencido' : v + ' vencidos') : `${MES3[d.getMonth()][0].toUpperCase() + MES3[d.getMonth()].slice(1)}/${d.getFullYear()}`; }
+    if (id === 'checkup') return 'CNPJ MEI';
+    if (id === 'negocio') return 'DASN e limite';
+    if (id === 'agenda') { const k = hojeLinhas().length; return k ? `${k} hoje` : 'Nada hoje'; }
     if (id === 'dinheiro') { if (!CW.dinheiro || !CW.dinheiro.pronto()) return 'Entrou e saiu'; const r = CW.dinheiro.doMes(ctx, isoHoje().slice(0, 7)); return r.entrou || r.saiu ? (r.sobrou < 0 ? 'Faltou ' : 'Sobrou ') + U().formatarDinheiro(Math.abs(r.sobrou)) + ' no mês' : 'Registre o que entra'; }
     if (id === 'espelhos') return n ? `${n} esperando` : 'Nenhuma agora';
-    if (id === 'negocio') { const f = CW.negocio && CW.negocio.fiscal && CW.negocio.fiscal(); return f && f.das.some(x => !x.pago && x.vencido) ? 'DAS atrasado' : 'DAS e limite'; }
     return 'Assistente';
   }
   function hojeHtml() {
-    const { esc, ic } = U(), l = hojeLinhas()[0], f = CW.negocio && CW.negocio.fiscal && CW.negocio.fiscal();
-    const das = f && f.das.find(x => !x.pago && !x.vencido), dasTxt = das ? `e o DAS vence dia ${das.venc.slice(8, 10)}` : f && f.das.some(x => !x.pago && x.vencido) ? 'e tem DAS atrasado' : '';
+    const { esc, ic } = U(), l = hojeLinhas()[0], f = fiscal();
+    const das = f && f.das.find(x => !x.pago && !x.vencido), dasTxt = das ? `e o DAS vence dia ${das.venc.slice(8, 10)}` : '';
     if (!l) return `<span class="mei-bola sol">${ic('clock')}</span><div><small>Hoje</small><b>Nada marcado para hoje</b>${dasTxt ? `<small>${esc(dasTxt[0].toUpperCase() + dasTxt.slice(1))}</small>` : ''}</div>`;
     const o = l.x || l.a, hora = l.hora ? `às ${l.hora.replace(':', 'h').replace('h00', 'h')}` : '';
     return `<span class="mei-bola sol">${ic('clock')}</span><div><small>Hoje ${esc(hora)}</small><b>${esc(o.titulo)}${l.x && l.x.cliente ? ' · ' + esc(l.x.cliente) : ''}</b>${dasTxt ? `<small>${esc(dasTxt)}</small>` : ''}</div>`;
   }
   function meiAtualiza(ps) {
-    const g = document.getElementById('mei-grade'); if (!g) return;
-    const { esc, ic } = U(), por = {}; (ps || CW.app.pendencias()).forEach(p => { por[p.mod] = (por[p.mod] || 0) + 1; });
+    const g = document.getElementById('mei-servicos'); if (!g) return;
+    const { esc, ic } = U(), lista = ps || CW.app.pendencias(), por = {}; lista.forEach(p => { por[p.mod] = (por[p.mod] || 0) + 1; });
     const vis = CW.app.visiveis().map(m => m.id);
-    g.innerHTML = TILES.filter(x => vis.includes(x.id)).map(x => { const n = por[x.id] || 0;
-      return `<button class="mei-tile" data-ir="${esc(x.id)}" data-tile="${esc(x.id)}">${n && x.id !== 'agenda' ? `<span class="mei-num" aria-label="${n} para ver">${n > 9 ? '9+' : n}</span>` : ''}<span class="mei-bola ${x.cor}">${ic(x.ic)}</span><b>${esc(x.t)}</b><small>${esc(subTile(x.id, n))}</small></button>`; }).join('');
+    g.innerHTML = SERV.filter(x => vis.includes(x.mod)).map(x => { const n = x.id === 'das' ? dasVencidos().length : x.id === 'checkup' ? 0 : (por[x.mod] || 0);
+      return `<button class="mh-serv${x.prim ? ' prim' : ''}" data-ir="${esc(x.rota)}" data-tile="${esc(x.id)}">${n && x.id !== 'agenda' ? `<span class="mh-num" aria-label="${n} para ver">${n > 9 ? '9+' : n}</span>` : ''}<span class="mh-serv-ic">${ic(x.ic)}</span><b>${esc(x.t)}</b><small>${esc(subServ(x.id, n))}</small></button>`; }).join('');
     g.querySelectorAll('[data-ir]').forEach(b => b.onclick = () => CW.ir(b.dataset.ir));
     const h = document.getElementById('mei-hoje'); if (h) h.innerHTML = hojeHtml();
+    /* alerta do DAS vencido e "Acompanhe suas demandas" */
+    const al = document.getElementById('mh-alerta'), v = dasVencidos().length;
+    if (al) { al.hidden = !v || !vis.includes('mei'); al.innerHTML = `<span class="mh-alerta-ic">${ic('alert')}</span><span class="t"><b>Você tem ${v === 1 ? 'DAS vencido' : v + ' DAS vencidos'}</b><small>Regularize e fique em dia</small></span><span class="mh-num est">${v}</span>${ic('chev')}`; }
+    const dm = document.getElementById('mh-demandas'); if (dm) { const n = por.ordens || 0;
+      dm.innerHTML = `<span class="t"><b>Acompanhe suas demandas</b><small>${n ? (n === 1 ? 'Você tem 1 demanda para responder' : `Você tem ${n} demandas para responder`) : 'Nenhuma demanda esperando você'}</small></span>${n ? `<span class="mh-num est">${n}</span>` : ''}${ic('chev')}`; }
+    const sino = document.getElementById('mh-sino-n'); if (sino) { sino.textContent = lista.length > 9 ? '9+' : String(lista.length); sino.hidden = !lista.length; }
     meiMes();
   }
   /* "Este mês": entrou, saiu e sobrou (as mesmas contas da tela Dinheiro) */
@@ -113,25 +127,36 @@
     } catch (e) { box.hidden = true; }
   }
   function meiInicio(el, ctx) {
-    const { esc, ic } = U(), s = ctx.sessao, nome = String((s.perfil && s.perfil.nome) || '').split(' ')[0];
+    const { esc, ic, mascara } = U(), s = ctx.sessao, c = ctx.contexto, e = c.empresa || {}, nome = String((s.perfil && s.perfil.nome) || '').split(' ')[0];
     const tb = document.querySelector('.topbar'); if (tb) tb.hidden = true;
-    const data = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const cnpj = e.cnpj ? mascara.cnpj(e.cnpj) : '';
     /* cadastro rápido do MEI: convite para completar o cadastro e receber pedidos da rede */
     const CONV = { mei: ['star', 'Quer receber pedidos de empresas?', 'Complete o cadastro com os documentos. A equipe Conectwork confere e você passa a receber demandas e contratos pela rede.', 'Completar cadastro'],
       analise: ['clock', 'Seu cadastro completo está em análise', 'A equipe Conectwork está conferindo os documentos. Enquanto isso, o dinheiro, a agenda e os impostos continuam liberados.', 'Ver situação'],
-      pendencia: ['alert', 'A equipe pediu um ajuste no cadastro', 'Veja o que falta e reenvie. O resto do Conectwork continua liberado.', 'Ver o ajuste'] }[(ctx.contexto.empresa || {}).status];
+      pendencia: ['alert', 'A equipe pediu um ajuste no cadastro', 'Veja o que falta e reenvie. O resto do Conectwork continua liberado.', 'Ver o ajuste'] }[e.status];
     const convite = CONV ? `<button class="mei-convite" id="mei-rede"><span class="mei-bola ceu">${ic(CONV[0])}</span><span class="t"><b>${esc(CONV[1])}</b><small>${esc(CONV[2])}</small></span><span class="mei-convite-bt">${esc(CONV[3])}</span></button>` : '';
+    const vis = CW.app.visiveis().map(m => m.id);
     el.innerHTML = `<div id="ini-avisos" class="stack" style="gap:10px"></div>
-      <div class="mei-home" id="mei-home">
-        <div class="mei-topo"><h2>Oi${nome ? ', ' + esc(nome) : ''}!</h2><p>${esc(data[0].toUpperCase() + data.slice(1))}</p></div>
-        <button class="mei-hoje" id="mei-hoje" data-ir="agenda"></button>
+      <div class="mei-home mh" id="mei-home">
+        <div class="mh-topo"><div class="t"><h2 id="mh-ola">Olá${nome ? ', ' + esc(nome) : ''}</h2>${cnpj ? `<p id="mh-cnpj">${esc(cnpj)}</p>` : ''}</div>
+          <button class="mh-sino" id="mh-sino" type="button" aria-label="O que precisa de você">${ic('bolt')}<span class="mh-num" id="mh-sino-n" hidden></span></button></div>
+        <button class="mh-alerta" id="mh-alerta" type="button" hidden></button>
         ${convite}
-        <div class="mei-grade" id="mei-grade"></div>
+        ${vis.includes('ordens') ? `<button class="mh-card mh-demandas" id="mh-demandas" type="button"></button>` : ''}
+        <button class="mei-hoje" id="mei-hoje" data-ir="agenda"></button>
+        <section class="mh-sec"><div class="mh-sec-h"><h3>Serviços pra você</h3></div><div class="mh-servicos" id="mei-servicos"></div></section>
         <button class="mei-mes" id="mei-mes" hidden></button>
         <button class="mei-lim" id="mei-lim" hidden></button>
+        <section class="mh-sec" id="mh-dados"><div class="mh-sec-h"><h3>Dados do seu MEI</h3>${cnpj ? `<a class="linkbtn" href="${CARTAO_CNPJ}" target="_blank" rel="noopener">cartão CNPJ ${ic('chev')}</a>` : ''}</div>
+          <div class="mh-card mh-dados-c"><span class="mh-logo">${CW.ui.avatar(c.nome, 'sm', c.empresaId)}</span><span class="t"><small>Nome do negócio</small><b>${esc(e.razao || e.nome || c.nome)}</b>${cnpj ? `<small>CNPJ ${esc(cnpj)}</small>` : ''}</span>
+            ${cnpj ? `<button class="iconbtn" id="mh-copiar" type="button" aria-label="Copiar o CNPJ" title="Copiar o CNPJ">${ic('copy')}</button>` : ''}</div></section>
         <section class="card" id="ini-pv" hidden><div class="card-h"><span class="ic">${ic('alert')}</span><h3>Para fazer</h3><span class="count" id="ini-pv-n" hidden></span></div><div class="card-b" id="ini-pv-b"></div></section>
       </div>`;
     document.getElementById('mei-hoje').onclick = () => CW.ir('agenda');
+    document.getElementById('mh-alerta').onclick = () => CW.ir('mei/das');
+    const dm = document.getElementById('mh-demandas'); if (dm) dm.onclick = () => CW.ir('ordens');
+    document.getElementById('mh-sino').onclick = () => { const pv = document.getElementById('ini-pv'); if (pv && !pv.hidden) pv.scrollIntoView({ behavior: 'smooth', block: 'start' }); else U().toast('Nada esperando você agora.'); };
+    const cp = document.getElementById('mh-copiar'); if (cp) cp.onclick = async () => { try { await navigator.clipboard.writeText(U().dig(e.cnpj)); U().toast('CNPJ copiado.'); } catch (x) { U().toast('CNPJ: ' + cnpj); } };
     const rede = document.getElementById('mei-rede'); if (rede) rede.onclick = () => CW.ir('meucadastro');
     const ps = CW.app.pendencias(); meiAtualiza(ps); pvDesenha(ps); mostraPv(ps);
     meiLimite(ctx);

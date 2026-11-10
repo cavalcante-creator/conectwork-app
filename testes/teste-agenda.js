@@ -40,7 +40,7 @@ const { ok, fim } = H.placar('agenda');
     && Object.values(s3).some(x => x.acao === 'agenda.criar' && /Visita técnica/.test(x.texto)), JSON.stringify({ e3, c: c3 && c3[1] }));
 
   // A4 "Precisa de você" no Início mostra o compromisso de hoje
-  await page.evaluate(() => { location.hash = '#inicio'; }); await page.waitForSelector('#mei-grade .mei-tile', { timeout: 8000 }); await H.dorme(400);
+  await page.evaluate(() => { location.hash = '#inicio'; }); await page.waitForSelector('#mei-servicos .mh-serv', { timeout: 8000 }); await H.dorme(400);
   const pv = await page.evaluate(() => document.getElementById('view').textContent);
   ok('A4 o compromisso de hoje entra em "Para fazer" do Início', /Hoje: Visita técnica/.test(pv), pv.slice(0, 200));
 
@@ -87,12 +87,12 @@ const { ok, fim } = H.placar('agenda');
     r1.id === 'faturei' && /35\.000,00/.test(r1.t) && r2.id === 'das' && /dia 20/.test(r2.t) && r3.id === 'nao' && r4.id === 'limite' && /Faltam R\$\s?46\.000,00/.test(r4.t), JSON.stringify({ r1, r2: r2.id, r3: r3.id, r4 }));
 
   // A10 Início do MEI (opção A): saudação, o que tem hoje, botões grandes que abrem cada tela e o limite do MEI
-  await page.evaluate(() => { location.hash = '#inicio'; }); await page.waitForSelector('#mei-grade .mei-tile', { timeout: 8000 }); await page.waitForSelector('#mei-lim:not([hidden])', { timeout: 6000 }).catch(() => {});
-  const a10 = await page.evaluate(() => ({ ola: document.querySelector('.mei-topo h2').innerText, topo: document.querySelector('.topbar').hidden, mei: document.documentElement.classList.contains('mei'),
-    tiles: Array.from(document.querySelectorAll('.mei-tile')).map(t => t.dataset.tile), hoje: document.getElementById('mei-hoje').innerText, lim: (document.getElementById('mei-lim') || {}).innerText || '' }));
-  await page.click('.mei-tile[data-tile="ordens"]'); await H.dorme(300); const h10 = await page.evaluate(() => location.hash);
-  ok('A10 Início do MEI: "Oi, Lia!", o que tem hoje, 6 botões grandes (abrem a tela) e o limite do MEI',
-    a10.ola === 'Oi, Lia!' && a10.topo && a10.mei && a10.tiles.join() === 'agenda,ordens,dinheiro,espelhos,negocio,assistentemei' && /Hoje/.test(a10.hoje) && /R\$ 35\.000 de R\$ 81\.000/.test(a10.lim) && h10 === '#ordens'
+  await page.evaluate(() => { location.hash = '#inicio'; }); await page.waitForSelector('#mei-servicos .mh-serv', { timeout: 8000 }); await page.waitForSelector('#mei-lim:not([hidden])', { timeout: 6000 }).catch(() => {});
+  const a10 = await page.evaluate(() => ({ ola: document.getElementById('mh-ola').innerText, topo: document.querySelector('.topbar').hidden, mei: document.documentElement.classList.contains('mei'),
+    tiles: Array.from(document.querySelectorAll('.mh-serv')).map(t => t.dataset.tile), hoje: document.getElementById('mei-hoje').innerText, lim: (document.getElementById('mei-lim') || {}).innerText || '' }));
+  await page.click('.mh-serv[data-tile="agenda"]'); await H.dorme(300); const h10 = await page.evaluate(() => location.hash);
+  ok('A10 Início do MEI: "Olá, Lia", o que tem hoje, "Serviços pra você" (abrem a tela) e o limite do MEI',
+    a10.ola === 'Olá, Lia' && a10.topo && a10.mei && a10.tiles.join() === 'das,checkup,negocio,dinheiro,agenda,espelhos,assistentemei' && /Hoje/.test(a10.hoje) && /R\$ 35\.000 de R\$ 81\.000/.test(a10.lim) && h10 === '#agenda'
     && !(await page.evaluate(() => document.querySelector('.topbar').hidden)), JSON.stringify(a10));
 
   // A9 celular: agenda e assistente cabem sem rolar para o lado
@@ -100,7 +100,7 @@ const { ok, fim } = H.placar('agenda');
   const lado1 = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth || (document.getElementById('app') || document.body).scrollWidth > innerWidth);
   await page.evaluate(() => { location.hash = '#agenda'; }); await page.waitForSelector('#ag-lista'); await H.dorme(300);
   const lado2 = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth || (document.getElementById('app') || document.body).scrollWidth > innerWidth);
-  await page.evaluate(() => { location.hash = '#inicio'; }); await page.waitForSelector('#mei-grade .mei-tile'); await H.dorme(300);
+  await page.evaluate(() => { location.hash = '#inicio'; }); await page.waitForSelector('#mei-servicos .mh-serv'); await H.dorme(300);
   const lado3 = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth || (document.getElementById('app') || document.body).scrollWidth > innerWidth);
   ok('A9 celular: assistente, agenda e Início do MEI cabem sem rolar para o lado', !lado1 && !lado2 && !lado3, JSON.stringify({ lado1, lado2, lado3 }));
 

@@ -25,7 +25,7 @@ const { ok, fim } = H.placar('cadastromei');
   await page.fill('#mc-atividade', 'Eletricista'); await page.click('[data-seg="Serviços"]'); await page.fill('#mc-cidade', 'Gravataí');
   await page.evaluate(() => document.querySelectorAll('[data-cons]').forEach(c => { if (['operacional', 'contrato', 'cobranca'].includes(c.dataset.cons)) c.checked = true; }));
   await page.check('#mc-termos'); await page.click('#mc-enviar');
-  await page.waitForSelector('#mei-grade .mei-tile', { timeout: 10000 });
+  await page.waitForSelector('#mei-servicos .mh-serv', { timeout: 10000 });
   const S = await srv(), id = Object.keys(S.docs).find(k => /^empresas\/[^/]+$/.test(k) && S.docs[k].nome === 'Zeca Elétrica').split('/')[1], e = S.docs['empresas/' + id], uid = S.users['zeca@zeca.com.br'].uid;
   const pv = S.docs['empresas/' + id + '/privado/cadastro'], ac = S.docs['acessos/' + id + '_' + uid];
   ok('C3 cria a conta e o MEI (status "mei", só presta, porte MEI, atividade e ramo), acesso de administrador, autorizações e histórico; entra direto no Início do MEI',
@@ -33,9 +33,9 @@ const { ok, fim } = H.placar('cadastromei');
     && ac && ac.cargo === 'admin' && S.docs['consentimentos/' + uid + '_cursos'].aceite === false && Object.values(S.docs).some(x => x.acao === 'empresa.mei'), JSON.stringify({ e, dados: pv.dados }));
 
   // C4 a gestão está liberada sem esperar a análise; as telas da rede (demandas, contratos, notas) não aparecem; convite para completar
-  const c4 = await page.evaluate(() => ({ menu: Array.from(document.querySelectorAll('#menu [data-mod]')).map(b => b.dataset.mod), convite: (document.getElementById('mei-rede') || {}).innerText || '', ola: document.querySelector('.mei-topo h2').innerText }));
-  ok('C4 "Oi, Zeca!" com Dinheiro, Agenda, Assistente e Meu negócio liberados; sem Demandas, Contratos e Notas; convite para completar o cadastro',
-    c4.ola === 'Oi, Zeca!' && ['dinheiro', 'agenda', 'assistentemei', 'negocio'].every(m => c4.menu.includes(m)) && !['ordens', 'contratos', 'espelhos', 'titulos'].some(m => c4.menu.includes(m)) && /receber pedidos de empresas/.test(c4.convite), JSON.stringify(c4));
+  const c4 = await page.evaluate(() => ({ menu: Array.from(document.querySelectorAll('#menu [data-mod]')).map(b => b.dataset.mod), convite: (document.getElementById('mei-rede') || {}).innerText || '', ola: document.getElementById('mh-ola').innerText }));
+  ok('C4 "Olá, Zeca" com Dinheiro, Agenda, Assistente e Meu negócio liberados; sem Demandas, Contratos e Notas; convite para completar o cadastro',
+    c4.ola === 'Olá, Zeca' && ['dinheiro', 'agenda', 'assistentemei', 'negocio'].every(m => c4.menu.includes(m)) && !['ordens', 'contratos', 'espelhos', 'titulos'].some(m => c4.menu.includes(m)) && /receber pedidos de empresas/.test(c4.convite), JSON.stringify(c4));
 
   // C5 dá para registrar dinheiro já no cadastro rápido
   await page.click('#mei-registrar'); await page.waitForSelector('dialog[open] #dn-valor'); await page.type('#dn-valor', '15000'); await page.fill('#dn-desc', 'Troca de chuveiro');

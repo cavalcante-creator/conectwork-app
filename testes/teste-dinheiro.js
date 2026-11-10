@@ -17,10 +17,10 @@ const { ok, fim } = H.placar('dinheiro');
   const iso = dt => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
   const hoje = iso(new Date());
   await H.preparar(page, d); await page.goto(H.BASE);
-  await H.entrar(page, 'lia@lia.com.br', 'senha123'); await page.waitForSelector('#mei-grade .mei-tile', { timeout: 8000 }); await H.dorme(400);
+  await H.entrar(page, 'lia@lia.com.br', 'senha123'); await page.waitForSelector('#mei-servicos .mh-serv', { timeout: 8000 }); await H.dorme(400);
 
   // D1 menu do MEI com Dinheiro logo depois do Início, botão "Registrar" sempre à mão e botão Dinheiro no Início
-  const d1 = await page.evaluate(() => ({ menu: Array.from(document.querySelectorAll('#menu [data-mod]')).map(b => b.dataset.mod).slice(0, 3).join(), fab: !!document.getElementById('mei-registrar'), tile: !!document.querySelector('.mei-tile[data-tile="dinheiro"]') }));
+  const d1 = await page.evaluate(() => ({ menu: Array.from(document.querySelectorAll('#menu [data-mod]')).map(b => b.dataset.mod).slice(0, 3).join(), fab: !!document.getElementById('mei-registrar'), tile: !!document.querySelector('.mh-serv[data-tile="dinheiro"]') }));
   ok('D1 menu do MEI começa por Início, Dinheiro, Agenda; botão "Registrar" à mão; botão Dinheiro no Início', d1.menu === 'inicio,dinheiro,agenda' && d1.fab && d1.tile, JSON.stringify(d1));
 
   // D2 "Registrar": pede o valor; grava a venda de hoje (já pago, Pix) com histórico
@@ -78,7 +78,7 @@ const { ok, fim } = H.placar('dinheiro');
 
   // D8 Início do MEI: "Este mês" com entrou, saiu e sobrou e o botão Dinheiro com o que sobrou
   await page.evaluate(() => { location.hash = '#inicio'; }); await page.waitForSelector('#mei-mes:not([hidden])', { timeout: 8000 });
-  const d8 = await page.evaluate(() => ({ mes: document.getElementById('mei-mes').innerText, tile: document.querySelector('.mei-tile[data-tile="dinheiro"]').innerText }));
+  const d8 = await page.evaluate(() => ({ mes: document.getElementById('mei-mes').innerText, tile: document.querySelector('.mh-serv[data-tile="dinheiro"]').innerText }));
   ok('D8 Início do MEI: "Este mês" (entrou R$ 350, saiu R$ 130, sobrou R$ 220) e o botão Dinheiro com o que sobrou', /R\$\s?350/.test(d8.mes) && /R\$\s?130/.test(d8.mes) && /Sobrou[\s\S]*R\$\s?220/.test(d8.mes) && /Sobrou R\$\s?220,00 no mês/.test(d8.tile), JSON.stringify(d8));
 
   // D9 relatório do mês em Excel (com a biblioteca simulada aqui, sem internet)
