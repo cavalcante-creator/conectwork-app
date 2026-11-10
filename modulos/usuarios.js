@@ -13,7 +13,8 @@
   let acessos = null, convites = null;
   const eu = ctx => ctx.sessao.usuario.uid;
   const quem = ctx => (ctx.sessao.perfil && ctx.sessao.perfil.nome) || ctx.sessao.usuario.email;
-  const linkConvite = token => { const base = (window.CONECTWORK_CONFIG || {}).urlApp || (location.origin + location.pathname); return base.replace(/#.*$/, '') + '#convite/' + token; };
+  /* link com página própria (convite/?c=): o WhatsApp mostra a prévia com imagem e título do convite; a página leva para #convite/<token> */
+  const linkConvite = token => { const base = ((window.CONECTWORK_CONFIG || {}).urlApp || (location.origin + location.pathname)).replace(/#.*$/, '').replace(/[^/]*$/, ''); return base + 'convite/?c=' + token; };
 
   /* telas que dá para ajustar por pessoa: módulos de empresa já no ar, contratados por esta empresa, que dependem do cargo */
   function telasAjustaveis(ctx) {
@@ -24,7 +25,7 @@
 
   function mensagemZap(cv, ctx) {
     return `Olá, ${cv.nome.split(' ')[0]}! ${quem(ctx)} convidou você para acessar a empresa ${ctx.contexto.nome} no Conectwork, como ${P().nomeCargo(cv.cargo)}.\n\n`
-      + `Para criar seu acesso, abra o link e use o e-mail ${cv.email}:\n${linkConvite(cv._id)}`;
+      + `Para criar seu acesso, abra o link e use o e-mail ${cv.email}:\n${linkConvite(cv._id)}\n\nO convite vale só para esse e-mail.`;
   }
 
   /* ---------- tela ---------- */
@@ -164,10 +165,12 @@
       corpo: `<div class="stack" style="gap:12px">
         <label class="f"><span>Link do convite</span><input id="cv-link" readonly value="${esc(link)}"></label>
         <a class="btn" id="cv-zap" target="_blank" rel="noopener" href="${esc(zap)}">${ic('send')}Enviar pelo WhatsApp</a>
-        <button class="btn sec" type="button" id="cv-copiar">Copiar link</button>
+        <button class="btn sec" type="button" id="cv-copiar-msg">${ic('copy')}Copiar a mensagem</button>
+        <button class="linkbtn" type="button" id="cv-copiar">Copiar só o link</button>
         <p class="hint" style="margin:0;font-size:12.5px">O Conectwork não envia e-mail sozinho por enquanto. Se preferir, cole o link num e-mail para a pessoa.</p></div>`,
       botoes: [{ texto: 'Fechar', valor: null, classe: 'sec' }],
       aoAbrir: d => {
+        d.querySelector('#cv-copiar-msg').onclick = async () => { try { await navigator.clipboard.writeText(msg); U().toast('Mensagem copiada. Cole na conversa com a pessoa.'); } catch (e) { U().toast('Não deu para copiar. Use "Enviar pelo WhatsApp".', 'erro'); } };
         d.querySelector('#cv-copiar').onclick = async () => {
           const inp = d.querySelector('#cv-link');
           try { await navigator.clipboard.writeText(link); } catch (e) { inp.select(); try { document.execCommand('copy'); } catch (x) { /* nada */ } }

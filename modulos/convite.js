@@ -169,7 +169,7 @@
     U().dialogo({ titulo: 'Tenho um convite', sub: 'Cole aqui o link que você recebeu por WhatsApp ou e-mail.',
       corpo: `<label class="f"><span>Link do convite</span><input id="tc-link" placeholder="https://…#convite/…" autocomplete="off"></label><p class="err" id="tc-erro" role="alert"></p>`,
       botoes: [{ texto: 'Voltar', valor: null, classe: 'sec' }, { texto: 'Abrir convite', valor: 'ok', antes: d => {
-        const v = d.querySelector('#tc-link').value.trim(), m = /convite\/([A-Za-z0-9_-]{6,64})/.exec(v) || /^([A-Za-z0-9_-]{15,64})$/.exec(v);
+        const v = d.querySelector('#tc-link').value.trim(), m = /convite\/([A-Za-z0-9_-]{6,64})/.exec(v) || /convite\/?\?c=([A-Za-z0-9_-]{6,64})/.exec(v) || /^([A-Za-z0-9_-]{15,64})$/.exec(v);
         if (!m) { d.querySelector('#tc-erro').textContent = 'Esse link não parece um convite do Conectwork. Copie o link inteiro da mensagem.'; return false; }
         tk = m[1]; return true; } }],
       aoAbrir: d => { const i = d.querySelector('#tc-link'); i.focus(); i.addEventListener('input', () => { d.querySelector('#tc-erro').textContent = ''; }); }

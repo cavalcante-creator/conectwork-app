@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Você recebeu um convite · Conectwork</title>
+<meta name="description" content="Toque no link para criar o seu acesso ao Conectwork.">
+<!-- prévia do link no WhatsApp, LinkedIn e e-mail (o convite é lido depois do ?c=, que o WhatsApp não usa) -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Conectwork">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:title" content="Você recebeu um convite para o Conectwork">
+<meta property="og:description" content="Toque para criar o seu acesso. Contratos, entregas, notas e pagamentos organizados em um só lugar.">
+<meta property="og:image" content="https://conectwork.com.br/icons/og-convite.jpg">
+<meta property="og:image:secure_url" content="https://conectwork.com.br/icons/og-convite.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Conectwork: você recebeu um convite">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Você recebeu um convite para o Conectwork">
+<meta name="twitter:description" content="Toque para criar o seu acesso.">
+<meta name="twitter:image" content="https://conectwork.com.br/icons/og-convite.jpg">
+<meta name="theme-color" content="#081936">
+<link rel="icon" href="../icons/favicon-32.png">
+<style>
+  html,body{margin:0;height:100%;background:#081936;color:#E6ECF8;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+  main{min-height:100%;display:grid;place-items:center;text-align:center;padding:24px;box-sizing:border-box}
+  a{color:#7FB3FF}
+</style>
+</head>
+<body>
+<main><div><p>Abrindo o seu convite…</p><p><a id="ir" href="../">Se não abrir sozinho, toque aqui</a></p></div></main>
+<script>
+  /* leva para o app com o convite: /convite/?c=<token> → /#convite/<token> */
+  (function () {
+    var m = /[?&]c=([A-Za-z0-9_-]{6,64})/.exec(location.search), alvo = '../' + (m ? '#convite/' + m[1] : '');
+    document.getElementById('ir').href = alvo;
+    location.replace(alvo);
+  })();
+</script>
+</body>
+</html>

@@ -70,9 +70,9 @@ const { ok, fim } = H.placar('usuarios');
   const zapTxt = decodeURIComponent(u7.zap.split('text=')[1] || '');
   await page.click('#cv-copiar'); await H.dorme(200); const t7 = await toast();
   await page.click('dialog[open] [data-dlg-b="0"]');
-  ok('U7 convite criado (e-mail em minúsculas, cargo, quem convidou); link #convite/<token>; WhatsApp com a mensagem pronta; copiar link',
-    cv.cargo === 'operacional' && cv.usado === false && cv.criadoPor === 'uANA' && cv.empresaNome === 'Alfa Serviços' && u7.link.endsWith('#convite/' + tok)
-    && /^https:\/\/wa\.me\/5551998761111\?text=/.test(u7.zap) && /Olá, Edu! Ana Souza convidou você para acessar a empresa Alfa Serviços no Conectwork, como Operacional/.test(zapTxt) && zapTxt.includes('#convite/' + tok) && zapTxt.includes('edu@alfa.com.br')
+  ok('U7 convite criado (e-mail em minúsculas, cargo, quem convidou); link com prévia (convite/?c=<token>); WhatsApp com a mensagem pronta; copiar link',
+    cv.cargo === 'operacional' && cv.usado === false && cv.criadoPor === 'uANA' && cv.empresaNome === 'Alfa Serviços' && u7.link.endsWith('convite/?c=' + tok)
+    && /^https:\/\/wa\.me\/5551998761111\?text=/.test(u7.zap) && /Olá, Edu! Ana Souza convidou você para acessar a empresa Alfa Serviços no Conectwork, como Operacional/.test(zapTxt) && zapTxt.includes('convite/?c=' + tok) && /vale só para esse e-mail/.test(zapTxt) && zapTxt.includes('edu@alfa.com.br')
     && /Link copiado/.test(t7) && (await logs('convite.criar')).length === 1 && !/99876/.test(JSON.stringify(await logs('convite.criar'))), JSON.stringify({ cv: { cargo: cv.cargo, email: cv.email }, link: u7.link, zap: zapTxt.slice(0, 80) }));
 
   // U8 convite aparece na lista; convidar de novo o mesmo e-mail é barrado; reenviar abre o link de novo

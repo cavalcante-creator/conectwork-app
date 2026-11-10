@@ -7,7 +7,8 @@
   const CW = window.CW;
   const U = () => CW.ui;
   const R = () => CW.rede;
-  const linkConvite = token => { const base = (window.CONECTWORK_CONFIG || {}).urlApp || (location.origin + location.pathname); return base.replace(/#.*$/, '') + '#convite/' + token; };
+  /* link com página própria (convite/?c=): o WhatsApp mostra a prévia com imagem e título do convite; a página leva para #convite/<token> */
+  const linkConvite = token => { const base = ((window.CONECTWORK_CONFIG || {}).urlApp || (location.origin + location.pathname)).replace(/#.*$/, '').replace(/[^/]*$/, ''); return base + 'convite/?c=' + token; };
   const token = () => { const a = new Uint8Array(18); crypto.getRandomValues(a); return Array.from(a, b => 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[b % 62]).join(''); };
   const perfis = {};            /* nome e e-mail de quem foi colocado na equipe pelo console (master/{uid} sem nome) */
 
@@ -86,15 +87,17 @@
   function compartilhar(ctx, c, titulo) {
     if (!c) return;
     const { esc, ic, dig } = U(), link = linkConvite(c._id);
-    const msg = `Olá, ${String(c.nome || '').split(' ')[0]}! ${R().quemSou(ctx)} convidou você para a equipe do Conectwork.\n\nPara criar seu acesso, abra o link e use o e-mail ${c.email}:\n${link}`;
+    const msg = `Olá, ${String(c.nome || '').split(' ')[0]}! ${R().quemSou(ctx)} convidou você para a equipe do Conectwork.\n\nPara criar seu acesso, abra o link e use o e-mail ${c.email}:\n${link}\n\nO convite vale só para esse e-mail.`;
     const tel = dig(c.tel || ''), zap = `https://wa.me/${tel.length === 11 ? '55' + tel : ''}?text=${encodeURIComponent(msg)}`;
     U().dialogo({ titulo, sub: `Mande o link para ${c.nome || c.email}. Ele só vale para o e-mail ${c.email}.`,
       corpo: `<div class="stack" style="gap:12px">
         <label class="f"><span>Link do convite</span><input id="eq-link" readonly value="${esc(link)}"></label>
         <a class="btn" id="eq-zap" target="_blank" rel="noopener" href="${esc(zap)}">${ic('send')}Enviar pelo WhatsApp</a>
-        <button class="btn sec" type="button" id="eq-copiar">${ic('copy')}Copiar link</button></div>`,
+        <button class="btn sec" type="button" id="eq-copiar-msg">${ic('copy')}Copiar a mensagem</button>
+        <button class="linkbtn" type="button" id="eq-copiar">Copiar só o link</button></div>`,
       botoes: [{ texto: 'Fechar', valor: null, classe: 'sec' }],
-      aoAbrir: d => { d.querySelector('#eq-copiar').onclick = async () => {
+      aoAbrir: d => { d.querySelector('#eq-copiar-msg').onclick = async () => { try { await navigator.clipboard.writeText(msg); U().toast('Mensagem copiada. Cole na conversa com a pessoa.'); } catch (e) { U().toast('Não deu para copiar. Use "Enviar pelo WhatsApp".', 'erro'); } };
+        d.querySelector('#eq-copiar').onclick = async () => {
         const inp = d.querySelector('#eq-link');
         try { await navigator.clipboard.writeText(link); } catch (e) { inp.select(); try { document.execCommand('copy'); } catch (x) { /* nada */ } }
         U().toast('Link copiado. Agora é só colar na conversa com a pessoa.'); }; } });

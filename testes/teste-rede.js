@@ -114,7 +114,7 @@ const { ok, fim } = H.placar('rede');
   await page.click('#eq-convidar'); await page.waitForSelector('dialog[open] #eq-nome');
   await page.fill('dialog[open] #eq-nome', 'Nina Rocha'); await page.fill('dialog[open] #eq-email', 'nina@conectwork.com.br'); await dlgOk();
   await page.waitForSelector('dialog[open] #eq-link', { timeout: 8000 });
-  const link = await page.$eval('dialog[open] #eq-link', e => e.value), tk = link.split('#convite/')[1];
+  const link = await page.$eval('dialog[open] #eq-link', e => e.value), tk = link.split('convite/?c=')[1];
   await page.click('dialog[open] [data-dlg-b="0"]'); await H.dorme(400);
   const s11 = await srv(), cv = s11['convites/' + tk] || {};
   ok('R11 Equipe: convida com nome e e-mail; cria o convite da equipe (tipo master) e mostra o link; aparece em "Convites esperando"',
@@ -122,7 +122,7 @@ const { ok, fim } = H.placar('rede');
 
   // R12 a pessoa abre o link, cria o acesso e entra na equipe
   await sair();
-  await page.goto(H.BASE + 'vazio.html'); await page.goto(H.BASE + '#convite/' + tk); await page.waitForSelector('#cv-criar', { timeout: 8000 });
+  await page.goto(H.BASE + 'vazio.html'); await page.goto(H.BASE + 'convite/?c=' + tk); await page.waitForSelector('#cv-criar', { timeout: 8000 });   /* a página do convite (prévia no WhatsApp) leva para #convite/<token> */
   await page.click('#cv-criar'); await page.waitForSelector('#cv-nome');
   await page.fill('#cv-nome', 'Nina Rocha'); await page.fill('#cv-email', 'nina@conectwork.com.br'); await page.fill('#cv-senha', 'senha1234'); await page.fill('#cv-senha2', 'senha1234');
   await page.check('#cv-termos'); for (const k of ['operacional', 'contrato', 'cobranca']) await page.check(`[data-ca="${k}"]`).catch(() => {});

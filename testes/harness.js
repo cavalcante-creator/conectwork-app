@@ -17,7 +17,8 @@ async function abrir(op) {
     if (u.includes('gstatic.com/firebasejs/')) return route.fulfill({ contentType: 'text/javascript', body: u.includes('app-compat') ? MOCK : '' });
     if (u.includes('fonts.googleapis.com') || u.includes('fonts.gstatic.com')) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
     if (u.startsWith(BASE)) {
-      const p = decodeURIComponent(new URL(u).pathname.slice(1)) || 'index.html';
+      let p = decodeURIComponent(new URL(u).pathname.slice(1)) || 'index.html';
+      if (p.endsWith('/')) p += 'index.html';   /* pasta/ → pasta/index.html, como o GitHub Pages */
       if (p === 'vazio.html') return route.fulfill({ contentType: 'text/html', body: '<html><body>vazio</body></html>' });
       if (p === 'config.js' && op.config !== undefined) return route.fulfill({ contentType: 'text/javascript', body: op.config });
       if (p === 'config.js') return route.fulfill({ contentType: 'text/javascript', body: fs.readFileSync(path.join(RAIZ, p), 'utf8') + (op.microsoft === false ? '' : '\nwindow.CONECTWORK_CONFIG.loginMicrosoft = true;') + (op.dinheiro ? '\nwindow.CONECTWORK_CONFIG.meiDinheiro = true;' : '') });
