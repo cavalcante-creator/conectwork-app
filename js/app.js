@@ -98,7 +98,7 @@
     const mods = menuMods(), mei = porteMei();
     const teste = CW.fb.ambiente() === 'teste' ? '<span class="env">Ambiente de testes</span>' : '';
     document.documentElement.classList.remove('entrada', 'wizpg'); document.documentElement.classList.add('casca');
-    document.documentElement.classList.toggle('mei', enxuto());   /* perfil MEI (menu simples): visual mais leve e amigável (10/11/2026) */
+    document.documentElement.classList.toggle('mei', porteMei());   /* perfil MEI: visual mais leve e amigável (10/11/2026); vale também com "Ver todas as telas" */
     document.getElementById('app').innerHTML = `<div class="shell">
       <aside class="side">${CURVES}
         <div class="logo">${LOGO(32)}<span>Conect<b>work</b></span></div>
@@ -298,5 +298,5 @@
   CW.inscrever = inscrever;
   CW.ir = ir;
   CW.iniciar = iniciar;
-  CW.app = { montar, desmontar, desenhar, modulos: () => MODULOS.slice(), visiveis, atual: () => atual, pendencias, pendenciasMudaram, buscar, mei: () => enxuto() };
+  CW.app = { montar, desmontar, desenhar, modulos: () => MODULOS.slice(), visiveis, atual: () => atual, pendencias, pendenciasMudaram, buscar, mei: () => porteMei() };
 })();

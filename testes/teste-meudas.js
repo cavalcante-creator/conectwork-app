@@ -59,6 +59,13 @@ const { ok, fim } = H.placar('meudas');
   const m6 = await page.$eval('#ck-res', e => e.innerText);
   ok('M6 com os DAS pagos, o check-up mostra "Seu MEI está em dia"', /Seu MEI está em dia/.test(m6), m6);
 
+  // M6b "Ver todas as telas" só abre o menu completo: o Início continua o do MEI
+  await page.evaluate(() => { location.hash = '#inicio'; }); await page.waitForSelector('#menu-alt'); await page.click('#menu-alt');
+  await page.waitForFunction(() => /Menu simples/.test((document.getElementById('menu-alt') || {}).innerText || ''), null, { timeout: 6000 }); await page.evaluate(() => { location.hash = '#inicio'; }); await page.waitForSelector('#mei-servicos .mh-serv', { timeout: 6000 });
+  const m6b = await page.evaluate(() => ({ mei: document.documentElement.classList.contains('mei'), ola: (document.getElementById('mh-ola') || {}).innerText }));
+  ok('M6b com "Ver todas as telas", o menu fica completo e o Início continua o do MEI', m6b.mei && m6b.ola === 'Olá, Lia', JSON.stringify(m6b));
+  await page.click('#menu-alt'); await page.waitForFunction(() => /Ver todas/.test((document.getElementById('menu-alt') || {}).innerText || ''), null, { timeout: 6000 });
+
   // M7 celular: Início, DAS e Check-up cabem sem rolar para o lado
   await page.setViewportSize({ width: 390, height: 844 }); await H.dorme(300);
   const lado = async () => page.evaluate(() => document.documentElement.scrollWidth > innerWidth || (document.getElementById('app') || document.body).scrollWidth > innerWidth);
