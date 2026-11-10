@@ -1525,3 +1525,35 @@ html.mei .topbar h1{letter-spacing:-.01em}
 .ck-it.ruim{border-color:rgba(229,72,77,.45)}
 .mh .mei-hoje{margin:0}
 @media (min-width:900px){.mh-servicos{grid-template-columns:repeat(auto-fit,minmax(112px,1fr))}}
+
+/* ---------- Perfil MEI · letra e cores da opção A (10/11/2026: "perfil MEI, mas que o sistema combine; profissional, mas não tão sério") ----------
+   Só com html.mei. Montserrat em todas as telas do MEI (menu, topo, formulários), títulos com peso 700 (não 800: menos sério),
+   azul royal no lugar do azul Conectwork, ciano claro nos cartões de destaque e verde só para "pago / em dia". As empresas que contratam não mudam. */
+html.mei{--fd:"Montserrat",system-ui,-apple-system,"Segoe UI",sans-serif;--ft:"Montserrat",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --blue:#1E4FD8;--blue2:#3A6BEA;--info:#1D3FA8;--infobg:#E2F3FD;--bg:#F2F7FC;--line:#DCE8F5;--ink:#13224A;--muted:#5F6C88;
+  --mei-ceu:#1D3FA8;--mei-ceu-bg:#E2F3FD;--mei-ok:#14814A;--mei-ok-bg:#DDF5E6;--dn-ent:#1E4FD8;--mei-topo:linear-gradient(160deg,#2457E6 0%,#1B3FB8 100%)}
+:root.mei[data-theme="dark"]{--blue:#5B8BFF;--blue2:#7EA4FF;--info:#9DBBFF;--infobg:rgba(91,139,255,.16);--ink:#E6ECF8;--muted:#9BA9C4;--line:#22304F;--bg:#0A1226;
+  --mei-ceu:#9DBBFF;--mei-ceu-bg:rgba(91,149,255,.16);--mei-ok:#5FD08F;--mei-ok-bg:rgba(34,160,90,.18);--dn-ent:#8DB2FF;--mei-topo:linear-gradient(160deg,#1E4FD8 0%,#142F8F 100%)}
+@media (prefers-color-scheme:dark){:root.mei:not([data-theme="light"]){--blue:#5B8BFF;--blue2:#7EA4FF;--info:#9DBBFF;--infobg:rgba(91,139,255,.16);--ink:#E6ECF8;--muted:#9BA9C4;--line:#22304F;--bg:#0A1226;
+  --mei-ceu:#9DBBFF;--mei-ceu-bg:rgba(91,149,255,.16);--mei-ok:#5FD08F;--mei-ok-bg:rgba(34,160,90,.18);--dn-ent:#8DB2FF;--mei-topo:linear-gradient(160deg,#1E4FD8 0%,#142F8F 100%)}}
+html.mei body{font-family:var(--ft);letter-spacing:-.003em}
+html.mei h1,html.mei h2,html.mei h3,html.mei .topbar h1{font-family:var(--fd);font-weight:700;letter-spacing:-.015em}
+html.mei b,html.mei strong{font-weight:600}
+/* menu e topo no mesmo azul royal */
+html.mei .shell .side{background:#13265E}
+:root.mei[data-theme="dark"] .shell .side{background:#0B1A45}
+@media (prefers-color-scheme:dark){:root.mei:not([data-theme="light"]) .shell .side{background:#0B1A45}}
+/* botões: azul royal liso, cantos redondos (também no escuro) */
+html.mei .btn:not(.sec):not(.ghost):not(.dangerous):not(.light):not(.ok):not(.warn){background:var(--blue);border-color:var(--blue);border-radius:14px}
+:root.mei[data-theme="dark"] .btn:not(.sec):not(.ghost):not(.dangerous):not(.light):not(.ok):not(.warn){background:linear-gradient(135deg,#1E4FD8,#3A6BEA);border-radius:14px}
+@media (prefers-color-scheme:dark){:root.mei:not([data-theme="light"]) .btn:not(.sec):not(.ghost):not(.dangerous):not(.light):not(.ok):not(.warn){background:linear-gradient(135deg,#1E4FD8,#3A6BEA);border-radius:14px}}
+/* Início do MEI */
+html.mei .mh-topo{background:var(--mei-topo)}
+html.mei .mh-topo h2{font-weight:700}
+html.mei .mh-card b,html.mei .mh-serv b,html.mei .mh-sec-h h3{font-weight:700}
+html.mei .mh-serv{background:var(--mei-ceu-bg);color:var(--mei-ceu);border-color:transparent}
+html.mei .mh-serv.prim{background:var(--blue);color:#fff}
+/* verde só para "pago" e "em dia" */
+html.mei .das-it.pago{background:var(--mei-ok-bg);border-color:transparent}
+html.mei .das-selo.pago{background:var(--mei-ok);color:#fff}
+html.mei .ck-it.bom .ck-dot{background:var(--mei-ok-bg);color:var(--mei-ok)}
