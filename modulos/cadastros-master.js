@@ -13,6 +13,7 @@
   const CHIPS = [['analise', 'Em análise'], ['pendencia', 'Ajuste pedido'], ['aprovado', 'Aprovadas'], ['basico', 'Falta completar'], ['mei', 'MEI (cadastro rápido)'], ['recusado', 'Recusadas'], ['todos', 'Todas']];
   let filtro = 'analise';
   let empresas = null;                 /* lista viva (onSnapshot) */
+  const dig = v => String(v == null ? '' : v).replace(/\D/g, '');
 
   const nomeEmp = e => e.nome || e.razao || 'Empresa';
   const quemSou = ctx => (ctx.sessao.perfil && ctx.sessao.perfil.nome) || ctx.sessao.usuario.email;
@@ -34,11 +35,12 @@
         <td>${CW.sessao.pillStatus(e.status)}${e.preCadastro ? ' <span class="pill warn">Documentos pendentes</span>' : ''}</td>
         <td class="r"><button class="btn ${e.status === 'analise' ? '' : 'sec'} sm" data-abrir="${esc(e._id)}">${e.status === 'analise' ? 'Analisar' : 'Abrir'}</button></td></tr>`).join('');
     el.innerHTML = `<div class="card" id="cm-lista"><div class="card-h"><div class="filters">${CHIPS.map(([k, l]) => `<button class="chip" data-filtro="${k}" aria-pressed="${filtro === k}">${l}<b>${conta(k)}</b></button>`).join('')}</div>
-        <button class="btn sm" id="cm-pre" style="margin-left:auto">${ic('plus')}Pré-cadastrar empresa</button></div>
+        <button class="btn sec sm" id="cm-prevarios" style="margin-left:auto">${ic('list')}Pré-cadastrar vários MEIs</button><button class="btn sm" id="cm-pre">${ic('plus')}Pré-cadastrar empresa</button></div>
       ${lista.length ? `<div class="scroll"><table class="resp"><thead><tr><th>Empresa</th><th>CNPJ</th><th>Uso</th><th>Cidade</th><th>Enviado em</th><th>Situação</th><th></th></tr></thead><tbody>${linhas}</tbody></table></div>`
         : `<div class="empty"><div class="ic">${ic('building')}</div><strong>Nenhum cadastro nesta situação.</strong></div>`}</div>`;
     el.querySelectorAll('[data-filtro]').forEach(b => b.onclick = () => { filtro = b.dataset.filtro; desenharLista(el); });
     document.getElementById('cm-pre').onclick = () => preCadastro();
+    document.getElementById('cm-prevarios').onclick = () => preVarios();
     el.querySelectorAll('[data-abrir]').forEach(r => { const ir = ev => { ev.stopPropagation(); CW.ir('cadastros/analise/' + r.dataset.abrir); };
       r.onclick = ir; if (r.tagName === 'TR') r.onkeydown = ev => { if (ev.key === 'Enter') ir(ev); }; });
   }
@@ -280,6 +282,77 @@
       if (!ir) { await CW.sessao.recarregar(); return; }
       await CW.sessao.recarregar();
       CW.sessao.entrarEm('empresa:' + id);
+    });
+  }
+
+  /* ---------- pré-cadastrar vários MEIs de uma vez (12/11/2026, "precisamos já cadastrar e deixar pronto quem está no painel") ----------
+     A lista vem do painel do RH ("Copiar a lista para o Conectwork": Nome;CNPJ;Prestadora;Celular;E-mail, uma pessoa por linha; nunca CPF).
+     Cada MEI nasce como o pré-cadastro de sempre (aprovado, preCadastro, porte MEI, só presta, plano gratuito) e, com e-mail, ganha um
+     convite de administrador(a) para esse e-mail: a pessoa abre o link, cria a senha e já entra no MEI dela. CNPJ que já existe fica de fora. */
+  function lerLista(txt) {
+    const linhas = String(txt || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean), out = [];
+    linhas.forEach((l, i) => {
+      const c = l.split(/\t|;/).map(x => x.trim()), cnpjI = c.findIndex(x => dig(x).length === 14);
+      if (cnpjI < 0) { if (i === 0 || /cnpj/i.test(l)) return; out.push({ linha: l, erro: 'sem CNPJ' }); return; }
+      const nome = (c[0] && c[0] !== c[cnpjI] ? c[0] : '').replace(/\s+/g, ' '), cnpj = U().mascara.cnpj(c[cnpjI]), resto = c.filter((x, j) => j !== 0 && j !== cnpjI);
+      const email = (resto.find(x => /@/.test(x)) || '').toLowerCase(), tel = dig(resto.find(x => dig(x).length >= 10 && dig(x).length <= 13 && !/@/.test(x)) || '');
+      const prest = resto.find(x => x && !/@/.test(x) && dig(x).length < 10) || '';
+      const r = { linha: l, nome, cnpj, num: dig(cnpj), email, tel: tel.length > 11 && tel.startsWith('55') ? tel.slice(2) : tel, prest };
+      if (!U().validarCNPJ(cnpj)) r.erro = 'CNPJ inválido'; else if (nome.split(' ').length < 2) r.erro = 'falta o nome e sobrenome';
+      else if (email && !U().validarEmail(email)) r.erro = 'e-mail inválido';
+      else if (out.some(o => o.num === r.num)) r.erro = 'CNPJ repetido na lista';
+      out.push(r);
+    });
+    return out;
+  }
+  async function preVarios() {
+    const { esc } = U(); let txt = '';
+    const v = await U().dialogo({ titulo: 'Pré-cadastrar vários MEIs', sub: 'Cole a lista que o painel do RH copia (Pagamento dos PJ › Conectwork › Convidar os PJ › "Copiar a lista para o Conectwork"). Uma pessoa por linha: Nome; CNPJ; Prestadora; Celular; E-mail.',
+      corpo: `<div class="stack" style="gap:10px"><label class="f"><span>Lista</span><textarea id="pv-txt" rows="9" placeholder="Joao da Silva;12.345.678/0001-90;Zenith;51999990000;joao@email.com"></textarea></label>
+        <p class="hint" id="pv-prev" style="margin:0">Cada MEI fica aprovado, com o porte MEI e só presta serviços. Quem tem e-mail recebe um convite para entrar já como administrador(a) do MEI dele. Não use CPF.</p><p class="err" id="pv-erro" role="alert"></p></div>`,
+      botoes: [{ texto: 'Voltar', valor: null, classe: 'sec' }, { texto: 'Pré-cadastrar', valor: 'ok', antes: d => { txt = d.querySelector('#pv-txt').value; const xs = lerLista(txt).filter(x => !x.erro); if (!xs.length) { d.querySelector('#pv-erro').textContent = 'Nenhuma linha com nome e CNPJ válidos.'; return false; } return true; } }],
+      aoAbrir: d => { const t = d.querySelector('#pv-txt'), pv = d.querySelector('#pv-prev'); t.oninput = () => { const xs = lerLista(t.value), ok = xs.filter(x => !x.erro), er = xs.filter(x => x.erro), ja = ok.filter(x => (empresas || []).some(e => dig(e.cnpj) === x.num));
+          pv.innerHTML = `<b>${ok.length - ja.length}</b> para pré-cadastrar${ja.length ? ` · ${ja.length} já estão no Conectwork` : ''} · ${ok.filter(x => x.email).length} com e-mail (recebem convite)${er.length ? ` · <span style="color:var(--danger)">${er.length} com problema: ${er.slice(0, 4).map(x => esc((x.nome || x.linha).slice(0, 30) + ' (' + x.erro + ')')).join(', ')}</span>` : ''}`; }; t.focus(); }
+    });
+    if (v !== 'ok') return;
+    const xs = lerLista(txt).filter(x => !x.erro), u = CW.fb.auth().currentUser, st = CW.sessao.estado(), quem = (st.perfil && st.perfil.nome) || u.email;
+    const db = CW.fb.db(), agora = CW.fb.agora, mods = (P().PLANOS.gratuito || { modulos: ['cobrancas'] }).modulos.slice(), res = [];
+    U().toast('Pré-cadastrando ' + xs.length + '…');
+    for (const x of xs) {
+      const ja = (empresas || []).find(e => dig(e.cnpj) === x.num);
+      if (ja) { res.push(Object.assign({ st: 'ja', empresaId: ja._id }, x)); continue; }
+      const empRef = db.collection('empresas').doc(), id = empRef.id, cvRef = x.email ? db.collection('convites').doc() : null, nomeNeg = x.nome;
+      try {
+        await db.runTransaction(async tx => {
+          const cRef = db.doc('contadores/protocolo'), nRef = db.doc('cnpjs/' + x.num);
+          const c = await tx.get(cRef), n = await tx.get(nRef);
+          if (n.exists) { const e = new Error('cnpj'); e.code = 'cw/cnpj-repetido'; throw e; }
+          const ano = new Date().getFullYear(), atual = c.exists ? c.data() : null, seq = atual && atual.ano === ano ? atual.n + 1 : 1, protocolo = `CW-${ano}-${String(seq).padStart(4, '0')}`;
+          tx.set(cRef, { ano, n: seq }); tx.set(nRef, { empresaId: id, criadoEm: agora() });
+          tx.set(empRef, { tipo: 'prestador', status: 'aprovado', nome: nomeNeg, razao: '', cnpj: x.cnpj, cnpjNum: x.num, cidade: '', uf: '', protocolo,
+            criadoPor: u.uid, criadoEm: agora(), enviadoEm: agora(), plano: 'gratuito', modulos: mods, preCadastro: true, avaliadoEm: agora(), avaliadoPor: quem });
+          tx.set(db.doc('empresas/' + id + '/privado/cadastro'), { dados: { porte: 'MEI' }, end: {}, resp: x.tel ? { nome: x.nome, celular: x.tel } : { nome: x.nome }, banco: {}, docs: {}, preCadastro: true });
+          if (cvRef) tx.set(cvRef, { email: x.email, nome: x.nome, tel: x.tel || '', empresaId: id, empresaNome: nomeNeg, cargo: 'admin', criadoPor: u.uid, criadoPorNome: quem, criadoEm: agora(), usado: false });
+          tx.set(db.collection('log').doc(), { em: agora(), uid: u.uid, quem, empresaId: id, acao: 'empresa.precadastro',
+            texto: `Pré-cadastro do MEI ${nomeNeg} (CNPJ ${x.cnpj}) pela equipe Conectwork, em lote${x.prest ? ', presta serviço para ' + x.prest : ''}.${x.email ? ' Convite de administrador(a) para ' + x.email + '.' : ''}`, ref: id });
+        });
+        res.push(Object.assign({ st: 'ok', empresaId: id, convite: cvRef ? cvRef.id : '' }, x));
+      } catch (err) { res.push(Object.assign({ st: 'erro', msg: err && err.code === 'cw/cnpj-repetido' ? 'CNPJ já tem cadastro' : CW.fb.mensagemErro(err) }, x)); }
+    }
+    mostrarLote(res);
+  }
+  const linkConv = t => ((window.CONECTWORK_CONFIG || {}).urlApp || (location.origin + location.pathname)).replace(/#.*$/, '').replace(/[^/]*$/, '') + 'convite/?c=' + t;
+  const msgConv = x => `Olá, ${x.nome.split(' ')[0]}! O seu MEI (CNPJ ${x.cnpj}) já está cadastrado no Conectwork${x.prest ? ', onde a ' + x.prest + ' vai pedir e receber as suas notas fiscais' : ''}.\n\nPara entrar, abra o link e crie a sua senha com o e-mail ${x.email}:\n${linkConv(x.convite)}\n\nO convite vale só para esse e-mail.`;
+  function mostrarLote(res) {
+    const { esc, ic, dig: d } = U(), ok = res.filter(x => x.st === 'ok'), ja = res.filter(x => x.st === 'ja'), er = res.filter(x => x.st === 'erro');
+    const zap = x => { const t = d(x.tel || ''); return `https://wa.me/${t.length === 11 || t.length === 10 ? '55' + t : ''}?text=${encodeURIComponent(msgConv(x))}`; };
+    U().dialogo({ titulo: 'MEIs pré-cadastrados', sub: `${ok.length} cadastrados agora${ja.length ? ` · ${ja.length} já estavam no Conectwork` : ''}${er.length ? ` · ${er.length} com erro` : ''}. Mande o convite de cada um.`,
+      corpo: `<div class="stack" style="gap:8px" id="pv-res">${ok.map((x, i) => `<div class="pv-l" style="display:flex;gap:8px 12px;align-items:center;flex-wrap:wrap;padding:6px 0;border-bottom:1px solid var(--line)"><span style="flex:1 1 200px;min-width:0"><b>${esc(x.nome)}</b><br><small class="hint">${esc(x.cnpj)}${x.email ? ' · ' + esc(x.email) : ' · sem e-mail'}</small></span>
+          ${x.convite ? `<a class="btn sm" target="_blank" rel="noopener" href="${esc(zap(x))}">${ic('send')}WhatsApp</a><button class="linkbtn" data-pvc="${i}">Copiar convite</button>` : '<small class="hint">Sem e-mail: abra o MEI em Cadastros e convide depois em Pessoas.</small>'}</div>`).join('')}
+        ${ja.length ? `<p class="hint" style="margin:6px 0 0">Já estavam no Conectwork: ${ja.map(x => esc(x.nome)).join(', ')}.</p>` : ''}
+        ${er.length ? `<p class="err" style="margin:6px 0 0">Não cadastrados: ${er.map(x => esc(x.nome + ' (' + x.msg + ')')).join(', ')}.</p>` : ''}</div>`,
+      botoes: [{ texto: 'Fechar', valor: null, classe: 'sec' }],
+      aoAbrir: dl => dl.querySelectorAll('[data-pvc]').forEach(b => b.onclick = async () => { try { await navigator.clipboard.writeText(msgConv(ok[+b.dataset.pvc])); U().toast('Convite copiado.'); } catch (e) { U().toast('Não deu para copiar. Use o WhatsApp.', 'erro'); } })
     });
   }
 
