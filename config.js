@@ -12,5 +12,7 @@ window.CONECTWORK_CONFIG = {
   ambiente: "producao",            // "producao" ou "teste"
   urlApp: "https://conectwork.com.br/",
   meiDinheiro: false,              // true liga o Dinheiro do MEI (entradas, saídas e o botão Registrar); desligado a pedido da usuária em 10/11/2026
+  suporteEmail: "",                // e-mail do suporte que aparece em Ajuda (vazio: a tela pede para falar com quem apresentou o Conectwork)
+  suporteWhatsapp: "",             // WhatsApp do suporte com DDI e DDD, só números (ex.: 5551999990000)
   loginMicrosoft: false            // true quando o app estiver registrado no Azure e ligado no Firebase (README › Login com Google e Microsoft)
 };

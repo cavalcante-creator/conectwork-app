@@ -58,7 +58,7 @@
     const tabela = (xs, id) => `<div class="scroll"><table class="resp" id="${id}"><thead><tr><th>Período</th><th class="r">Valor</th><th>Situação</th></tr></thead><tbody>${xs.map(linha).join('')}</tbody></table></div>`;
     el.innerHTML = `${minhas.length ? `<section class="card" id="md-minhas" style="margin-bottom:22px"><div class="card-h"><span class="ic">${ic('alert')}</span><h3>Precisa de você</h3><span class="count">${minhas.length}</span></div>${tabela(minhas, 'md-tab-minhas')}</section>` : ''}
       <section class="card" id="md-lista"><div class="card-h"><span class="ic">${ic('list')}</span><h3>Medições</h3><span class="count">${lista.length}</span></div>
-      ${lista.length ? tabela(lista, 'md-tab') : `<div class="empty"><div class="ic">${ic('list')}</div><strong>Nenhuma medição ainda.</strong><span>${pode(ctx, LANCA) ? 'Lance a medição do período ou envie do painel do RH com o botão "Enviar ao Conectwork".' : 'Quando houver medição de um contrato da sua empresa, ela aparece aqui.'}</span>${U().passos(['Contrato de equipe contínua ativo', 'Lance a medição do período (ou envie do painel do RH)', 'O aprovador confere e aprova a medição'])}</div>`}</section>`;
+      ${lista.length ? tabela(lista, 'md-tab') : `<div class="empty"><div class="ic">${ic('list')}</div><strong>Nenhuma medição ainda.</strong><span>${pode(ctx, LANCA) ? 'Lance a medição do período: digite cada profissional ou preencha com uma planilha (Excel ou CSV).' : 'Quando houver medição de um contrato da sua empresa, ela aparece aqui.'}</span>${U().passos(['Contrato de equipe contínua ativo', 'Lance a medição do período (digitada ou por planilha)', 'O aprovador confere e aprova a medição'])}</div>`}</section>`;
     const n = document.getElementById('md-nova'); if (n) n.onclick = () => formulario(ctx, null, null);
     el.querySelectorAll('[data-abrir]').forEach(r => { const ir = () => CW.ir('medicoes/ver/' + r.dataset.abrir); r.onclick = ir; r.onkeydown = e => { if (e.key === 'Enter') ir(); }; });
   }
@@ -89,7 +89,10 @@
           <label class="f c12"><span>Período</span><select id="md-per" ${pre ? 'disabled' : ''}></select></label></div>`}
         <div><p style="margin:0 0 8px;font-size:13px;font-weight:500">Memória: cada profissional, horas e valor <span class="hint" style="font-weight:400">(sem CPF)</span></p>
           <div class="md-its" id="md-its">${itens.map(linhaItem).join('')}</div>
-          <button type="button" class="linkbtn" id="md-mais" style="margin-top:8px">${ic('plus')}Mais um profissional</button></div>
+          <div class="md-plan"><button type="button" class="linkbtn" id="md-mais">${ic('plus')}Mais um profissional</button>
+            ${pre ? '' : `<button type="button" class="linkbtn" id="md-planilha">${ic('upload')}Preencher com uma planilha</button><button type="button" class="linkbtn" id="md-modelo">${ic('file')}Baixar o modelo</button>`}</div>
+          <input type="file" id="md-arq" accept=".xlsx,.xls,.csv,text/csv" hidden>
+          <p class="hint" id="md-plan-msg" style="margin:6px 0 0;font-size:12.5px"></p></div>
         <div class="md-total"><span>Total da medição</span><b id="md-total">R$ 0,00</b></div>
         <label class="f"><span>Observação <i>(opcional)</i></span><input id="md-obs" maxlength="300" value="${esc((m && m.obs) || '')}"></label>
         <p class="err" id="md-erro" role="alert"></p></form>`,
@@ -114,11 +117,83 @@
         const periodos = () => { if (!sp) return; const p = per(sc.value); const ps = pre ? [pre.periodo] : ultimosPeriodos(p, 8);
           sp.innerHTML = `<option value="">Escolha o período</option>` + ps.map(x => `<option value="${x}" ${pre && x === pre.periodo ? 'selected' : ''}>${esc(periodoTxt(x))}</option>`).join(''); };
         if (sc) { sc.onchange = periodos; periodos(); }
+        /* planilha (12/11/2026): qualquer cliente lança a medição a partir de uma planilha, sem depender de um painel de RH */
+        const arq = d.querySelector('#md-arq'), msg = d.querySelector('#md-plan-msg'), bp = d.querySelector('#md-planilha'), bm = d.querySelector('#md-modelo');
+        if (bm) bm.onclick = () => baixarModelo();
+        if (bp) bp.onclick = () => arq.click();
+        if (arq) arq.onchange = async () => {
+          const f = arq.files[0]; arq.value = ''; if (!f) return;
+          msg.textContent = 'Lendo a planilha…';
+          try {
+            const r = await lerPlanilha(f);
+            its.innerHTML = r.itens.map(linhaItem).join(''); ligar(); soma(); d.querySelector('#md-erro').textContent = '';
+            msg.textContent = `${r.itens.length} ${r.itens.length === 1 ? 'profissional' : 'profissionais'} da planilha "${f.name}".` + (r.pulou ? (r.pulou === 1 ? ' 1 linha sem nome ou sem valor ficou de fora.' : ` ${r.pulou} linhas sem nome ou sem valor ficaram de fora.`) : '') + ' Confira antes de enviar.';
+          } catch (e) { msg.textContent = ''; d.querySelector('#md-erro').textContent = e.message || 'Não foi possível ler a planilha.'; }
+        };
         ligar(); soma();
       }
     });
     if (!dados) return;
     return gravar(ctx, m, dados, pre, cts);
+  }
+  /* ---------- planilha da medição (12/11/2026): Excel ou CSV com Nome, Horas (opcional), Valor e CNPJ do MEI (opcional) ---------- */
+  const XLSX_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  const semAcento = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  function carregaScript(src, ok) {
+    if (ok()) return Promise.resolve();
+    return new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = src; sc.onload = () => ok() ? res() : rej(new Error('A ferramenta de planilha não carregou.')); sc.onerror = () => rej(new Error('Não foi possível baixar a ferramenta de planilha. Confira a internet ou salve como CSV.')); document.head.appendChild(sc); });
+  }
+  /* número de planilha: 1.234,56 · 1234,56 · 1234.56 · 1,234.56 · número do Excel */
+  function numero(v) {
+    if (typeof v === 'number') return v;
+    let t = String(v == null ? '' : v).replace(/[R$\s]/g, '');
+    if (!t) return null;
+    const uv = t.lastIndexOf(','), up = t.lastIndexOf('.');
+    if (uv > up) t = t.replace(/\./g, '').replace(',', '.');
+    else if (uv < 0 && /^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');   /* 1.200 = mil e duzentos */
+    else t = t.replace(/,/g, '');
+    const n = Number(t); return isFinite(n) ? n : NaN;
+  }
+  function csvLinhas(txt) {
+    const lin = txt.replace(/^\ufeff/, '').split(/\r?\n/).filter(l => l.trim());
+    const sep = (lin[0].match(/;/g) || []).length >= (lin[0].match(/,/g) || []).length ? ';' : ',';
+    return lin.map(l => { const out = []; let cur = '', q = false;
+      for (let i = 0; i < l.length; i++) { const ch = l[i];
+        if (q) { if (ch === '"' && l[i + 1] === '"') { cur += '"'; i++; } else if (ch === '"') q = false; else cur += ch; }
+        else if (ch === '"') q = true; else if (ch === sep) { out.push(cur); cur = ''; } else cur += ch; }
+      out.push(cur); return out; });
+  }
+  async function lerPlanilha(f) {
+    if (f.size > 5 * 1024 * 1024) throw new Error('A planilha passa de 5 MB. Deixe só as colunas Nome, Horas, Valor e CNPJ do MEI.');
+    let linhas;
+    if (/\.csv$/i.test(f.name) || f.type === 'text/csv') linhas = csvLinhas(await f.text());
+    else {
+      await carregaScript(XLSX_CDN, () => !!window.XLSX);
+      const wb = window.XLSX.read(await f.arrayBuffer(), { type: 'array' });
+      linhas = window.XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: '' });
+    }
+    const hi = linhas.findIndex(l => l.some(c => /^(nome|profissional)/.test(semAcento(c))));
+    if (hi < 0) throw new Error('Não achei a coluna "Nome" na planilha. Use o modelo: Nome, Horas, Valor e CNPJ do MEI.');
+    const cab = linhas[hi].map(semAcento), col = re => cab.findIndex(c => re.test(c));
+    const cN = col(/^(nome|profissional)/), cH = col(/^horas?/), cV = col(/^(valor|total)/), cC = col(/cnpj/);
+    if (cV < 0) throw new Error('Não achei a coluna "Valor" na planilha. Use o modelo: Nome, Horas, Valor e CNPJ do MEI.');
+    const itens = []; let pulou = 0;
+    linhas.slice(hi + 1).forEach((l, i) => {
+      const nome = String(l[cN] == null ? '' : l[cN]).trim().replace(/\s+/g, ' '), v = numero(l[cV]);
+      if (!nome && (v == null || isNaN(v))) return;   /* linha vazia */
+      if (/^total/.test(semAcento(nome))) return;      /* linha de total da planilha */
+      if (!nome || !(v > 0)) { pulou++; return; }
+      const h = cH >= 0 ? numero(l[cH]) : null, cn = cC >= 0 ? U().dig(String(l[cC] || '')) : '';
+      itens.push(Object.assign({ nome: nome.slice(0, 120), horas: h == null || isNaN(h) ? '' : Math.round(h * 100) / 100, valorCentavos: Math.round(v * 100) }, /^\d{14}$/.test(cn) && U().validarCNPJ(cn) ? { cnpj: cn } : {}));
+    });
+    if (!itens.length) throw new Error('A planilha não tem nenhuma linha com nome e valor. Confira as colunas Nome e Valor.');
+    if (itens.length > 300) throw new Error('A planilha tem mais de 300 profissionais. Divida em duas medições.');
+    return { itens, pulou };
+  }
+  function baixarModelo() {
+    const txt = '\ufeffNome;Horas;Valor;CNPJ do MEI\r\n';
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'text/csv;charset=utf-8' })); a.download = 'modelo-medicao-conectwork.csv';
+    document.body.appendChild(a); a.click(); a.remove();
   }
   function ler(d) {
     return Array.from(d.querySelectorAll('.md-it')).map(r => {
@@ -296,5 +371,5 @@
       importar: { nome: 'Medição do painel do RH', sub: 'Confira o que veio do painel do RH antes de enviar para a prestadora.', render: (el, ctx) => importar(el, ctx, ctx.params[0]) }
     }
   });
-  CW.medicoes = { periodoTxt, lerResumo, ultimosPeriodos };
+  CW.medicoes = { periodoTxt, lerResumo, ultimosPeriodos, numero, csvLinhas };
 })();

@@ -109,6 +109,7 @@
         <div class="usercard"><button class="uc-eu" id="meus-dados" type="button" title="Meus dados" aria-label="Meus dados: ${esc(nome)}">${avatar(nome, 'sm')}<span class="t"><strong id="quem-nome">${esc(nome)}</strong><small id="quem-sub">${esc(sub)}</small></span></button>
           <button class="iconbtn so-cel" id="busca-cel" aria-label="Buscar" title="Buscar">${ic('busca')}</button>
           <button class="iconbtn so-cel" id="tema-cel" aria-label="Tema claro ou escuro" title="Tema claro ou escuro"></button>
+          <button class="iconbtn" id="ajuda-btn" aria-label="Ajuda" title="Ajuda">${ic('help')}</button>
           <button class="iconbtn" id="minhas-aut" aria-label="Minhas autorizações" title="Minhas autorizações">${ic('shield')}</button>
           <button class="iconbtn" id="sair" aria-label="Sair" title="Sair">${ic('logout')}</button></div>
       </aside>
@@ -127,6 +128,7 @@
     posicionarTopo();
     const vc = document.getElementById('vercomo-sair'); if (vc) vc.onclick = () => CW.sessao.voltarEquipe('redeempresas/ver/' + ctx.empresaId);
     document.getElementById('minhas-aut').onclick = () => ir('autorizacoes');
+    document.getElementById('ajuda-btn').onclick = () => ir('ajuda');
     document.getElementById('meus-dados').onclick = () => ir('meusdados');
     document.getElementById('busca-abrir').onclick = document.getElementById('busca-cel').onclick = () => buscar();
     const ma = document.getElementById('menu-alt'); if (ma) ma.onclick = alternarMenu;
@@ -225,7 +227,7 @@
     const nomeMei = enxuto() && NOMES_MEI[m.id] && telaId === ids[0] ? NOMES_MEI[m.id] : '';   /* menu simples do MEI: o título usa o mesmo nome do menu */
     document.getElementById('titulo').textContent = nomeMei || (tela.titulo ? tela.titulo(baseCtx()) : (tela.nome || m.nome));
     document.getElementById('subtitulo').textContent = tela.sub || '';
-    const eb = document.getElementById('eyebrow'); if (eb) eb.textContent = m.id === 'inicio' ? new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }) : (GRUPO[m.id] || 'Conectwork');
+    const eb = document.getElementById('eyebrow'); if (eb) { eb.textContent = m.id === 'inicio' ? new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }) : (GRUPO[m.id] || ''); eb.hidden = !eb.textContent; }   /* sem grupo, sem a linha de cima (antes repetia "Conectwork") */
     document.getElementById('acoes').innerHTML = '';
     const tb = document.querySelector('.topbar'); if (tb) tb.hidden = false;   /* o Início do MEI esconde o título dele */
     const view = document.getElementById('view'); view.innerHTML = '';
@@ -247,7 +249,7 @@
   }
   function fontesBusca() {
     const c = baseCtx(), out = [], s = CW.sessao.estado();
-    const telas = menuMods().concat(visiveis().filter(m => ['meusdados', 'autorizacoes'].includes(m.id)));
+    const telas = menuMods().concat(visiveis().filter(m => ['meusdados', 'autorizacoes', 'ajuda'].includes(m.id)));
     telas.forEach(m => out.push({ g: 'Telas', t: m.nome, s: GRUPO[m.id] || 'Conectwork', rota: m.id, icone: m.icone, txt: m.nome + ' ' + (m.nomeCurto || '') }));
     if (CW.sessao.podeTrocar()) (s.opcoes || []).filter(o => o.chave !== (c.contexto || {}).chave)
       .forEach(o => out.push({ g: 'Trocar de empresa', t: o.nome, s: o.tipo === 'master' ? 'Voltar para a equipe Conectwork' : 'Entrar nesta empresa', chave: o.chave, icone: 'swap', txt: o.nome + ' ' + ((o.empresa || {}).cnpj || '') }));

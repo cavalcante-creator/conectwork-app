@@ -38,6 +38,54 @@
     if (!l.length) return `<div class="ini-vz">Nenhum vencimento em aberto.</div>`;
     return l.map(t => `<button class="ini-vc" data-vc="${esc(t.id)}"><span>${esc(t.nome)}<small>${esc(t.venc)} · ${t.lado === 'tomador' ? 'a pagar' : 'a receber'}${t.vencido ? ' · <b class="ini-atr">vencido</b>' : ''}</small></span><b>${esc(t.valor)}</b></button>`).join('');
   }
+  /* ---------- Primeiros passos (12/11/2026): para o administrador de uma empresa nova, o que falta para começar.
+     Cada passo se marca sozinho pelo que já existe; some quando tudo está feito ou quando a pessoa esconde. ---------- */
+  let passosUlt = null;   /* {ctx, F}: refaz a lista quando as pendências chegam (documentos carregam depois do Início) sem ler de novo */
+  async function passos(ctx, F0) {
+    const el = document.getElementById('ini-passos'), c = ctx.contexto;
+    if (!el || c.tipo !== 'empresa' || c.empresa.status !== 'aprovado' || (c.acesso || {}).cargo !== 'admin' || ctx.soLeitura) return;
+    const emp = c.empresaId, kOculto = 'cw.passos.oculto.' + emp;
+    try { if (localStorage.getItem(kOculto)) return; } catch (e) {}   /* escondido pela pessoa ou tudo feito: não lê nada */
+    const vis = id => CW.app.visiveis().some(m => m.id === id), db = CW.fb.db();
+    const presta = c.empresa.tipo === 'prestador';
+    const F = F0 || {};
+    if (!F0) {
+      const tenta = async p => { try { return await p; } catch (e) { return null; } };
+      const [logo, ac, cv, ctT, ctP] = await Promise.all([
+        tenta(CW.logos ? CW.logos.buscar(emp) : null),
+        vis('usuarios') ? tenta(db.collection('acessos').where('empresaId', '==', emp).limit(2).get()) : null,
+        vis('usuarios') ? tenta(db.collection('convites').where('empresaId', '==', emp).where('usado', '==', false).limit(1).get()) : null,
+        vis('contratos') ? tenta(db.collection('contratos').where('tomadorId', '==', emp).limit(1).get()) : null,
+        vis('contratos') ? tenta(db.collection('contratos').where('prestadorId', '==', emp).limit(1).get()) : null]);
+      F.logo = !!logo;
+      F.equipe = !!((ac && ac.size > 1) || (cv && cv.size));
+      F.contrato = !!((ctT && ctT.size) || (ctP && ctP.size));
+      passosUlt = { ctx, F };
+    }
+    let ajudaVista = false; try { ajudaVista = !!localStorage.getItem('cw.ajuda.vista'); } catch (e) {}
+    const docsMod = CW.app.visiveis().find(m => m.id === 'documentos');
+    const docsPend = CW.app.pendencias().some(p => p.mod === 'documentos' && p.rota === 'documentos'), docsPronto = !docsMod || !CW.documentos || (CW.documentos.carregado ? CW.documentos.carregado() : true);
+    const L = [
+      { id: 'logo', t: 'Ponha a logo da empresa', s: 'Ela aparece para quem trabalha com vocês no Conectwork.', ok: F.logo, rota: 'empresa', bt: 'Pôr a logo' },
+      vis('documentos') && { id: 'docs', t: 'Envie os documentos e as certidões', s: 'Ficam numa área só da empresa, com o aviso de vencimento.', ok: docsPronto && !docsPend, rota: 'documentos', bt: 'Enviar' },
+      vis('usuarios') && { id: 'equipe', t: 'Convide a sua equipe', s: 'Cada pessoa entra com o próprio e-mail e o cargo que você escolher (financeiro, aprovador, tesouraria…).', ok: F.equipe, rota: 'usuarios', bt: 'Convidar' },
+      vis('contratos') && { id: 'contrato', t: presta ? 'Assine o primeiro contrato' : 'Cadastre o primeiro contrato', s: presta ? 'Quem contrata cadastra o contrato; você confere e assina em Contratos.' : 'Com quem presta o serviço, a forma de medir e o vencimento. A triagem vem junto.', ok: F.contrato, rota: 'contratos', bt: presta ? 'Ver contratos' : 'Cadastrar' },
+      vis('ajuda') && { id: 'ajuda', t: 'Veja como o Conectwork funciona', s: 'Respostas curtas sobre contratos, medições, notas e pagamentos.', ok: ajudaVista, rota: 'ajuda', bt: 'Abrir a ajuda' }
+    ].filter(Boolean);
+    const feitos = L.filter(x => x.ok).length;
+    if (!L.length || feitos === L.length) { el.hidden = true; if (L.length) try { localStorage.setItem(kOculto, 'feito'); } catch (e) {} return; }
+    const { esc, ic } = CW.ui, prox = L.find(x => !x.ok);
+    el.hidden = false;
+    el.innerHTML = `<section class="card ini-ps"><div class="card-h"><span class="ic">${ic('star')}</span><h3>Primeiros passos</h3><span class="count" id="ini-ps-n">${feitos} de ${L.length}</span>
+        <button class="linkbtn" id="ini-ps-x" style="margin-left:auto;font-size:13px">Esconder</button></div>
+      <div class="ini-ps-bar" aria-hidden="true"><i style="width:${Math.round(feitos / L.length * 100)}%"></i></div>
+      <ol class="ini-ps-l">${L.map((x, i) => `<li class="${x.ok ? 'ok' : x === prox ? 'agora' : ''}" data-passo="${x.id}"><span class="n">${x.ok ? ic('check') : i + 1}</span>
+        <div class="t"><strong>${esc(x.t)}</strong><small>${esc(x.ok ? 'Feito' : x.s)}</small></div>
+        ${x.ok ? '' : `<button class="btn ${x === prox ? '' : 'sec'} sm" data-ir="${esc(x.rota)}">${esc(x.bt)}</button>`}</li>`).join('')}</ol></section>`;
+    el.querySelectorAll('[data-ir]').forEach(b => b.onclick = () => CW.ir(b.dataset.ir));
+    el.querySelector('#ini-ps-x').onclick = () => { try { localStorage.setItem(kOculto, '1'); } catch (e) {} el.hidden = true; CW.ui.toast('Primeiros passos escondidos. A Ajuda continua no menu.'); };
+  }
+
   function pvDesenha(ps) {
     const vc = document.getElementById('ini-venc-b');
     if (vc) { vc.innerHTML = vencHtml(); vc.querySelectorAll('[data-vc]').forEach(x => x.onclick = () => CW.ir('titulos/ver/' + x.dataset.vc)); }
@@ -50,9 +98,10 @@
       b.querySelectorAll('[data-pv]').forEach(x => x.onclick = () => CW.ir(x.dataset.pv));
     }
     const k = document.getElementById('ini-nums');
-    if (k) { k.innerHTML = numeros(ps); k.hidden = !k.innerHTML; k.querySelectorAll('[data-ir]').forEach(x => x.onclick = () => CW.ir(x.dataset.ir)); }
+    if (k) { k.innerHTML = numeros(ps); k.hidden = !k.innerHTML; k.dataset.n = k.children.length;   /* data-n: 4 números ficam 2 + 2, sem um cartão sobrando na linha de baixo */ k.querySelectorAll('[data-ir]').forEach(x => x.onclick = () => CW.ir(x.dataset.ir)); }
   }
-  window.addEventListener('cw:pendencias', e => { pvDesenha(e.detail || []); meiAtualiza(e.detail || []); });
+  window.addEventListener('cw:pendencias', e => { pvDesenha(e.detail || []); meiAtualiza(e.detail || []);
+    if (passosUlt && document.getElementById('ini-passos') && passosUlt.ctx.contexto.empresaId === (CW.sessao.contexto() || {}).empresaId) passos(passosUlt.ctx, passosUlt.F); });
 
   /* ---------- Início do MEI (10/11/2026): faixa azul com nome e CNPJ, alerta do DAS, demandas, "Serviços pra você",
      o mês, o limite e "Dados do seu MEI" (layout inspirado na referência que a usuária aprovou; marca e cores do Conectwork) ---------- */
@@ -195,6 +244,7 @@
           el.innerHTML = `<div id="ini-avisos" class="stack" style="gap:10px"></div>${aviso}${leitura}
             <div class="ini-grade">
               <div class="ini-principal">
+                <div id="ini-passos" hidden></div>
                 ${pv ? `<div class="ini-nums" id="ini-nums"></div>` : ''}${pv}
               </div>
               <aside class="ini-lado">
@@ -212,6 +262,7 @@
               </aside>
             </div>`;
           pvDesenha(CW.app.pendencias());
+          passos(ctx);
           if (CW.avisos) CW.avisos.bloco(document.getElementById('ini-avisos'), ctx);
         }
       }

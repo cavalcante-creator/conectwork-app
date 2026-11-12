@@ -224,5 +224,5 @@
   });
   /* agenda (10/11/2026): documentos da própria empresa com validade, já carregados por esta tela */
   const comValidade = () => (meus || []).filter(d => d.status === 'vigente' && d.validade).map(d => ({ id: d._id, nome: tipoDe(d.tipo)[1] || d.nome, validade: d.validade }));
-  CW.documentos = { comValidade, situacao, blocoContrato, alerta, blocoMaster, abrirArquivo, OBRIG_PRESTA, CERTS, obrigContrato, TIPOS };
+  CW.documentos = { carregado: () => meus !== null, comValidade, situacao, blocoContrato, alerta, blocoMaster, abrirArquivo, OBRIG_PRESTA, CERTS, obrigContrato, TIPOS };
 })();
