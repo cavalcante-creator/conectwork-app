@@ -167,7 +167,9 @@ h1,h2,h3{letter-spacing:-.015em}
 .appbar{display:flex;align-items:center;gap:8px;padding:14px clamp(16px,3.5vw,40px);border-bottom:1px solid var(--line);background:var(--surface)}
 .crumbs{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);min-width:0;margin-right:auto}
 .crumbs b{color:var(--ink);font-weight:500}
-.crumbs svg.i{width:14px;height:14px;color:var(--faint)}
+.crumbs svg.i{width:14px;height:14px;color:var(--faint);flex:none}
+.crumbs{overflow:hidden}
+.crumbs>span,.crumbs>b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .topobtn{display:inline-flex;align-items:center;gap:6px;background:var(--infobg);color:var(--info);border:0;border-radius:999px;padding:5px 12px;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;max-width:220px}
 .topobtn span{overflow:hidden;text-overflow:ellipsis}
 .topobtn svg.i{width:14px;height:14px}
@@ -1182,6 +1184,10 @@ table.resp th,table th{font-size:11px;font-weight:600;letter-spacing:.06em;text-
 @media (min-width:901px){
   .appbar{gap:12px}
   .topo-dir{margin-left:auto;display:flex;align-items:center;gap:10px;min-width:0}
+  .topo-dir .empbloco,.topo-dir .usercard{min-width:0;flex:0 1 auto}   /* nome comprido encolhe com reticências; a página não fica mais larga que a janela (11/11) */
+  .appbar{min-width:0;overflow:hidden}
+  .appbar .crumbs{flex:0 1 auto}   /* trilha e nomes encolhem com reticências; a busca fica mais estreita em telas médias (fim do arquivo) */
+  .topo-dir{flex:0 1 auto}
   .topo-dir .empbloco{margin:0;height:44px;padding:0 6px 0 8px;border-radius:10px;background:var(--surface2);border:1px solid var(--line);max-width:340px}
   .topo-dir .empbloco small{color:var(--muted)}
   .topo-dir .empbloco strong{color:var(--ink)}
@@ -1595,8 +1601,8 @@ html.mei .shell .side,html.mei .shell .logo{background:#13265E}
 
 /* ---------- Na sua cidade e Oportunidades da cidade (11/11/2026) · prefixo cd- ---------- */
 .cd-topo{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.cd-topo small{display:block;font-size:11.5px;letter-spacing:.08em;color:var(--muted);font-weight:600}
-.cd-topo b{font-family:var(--fd);font-size:20px}
+.cd-cid{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600;color:var(--muted)}
+.cd-cid svg{width:16px;height:16px}
 .cd-abas{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
 .cd-abas button,.cd-seg button{flex:none;border:1px solid var(--line);background:var(--surface);color:inherit;font:inherit;font-size:13.5px;font-weight:600;padding:9px 14px;border-radius:999px;cursor:pointer;white-space:nowrap}
 .cd-abas button[aria-selected="true"],.cd-seg button[aria-pressed="true"]{background:var(--blue);border-color:var(--blue);color:#fff}
@@ -1642,3 +1648,9 @@ html.mei .shell .side,html.mei .shell .logo{background:#13265E}
 .cd-dados small{display:block;color:var(--muted);font-size:12px}
 .cd-dados b{font-size:13.5px;word-break:break-word}
 @media (max-width:700px){.cd-lista{grid-template-columns:1fr}.cd-it{flex-wrap:wrap}.cd-it .cd-bts{flex-direction:row;width:100%}.cd-dados{grid-template-columns:1fr}.cd-seg{margin-left:0;width:100%}}
+
+/* topo em telas médias (11/11): a busca fica mais estreita para a trilha e os nomes caberem */
+@media (min-width:901px) and (max-width:1500px){
+  .appbar .busca-top{width:clamp(150px,15vw,240px)}
+  .appbar .busca-top kbd{display:none}
+}

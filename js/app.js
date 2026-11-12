@@ -221,7 +221,7 @@
     if (mudou) { const ap = document.getElementById('app'); if (ap) ap.scrollTop = 0; window.scrollTo(0, 0); }   /* outra tela começa do alto */
     document.querySelectorAll('#menu [data-mod]').forEach(b => { if (b.dataset.mod === m.id) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
     barraBaixo(menuMods(), m.id);
-    document.getElementById('crumbs').innerHTML = `Conectwork ${ic('chev')} ${ids.length > 1 && telaId !== ids[0] ? `<span>${esc(m.nome)}</span> ${ic('chev')} <b>${esc(tela.nome)}</b>` : `<b>${esc(m.nome)}</b>`}`;
+    document.getElementById('crumbs').innerHTML = `${ids.length > 1 && telaId !== ids[0] ? `<span>${esc(m.nome)}</span> ${ic('chev')} <b>${esc(tela.nome)}</b>` : `<b>${esc(m.nome)}</b>`}`;
     const nomeMei = enxuto() && NOMES_MEI[m.id] && telaId === ids[0] ? NOMES_MEI[m.id] : '';   /* menu simples do MEI: o título usa o mesmo nome do menu */
     document.getElementById('titulo').textContent = nomeMei || (tela.titulo ? tela.titulo(baseCtx()) : (tela.nome || m.nome));
     document.getElementById('subtitulo').textContent = tela.sub || '';

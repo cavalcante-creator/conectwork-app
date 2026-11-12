@@ -129,18 +129,20 @@
 
   function inscritos(el, ctx) {
     const { esc, ic, formatarData } = U(), id = (ctx.params || [])[0], o = (G.ops || []).find(x => x._id === id);
-    document.getElementById('acoes').innerHTML = `<button class="btn sec" id="ci-voltar">${ic('chev')}Voltar</button>`;
-    document.getElementById('ci-voltar').onclick = () => CW.ir('cidadegestao');
-    if (!G.ops || !G.insc) { el.innerHTML = `<div class="card"><div class="empty"><div class="giro"></div><span>Carregando…</span></div></div>`; return; }
-    if (!o) { el.innerHTML = `<div class="banner warn">${ic('alert')}<span><strong>Publicação não encontrada.</strong></span></div>`; return; }
+    document.getElementById('acoes').innerHTML = '';
+    const volta = `<div style="margin-bottom:14px"><button class="linkbtn" id="ci-voltar">${ic('back')}Voltar para as publicações</button></div>`;
+    const liga = () => { const b = document.getElementById('ci-voltar'); if (b) b.onclick = () => CW.ir('cidadegestao'); };
+    if (!G.ops || !G.insc) { el.innerHTML = volta + `<div class="card"><div class="empty"><div class="giro"></div><span>Carregando…</span></div></div>`; liga(); return; }
+    if (!o) { el.innerHTML = volta + `<div class="banner warn">${ic('alert')}<span><strong>Publicação não encontrada.</strong></span></div>`; liga(); return; }
     const xs = inscDe(id).sort((a, b) => ms(a.criadoEm) - ms(b.criadoEm)), canc = (G.insc || []).filter(i => i.oportunidadeId === id && i.status === 'cancelado').length;
-    el.innerHTML = `<section class="card" style="margin-bottom:18px"><div class="card-b"><span class="pill info">${esc((TIPOS[o.tipo] || {}).nome || '')}</span> <strong style="font-size:17px">${esc(o.titulo)}</strong><div class="hint">${esc(quando(o))}${o.vagas ? ' · ' + o.vagas + ' vagas' : ''}</div></div></section>
+    el.innerHTML = volta + `<section class="card" style="margin-bottom:18px"><div class="card-b cd-tx"><div class="cd-l1"><span class="pill info">${esc((TIPOS[o.tipo] || {}).nome || '')}</span></div><strong style="font-size:17px">${esc(o.titulo)}</strong><small>${esc(quando(o))}${o.vagas ? ' · ' + o.vagas + ' vagas' : ''}</small></div></section>
       <section class="card" id="ci-lista"><div class="card-h"><span class="ic">${ic('users')}</span><h3>Inscritos</h3><span class="count">${xs.length}</span>${xs.length ? `<button class="btn sec sm" id="ci-csv" style="margin-left:auto">${ic('file')}Baixar a lista</button>` : ''}</div>
         ${xs.length ? `<div class="scroll"><table class="rl-tab"><thead><tr><th>Negócio</th><th>Pessoa</th><th>Contato</th><th>Inscrito em</th><th>Situação</th><th></th></tr></thead><tbody>${xs.map(i => `<tr data-i="${esc(i._id)}"><td style="white-space:normal"><strong>${esc(i.negocio)}</strong></td><td>${esc(i.pessoa)}</td><td style="white-space:normal">${esc(i.tel || '')}${i.tel && i.email ? ' · ' : ''}${esc(i.email || '')}</td><td>${esc(formatarData(i.criadoEm) || '')}</td>
             <td>${i.concluiu ? '<span class="pill ok">Concluiu</span>' : '<span class="pill info">Inscrito</span>'}</td>
             <td>${podeG(ctx) && o.tipo === 'curso' ? (i.concluiu ? `<button class="btn sec sm" data-desfaz="${esc(i._id)}">Desfazer</button>` : `<button class="btn sec sm" data-concluiu="${esc(i._id)}">${ic('check')}Concluiu</button>`) : ''}</td></tr>`).join('')}</tbody></table></div>`
           : `<div class="card-b"><div class="empty" id="ci-vazio"><div class="ic">${ic('users')}</div><strong>Ninguém se inscreveu ainda</strong><span>As inscrições feitas em "Na sua cidade" aparecem aqui na hora.</span></div></div>`}
         <p class="hint" style="margin:0;padding:10px 20px;font-size:12.5px;border-top:1px solid var(--line)">${canc ? canc + ' inscrição(ões) cancelada(s) não aparecem. ' : ''}Cada pessoa autorizou o envio destes dados só para esta inscrição (LGPD). Use apenas para organizar o curso ou evento.</p></section>`;
+    liga();
     const marca = (iid, sim) => { const i = xs.find(z => z._id === iid); if (!i) return;
       grava((b, db) => { b.update(db.doc('inscricoes/' + iid), { concluiu: sim ? { em: hoje(), por: quem(ctx) } : null, atualizadoEm: CW.fb.agora() });
         log(b, sim ? 'cidade.concluiu' : 'cidade.desfazer', `${i.negocio} ${sim ? 'concluiu' : 'voltou para inscrito em'} "${o.titulo}".`, iid); }, sim ? 'Marcado: concluiu. O certificado aparece no perfil do prestador.' : 'Voltou para inscrito.'); };
@@ -181,10 +183,11 @@
   }
   const minha = id => (N.insc || []).find(i => i.oportunidadeId === id && i.status !== 'cancelado');
 
+  const variasOrigens = () => new Set(vivas().map(o => o.origemId)).size > 1;
   function cartao(o, ctx) {
     const { esc, ic } = U(), t = TIPOS[o.tipo] || TIPOS.aviso, ins = minha(o._id);
     return `<article class="cd-card ${esc(o.tipo)}" data-op="${esc(o._id)}"><span class="cd-ic ${esc(o.tipo)}">${ic(t.ic)}</span><div class="cd-tx">
-        <div class="cd-l1"><span class="pill info">${esc(t.nome)}</span>${ins ? (ins.concluiu ? '<span class="pill ok">Você concluiu</span>' : '<span class="pill ok">Você está inscrito</span>') : ''}<small>${esc(o.origemNome || 'Prefeitura')}</small></div>
+        <div class="cd-l1"><span class="pill info">${esc(t.nome)}</span>${ins ? (ins.concluiu ? '<span class="pill ok">Você concluiu</span>' : '<span class="pill ok">Você está inscrito</span>') : ''}${variasOrigens() ? `<small>${esc(o.origemNome || 'Prefeitura')}</small>` : ''}</div>
         <strong>${esc(o.titulo)}</strong>${quando(o) ? `<small class="cd-qd">${ic('clock')}${esc(quando(o))}</small>` : ''}
         ${o.motivo ? `<div class="cd-motivo">${ic('star')}${esc(o.motivo)}</div>` : ''}
         ${o.texto ? `<p>${esc(o.texto)}</p>` : ''}
@@ -210,7 +213,7 @@
     else corpo = (por[N.aba] || []).length ? `<div class="cd-lista" id="nc-lista">${ord(por[N.aba]).map(o => cartao(o, ctx)).join('')}</div>` : vazioAba('Nada nesta parte por enquanto.');
     const credExtra = N.aba === 'credito' ? `<section class="card" id="nc-renda" style="margin-top:18px"><div class="card-b cd-renda"><span class="cd-ic credito">${ic('file')}</span><div><strong>Comprovante de recebimentos</strong><p>Para pedir crédito sem ter como provar quanto ganha: o Conectwork monta um PDF com os pagamentos de notas confirmados aqui. Você baixa e leva; nada é enviado a ninguém.</p></div><button class="btn" data-ir="nacidade/renda">${ic('file')}Montar o comprovante</button></div></section>` : '';
     const certs = meusC.filter(i => i.concluiu);
-    el.innerHTML = `<div class="cd-topo"><div><small>NA SUA CIDADE</small><b>${esc(emp.cidade)} · ${esc(emp.uf)}</b></div>${N.cursosOk === false ? `<button class="btn sec sm" id="nc-avise">${ic('mail')}Quero ser avisado de cursos</button>` : ''}</div>
+    el.innerHTML = `<div class="cd-topo"><span class="cd-cid">${ic('building')}${esc(emp.cidade)} · ${esc(emp.uf)}</span>${N.cursosOk === false ? `<button class="btn sec sm" id="nc-avise">${ic('mail')}Quero ser avisado de cursos</button>` : ''}</div>
       <div class="cd-abas" id="nc-abas" role="tablist">${ABAS.map(([v, t]) => `<button role="tab" data-aba="${v}" aria-selected="${N.aba === v}">${t}${(por[v] || []).length ? ` <i>${por[v].length}</i>` : ''}</button>`).join('')}</div>
       ${corpo}${credExtra}
       ${meusC.length ? `<section class="card" id="nc-meus" style="margin-top:22px"><div class="card-h"><span class="ic">${ic('star')}</span><h3>Meus cursos e eventos</h3><span class="count">${meusC.length}</span></div>
@@ -228,7 +231,7 @@
     if (!o) return;
     const { esc } = U(), emp = empDe(ctx), empId = ctx.contexto.empresaId, st = ctx.sessao, pessoa = quem(ctx), email = (st.usuario.email || '').toLowerCase(), tel = (st.perfil && (st.perfil.zap || st.perfil.tel)) || '';
     if (ctx.soLeitura || (ctx.contexto.acesso || {}).cargo !== 'admin') { U().toast('Só o administrador da empresa faz a inscrição.', 'erro'); return; }
-    const texto = `Autorizo o Conectwork a enviar para ${o.origemNome || 'a Prefeitura'} o nome do meu negócio, o meu nome, o meu e-mail e o meu telefone, só para a inscrição em "${o.titulo}".`;
+    const texto = `Autorizo o Conectwork a enviar ${/^prefeitura/i.test(o.origemNome || 'Prefeitura') ? 'à ' : 'para '}${o.origemNome || 'Prefeitura'} o nome do meu negócio, o meu nome, o meu e-mail e o meu telefone, só para a inscrição em "${o.titulo}".`;
     const ok = await U().dialogo({ titulo: 'Quero participar', sub: o.titulo,
       corpo: `<div class="stack" style="gap:12px"><div class="cd-dados"><div><small>Negócio</small><b>${esc(emp.nome || '')}</b></div><div><small>Pessoa</small><b>${esc(pessoa)}</b></div><div><small>E-mail</small><b>${esc(email)}</b></div><div><small>Telefone</small><b>${esc(tel || 'não informado')}</b></div></div>
         <label class="check"><input type="checkbox" id="np-aceite"><span>${esc(texto)}<small>Você pode cancelar a inscrição quando quiser. Os dados não são usados para mais nada.</small></span></label><p class="err" id="np-erro" role="alert"></p></div>`,
@@ -260,16 +263,17 @@
   }
   function renda(el, ctx) {
     const { esc, ic } = U(), emp = empDe(ctx), R = recebidosDe(ctx, rendaMeses), brl = c => U().formatarDinheiro(c);
-    document.getElementById('acoes').innerHTML = `<button class="btn sec" id="nr-voltar">${ic('chev')}Voltar</button>`;
-    document.getElementById('nr-voltar').onclick = () => { N.aba = 'credito'; CW.ir('nacidade'); };
+    document.getElementById('acoes').innerHTML = '';
     const mesTxt = m => MESES[+m.slice(5, 7) - 1].slice(0, 3) + '/' + m.slice(2, 4), mx = Math.max(1, ...Object.values(R.porMes));
-    el.innerHTML = `<div class="banner info" style="margin-bottom:18px">${ic('shield')}<span><strong>Você baixa e leva</strong>O comprovante junta os pagamentos de notas confirmados no Conectwork. Ele fica com você: o Conectwork não manda os seus dados para banco, Prefeitura ou qualquer outra entidade.</span></div>
+    el.innerHTML = `<div style="margin-bottom:14px"><button class="linkbtn" id="nr-voltar">${ic('back')}Voltar para Na sua cidade</button></div>
+      <div class="banner info" style="margin-bottom:18px">${ic('shield')}<span><strong>Você baixa e leva</strong>O comprovante junta os pagamentos de notas confirmados no Conectwork. Ele fica com você: o Conectwork não manda os seus dados para banco, Prefeitura ou qualquer outra entidade.</span></div>
       <section class="card" style="margin-bottom:18px"><div class="card-b cd-rtopo"><label class="f"><span>Período</span><select id="nr-meses"><option value="6" ${rendaMeses === 6 ? 'selected' : ''}>Últimos 6 meses</option><option value="12" ${rendaMeses === 12 ? 'selected' : ''}>Últimos 12 meses</option></select></label>
         <div class="pc-n" id="nr-total"><small>Recebido no período</small><b>${esc(brl(R.total))}</b><span>${R.xs.length} pagamento${R.xs.length === 1 ? '' : 's'}</span></div><div class="pc-n" id="nr-media"><small>Média por mês</small><b>${esc(brl(R.media))}</b><span>em ${rendaMeses} meses</span></div>
         <button class="btn" id="nr-pdf" ${R.xs.length ? '' : 'disabled'}>${ic('file')}Baixar o comprovante (PDF)</button></div></section>
       ${R.xs.length ? `<section class="card" style="margin-bottom:18px"><div class="card-h"><span class="ic">${ic('chart')}</span><h3>Mês a mês</h3></div><div class="card-b">${Object.entries(R.porMes).map(([m, v]) => `<div class="pc-bar"><span>${esc(mesTxt(m))}</span><i style="width:${Math.round(v / mx * 100)}%"></i><span class="r">${esc(brl(v))}</span></div>`).join('')}</div></section>
       <section class="card" id="nr-lista"><div class="card-h"><span class="ic">${ic('wallet')}</span><h3>Pagamentos recebidos</h3><span class="count">${R.xs.length}</span></div><div class="scroll"><table class="rl-tab"><thead><tr><th>Data</th><th>Quem pagou</th><th>Nota</th><th style="text-align:right">Valor</th></tr></thead><tbody>${R.xs.map(t => `<tr><td>${esc(dataBR(t.data))}</td><td style="white-space:normal">${esc(t.nome)}</td><td>${esc(t.nota || '—')}</td><td style="text-align:right"><strong>${esc(brl(t.centavos))}</strong></td></tr>`).join('')}</tbody></table></div></section>`
       : `<div class="card"><div class="empty" id="nr-vazio"><div class="ic">${ic('wallet')}</div><strong>Ainda não há pagamentos confirmados no período</strong><span>O comprovante usa os pagamentos de notas que o cliente confirmou no Conectwork. Quando houver, ele pode ser baixado aqui.</span></div></div>`}`;
+    document.getElementById('nr-voltar').onclick = () => { N.aba = 'credito'; CW.ir('nacidade'); };
     document.getElementById('nr-meses').onchange = e => { rendaMeses = +e.target.value; renda(el, ctx); };
     document.getElementById('nr-pdf').onclick = () => rendaPdf(ctx, emp, R);
   }
@@ -300,7 +304,7 @@
   const redesenha = (mod, f) => () => { const el = document.getElementById('view'), at = CW.app.atual(); if (el && at && at.modulo === mod) CW.app.desenhar(); CW.app.pendenciasMudaram(); if (f) f(); };
 
   CW.registrarModulo({
-    id: 'cidadegestao', nome: 'Oportunidades da cidade', nomeCurto: 'Cidade', icone: 'building', ordem: 19,
+    id: 'cidadegestao', nome: 'Oportunidades da cidade', nomeCurto: 'Publicar', icone: 'send', ordem: 19,
     para: ['empresa'], contrato: 'cidade',
     iniciar(ctx) {
       G = { ops: null, insc: null, filtro: 'no-ar' };
