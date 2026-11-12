@@ -629,6 +629,54 @@ async function deve(nome, permitido, op) {
   await deve('Empresa: a equipe suspende o acesso de uma empresa (com motivo)', true, () => updateDoc(doc(db('master'), 'empresas', 'beta'), { status: 'suspenso', motivo: 'Mensalidade em atraso.', avaliadoEm: serverTimestamp(), avaliadoPor: 'Iasmyn' }));
   await deve('Empresa: o admin NÃO tira a própria suspensão', false, () => updateDoc(doc(db('beto'), 'empresas', 'beta'), { status: 'aprovado' }));
 
+  /* ---------- Na sua cidade (11/11/2026): a Prefeitura publica, o prestador se inscreve ---------- */
+  Object.assign(P, { pia: 'uPIA', caio: 'uCAIO', olga: 'uOLGA', vera: 'uVERA' });
+  Object.assign(EM, { pia: 'pia@cidade.example', caio: 'caio@mei.example', olga: 'olga@cidade.example', vera: 'vera@outra.example' });
+  await env.withSecurityRulesDisabled(async c => { const d = c.firestore();
+    await setDoc(doc(d, 'empresas', 'pref'), { nome: 'Prefeitura de Vila Nova', status: 'aprovado', tipo: 'contratante', cidade: 'Vila Nova', uf: 'RS', modulos: ['equipe', 'cidade'], criadoPor: 'uX' });
+    await setDoc(doc(d, 'empresas', 'meic'), { nome: 'Caio Reparos', status: 'mei', tipo: 'prestador', cidade: 'Vila Nova', uf: 'RS', criadoPor: P.caio });
+    await setDoc(doc(d, 'empresas', 'semmod'), { nome: 'Outra Ltda', status: 'aprovado', tipo: 'contratante', cidade: 'Vila Nova', uf: 'RS', modulos: ['equipe'], criadoPor: 'uX' });
+    const ac = (emp, k, cargo) => setDoc(doc(d, 'acessos', emp + '_' + P[k]), { uid: P[k], empresaId: emp, nome: k, email: EM[k], cargo, extras: [], sem: [], ativo: true });
+    await ac('pref', 'pia', 'admin'); await ac('pref', 'olga', 'consulta'); await ac('meic', 'caio', 'admin'); await ac('semmod', 'vera', 'admin'); });
+  const op = extra => Object.assign({ origemId: 'pref', origemNome: 'Prefeitura de Vila Nova', cidade: 'Vila Nova', uf: 'RS', cidadeKey: 'vila-nova-rs', tipo: 'curso', titulo: 'Oficina de regularização do DAS', texto: '', data: '2026-12-01', hora: '19:00', local: 'Sala do Empreendedor', link: '', ate: '', inscricao: true, vagas: 30, gatilho: 'das', ramos: [], docs: [], valorCentavos: 0,
+    status: 'publicado', criadoPor: P.pia, criadoPorNome: 'Pia', criadoEm: serverTimestamp(), atualizadoEm: serverTimestamp() }, extra || {});
+  await deve('Cidade: a parceira publica para a própria cidade', true, () => setDoc(doc(db('pia'), 'oportunidades', 'o1'), op()));
+  await deve('Cidade: guarda um rascunho', true, () => setDoc(doc(db('pia'), 'oportunidades', 'o2'), op({ status: 'rascunho', tipo: 'licitacao', titulo: 'Pregão de pintura', inscricao: false, vagas: 0, gatilho: '' })));
+  await deve('Cidade: NÃO publica para outra cidade', false, () => setDoc(doc(db('pia'), 'oportunidades', 'o3'), op({ cidade: 'Outra Cidade', cidadeKey: 'outra-cidade-rs' })));
+  await deve('Cidade: NÃO com campo a mais', false, () => setDoc(doc(db('pia'), 'oportunidades', 'o3'), op({ cpf: '1' })));
+  await deve('Cidade: NÃO com link que não é https', false, () => setDoc(doc(db('pia'), 'oportunidades', 'o3'), op({ link: 'javascript:alert(1)' })));
+  await deve('Cidade: NÃO em nome de outra pessoa', false, () => setDoc(doc(db('pia'), 'oportunidades', 'o3'), op({ criadoPor: P.olga })));
+  await deve('Cidade: cargo de consulta da parceira NÃO publica', false, () => setDoc(doc(db('olga'), 'oportunidades', 'o3'), op({ criadoPor: P.olga })));
+  await deve('Cidade: empresa sem o módulo NÃO publica', false, () => setDoc(doc(db('vera'), 'oportunidades', 'o3'), op({ origemId: 'semmod', criadoPor: P.vera })));
+  await deve('Cidade: o prestador NÃO publica em nome da parceira', false, () => setDoc(doc(db('caio'), 'oportunidades', 'o3'), op({ criadoPor: P.caio })));
+  await deve('Cidade: o prestador lê o que está publicado na cidade', true, () => getDocs(query(collection(db('caio'), 'oportunidades'), where('cidadeKey', '==', 'vila-nova-rs'), where('status', '==', 'publicado'))));
+  await deve('Cidade: o prestador NÃO lê rascunho', false, () => getDoc(doc(db('caio'), 'oportunidades', 'o2')));
+  await deve('Cidade: sem login NÃO lê', false, () => getDoc(doc(anon(), 'oportunidades', 'o1')));
+  await deve('Cidade: a parceira lê todas as suas (rascunho também)', true, () => getDocs(query(collection(db('pia'), 'oportunidades'), where('origemId', '==', 'pref'))));
+  await deve('Cidade: a parceira encerra', true, () => updateDoc(doc(db('pia'), 'oportunidades', 'o2'), { status: 'encerrado', atualizadoEm: serverTimestamp() }));
+  await deve('Cidade: NÃO troca a cidade depois', false, () => updateDoc(doc(db('pia'), 'oportunidades', 'o1'), { cidade: 'Outra', cidadeKey: 'outra-rs' }));
+  await deve('Cidade: ninguém apaga a publicação', false, () => deleteDoc(doc(db('pia'), 'oportunidades', 'o1')));
+  const ins = extra => Object.assign({ oportunidadeId: 'o1', origemId: 'pref', origemNome: 'Prefeitura de Vila Nova', titulo: 'Oficina de regularização do DAS', tipo: 'curso', empresaId: 'meic', negocio: 'Caio Reparos', pessoa: 'Caio', email: EM.caio, tel: '',
+    status: 'inscrito', concluiu: null, consentimento: { texto: 'Autorizo o envio do nome, e-mail e telefone só para esta inscrição.', versao: '2026-11-11', em: serverTimestamp() }, criadoPor: P.caio, criadoEm: serverTimestamp(), atualizadoEm: serverTimestamp() }, extra || {});
+  await deve('Inscrição: NÃO sem a autorização', false, () => setDoc(doc(db('caio'), 'inscricoes', 'o1_meic'), ins({ consentimento: null })));
+  await deve('Inscrição: NÃO em publicação encerrada', false, () => setDoc(doc(db('caio'), 'inscricoes', 'o2_meic'), ins({ oportunidadeId: 'o2' })));
+  await deve('Inscrição: NÃO em nome de outra empresa', false, () => setDoc(doc(db('caio'), 'inscricoes', 'o1_alfa'), ins({ empresaId: 'alfa' })));
+  await deve('Inscrição: NÃO com outro identificador', false, () => setDoc(doc(db('caio'), 'inscricoes', 'qualquer'), ins()));
+  await deve('Inscrição: NÃO já nasce como concluído', false, () => setDoc(doc(db('caio'), 'inscricoes', 'o1_meic'), ins({ concluiu: { em: '2026-12-01', por: 'Caio' } })));
+  await deve('Inscrição: o MEI (cadastro rápido) se inscreve com a autorização', true, () => setDoc(doc(db('caio'), 'inscricoes', 'o1_meic'), ins()));
+  await deve('Inscrição: o MEI lê as próprias', true, () => getDocs(query(collection(db('caio'), 'inscricoes'), where('empresaId', '==', 'meic'))));
+  await deve('Inscrição: a parceira lê os inscritos das publicações dela', true, () => getDocs(query(collection(db('pia'), 'inscricoes'), where('origemId', '==', 'pref'))));
+  await deve('Inscrição: outra empresa NÃO lê', false, () => getDoc(doc(db('vera'), 'inscricoes', 'o1_meic')));
+  await deve('Inscrição: quem não é de nenhuma das duas NÃO lista', false, () => getDocs(query(collection(db('vera'), 'inscricoes'), where('origemId', '==', 'pref'))));
+  await deve('Inscrição: o MEI NÃO marca que concluiu', false, () => updateDoc(doc(db('caio'), 'inscricoes', 'o1_meic'), { concluiu: { em: '2026-12-01', por: 'Caio' } }));
+  await deve('Inscrição: a parceira marca que concluiu', true, () => updateDoc(doc(db('pia'), 'inscricoes', 'o1_meic'), { concluiu: { em: '2026-12-01', por: 'Pia' }, atualizadoEm: serverTimestamp() }));
+  await deve('Inscrição: a parceira NÃO muda os dados do inscrito', false, () => updateDoc(doc(db('pia'), 'inscricoes', 'o1_meic'), { tel: '51999990000' }));
+  await deve('Inscrição: consulta da parceira NÃO marca', false, () => updateDoc(doc(db('olga'), 'inscricoes', 'o1_meic'), { concluiu: null }));
+  await deve('Inscrição: o MEI cancela', true, () => updateDoc(doc(db('caio'), 'inscricoes', 'o1_meic'), { status: 'cancelado', atualizadoEm: serverTimestamp() }));
+  await deve('Inscrição: o MEI NÃO troca a publicação da inscrição', false, () => updateDoc(doc(db('caio'), 'inscricoes', 'o1_meic'), { oportunidadeId: 'o2' }));
+  await deve('Inscrição: ninguém apaga', false, () => deleteDoc(doc(db('caio'), 'inscricoes', 'o1_meic')));
+  await deve('Cidade: o MEI NÃO vira parceiro mudando a própria empresa', false, () => updateDoc(doc(db('caio'), 'empresas', 'meic'), { modulos: ['cidade'] }));
+
   await env.cleanup();
   const falhas = res.filter(r => !r.ok).length;
   console.log(`\n${res.length - falhas} de ${res.length} testes de regras passaram.`);

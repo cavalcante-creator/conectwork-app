@@ -802,6 +802,68 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // ---------- Na sua cidade (11/11/2026): a Prefeitura (empresa parceira com o módulo 'cidade') publica; o prestador se inscreve ----------
+    // A parceira só enxerga a inscrição feita numa publicação dela (com a autorização do prestador). Nada se apaga.
+    function gestorCidade(emp) {
+      let e = get(caminho('empresas', emp)).data;
+      return cargoEm(emp, ['admin','operacional']) && e.status == 'aprovado' && e.get('modulos', []).hasAny(['cidade']);
+    }
+    function oportunidadeOk(d) {
+      return d.keys().hasOnly(['origemId','origemNome','cidade','uf','cidadeKey','tipo','titulo','texto','data','hora','local','link','ate','inscricao','vagas','gatilho','ramos','docs','valorCentavos','status','criadoPor','criadoPorNome','criadoEm','atualizadoEm'])
+        && d.tipo in ['curso','evento','licitacao','credito','aviso','servico']
+        && d.status in ['rascunho','publicado','encerrado']
+        && d.titulo is string && d.titulo.size() >= 4 && d.titulo.size() <= 120
+        && d.texto is string && d.texto.size() <= 800
+        && d.link is string && (d.link == '' || d.link.matches('https://.+'))
+        && d.gatilho in ['','das','dasn','nota']
+        && d.inscricao is bool && d.vagas is int && d.vagas >= 0
+        && d.ramos is list && d.ramos.size() <= 20 && d.docs is list && d.docs.size() <= 12
+        && d.valorCentavos is int && d.valorCentavos >= 0;
+    }
+    match /oportunidades/{id} {
+      allow read: if logado() && (resource.data.status == 'publicado' || master() || membro(resource.data.origemId));
+      allow create: if gestorCidade(request.resource.data.origemId)
+        && oportunidadeOk(request.resource.data)
+        && request.resource.data.status in ['rascunho','publicado']
+        && request.resource.data.criadoPor == request.auth.uid
+        && request.resource.data.criadoEm == request.time
+        && request.resource.data.cidade == get(caminho('empresas', request.resource.data.origemId)).data.cidade
+        && request.resource.data.uf == get(caminho('empresas', request.resource.data.origemId)).data.uf
+        && request.resource.data.cidade.size() >= 2
+        && request.resource.data.cidadeKey is string && request.resource.data.cidadeKey.size() >= 4;
+      allow update: if gestorCidade(resource.data.origemId)
+        && oportunidadeOk(request.resource.data)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['origemId','origemNome','cidade','uf','cidadeKey','criadoPor','criadoPorNome','criadoEm']);
+      allow delete: if false;
+    }
+    match /inscricoes/{id} {
+      allow read: if master() || membro(resource.data.empresaId) || membro(resource.data.origemId);
+      // só o administrador da própria empresa inscreve, numa publicação no ar que aceita inscrição, com a autorização registrada
+      allow create: if admin(request.resource.data.empresaId)
+        && id == request.resource.data.oportunidadeId + '_' + request.resource.data.empresaId
+        && request.resource.data.keys().hasOnly(['oportunidadeId','origemId','origemNome','titulo','tipo','empresaId','negocio','pessoa','email','tel','status','concluiu','consentimento','criadoPor','criadoEm','atualizadoEm'])
+        && get(caminho('oportunidades', request.resource.data.oportunidadeId)).data.status == 'publicado'
+        && get(caminho('oportunidades', request.resource.data.oportunidadeId)).data.inscricao == true
+        && get(caminho('oportunidades', request.resource.data.oportunidadeId)).data.origemId == request.resource.data.origemId
+        && request.resource.data.status == 'inscrito' && request.resource.data.concluiu == null
+        && request.resource.data.consentimento is map && request.resource.data.consentimento.texto is string
+        && request.resource.data.consentimento.texto.size() >= 20 && request.resource.data.consentimento.em == request.time
+        && request.resource.data.email == meuEmail()
+        && request.resource.data.negocio is string && request.resource.data.negocio.size() <= 120
+        && request.resource.data.pessoa is string && request.resource.data.pessoa.size() <= 120
+        && request.resource.data.tel is string && request.resource.data.tel.size() <= 30
+        && request.resource.data.criadoPor == request.auth.uid && request.resource.data.criadoEm == request.time;
+      // o prestador cancela ou volta a se inscrever (autoriza de novo); a parceira só marca quem concluiu
+      allow update: if (admin(resource.data.empresaId)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','consentimento','atualizadoEm'])
+            && request.resource.data.status in ['inscrito','cancelado']
+            && request.resource.data.consentimento is map && request.resource.data.consentimento.texto is string)
+        || (gestorCidade(resource.data.origemId)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['concluiu','atualizadoEm'])
+            && (request.resource.data.concluiu == null || request.resource.data.concluiu is map));
+      allow delete: if false;
+    }
+
     match /log/{id} {
       allow create: if logado()
         && request.resource.data.uid == request.auth.uid

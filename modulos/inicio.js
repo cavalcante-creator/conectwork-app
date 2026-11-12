@@ -63,6 +63,7 @@
     { id: 'dinheiro', mod: 'dinheiro', rota: 'dinheiro', t: 'Dinheiro', ic: 'bank' },
     { id: 'agenda', mod: 'agenda', rota: 'agenda', t: 'Agenda', ic: 'clock' },
     { id: 'espelhos', mod: 'espelhos', rota: 'espelhos', t: 'Emitir nota', ic: 'receipt' },
+    { id: 'nacidade', mod: 'nacidade', rota: 'nacidade', t: 'Na sua cidade', ic: 'building' },
     { id: 'assistentemei', mod: 'assistentemei', rota: 'assistentemei', t: 'Dúvidas', ic: 'help' }
   ];
   const MES3 = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
@@ -78,6 +79,7 @@
     const ctx = ctxAgora();
     if (id === 'das') { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 1); const v = dasVencidos().length; return v ? (v === 1 ? '1 vencido' : v + ' vencidos') : `${MES3[d.getMonth()][0].toUpperCase() + MES3[d.getMonth()].slice(1)}/${d.getFullYear()}`; }
     if (id === 'checkup') return 'CNPJ MEI';
+    if (id === 'nacidade') { const r = CW.cidade ? CW.cidade.resumo() : { n: 0, voce: 0 }; return r.voce ? (r.voce === 1 ? '1 para você' : r.voce + ' para você') : r.n ? 'Cursos e avisos' : 'Cursos e editais'; }
     if (id === 'negocio') return 'DASN e limite';
     if (id === 'agenda') { const k = hojeLinhas().length; return k ? `${k} hoje` : 'Nada hoje'; }
     if (id === 'dinheiro') { if (!CW.dinheiro || !CW.dinheiro.pronto()) return 'Entrou e saiu'; const r = CW.dinheiro.doMes(ctx, isoHoje().slice(0, 7)); return r.entrou || r.saiu ? (r.sobrou < 0 ? 'Faltou ' : 'Sobrou ') + U().formatarDinheiro(Math.abs(r.sobrou)) + ' no mês' : 'Registre o que entra'; }

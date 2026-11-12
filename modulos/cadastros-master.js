@@ -230,6 +230,9 @@
         <label class="f"><span>Uso</span><select id="pc-tipo">${Object.entries(C().TIPOS).map(([k, t]) => `<option value="${k}">${esc(t)}</option>`).join('')}</select></label>
         <label class="f"><span>Plano</span><select id="pc-plano">${planos.map(([k, p]) => `<option value="${k}" ${k === 'profissional' ? 'selected' : ''}>${esc(p.nome)}</option>`).join('')}</select>
           <em class="hint" id="pc-plano-desc">${esc(P().PLANOS.profissional.desc)} Os módulos do plano já vêm ligados; dá para mudar depois.</em></label>
+        <div class="fgrid" id="pc-cidade-bloco" hidden><label class="f c8"><span>Cidade que a parceira atende <b aria-hidden="true">*</b></span><input id="pc-cidade" maxlength="60" autocomplete="off" placeholder="Ex.: Gravataí"></label>
+          <label class="f c4"><span>UF <b aria-hidden="true">*</b></span><input id="pc-uf" maxlength="2" autocomplete="off" placeholder="RS" style="text-transform:uppercase"></label>
+          <em class="hint c12">O que ela publicar aparece para os prestadores desta cidade. Escreva igual ao cadastro dos prestadores (acento não faz diferença).</em></div>
         <label class="check"><input type="checkbox" id="pc-admin" checked><span>Me colocar como administrador(a) desta empresa<small>Para você configurar a empresa agora. Depois, convide as pessoas com o e-mail delas.</small></span></label>
         <p class="err" id="pc-erro" role="alert"></p></div>`,
       botoes: [{ texto: 'Voltar', valor: null, classe: 'sec' }, { texto: 'Pré-cadastrar', valor: 'ok', icone: 'check', antes: d => {
@@ -238,11 +241,14 @@
         if (!U().validarCNPJ(cnpj)) { er.textContent = dig(cnpj).length ? 'CNPJ inválido. Confira os números.' : 'Informe o CNPJ.'; d.querySelector('#pc-cnpj').focus(); return false; }
         if (nome.length < 2) { er.textContent = 'Informe o nome da empresa.'; d.querySelector('#pc-nome').focus(); return false; }
         if ((empresas || []).some(e => dig(e.cnpj) === dig(cnpj))) { er.textContent = 'Este CNPJ já tem cadastro no Conectwork. Procure a empresa na lista "Todas".'; return false; }
-        dados = { cnpj, nome, porte: d.querySelector('#pc-porte').value, tipo: d.querySelector('#pc-tipo').value, plano: d.querySelector('#pc-plano').value, admin: d.querySelector('#pc-admin').checked };
+        const cid = d.querySelector('#pc-plano').value === 'cidade', cidade = cid ? v('pc-cidade').replace(/\s+/g, ' ') : '', uf = cid ? v('pc-uf').toUpperCase() : '';
+        if (cid && (cidade.length < 2 || !/^[A-Z]{2}$/.test(uf))) { er.textContent = 'Informe a cidade e a UF (duas letras) que a parceira atende.'; d.querySelector('#pc-cidade').focus(); return false; }
+        if (cid && d.querySelector('#pc-tipo').value === 'prestador') { er.textContent = 'Parceiro da cidade não pode ser "só presta serviços". Escolha outro uso.'; return false; }
+        dados = { cidade, uf, cnpj, nome, porte: d.querySelector('#pc-porte').value, tipo: d.querySelector('#pc-tipo').value, plano: d.querySelector('#pc-plano').value, admin: d.querySelector('#pc-admin').checked };
         return true; } }],
       aoAbrir: d => { U().aplicarMascaras(d); const sp = d.querySelector('#pc-plano'), po = d.querySelector('#pc-porte');
         po.onchange = () => { if (po.value.startsWith('MEI')) d.querySelector('#pc-tipo').value = 'prestador'; };   /* MEI presta serviço */
-        sp.onchange = () => { d.querySelector('#pc-plano-desc').textContent = (P().PLANOS[sp.value] || {}).desc + ' Os módulos do plano já vêm ligados; dá para mudar depois.'; };
+        sp.onchange = () => { d.querySelector('#pc-cidade-bloco').hidden = sp.value !== 'cidade'; d.querySelector('#pc-plano-desc').textContent = (P().PLANOS[sp.value] || {}).desc + ' Os módulos do plano já vêm ligados; dá para mudar depois.'; };
         d.querySelector('#pc-cnpj').focus(); }
     }).then(async v => {
       if (v !== 'ok' || !dados) return;
@@ -258,12 +264,12 @@
           protocolo = `CW-${ano}-${String(seq).padStart(4, '0')}`;
           tx.set(cRef, { ano, n: seq });
           tx.set(nRef, { empresaId: id, criadoEm: agora() });
-          tx.set(empRef, { tipo: dados.tipo, status: 'aprovado', nome: dados.nome, razao: '', cnpj: dados.cnpj, cnpjNum: num, cidade: '', uf: '', protocolo,
+          tx.set(empRef, { tipo: dados.tipo, status: 'aprovado', nome: dados.nome, razao: '', cnpj: dados.cnpj, cnpjNum: num, cidade: dados.cidade || '', uf: dados.uf || '', protocolo,
             criadoPor: u.uid, criadoEm: agora(), enviadoEm: agora(), plano: dados.plano, modulos: mods, preCadastro: true, avaliadoEm: agora(), avaliadoPor: quem });
           tx.set(db.doc('empresas/' + id + '/privado/cadastro'), { dados: dados.porte ? { porte: dados.porte } : {}, end: {}, resp: {}, banco: {}, docs: {}, preCadastro: true });
           if (dados.admin) tx.set(db.doc('acessos/' + id + '_' + u.uid), { uid: u.uid, empresaId: id, nome: quem, email: (u.email || '').toLowerCase(), cargo: 'admin', extras: [], sem: [], ativo: true, criadoEm: agora() });
           tx.set(db.collection('log').doc(), { em: agora(), uid: u.uid, quem, empresaId: id, acao: 'empresa.precadastro',
-            texto: `Pré-cadastro de ${dados.nome} (CNPJ ${dados.cnpj}) pela equipe Conectwork, no plano ${P().nomePlano(dados.plano)}${dados.porte ? ', porte ' + dados.porte : ''}. Dados e documentos pendentes.${dados.admin ? ` ${quem} entrou como administrador(a).` : ''}`, ref: id });
+            texto: `Pré-cadastro de ${dados.nome} (CNPJ ${dados.cnpj}) pela equipe Conectwork, no plano ${P().nomePlano(dados.plano)}${dados.porte ? ', porte ' + dados.porte : ''}${dados.cidade ? ', parceira de ' + dados.cidade + '/' + dados.uf : ''}. Dados e documentos pendentes.${dados.admin ? ` ${quem} entrou como administrador(a).` : ''}`, ref: id });
         });
       } catch (err) {
         U().toast(err && err.code === 'cw/cnpj-repetido' ? 'Este CNPJ já tem cadastro no Conectwork.' : 'O pré-cadastro não foi feito. ' + CW.fb.mensagemErro(err), 'erro');

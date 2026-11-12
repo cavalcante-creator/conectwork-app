@@ -1592,3 +1592,53 @@ html.mei .shell .side,html.mei .shell .logo{background:#13265E}
 .mcad-social .err:empty{display:none}
 .mcad .lg-ou{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:13px;margin:4px 0}
 .mcad .lg-ou::before,.mcad .lg-ou::after{content:"";flex:1;height:1px;background:var(--line)}
+
+/* ---------- Na sua cidade e Oportunidades da cidade (11/11/2026) · prefixo cd- ---------- */
+.cd-topo{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.cd-topo small{display:block;font-size:11.5px;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.cd-topo b{font-family:var(--fd);font-size:20px}
+.cd-abas{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.cd-abas button,.cd-seg button{flex:none;border:1px solid var(--line);background:var(--surface);color:inherit;font:inherit;font-size:13.5px;font-weight:600;padding:9px 14px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.cd-abas button[aria-selected="true"],.cd-seg button[aria-pressed="true"]{background:var(--blue);border-color:var(--blue);color:#fff}
+.cd-abas i,.cd-seg i{font-style:normal;font-size:12px;opacity:.75;margin-left:2px}
+.cd-seg{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+.cd-seg button{padding:6px 12px;font-size:12.5px}
+.cd-lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+.cd-card,.cd-it{display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
+.cd-it{border-radius:12px;padding:14px}
+.cd-ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none;background:var(--surface2);color:var(--blue)}
+.cd-ic svg{width:20px;height:20px}
+.cd-ic.licitacao,.cd-ic.credito{color:var(--warn,#B7791F)}
+.cd-ic.aviso{color:var(--danger,#C0392B)}
+.cd-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.cd-tx strong{font-size:15px;line-height:1.3}
+.cd-tx p{margin:0;font-size:13.5px;color:var(--muted);white-space:pre-line}
+.cd-tx small{color:var(--muted);font-size:12.5px}
+.cd-l1{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.cd-qd{display:flex;align-items:center;gap:6px}
+.cd-qd svg{width:14px;height:14px;flex:none}
+.cd-motivo{display:flex;gap:8px;align-items:center;font-size:13px;font-weight:600;color:var(--blue);background:var(--surface2);border-radius:10px;padding:8px 10px}
+.cd-motivo svg{width:15px;height:15px;flex:none}
+.cd-lic{font-size:13px;display:flex;flex-direction:column;gap:6px}
+.cd-lic ul{margin:4px 0 0;padding-left:18px}
+.cd-bts{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.cd-it .cd-bts{flex-direction:column;align-items:stretch;margin:0;flex:none}
+.cd-chips{display:flex;flex-wrap:wrap;gap:8px}
+.cd-chips label{cursor:pointer}
+.cd-chips input{position:absolute;opacity:0;pointer-events:none}
+.cd-chips span{display:block;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:13px}
+.cd-chips input:checked+span{background:var(--blue);border-color:var(--blue);color:#fff}
+.cd-chips input:focus-visible+span{outline:2px solid var(--blue);outline-offset:2px}
+.cd-serv{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.cd-sv{display:flex;flex-direction:column;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;color:inherit;text-decoration:none}
+.cd-sv:hover{border-color:var(--blue)}
+.cd-sv small{color:var(--muted);font-size:12.5px}
+.cd-renda{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.cd-renda>div{flex:1;min-width:220px}
+.cd-renda p{margin:4px 0 0;color:var(--muted);font-size:13.5px}
+.cd-rtopo{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap}
+.cd-rtopo .pc-n{flex:1;min-width:170px}
+.cd-dados{display:grid;grid-template-columns:1fr 1fr;gap:10px;background:var(--surface2);border-radius:12px;padding:12px}
+.cd-dados small{display:block;color:var(--muted);font-size:12px}
+.cd-dados b{font-size:13.5px;word-break:break-word}
+@media (max-width:700px){.cd-lista{grid-template-columns:1fr}.cd-it{flex-wrap:wrap}.cd-it .cd-bts{flex-direction:row;width:100%}.cd-dados{grid-template-columns:1fr}.cd-seg{margin-left:0;width:100%}}

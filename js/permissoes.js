@@ -20,7 +20,7 @@
     financeiro:  { nome: 'Financeiro', telas: ['pagar', 'receber', 'negocio', 'contratos', 'ordens', 'medicoes', 'espelhos', 'titulos', 'relatorios', 'documentos', 'conta', 'empresa'], desc: 'Pagar, receber, relatórios, conta e dados da empresa.' },
     tesouraria:  { nome: 'Tesouraria', telas: ['titulos', 'pagar', 'notificacoes'], desc: 'Agenda pagamentos liberados e confirma a liquidação.' },
     rh:          { nome: 'RH', telas: ['pagar', 'medicoes', 'documentos', 'integracao', 'relatorios', 'catalogo'], desc: 'Fechamentos, integração, relatórios e catálogo.' },
-    operacional: { nome: 'Operacional', telas: ['receber', 'ordens', 'espelhos', 'documentos', 'profissionais', 'catalogo'], desc: 'Notas a emitir, profissionais e catálogo.' },
+    operacional: { nome: 'Operacional', telas: ['receber', 'ordens', 'espelhos', 'documentos', 'profissionais', 'catalogo', 'cidadegestao'], desc: 'Notas a emitir, profissionais e catálogo.' },
     contador:    { nome: 'Contador (só leitura)', telas: ['pagar', 'receber', 'ordens', 'espelhos', 'titulos', 'relatorios', 'documentos'], soLeitura: true, desc: 'Só leitura: cobranças e relatórios.' },
     consulta:    { nome: 'Só consulta', telas: ['pagar', 'receber', 'ordens', 'espelhos', 'titulos', 'relatorios', 'documentos', 'empresa'], soLeitura: true, desc: 'Só leitura das telas liberadas.' }
   };
@@ -74,12 +74,14 @@
     { id: 'emissao', nome: 'Emissão de NFS-e', fase: 2, desc: 'Nota emitida pelo Conectwork (certificado só no servidor).' },
     { id: 'demandas', nome: 'Demandas e propostas', fase: 2, desc: 'Triagem, demanda, propostas, comparador e OS.' },
     { id: 'catalogo', nome: 'Catálogo', fase: 3, desc: 'Busca e solicitação de profissionais da rede.' },
-    { id: 'conta', nome: 'Conta e benefícios', fase: 3, desc: 'Conta digital e benefícios com parceiros.' }
+    { id: 'conta', nome: 'Conta e benefícios', fase: 3, desc: 'Conta digital e benefícios com parceiros.' },
+    { id: 'cidade', nome: 'Parceiro da cidade', fase: 1, desc: 'Prefeitura ou entidade parceira: publica cursos, eventos, licitações, crédito, avisos e serviços para os prestadores da cidade.' }
   ];
   const PLANOS = {
     essencial: { nome: 'Essencial', desc: 'Cobranças, notas, usuários e integração com o RH.', modulos: ['equipe', 'cobrancas', 'integracao'] },
     profissional: { nome: 'Profissional', desc: 'Essencial + contratos, profissionais e emissão de NFS-e.', modulos: ['equipe', 'cobrancas', 'integracao', 'contratos', 'profissionais', 'emissao'] },
     rede: { nome: 'Rede', desc: 'Profissional + demandas, catálogo e conta.', modulos: ['equipe', 'cobrancas', 'integracao', 'contratos', 'profissionais', 'emissao', 'demandas', 'catalogo', 'conta'] },
+    cidade: { nome: 'Parceiro da cidade', desc: 'Prefeitura ou entidade parceira: publica para os prestadores da cidade e vê os inscritos.', modulos: ['equipe', 'cidade'] },
     gratuito: { nome: 'Gratuito para profissional', desc: 'Profissional MEI: cadastro grátis.', modulos: ['cobrancas'] }
   };
   const nomePlano = id => (PLANOS[id] && PLANOS[id].nome) || '';

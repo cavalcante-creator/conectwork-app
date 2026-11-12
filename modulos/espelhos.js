@@ -511,5 +511,5 @@
       ver: { nome: 'Espelho da nota', sub: 'Os dados para emitir a nota fiscal, as retenções e o líquido.', render: (el, ctx) => desenharVer(el, ctx, ctx.params[0]) }
     }
   });
-  CW.espelhos = { blocoMedicao, sugestao, vencTxt };
+  CW.espelhos = { blocoMedicao, sugestao, vencTxt, recusada: () => espP.some(x => x.status === 'aguardando_nota' && (x.recusadas || []).length) };   /* recusada: usada em Na sua cidade */
 })();

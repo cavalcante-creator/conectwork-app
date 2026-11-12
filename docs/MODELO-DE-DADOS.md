@@ -130,3 +130,27 @@ Recado da equipe para a rede: `titulo`, `texto`, `tipo` (`info` | `atencao`), `p
 
 ### "Ver como a empresa"
 Não grava nada: a equipe abre o app com o contexto da empresa (cargo admin, só consulta). As regras do banco continuam valendo (a equipe lê, não grava no lugar da empresa).
+
+## Na sua cidade (11/11/2026 · piloto com a Prefeitura)
+
+A Prefeitura (ou outra entidade da cidade) é uma **empresa parceira** pré-cadastrada pela equipe Conectwork no plano
+"Parceiro da cidade": `empresas/{id}.modulos` com `cidade`, e `cidade`/`uf` preenchidos pela equipe (a parceira não muda).
+
+### `oportunidades/{id}`
+O que a parceira publica para os prestadores da cidade: `origemId` (empresa parceira), `origemNome`, `cidade`, `uf`,
+`cidadeKey` (cidade sem acento + UF, ex.: `vila-nova-rs`), `tipo` (`curso` | `evento` | `licitacao` | `credito` | `aviso` | `servico`),
+`titulo`, `texto`, `data`, `hora`, `local`, `link` (só https), `ate` (aparece até), `inscricao` (aceita inscrição pelo app), `vagas`,
+`gatilho` (`''` | `das` | `dasn` | `nota`: sugerir para quem está com DAS vencido, declaração pendente ou nota recusada),
+`ramos` [] (vazio = todos), `docs` [] (documentos pedidos na licitação), `valorCentavos`, `status` (`rascunho` | `publicado` | `encerrado`),
+`criadoPor`, `criadoPorNome`, `criadoEm`, `atualizadoEm`.
+Regras: qualquer pessoa logada lê as publicadas; rascunho e encerrada só a parceira e a equipe. Cria e muda só admin ou operacional
+da parceira aprovada com o módulo `cidade`, para a cidade da própria empresa, sem trocar origem, cidade ou autor. Nada se apaga.
+
+### `inscricoes/{oportunidadeId}_{empresaId}`
+`oportunidadeId`, `origemId`, `origemNome`, `titulo`, `tipo`, `empresaId`, `negocio`, `pessoa`, `email`, `tel`,
+`status` (`inscrito` | `cancelado`), `concluiu` (`null` ou {em, por}: vira o certificado no perfil do prestador),
+`consentimento` {texto, versao, em} (autorização de enviar esses dados à parceira, só para esta inscrição), `criadoPor`, `criadoEm`, `atualizadoEm`.
+Sem CNPJ nem CPF. Regras: o admin da própria empresa inscreve (publicação no ar que aceita inscrição, com a autorização), cancela e volta;
+a parceira lê só as inscrições das publicações dela e marca só `concluiu`; outras empresas não leem. Nada se apaga.
+
+O comprovante de recebimentos (crédito) não grava nada além do histórico (`cidade.renda`): é um PDF montado no aparelho com os pagamentos já confirmados.
