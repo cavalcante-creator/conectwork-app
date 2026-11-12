@@ -20,6 +20,13 @@ const b64url = o => Buffer.from(JSON.stringify(o), 'utf8').toString('base64').re
   const D = await srv(), z = Object.entries(D).find(([k, v]) => /^empresas\/[^/]+$/.test(k) && v.cnpjNum === '62944495000164');
   const pr = await page.$eval('#ct-prest', e => e.value);
   ok('P2 a Zenith fica pré-cadastrada (aprovada, só presta) e o contrato já vem com ela escolhida', z && z[1].status === 'aprovado' && z[1].tipo === 'prestador' && z[1].preCadastro && pr === z[0].split('/')[1], JSON.stringify({ z: z && z[1], pr }));
+  ok('P3 quem pré-cadastrou (equipe) já é administrador(a) da Zenith', z && !!D['acessos/' + z[0].split('/')[1] + '_uIASMYN'] && D['acessos/' + z[0].split('/')[1] + '_uIASMYN'].cargo === 'admin');
+  // P4 na análise de uma empresa aprovada em que a equipe ainda não é admin: "Me colocar como administrador(a)"
+  await page.keyboard.press('Escape').catch(() => null);
+  await page.evaluate(() => CW.sessao.voltarEquipe('cadastros/analise/beta')); await page.waitForSelector('#cm-souadm', { timeout: 8000 });
+  await page.click('#cm-souadm'); await H.dorme(1500);
+  const D2 = await srv();
+  ok('P4 "Me colocar como administrador(a)" cria o acesso de admin e entra na empresa', D2['acessos/beta_uIASMYN'] && D2['acessos/beta_uIASMYN'].cargo === 'admin' && await page.evaluate(() => (CW.sessao.contexto() || {}).empresaId) === 'beta');
   ok('Sem erros de JavaScript na página', !erros.filter(x => !/ERR_NAME_NOT_RESOLVED/.test(x)).length, erros.join(' | '));
   await browser.close(); fim();
 })().catch(e => { console.error('ERRO NO TESTE', e); process.exit(1); });

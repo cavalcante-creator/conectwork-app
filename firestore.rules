@@ -229,8 +229,14 @@ service cloud.firestore {
             || ('triagem' in r && r.triagem != null && r.triagem.resultado == 'analise_juridica' && t.r == r.triagem.r && t.resultado == r.triagem.resultado
                 && t.uid == r.triagem.uid && t.parecer.ok == true && t.parecer.uid == request.auth.uid && t.parecer.obs is string && t.parecer.obs.size() >= 10));
     }
+    // lado de quem assina = a chave que entra em assinaturas (12/11/2026: a mesma pessoa pode ser admin das duas empresas no piloto;
+    // antes valia sempre 'tomador' e ela não conseguia assinar pela prestadora). Precisa ser admin daquele lado.
+    function ladoAssina(r, d) {
+      let k = d.assinaturas.diff(r.assinaturas).affectedKeys();
+      return k.hasOnly(['tomador']) && admin(r.tomadorId) ? 'tomador' : (k.hasOnly(['prestador']) && admin(r.prestadorId) ? 'prestador' : '');
+    }
     function contratoAssinar(r, d) {
-      let lado = meuLado(r);
+      let lado = ladoAssina(r, d);
       let outro = lado == 'tomador' ? 'prestador' : 'tomador';
       return lado != '' && r.status == 'assinatura' && !(lado in r.assinaturas)
         && mudou().hasOnly(['assinaturas','status','ativadoEm','interlocutor','atualizadoEm'])

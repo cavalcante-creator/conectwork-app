@@ -139,6 +139,14 @@
       <div class="grid-main"><div>${cartaoDados(e, pv)}</div>
         <div class="stack decision">${cartaoDecisao(e, pv, faltam)}${cartaoDocs(e, pv, editavel)}<div id="cm-arquivos"></div>${cartaoHist(hist)}</div></div>`;
     ligarAnalise(el, ctx, e, pv, faltam);
+    /* 12/11/2026 ("por enquanto meu login vai ser administrador de todas"): a equipe entra como administrador(a) da empresa */
+    const jaAdm = (CW.sessao.estado().opcoes || []).some(o => o.tipo === 'empresa' && o.empresaId === id);
+    const ac = document.getElementById('acoes');
+    if (ac && e.status === 'aprovado') { ac.innerHTML = jaAdm ? `<button class="btn sec" id="cm-entrar">${ic('building')}Entrar nesta empresa</button>` : `<button class="btn sec" id="cm-souadm">${ic('plus')}Me colocar como administrador(a)</button>`;
+      const be = document.getElementById('cm-entrar'); if (be) be.onclick = () => CW.sessao.entrarEm('empresa:' + id);
+      const ba = document.getElementById('cm-souadm'); if (ba) ba.onclick = async () => { ba.disabled = true;
+        try { await adminDe(id, nomeEmp(e)); U().toast('Pronto: você é administrador(a) de ' + nomeEmp(e) + '.'); await CW.sessao.recarregar(); CW.sessao.entrarEm('empresa:' + id); }
+        catch (err) { ba.disabled = false; U().toast(CW.fb.mensagemErro(err), 'erro'); } }; }
     if (CW.documentos) CW.documentos.blocoMaster(document.getElementById('cm-arquivos'), id);
   }
 
@@ -339,11 +347,19 @@
       tx.set(empRef, { tipo: x.tipo || 'prestador', status: 'aprovado', nome: x.nome, razao: '', cnpj, cnpjNum: num, cidade: '', uf: '', protocolo,
         criadoPor: u.uid, criadoEm: agora(), enviadoEm: agora(), plano, modulos: mods, preCadastro: true, avaliadoEm: agora(), avaliadoPor: quem });
       tx.set(db.doc('empresas/' + id + '/privado/cadastro'), { dados: x.porte ? { porte: x.porte } : {}, end: {}, resp: {}, banco: {}, docs: {}, preCadastro: true });
-      tx.set(db.collection('log').doc(), { em: agora(), uid: u.uid, quem, empresaId: id, acao: 'empresa.precadastro', texto: `Pré-cadastro de ${x.nome} (CNPJ ${cnpj}) pela equipe Conectwork, ${x.como || 'pelo contrato'}, no plano ${P().nomePlano(plano)}. Dados e documentos pendentes.`, ref: id });
+      tx.set(db.doc('acessos/' + id + '_' + u.uid), { uid: u.uid, empresaId: id, nome: quem, email: (u.email || '').toLowerCase(), cargo: 'admin', extras: [], sem: [], ativo: true, criadoEm: agora() });
+      tx.set(db.collection('log').doc(), { em: agora(), uid: u.uid, quem, empresaId: id, acao: 'empresa.precadastro', texto: `Pré-cadastro de ${x.nome} (CNPJ ${cnpj}) pela equipe Conectwork, ${x.como || 'pelo contrato'}, no plano ${P().nomePlano(plano)}. Dados e documentos pendentes. ${quem} entrou como administrador(a).`, ref: id });
     });
     return id;
   }
-  CW.cadastrosMaster = { preCadEmpresa };
+  /* acesso de administrador(a) da empresa para quem é da equipe (mesmo gravado do "me colocar como administrador(a)" do pré-cadastro) */
+  async function adminDe(id, nome) {
+    const st = CW.sessao.estado(), u = CW.fb.auth().currentUser, db = CW.fb.db(), quem = (st.perfil && st.perfil.nome) || u.email, b = db.batch();
+    b.set(db.doc('acessos/' + id + '_' + u.uid), { uid: u.uid, empresaId: id, nome: quem, email: (u.email || '').toLowerCase(), cargo: 'admin', extras: [], sem: [], ativo: true, criadoEm: CW.fb.agora() });
+    b.set(db.collection('log').doc(), { em: CW.fb.agora(), uid: u.uid, quem, empresaId: id, acao: 'acesso.equipe', texto: `${quem} (equipe Conectwork) entrou como administrador(a) de ${nome}.`, ref: id });
+    await b.commit();
+  }
+  CW.cadastrosMaster = { preCadEmpresa, adminDe };
   /* convite novo para um MEI já pré-cadastrado (o RH completou o e-mail depois) */
   async function conviteMei(empresaId, x, u, quem) {
     const db = CW.fb.db(), ref = db.collection('convites').doc(), b = db.batch();

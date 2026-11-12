@@ -772,6 +772,13 @@ async function deve(nome, permitido, op) {
   await deve('Inscrição: ninguém apaga', false, () => deleteDoc(doc(db('caio'), 'inscricoes', 'o1_meic')));
   await deve('Cidade: o MEI NÃO vira parceiro mudando a própria empresa', false, () => updateDoc(doc(db('caio'), 'empresas', 'meic'), { modulos: ['cidade'] }));
 
+  /* mesma pessoa administradora das duas empresas (piloto, 12/11/2026): assina pela prestadora */
+  await env.withSecurityRulesDisabled(async c => { const f = c.firestore();
+    await setDoc(doc(f, 'acessos', 'beta_' + P.ana), { uid: P.ana, empresaId: 'beta', nome: 'Ana', email: EM.ana, cargo: 'admin', extras: [], sem: [], ativo: true });
+    await setDoc(doc(f, 'contratos', 'cdup'), ct({ criadoEm: '2026-11-12T00:00:00Z', atualizadoEm: '2026-11-12T00:00:00Z' })); });
+  await deve('Contrato: admin das duas empresas assina pela prestadora', true, () => updateDoc(doc(db('ana'), 'contratos', 'cdup'), { 'assinaturas.prestador': { uid: P.ana, nome: 'Ana', em: serverTimestamp() }, interlocutor: { nome: 'Ana', email: EM.ana, cel: '' }, atualizadoEm: serverTimestamp() }));
+  await deve('Contrato: quem NÃO é admin da prestadora não assina por ela', false, () => updateDoc(doc(db('rita'), 'contratos', 'cdup'), { 'assinaturas.tomador': { uid: P.rita, nome: 'Rita', em: serverTimestamp() }, atualizadoEm: serverTimestamp() }));
+  await env.withSecurityRulesDisabled(async c => { await deleteDoc(doc(c.firestore(), 'acessos', 'beta_' + P.ana)); });
   /* fila de MEIs do painel do RH (12/11/2026): admin/RH de quem contrata põe na fila; a equipe Conectwork processa */
   const fm = (k, extra) => Object.assign({ cnpj: '12.345.678/0001-95', cnpjNum: '12345678000195', nome: 'Joao Teste Silva', email: 'joao@teste.com', tel: '51999990000', prestadora: 'Zenith', prestCnpj: '04252011000110',
     empresaId: 'alfa', enviadoPor: P[k], enviadoPorNome: k, em: serverTimestamp(), st: 'pendente' }, extra || {});
