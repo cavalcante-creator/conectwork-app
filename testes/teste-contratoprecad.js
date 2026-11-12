@@ -7,6 +7,7 @@ const b64url = o => Buffer.from(JSON.stringify(o), 'utf8').toString('base64').re
   const { browser, page, erros } = await H.abrir();
   const { d } = H.seed(d => {
     Object.assign(d.docs['empresas/alfa'], { modulos: ['equipe', 'cobrancas', 'contratos'], cnpj: '11.444.777/0001-61', tipo: 'contratante' });
+    d.docs['empresas/zeta'] = { nome: 'Zeta Teste', cnpj: '04.252.011/0001-10', status: 'aprovado', tipo: 'prestador', modulos: ['cobrancas'], criadoPor: 'uX' };
     d.docs['acessos/alfa_uIASMYN'] = { uid: 'uIASMYN', empresaId: 'alfa', cargo: 'admin', extras: [], sem: [], ativo: true };
   });
   const srv = () => page.evaluate(() => JSON.parse(localStorage.getItem('__srv')).docs);
@@ -27,6 +28,10 @@ const b64url = o => Buffer.from(JSON.stringify(o), 'utf8').toString('base64').re
   await page.click('#cm-souadm'); await H.dorme(1500);
   const D2 = await srv();
   ok('P4 "Me colocar como administrador(a)" cria o acesso de admin e entra na empresa', D2['acessos/beta_uIASMYN'] && D2['acessos/beta_uIASMYN'].cargo === 'admin' && await page.evaluate(() => (CW.sessao.contexto() || {}).empresaId) === 'beta');
+  // P5 pela tela da Rede › Empresas também
+  await page.evaluate(() => CW.sessao.voltarEquipe('redeempresas/ver/zeta')); await page.waitForSelector('#re-souadm', { timeout: 8000 });
+  await page.click('#re-souadm'); await H.dorme(1500);
+  ok('P5 na Rede › Empresas, "Me colocar como administrador(a)" também funciona', (await srv())['acessos/zeta_uIASMYN'] && await page.evaluate(() => (CW.sessao.contexto() || {}).empresaId) === 'zeta');
   ok('Sem erros de JavaScript na página', !erros.filter(x => !/ERR_NAME_NOT_RESOLVED/.test(x)).length, erros.join(' | '));
   await browser.close(); fim();
 })().catch(e => { console.error('ERRO NO TESTE', e); process.exit(1); });
