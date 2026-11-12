@@ -327,7 +327,21 @@
     if (!pode(ctx, LANCA)) return fimTela('warn', 'Você não pode lançar medições nesta empresa', 'Quem lança é o administrador ou o RH. Peça para uma dessas pessoas abrir o link.');
     let cts;
     try { cts = (await contratosAtivos(ctx)).filter(c => U().dig(c.prestadorCnpj) === r.cnpj); } catch (e) { return fimTela('danger', 'Não foi possível abrir os contratos', CW.fb.mensagemErro(e)); }
-    if (!cts.length) return fimTela('warn', `Nenhum contrato ativo com ${r.prestadorNome || 'essa prestadora'}`, `Para receber a medição, a ${ctx.contexto.nome} precisa de um contrato de equipe contínua ativo com a prestadora de CNPJ ${r.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5')}.`);
+    if (!cts.length) {
+      /* 12/11/2026 ("os contratos foram feitos antes do Conectwork"): o contrato que já existe no papel é registrado aqui mesmo,
+         com a prestadora e a medição já preenchidas; quando ele fica ativo, o contrato mostra "Voltar para a medição". */
+      const cn = r.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5'), nm = r.prestadorNome || 'essa prestadora';
+      let espera = []; try { espera = CW.fb.lista(await CW.fb.db().collection('contratos').where('tomadorId', '==', ctx.contexto.empresaId).get()).filter(c => c.status === 'assinatura' && U().dig(c.prestadorCnpj) === r.cnpj); } catch (e) { espera = []; }
+      const adm = ctx.contexto.acesso && ctx.contexto.acesso.cargo === 'admin' && !ctx.soLeitura, rota = 'medicoes/importar/' + payload;
+      el.innerHTML = `<div class="banner warn" id="mi-msg">${ic('alert')}<span><strong>${espera.length ? `O contrato com ${esc(nm)} ainda não está ativo` : `Falta registrar no Conectwork o contrato com ${esc(nm)}`}</strong>${espera.length
+          ? 'Ele já foi registrado e está esperando a triagem ou as assinaturas. Quando as duas empresas confirmarem, ele fica ativo e a medição pode ser enviada.'
+          : `O contrato de vocês pode ter sido assinado antes do Conectwork: não precisa fazer outro. Registre aqui o contrato que já existe (CNPJ ${esc(cn)}), com a data em que foi assinado. ${adm ? '' : 'Quem registra é o administrador da empresa.'}`}</span></div>
+        <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">${espera.length ? `<button class="btn" id="mi-vercont">${ic('file')}Ver o contrato</button>` : adm ? `<button class="btn" id="mi-regcont">${ic('file')}Registrar o contrato que já existe</button>` : ''}${voltar}</div>`;
+      document.getElementById('mi-voltar').onclick = () => CW.ir('medicoes');
+      const vc = document.getElementById('mi-vercont'); if (vc) vc.onclick = () => { try { sessionStorage.setItem('cw.medVoltar', rota); } catch (e) { /* */ } CW.ir('contratos/ver/' + espera[0]._id); };
+      const rc = document.getElementById('mi-regcont'); if (rc) rc.onclick = () => CW.contratos.novo(ctx, { cnpj: r.cnpj, periodicidade: /-[12]$/.test(r.periodo) ? 'quinzena' : 'mes', existente: true, voltar: rota });
+      return;
+    }
     const okPer = cts.filter(c => periodoOk(r.periodo, c.periodicidade));
     if (!okPer.length) return fimTela('warn', 'O período não combina com o contrato', `O painel mandou ${periodoTxt(r.periodo)}, mas o contrato com ${cts[0].prestadorNome} é ${cts[0].periodicidade === 'mes' ? 'mensal' : 'por quinzena'}.`);
     const c = okPer[0], id = c._id + '_' + r.periodo + (r.parte ? '_' + r.parte : '');

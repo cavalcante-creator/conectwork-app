@@ -49,20 +49,32 @@
 
   /* ---------- criar e corrigir ---------- */
   const MODAL = { continua: 'Equipe contínua', os: 'Serviço por entrega' };
-  async function formulario(ctx, c) {
+  /* pre (12/11/2026, "os contratos foram feitos antes do Conectwork"): { cnpj, periodicidade, existente, voltar } — registra no
+     Conectwork o contrato que já existe no papel. O caminho é o de sempre (triagem e as duas empresas confirmam); o formulário já
+     vem com a prestadora, a medição e a caixinha "já assinado antes do Conectwork" (a data entra no objeto). */
+  async function formulario(ctx, c, pre) {
+    pre = pre || null;
     const { esc, ic } = U(), db = CW.fb.db(), eu = ctx.contexto.empresaId;
     let prestadoras = [];
     try { prestadoras = CW.fb.lista(await db.collection('empresas').where('status', '==', 'aprovado').get()).filter(e => e._id !== eu && ['prestador', 'ambos'].includes(e.tipo)).sort((a, b) => String(a.nome).localeCompare(String(b.nome), 'pt-BR')); }
     catch (e) { U().toast(CW.fb.mensagemErro(e), 'erro'); return; }
     let dados = null;
     const v = c || { modalidade: 'continua', prestadorId: '', objeto: '', periodicidade: 'quinzena', vencimentoDias: 1, inicio: '', fim: '' };
+    if (pre && pre.cnpj) {
+      const pr = prestadoras.find(e => U().dig(e.cnpj) === pre.cnpj);
+      if (!pr) { await U().dialogo({ titulo: 'A prestadora ainda não está no Conectwork', corpo: `<p style="margin:0">A empresa de CNPJ ${esc(pre.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5'))} ainda não está cadastrada e aprovada no Conectwork. Peça para a equipe Conectwork pré-cadastrar a empresa (Cadastros › Pré-cadastrar empresa) e depois registre o contrato.</p>` }); return; }
+      v.prestadorId = pr._id; if (pre.periodicidade) v.periodicidade = pre.periodicidade;
+    }
+    const exist = !c && !!(pre && pre.existente);
     await U().dialogo({ titulo: c ? 'Corrigir contrato' : 'Novo contrato', sub: c ? 'As assinaturas recomeçam: as duas empresas assinam de novo.' : 'A prestadora recebe o contrato para assinar. Com as duas assinaturas, ele fica ativo.',
       corpo: `<form class="fgrid" id="ct-form" novalidate>
         ${c ? '' : `<div class="c12"><p style="margin:0 0 8px;font-size:13px;font-weight:500">Tipo de contrato</p><div class="ct-mods">
           <label class="ct-mod"><input type="radio" name="ct-mod" value="continua" checked><span><b>Equipe contínua</b><small>Prestadora com equipe e supervisor próprios; paga por medição do período.</small></span></label>
           <label class="ct-mod"><input type="radio" name="ct-mod" value="os"><span><b>Serviço por entrega</b><small>Profissional PJ/MEI ou prestadora; cada trabalho é uma ordem de serviço com escopo, prazo e valor da entrega.</small></span></label></div></div>`}
-        <label class="f c12"><span id="ct-prest-rot">Prestadora</span>${c ? `<input value="${esc(c.prestadorNome)} · ${esc(c.prestadorCnpj || '')}" disabled>` : `<select id="ct-prest"><option value="">Escolha a prestadora</option>${prestadoras.map(e => `<option value="${esc(e._id)}">${esc(e.nome || e.razao)} · ${esc(e.cnpj || '')}</option>`).join('')}</select>
+        <label class="f c12"><span id="ct-prest-rot">Prestadora</span>${c ? `<input value="${esc(c.prestadorNome)} · ${esc(c.prestadorCnpj || '')}" disabled>` : `<select id="ct-prest"><option value="">Escolha a prestadora</option>${prestadoras.map(e => `<option value="${esc(e._id)}" ${v.prestadorId === e._id ? 'selected' : ''}>${esc(e.nome || e.razao)} · ${esc(e.cnpj || '')}</option>`).join('')}</select>
           <em class="hint">${prestadoras.length ? 'Só aparecem empresas aprovadas no Conectwork que prestam serviços.' : 'Nenhuma prestadora aprovada ainda. Ela precisa se cadastrar e ser aprovada pela equipe Conectwork.'}</em>`}</label>
+        ${c ? '' : `<label class="check c12" id="ct-exist-l"><input type="checkbox" id="ct-exist" ${exist ? 'checked' : ''}><span>Este contrato já existe: foi assinado antes do Conectwork (no papel ou por outro sistema). Aqui ele só fica registrado para as medições e as notas.</span></label>
+        <label class="f c6" id="ct-exist-dl" ${exist ? '' : 'hidden'}><span>Assinado em</span><input id="ct-exist-d" type="date"><em class="hint">A data em que as duas empresas assinaram o contrato.</em></label>`}
         <label class="f c12"><span>Objeto do contrato</span><textarea id="ct-obj" rows="3" maxlength="500" placeholder="Ex.: Equipe de manutenção industrial com supervisor próprio da prestadora.">${esc(v.objeto)}</textarea></label>
         <label class="f c6" id="ct-per-l" ${v.modalidade === 'os' ? 'hidden' : ''}><span>Medição</span><select id="ct-per">${Object.entries(PER).map(([k, n]) => `<option value="${k}" ${v.periodicidade === k ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
         <label class="f c6"><span>Vencimento (dias depois da nota válida)</span><input id="ct-venc" type="number" inputmode="numeric" min="0" max="90" value="${esc(String(v.vencimentoDias))}"><em class="hint">Padrão: 1 dia. Depois de assinado, só muda com o aceite das duas empresas.</em></label>
@@ -75,13 +87,18 @@
         const mod = c ? (c.modalidade || 'continua') : ((d.querySelector('[name="ct-mod"]:checked') || {}).value || 'continua');
         const prest = c ? c.prestadorId : g('ct-prest').value, obj = g('ct-obj').value.trim().replace(/\s+/g, ' '), per = mod === 'os' ? '' : g('ct-per').value;
         const vd = Number(g('ct-venc').value), ini = g('ct-ini').value, fim = g('ct-fim').value;
+        const ex = !c && g('ct-exist') && g('ct-exist').checked, exd = ex ? g('ct-exist-d').value : '';
+        if (ex && !U().validarData(exd)) { er.textContent = 'Informe a data em que o contrato foi assinado.'; g('ct-exist-d').focus(); return false; }
         if (!prest) { er.textContent = mod === 'os' ? 'Escolha o profissional ou a prestadora.' : 'Escolha a prestadora.'; return false; }
         if (obj.length < 10) { er.textContent = 'Descreva o objeto do contrato (pelo menos 10 letras).'; g('ct-obj').focus(); return false; }
         if (!Number.isInteger(vd) || vd < 0 || vd > 90) { er.textContent = 'O vencimento vai de 0 a 90 dias depois da nota válida.'; g('ct-venc').focus(); return false; }
         if (!U().validarData(ini)) { er.textContent = 'Informe a data de início.'; g('ct-ini').focus(); return false; }
         if (fim && (!U().validarData(fim) || fim < ini)) { er.textContent = 'A data de fim precisa ser depois do início.'; g('ct-fim').focus(); return false; }
-        dados = { modalidade: mod, prestadorId: prest, objeto: obj, periodicidade: per, vencimentoDias: vd, inicio: ini, fim: fim || '' }; return true; } }],
+        const objF = ex ? (`Contrato já existente, assinado em ${U().formatarData(exd)} (antes do Conectwork). ` + obj).slice(0, 500) : obj;
+        dados = { modalidade: mod, prestadorId: prest, objeto: objF, periodicidade: per, vencimentoDias: vd, inicio: ini, fim: fim || '' }; return true; } }],
       aoAbrir: d => { const s = d.querySelector('#ct-prest') || d.querySelector('#ct-obj'); s.focus();
+        const ce = d.querySelector('#ct-exist'); if (ce) ce.onchange = () => { d.querySelector('#ct-exist-dl').hidden = !ce.checked; const di = d.querySelector('#ct-exist-d'), ii = d.querySelector('#ct-ini'); if (ce.checked) di.oninput = () => { if (!ii.value) ii.value = di.value; }; };
+        if (ce && ce.checked) ce.onchange();
         d.querySelectorAll('[name="ct-mod"]').forEach(r => r.onchange = () => { const os = r.value === 'os' && r.checked; if (!r.checked) return; d.querySelector('#ct-per-l').hidden = os;
           d.querySelector('#ct-prest-rot').textContent = os ? 'Profissional (PJ/MEI) ou prestadora' : 'Prestadora';
           d.querySelector('#ct-obj').placeholder = os ? 'Ex.: Manutenção elétrica sob demanda, por ordem de serviço com entrega definida.' : 'Ex.: Equipe de manutenção industrial com supervisor próprio da prestadora.'; }); d.querySelectorAll('input,select,textarea').forEach(i => i.addEventListener('input', () => { d.querySelector('#ct-erro').textContent = ''; })); }
@@ -99,7 +116,9 @@
       b.set(ref, Object.assign({ tomadorId: eu, partes: [eu, p._id], tomadorNome: t.nome || t.razao || '', tomadorCnpj: t.cnpj || '', prestadorNome: p.nome || p.razao || '', prestadorCnpj: p.cnpj || '',
         status: 'assinatura', assinaturas: {}, interlocutor: null, proposta: null, criadoPor: ctx.sessao.usuario.uid, criadoPorNome: quem(ctx), criadoEm: agora(), atualizadoEm: agora() }, dados));
       log(b, ctx, 'contrato.criar', `Contrato (${MODAL[dados.modalidade].toLowerCase()}) com ${p.nome || p.razao} criado e mandado para assinatura.`, ref.id);
-      await b.commit(); U().toast('Contrato criado. Agora as duas empresas assinam.'); CW.ir('contratos/ver/' + ref.id);
+      await b.commit();
+      if (pre && pre.voltar) try { sessionStorage.setItem('cw.medVoltar', pre.voltar); } catch (e) { /* sem armazenamento */ }
+      U().toast(pre && pre.existente ? 'Contrato registrado. Faça a triagem e confirme; depois a prestadora confirma no Conectwork dela.' : 'Contrato criado. Agora as duas empresas assinam.'); CW.ir('contratos/ver/' + ref.id);
     } catch (e) { U().toast(CW.fb.mensagemErro(e), 'erro'); }
   }
 
@@ -116,6 +135,10 @@
     const ass = lado => { const a = as[lado], n = lado === 'tomador' ? c.tomadorNome : c.prestadorNome;
       return `<li class="${a ? 'done' : 'now'}"><span class="dot">${a ? ic('check') : ''}</span>${esc(n)} <span class="hint">(${lado === 'tomador' ? 'contrata' : 'presta o serviço'})</span><small>${a ? 'assinou ' + esc(formatarDataHora(a.em)) + ' · ' + esc(a.nome) : 'falta assinar'}</small></li>`; };
     let acoes = '';
+    let medVoltar = ''; try { medVoltar = sessionStorage.getItem('cw.medVoltar') || ''; } catch (e) { /* sem armazenamento */ }
+    if (medVoltar && l === 'tomador' && (c.modalidade || 'continua') === 'continua') acoes += c.status === 'ativo'
+      ? `<div class="banner ok" id="ct-medvolta">${ic('check')}<span><strong>Contrato ativo</strong>Agora a medição que veio do painel do RH pode ser enviada.</span><button class="btn sm" id="ct-medvolta-bt">Voltar para a medição</button></div>`
+      : `<div class="banner info" id="ct-medespera">${ic('clock')}<span><strong>A medição do painel do RH espera este contrato</strong>Faça a triagem e assine. Quando a ${esc(c.prestadorNome)} confirmar no Conectwork, o contrato fica ativo e aparece aqui o botão para voltar à medição.</span></div>`;
     const semTriagem = l === 'tomador' && CW.triagem && !CW.triagem.libera(c);
     if (pode && c.status === 'assinatura' && !as[l] && semTriagem) acoes += `<div class="banner warn" id="ct-sem-triagem">${ic('shield')}<span><strong>Antes de assinar: triagem</strong>${c.triagem && c.triagem.resultado === 'nao_publicar' ? 'A triagem indica que este serviço não deve ser contratado neste modelo.' : c.triagem ? 'Registre o parecer jurídico favorável para liberar a assinatura.' : 'Faça a triagem do contrato (7 perguntas) para liberar a assinatura.'}</span></div>`;
     if (pode && c.status === 'assinatura' && !as[l] && !semTriagem) acoes += `<div class="stack" style="gap:10px" id="ct-assinar-box">
@@ -187,6 +210,7 @@
         ambos ? 'Contrato assinado pelas duas empresas. Agora está ativo.' : 'Assinado. Falta a outra empresa assinar.');
     };
     const cr = $('ct-corrigir'); if (cr) cr.onclick = () => formulario(ctx, c);
+    const mv = $('ct-medvolta-bt'); if (mv) mv.onclick = () => { let r = ''; try { r = sessionStorage.getItem('cw.medVoltar') || ''; sessionStorage.removeItem('cw.medVoltar'); } catch (e) { /* sem armazenamento */ } if (r) CW.ir(r); };
     const ca = $('ct-cancelar');
     if (ca) ca.onclick = async () => { if (!(await U().confirmar('Cancelar o contrato?', `O contrato com ${c.prestadorNome} deixa de valer antes de ser assinado. Fica registrado no histórico.`, 'Cancelar contrato'))) return;
       grava(b => { b.update(ref, { status: 'cancelado', atualizadoEm: agora() }); log(b, ctx, 'contrato.cancelar', `Contrato com ${c.prestadorNome} cancelado antes da assinatura.`, c._id); }, 'Contrato cancelado.'); };
@@ -226,6 +250,7 @@
     };
   }
 
+  CW.contratos = { novo: (ctx, pre) => formulario(ctx, null, pre) };
   CW.registrarModulo({
     id: 'contratos', nome: 'Contratos', icone: 'file', ordem: 20,
     para: ['empresa'], contrato: ['contratos', 'cobrancas'],
