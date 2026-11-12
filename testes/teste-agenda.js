@@ -21,7 +21,7 @@ const { ok, fim } = H.placar('agenda');
 
   // A1 menu do MEI: Agenda e Assistente aparecem; no celular a barra de baixo começa por Início, Agenda, Demandas, A receber
   const m1 = await page.$$eval('#menu [data-mod]', x => x.map(b => b.dataset.mod));
-  ok('A1 menu do MEI tem Agenda e lembretes e Assistente', m1.join() === 'inicio,agenda,ordens,titulos,negocio,espelhos,assistentemei,contratos,documentos,empresa', m1.join());
+  ok('A1 menu do MEI tem Agenda e lembretes e Assistente', m1.join() === 'inicio,agenda,ordens,titulos,negocio,espelhos,assistentemei,contratos,servicos,cursos,documentos,empresa', m1.join());
 
   // A2 prazos automáticos: o DAS entra sozinho (marcado "automático") e o que venceu aparece em "Ficou para trás"
   await page.evaluate(() => { location.hash = '#agenda'; }); await page.waitForSelector('#ag-lista', { timeout: 8000 }); await H.dorme(400);

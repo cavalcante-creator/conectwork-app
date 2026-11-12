@@ -792,6 +792,14 @@ html.entrada .login{height:100%;min-height:0}
 .es-cp .iconbtn:hover,#es-valores .iconbtn:hover{background:var(--surface2);color:var(--ink)}
 /* conferência da nota (lista com ✓ e !) */
 .es-cf{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+/* contestação da nota (12/11/2026): conversa entre as duas empresas */
+.es-ct-msgs{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.es-ct-msgs li{max-width:85%;padding:9px 12px;border-radius:12px;background:var(--surface2);border:1px solid var(--line);min-width:0}
+.es-ct-msgs li.prestador{justify-self:end;background:color-mix(in srgb,var(--blue) 9%,var(--surface))}
+.es-ct-msgs li small{display:block;font-size:11.5px;color:var(--muted)}
+.es-ct-msgs li p{margin:3px 0 0;font-size:13.5px;line-height:1.45;overflow-wrap:anywhere;white-space:pre-wrap}
+.es-ct-hist summary{cursor:pointer;font-size:13px;color:var(--muted)}
+.es-ct-h{margin-top:10px;font-size:13px;display:grid;gap:8px}
 .es-cf li{display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.4}
 .es-cf li svg{width:16px;height:16px;flex:none;margin-top:1px}
 .es-cf li.ok svg{color:var(--ok)}
@@ -1592,3 +1600,27 @@ html.mei .shell .side,html.mei .shell .logo{background:#13265E}
 .mcad-social .err:empty{display:none}
 .mcad .lg-ou{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:13px;margin:4px 0}
 .mcad .lg-ou::before,.mcad .lg-ou::after{content:"";flex:1;height:1px;background:var(--line)}
+
+/* catálogo de serviços (12/11/2026) */
+.sv-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.sv-cat+.sv-cat{margin-top:16px}
+.sv-it{display:flex;flex-direction:column;gap:10px;justify-content:space-between;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);min-width:0}
+.sv-it .t{display:grid;gap:2px;min-width:0}
+.sv-it .t strong{font-size:14px;font-weight:600;overflow-wrap:anywhere}
+.sv-it .t small{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+.sv-it .a{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.sv-of{margin:0 0 0 auto;font-size:12.5px}
+.sv-quem{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.sv-quem li{display:flex;gap:10px;align-items:center}
+.sv-quem li div{display:grid;min-width:0}
+.sv-quem li small{color:var(--muted);font-size:12.5px}
+
+/* cursos dos parceiros (12/11/2026) */
+.cu-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.cu-it{display:flex;flex-direction:column;gap:6px;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);min-width:0}
+.cu-it h4{margin:4px 0 0;font-size:15px;font-weight:600;overflow-wrap:anywhere}
+.cu-it p{margin:2px 0;font-size:13px;color:var(--ink);overflow-wrap:anywhere}
+.cu-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cu-preco{font-size:14px}
+.cu-par{color:var(--muted);font-size:12.5px}
+.cu-a{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:auto;padding-top:6px}

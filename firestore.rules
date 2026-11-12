@@ -58,7 +58,9 @@ service cloud.firestore {
         && ((request.resource.data.keys().hasOnly(['tipo','status','nome','razao','cnpj','cnpjNum','cidade','uf','protocolo','criadoPor','criadoEm','enviadoEm'])
              && (request.resource.data.status == 'analise'
                  // cadastro rápido do MEI (10/11/2026): só a gestão do próprio negócio; não aparece para a rede nem pode ser contratado
-                 || (request.resource.data.status == 'mei' && request.resource.data.tipo == 'prestador')))
+                 || (request.resource.data.status == 'mei' && request.resource.data.tipo == 'prestador')
+                 // cadastro simplificado (12/11/2026): entra com o essencial; completa depois e vai para análise
+                 || request.resource.data.status == 'basico'))
           || (master()
              && request.resource.data.keys().hasOnly(['tipo','status','nome','razao','cnpj','cnpjNum','cidade','uf','protocolo','criadoPor','criadoEm','enviadoEm','plano','modulos','preCadastro','avaliadoEm','avaliadoPor'])
              && request.resource.data.status == 'aprovado'
@@ -74,7 +76,7 @@ service cloud.firestore {
       // equipe master decide; a empresa só reenvia o cadastro quando foi pedido ajuste
       allow update: if master()
         || ((admin(emp) || fundador(emp))
-            && resource.data.status in ['pendencia','mei']   // o MEI do cadastro rápido completa o cadastro para receber demandas
+            && resource.data.status in ['pendencia','mei','basico']   // MEI do cadastro rápido e empresa do cadastro simplificado completam o cadastro
             && request.resource.data.status == 'analise'
             && request.resource.data.diff(resource.data).affectedKeys()
                  .hasOnly(['status','nome','razao','cidade','uf','tipo','enviadoEm']));   // o CNPJ não muda na correção
@@ -315,7 +317,7 @@ service cloud.firestore {
     // Valor = o da medição; vencimento = o do contrato (não muda no espelho); líquido = valor − retenções. A prestadora lê. Nada se apaga.
     function camposEspelho() { return ['medicaoId','contratoId','tomadorId','prestadorId','partes','tomadorNome','prestadorNome','prestadorCnpj','tomador',
       'periodo','competencia','descricao','valorCentavos','retencoes','liquidoCentavos','vencimentoDias','obs','status','versao',
-      'criadoPor','criadoPorNome','criadoEm','atualizadoPor','atualizadoPorNome','atualizadoEm','emissao','nota','recusadas','conferenciaNota','origem','osNumero','item','horas','prestadorCnpjNum']; }
+      'criadoPor','criadoPorNome','criadoEm','atualizadoPor','atualizadoPorNome','atualizadoEm','emissao','nota','recusadas','conferenciaNota','origem','osNumero','item','horas','prestadorCnpjNum','contestacao','contestacoes']; }
     function centavos(v) { return v is int && v >= 0; }
     function espelhoValores(d) {
       let r = d.retencoes;
@@ -409,6 +411,52 @@ service cloud.firestore {
         && d.recusadas[antes].uid == request.auth.uid && d.recusadas[antes].motivo is string && d.recusadas[antes].motivo.size() >= 10
         && d.recusadas[antes].chaveUnica == r.nota.chaveUnica;
     }
+    // Contestação da nota (12/11/2026): quem contrata (admin ou financeiro) contesta a nota com motivo; a nota fica parada
+    // (não vira título) até: o tomador aceitar a explicação (volta a "nota para conferir") ou alguém pedir uma nota nova
+    // (volta a "esperando a nota", a nota contestada entra em "recusadas"). As duas empresas conversam em contestacao.msgs.
+    // Contestação fechada vai para "contestacoes" (nada se apaga).
+    function ladoEsp(r) { return cargoEm(r.tomadorId, ['admin','financeiro']) ? 'tomador' : cargoEm(r.prestadorId, ['admin','financeiro','operacional']) ? 'prestador' : ''; }
+    function espelhoContestar(r, d) {
+      let c = d.contestacao;
+      return cargoEm(r.tomadorId, ['admin','financeiro']) && r.status == 'nota_enviada' && d.status == 'nota_contestada'
+        && mudou().hasOnly(['status','contestacao','atualizadoEm'])
+        && c.keys().hasOnly(['motivos','texto','uid','nome','em','chaveUnica','msgs']) && c.uid == request.auth.uid
+        && c.motivos is list && c.motivos.size() >= 1 && c.motivos.size() <= 6
+        && c.texto is string && c.texto.size() >= 10 && c.texto.size() <= 1000
+        && c.chaveUnica == r.nota.chaveUnica && c.msgs is list && c.msgs.size() == 0;
+    }
+    function espelhoContestaMsg(r, d) {
+      let a = r.contestacao;
+      let c = d.contestacao;
+      let n = a.msgs.size();
+      let m = c.msgs[n];
+      return r.status == 'nota_contestada' && d.status == 'nota_contestada' && ladoEsp(r) != ''
+        && mudou().hasOnly(['contestacao','atualizadoEm'])
+        && c.diff(a).affectedKeys().hasOnly(['msgs']) && c.msgs.size() == n + 1 && (n == 0 || c.msgs[0:n] == a.msgs)
+        && m.keys().hasOnly(['lado','t','uid','nome','em']) && m.uid == request.auth.uid && m.lado == ladoEsp(r)
+        && m.t is string && m.t.size() >= 2 && m.t.size() <= 1000;
+    }
+    function contestacaoFechada(r, d) {
+      let antes = 'contestacoes' in r ? r.contestacoes.size() : 0;
+      let f = d.contestacoes[antes];
+      return d.contestacao == null && d.contestacoes.size() == antes + 1 && (antes == 0 || d.contestacoes[0:antes] == r.contestacoes)
+        && f.chaveUnica == r.contestacao.chaveUnica && f.texto == r.contestacao.texto && f.msgs == r.contestacao.msgs
+        && f.fim.uid == request.auth.uid && f.fim.como in ['aceita','nova_nota'];
+    }
+    function espelhoContestaAceita(r, d) {
+      return cargoEm(r.tomadorId, ['admin','financeiro']) && r.status == 'nota_contestada' && d.status == 'nota_enviada'
+        && mudou().hasOnly(['status','contestacao','contestacoes','atualizadoEm']) && contestacaoFechada(r, d)
+        && d.contestacoes[d.contestacoes.size() - 1].fim.como == 'aceita';
+    }
+    function espelhoContestaNova(r, d) {
+      let antes = 'recusadas' in r ? r.recusadas.size() : 0;
+      return ladoEsp(r) != '' && r.status == 'nota_contestada' && d.status == 'aguardando_nota' && d.nota == null
+        && mudou().hasOnly(['status','nota','emissao','recusadas','contestacao','contestacoes','atualizadoEm'])
+        && contestacaoFechada(r, d) && d.contestacoes[d.contestacoes.size() - 1].fim.como == 'nova_nota'
+        && d.recusadas.size() == antes + 1 && (antes == 0 || d.recusadas[0:antes] == r.recusadas)
+        && d.recusadas[antes].uid == request.auth.uid && d.recusadas[antes].motivo is string && d.recusadas[antes].motivo.size() >= 10
+        && d.recusadas[antes].chaveUnica == r.nota.chaveUnica;
+    }
     match /espelhos/{id} {
       allow get: if logado() && (resource == null || master() || membro(resource.data.tomadorId) || membro(resource.data.prestadorId));
       allow list: if master() || membro(resource.data.tomadorId) || membro(resource.data.prestadorId);
@@ -418,7 +466,11 @@ service cloud.firestore {
               && (espelhoCorrigir(resource.data, request.resource.data) || espelhoEmissao(resource.data, request.resource.data)))
             || (request.resource.data.status == 'nota_enviada' && espelhoNota(id, resource.data, request.resource.data))
             || (request.resource.data.status == 'nota_ok' && espelhoConferirNota(id, resource.data, request.resource.data))
-            || (resource.data.status == 'nota_enviada' && request.resource.data.status == 'aguardando_nota' && espelhoRecusarNota(resource.data, request.resource.data)));
+            || (resource.data.status == 'nota_enviada' && request.resource.data.status == 'aguardando_nota' && espelhoRecusarNota(resource.data, request.resource.data))
+            || (request.resource.data.status == 'nota_contestada' && resource.data.status == 'nota_enviada' && espelhoContestar(resource.data, request.resource.data))
+            || (request.resource.data.status == 'nota_contestada' && resource.data.status == 'nota_contestada' && espelhoContestaMsg(resource.data, request.resource.data))
+            || (resource.data.status == 'nota_contestada' && request.resource.data.status == 'nota_enviada' && espelhoContestaAceita(resource.data, request.resource.data))
+            || (resource.data.status == 'nota_contestada' && request.resource.data.status == 'aguardando_nota' && espelhoContestaNova(resource.data, request.resource.data)));
       allow delete: if false;
 
       // arquivo da nota (PDF ou XML) em pedaços: só a prestadora grava, enquanto espera a nota; nunca muda nem some
@@ -792,6 +844,67 @@ service cloud.firestore {
         && d.feito is bool && d.feitos is list && d.feitos.size() <= 60 && d.removido is bool
         && (!('obs' in d) || (d.obs is string && d.obs.size() <= 300));
     }
+    // ---------- Cursos dos parceiros (12/11/2026) ----------
+    // Porcentagem combinada com cada parceiro: só a equipe Conectwork grava; o parceiro lê a sua. Por enquanto é só registro.
+    match /parcerias/{emp} {
+      allow read: if master() || membro(emp);
+      allow create, update: if master()
+        && request.resource.data.keys().hasOnly(['empresaId','pctBp','obs','em','por','porNome'])
+        && request.resource.data.empresaId == emp && request.resource.data.pctBp is int
+        && request.resource.data.pctBp >= 0 && request.resource.data.pctBp <= 10000;
+      allow delete: if false;
+    }
+    // Cursos: o parceiro (admin da empresa com o módulo "cursos") publica; quem está logado vê os publicados. Nada se apaga.
+    function camposCurso() { return ['empresaId','parceiroNome','titulo','desc','modalidade','cidade','cargaHoras','inicio','precoCentavos','publico','link','status','removido','criadoPor','criadoPorNome','criadoEm','atualizadoEm']; }
+    function cursoOk(d) {
+      return d.keys().hasOnly(camposCurso()) && d.titulo is string && d.titulo.size() >= 4 && d.titulo.size() <= 100
+        && d.modalidade in ['online','presencial','hibrido'] && d.publico in ['todos','mei','empresas'] && d.status in ['publicado','pausado']
+        && d.precoCentavos is int && d.precoCentavos >= 0 && d.link is string && d.link.matches('https://.+') && d.link.size() <= 300;
+    }
+    function parceiro(emp) { return cargoEm(emp, ['admin']) && 'cursos' in get(caminho('empresas', emp)).data.get('modulos', []); }
+    match /cursos/{id} {
+      allow read: if master() || membro(resource.data.empresaId)
+        || (logado() && resource.data.status == 'publicado' && resource.data.removido == false);
+      allow create: if parceiro(request.resource.data.empresaId) && cursoOk(request.resource.data)
+        && request.resource.data.criadoPor == request.auth.uid && request.resource.data.removido == false;
+      allow update: if parceiro(resource.data.empresaId) && cursoOk(request.resource.data)
+        && request.resource.data.empresaId == resource.data.empresaId && request.resource.data.criadoPor == resource.data.criadoPor;
+      allow delete: if false;
+      // interessados: cada pessoa marca uma vez (só uid, empresa e data); o parceiro e a equipe veem quantos
+      match /interesses/{uid} {
+        allow read: if master() || membro(get(caminho('cursos', id)).data.empresaId);
+        allow create: if logado() && uid == request.auth.uid
+          && request.resource.data.keys().hasOnly(['uid','empresaId','em']) && request.resource.data.uid == uid
+          && (request.resource.data.empresaId == '' || membro(request.resource.data.empresaId));
+        allow update, delete: if false;
+      }
+    }
+
+    // ---------- Catálogo de serviços (12/11/2026) ----------
+    // Serviços específicos de cada empresa: membros leem; admin, solicitante e operacional cadastram e mudam; nada se apaga.
+    match /servicosesp/{id} {
+      allow read: if membro(resource.data.empresaId);
+      allow create: if cargoEm(request.resource.data.empresaId, ['admin','solicitante','operacional'])
+        && request.resource.data.keys().hasOnly(['empresaId','nome','cat','desc','removido','criadoPor','criadoPorNome','criadoEm','atualizadoEm'])
+        && request.resource.data.criadoPor == request.auth.uid && request.resource.data.removido == false
+        && request.resource.data.nome is string && request.resource.data.nome.size() >= 3 && request.resource.data.nome.size() <= 80
+        && request.resource.data.desc is string && request.resource.data.desc.size() <= 300;
+      allow update: if cargoEm(resource.data.empresaId, ['admin','solicitante','operacional'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nome','cat','desc','removido','atualizadoEm'])
+        && request.resource.data.nome is string && request.resource.data.nome.size() >= 3 && request.resource.data.nome.size() <= 80;
+      allow delete: if false;
+    }
+    // O que cada prestadora oferece (id = empresaId): quem está logado lê (é o "Quem faz" da rede); admin e operacional da própria empresa gravam.
+    match /ofertaserv/{emp} {
+      allow read: if logado();
+      allow create, update: if cargoEm(emp, ['admin','operacional'])
+        && request.resource.data.keys().hasOnly(['empresaId','gerais','especificos','atualizadoPor','atualizadoEm'])
+        && request.resource.data.empresaId == emp && request.resource.data.atualizadoPor == request.auth.uid
+        && request.resource.data.gerais is list && request.resource.data.gerais.size() <= 80
+        && request.resource.data.especificos is list && request.resource.data.especificos.size() <= 20;
+      allow delete: if false;
+    }
+
     match /agenda/{id} {
       allow read: if master() || membro(resource.data.empresaId);
       allow create: if cargoEm(request.resource.data.empresaId, ['admin','financeiro','operacional'])

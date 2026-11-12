@@ -28,6 +28,12 @@
   const PIXT = ['CNPJ', 'E-mail', 'Celular', 'Chave aleatória'];
   const PASSOS = [['Tipo e empresa', 'Dados da empresa'], ['Endereço', 'Sede da empresa'], ['Responsável', 'Quem responde pela conta'],
     ['Dados bancários', 'Conta para pagar e receber'], ['Documentos', 'Arquivos para conferência'], ['Revisão', 'Conferir e enviar']];
+  /* cadastro simplificado (12/11/2026): a empresa nova entra com o essencial (tipo, CNPJ, nome, responsável e celular)
+     e as autorizações; endereço, dados fiscais, banco e documentos vêm depois, em "Meu cadastro" › "Completar o cadastro"
+     (as 6 etapas de antes). Status "basico": só Início, Meu cadastro e Documentos; contratar e ser contratada depois da aprovação. */
+  const PASSOS_R = [['Sua empresa', 'O essencial para começar'], ['Confirmar', 'Declarações e autorizações']];
+  const rapido = () => !!W && !W.edit;
+  const PS = () => rapido() ? PASSOS_R : PASSOS;
   const MAX_ARQ = 10 * 1024 * 1024;
 
   /* Autorizações separadas (CLAUDE.md, consentimentos). As três primeiras são necessárias para usar o Conectwork;
@@ -80,7 +86,7 @@
     const r = lerRasc() || (u ? (() => { try { return JSON.parse(localStorage.getItem('cw.cad.novo') || 'null'); } catch (e) { return null; } })() : null);
     const d = Object.assign(vazio(), r ? r.d : {});
     AUTORIZACOES.forEach(a => { if (!(a.k in d.cons)) d.cons[a.k] = a.obrig ? false : !!a.padrao; });
-    W = { passo: u ? (r && typeof r.passo === 'number' ? r.passo : 0) : 'acesso', d, err: {}, edit: null };
+    W = { passo: u ? (r && typeof r.passo === 'number' ? Math.min(r.passo, PASSOS_R.length - 1) : 0) : 'acesso', d, err: {}, edit: null };
     if (u) preencherDoLogin();
     desenhar();
   }
@@ -137,6 +143,7 @@
           ${W.err['acesso.senha2'] ? `<em class="ferr">${esc(W.err['acesso.senha2'])}</em>` : ''}</label>
       </div>`;
     }
+    if (rapido()) return corpoR();
     switch (W.passo) {
       case 0: return `<div class="fgrid">
         <div class="fsec">Como sua empresa vai usar o Conectwork</div>
@@ -183,11 +190,12 @@
         ${campo('banco.pixTipo', 'Tipo de chave', { w: 4, opts: PIXT })}
         ${campo('banco.pix', 'Chave', { w: 8, max: 120 })}
       </div>`;
-      case 4: return `<p class="sub" style="margin:0 0 16px">Separe os arquivos em PDF, JPG ou PNG de até 10 MB. A equipe Conectwork confere os documentos antes de aprovar. Aqui você marca os arquivos; depois do envio do cadastro, mande os arquivos em "Documentos e certidões" para a equipe Conectwork conferir.</p>
+      case 4: return `<div class="banner info" id="cad-docs-depois">${ic('clock')}<span><strong>Os documentos podem ficar para depois</strong>Se ainda não tem os arquivos agora, continue: você manda depois em "Documentos". A equipe Conectwork só aprova a empresa com os documentos.</span></div>
+        <p class="sub" style="margin:0 0 16px">Separe os arquivos em PDF, JPG ou PNG de até 10 MB. A equipe Conectwork confere os documentos antes de aprovar. Aqui você marca os arquivos; depois do envio do cadastro, mande os arquivos em "Documentos e certidões" para a equipe Conectwork conferir.</p>
         <div class="stack" style="gap:10px">${docsReq(d).map(([k, l, req]) => {
           const f = d.docs[k], e = W.err['docs.' + k];
           return `<div class="up ${f ? 'ok' : ''} ${e ? 'has-err' : ''}" id="cad-doc-${k}"><span class="ic">${ic(f ? 'check' : 'upload')}</span>
-            <div class="t"><strong>${esc(l)}${req ? '' : ' <span class="hint" style="font-weight:400">(opcional)</span>'}</strong><small>${f ? esc(f.nome) + ' · ' + tamanho(f.tam) : e ? `<span class="ferr">${esc(e)}</span>` : 'Nenhum arquivo selecionado'}</small></div>
+            <div class="t"><strong>${esc(l)}</strong><small>${f ? esc(f.nome) + ' · ' + tamanho(f.tam) : e ? `<span class="ferr">${esc(e)}</span>` : 'Nenhum arquivo selecionado'}</small></div>
             <label class="btn sec sm">${f ? 'Trocar' : 'Selecionar'}<input type="file" data-doc="${k}" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"></label></div>`;
         }).join('')}</div>`;
       case 5: {
@@ -218,6 +226,40 @@
     }
     return '';
   }
+  /* tela única do cadastro simplificado e a confirmação (declarações e autorizações) */
+  const decl = () => {
+    const d = W.d, { esc } = U();
+    const dec = (k, t) => `<label class="check ${W.err['aceite.' + k] ? 'has-err' : ''}"><input type="checkbox" data-aceite="${k}" ${d.aceite[k] ? 'checked' : ''}><span>${t}</span></label>`;
+    const aut = a => `<label class="check ${a.obrig ? '' : 'opc'} ${W.err['cons.' + a.k] ? 'has-err' : ''}"><input type="checkbox" data-cons="${a.k}" ${d.cons[a.k] ? 'checked' : ''}><span>${esc(a.t)}${a.obrig ? ' <b style="color:var(--danger)" aria-hidden="true">*</b>' : ''}${a.s ? `<small>${esc(a.s)}</small>` : ''}</span></label>`;
+    return `<div class="stack" style="gap:10px" id="cad-declaracoes">
+      <div class="fsec">Declarações</div>
+      ${dec('verdade', 'Declaro que as informações são verdadeiras e que tenho poderes para representar a empresa.')}
+      ${dec('termos', 'Li e aceito os <button type="button" class="linkbtn" data-texto="termos">Termos de uso</button> e a <button type="button" class="linkbtn" data-texto="privacidade">Política de privacidade</button> do Conectwork.')}
+      <div class="fsec" style="margin-top:8px">Autorizações</div>
+      <p class="hint" style="margin:-4px 0 0;font-size:12.5px">Cada autorização é registrada separada, com data e versão do texto. As opcionais dá para mudar quando quiser.</p>
+      ${AUTORIZACOES.map(aut).join('')}
+      <p class="hint" style="margin:6px 0 0;font-size:12px">${esc(AVISO)}</p></div>`;
+  };
+  function corpoR() {
+    const d = W.d, { esc, ic } = U();
+    if (W.passo === 1) return `<div class="banner info" id="cad-depois">${ic('clock')}<span><strong>O resto fica para depois</strong>Endereço, dados fiscais, conta bancária e documentos você completa em "Meu cadastro". A equipe Conectwork aprova a empresa quando estiver tudo lá; aí ela pode contratar e ser contratada.</span></div>
+      <dl class="dl" id="cad-resumo" style="margin:16px 0 4px"><div><dt>Uso</dt><dd>${esc(TIPOS[d.tipo] || '—')}</dd></div><div><dt>CNPJ</dt><dd>${esc(d.dados.cnpj || '—')}</dd></div>
+        <div class="full"><dt>Empresa</dt><dd>${esc(d.dados.razao || '—')}${d.dados.fantasia ? ' · ' + esc(d.dados.fantasia) : ''}</dd></div>
+        <div><dt>Responsável</dt><dd>${esc(d.resp.nome || '—')}</dd></div><div><dt>Celular</dt><dd>${esc(d.resp.cel || '—')}</dd></div></dl>
+      <button type="button" class="linkbtn" data-ir="0" style="font-size:13px">${ic('edit')}Mudar os dados</button>${decl()}`;
+    return `<div class="fgrid">
+      <div class="fsec">Como sua empresa vai usar o Conectwork</div>
+      <div class="c12"><div class="optc" role="radiogroup" aria-label="Tipo de uso">${Object.keys(TIPOS).map(k => `<button type="button" class="opt ${W.err.tipo ? 'has-err' : ''}" role="radio" aria-checked="${d.tipo === k}" data-tipo="${k}"><span class="ic">${ic(TIPO_IC[k])}</span><strong>${esc(TIPOS[k])}</strong><small>${esc(TIPO_DESC[k])}</small></button>`).join('')}</div>
+        ${W.err.tipo ? `<em class="ferr" style="font-size:12px;font-style:normal">${esc(W.err.tipo)}</em>` : ''}</div>
+      <div class="fsec">Empresa</div>
+      ${campo('dados.cnpj', 'CNPJ', { w: 4, mask: 'cnpj', ph: '00.000.000/0000-00' })}
+      ${campo('dados.razao', 'Razão social', { w: 8, ac: 'organization', max: 150 })}
+      ${campo('dados.fantasia', 'Nome fantasia', { w: 12, opc: true, max: 80, dica: 'Se ficar em branco, usamos a razão social.' })}
+      <div class="fsec">Responsável pela conta</div>
+      ${campo('resp.nome', 'Nome completo', { w: 7, ac: 'name', max: 120 })}
+      ${campo('resp.cel', 'Celular', { w: 5, mask: 'celular', im: 'tel', ph: '(00) 00000-0000', ac: 'tel' })}
+    </div>`;
+  }
   const tamanho = b => b >= 1048576 ? (b / 1048576).toFixed(1).replace('.', ',') + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB';
 
   /* ---------- validação ---------- */
@@ -230,6 +272,20 @@
       if (!validarEmail(d.acesso.email)) e['acesso.email'] = d.acesso.email ? 'Esse e-mail não parece válido. Confira se digitou certo.' : 'Informe seu e-mail.';
       if (!senhaOk(d.acesso.senha)) e['acesso.senha'] = 'A senha precisa ter 8 ou mais caracteres, com letras e números.';
       else if (d.acesso.senha !== d.acesso.senha2) e['acesso.senha2'] = 'As duas senhas não estão iguais.';
+    }
+    if (rapido() && p === 0) {
+      if (!d.tipo) e.tipo = 'Escolha como a empresa vai usar o Conectwork.';
+      if (!validarCNPJ(d.dados.cnpj)) e['dados.cnpj'] = dig(d.dados.cnpj).length ? 'CNPJ inválido. Confira os números.' : 'Informe o CNPJ.';
+      req('dados.razao', 'Informe a razão social.');
+      req('resp.nome', 'Informe o nome completo.');
+      if (d.resp.nome && String(d.resp.nome).trim().split(/\s+/).length < 2) e['resp.nome'] = 'Informe nome e sobrenome.';
+      if (!validarCelular(d.resp.cel)) e['resp.cel'] = d.resp.cel ? 'Celular inválido. Use DDD + 9 dígitos, começando com 9.' : 'Informe o celular com DDD.';
+      return e;
+    }
+    if (rapido() && p === 1) {
+      ['verdade', 'termos'].forEach(k => { if (!d.aceite[k]) e['aceite.' + k] = 1; });
+      AUTORIZACOES.filter(a => a.obrig).forEach(a => { if (!d.cons[a.k]) e['cons.' + a.k] = 1; });
+      return e;
     }
     if (p === 0) {
       if (!d.tipo) e.tipo = 'Escolha como a empresa vai usar o Conectwork.';
@@ -268,7 +324,7 @@
       else if (d.banco.pixTipo === 'E-mail' && !validarEmail(px)) e['banco.pix'] = 'Essa chave não parece um e-mail.';
       else if (d.banco.pixTipo === 'Celular' && !validarCelular(px)) e['banco.pix'] = 'Use o celular com DDD.';
     }
-    if (p === 4) docsReq(d).forEach(([k, , r]) => { if (r && !d.docs[k]) e['docs.' + k] = 'Documento obrigatório.'; });
+    /* documentos (12/11/2026): podem ficar para depois (mandados em "Documentos"); a equipe só aprova com eles */
     if (p === 5) {
       ['verdade', 'termos'].forEach(k => { if (!d.aceite[k]) e['aceite.' + k] = 1; });
       AUTORIZACOES.filter(a => a.obrig).forEach(a => { if (!d.cons[a.k]) e['cons.' + a.k] = 1; });
@@ -286,28 +342,29 @@
       const u = usuario();
       el.innerHTML = `<div class="wiz">${lado('', '')}<section class="wiz-main"><div class="card cad-fim" id="cad-fim"><div class="card-b">
         <span class="avatar lg" style="background:var(--grad)">${ic('check')}</span>
-        <h1>${W.edit ? 'Correções enviadas' : 'Cadastro enviado'}</h1>
-        <p class="sub" style="margin:0">Protocolo <strong style="color:var(--ink)" id="cad-protocolo">${esc(W.fim)}</strong>. A equipe Conectwork confere os dados e os documentos e avisa o resultado. Enquanto isso, você acompanha tudo em "Meu cadastro".</p>
+        <h1>${W.edit ? (W.completar ? 'Cadastro completo enviado' : 'Correções enviadas') : 'Empresa cadastrada'}</h1>
+        <p class="sub" style="margin:0">Protocolo <strong style="color:var(--ink)" id="cad-protocolo">${esc(W.fim)}</strong>. ${W.edit ? 'A equipe Conectwork confere os dados e os documentos e avisa o resultado. Enquanto isso, você acompanha tudo em "Meu cadastro".' : 'A empresa já está no Conectwork. Para contratar e ser contratada, complete o cadastro (endereço, dados fiscais, conta e documentos) em "Meu cadastro": a equipe Conectwork aprova quando estiver tudo lá.'}</p>
         ${!W.edit && u && !u.emailVerified ? `<div class="banner info" style="margin:0;width:100%">${ic('mail')}<span><strong>Confirme seu e-mail</strong>Mandamos um link para ${esc(u.email)}. Confira também a caixa de spam.</span></div>` : ''}
-        <ul class="tl" style="width:100%"><li class="done"><span class="dot">${ic('check')}</span>${W.edit ? 'Correções enviadas' : 'Cadastro enviado'}<small>${U().formatarData(new Date())}</small></li>
-          <li class="now"><span class="dot"></span>Conferência dos dados e documentos<small>em andamento</small></li>
+        <ul class="tl" style="width:100%"><li class="done"><span class="dot">${ic('check')}</span>${W.edit ? (W.completar ? 'Cadastro completo enviado' : 'Correções enviadas') : 'Empresa cadastrada'}<small>${U().formatarData(new Date())}</small></li>
+          ${W.edit ? '' : `<li class="now"><span class="dot"></span>Completar o cadastro e mandar os documentos<small>em "Meu cadastro"</small></li>`}
+          <li class="${W.edit ? 'now' : ''}"><span class="dot"></span>Conferência dos dados e documentos<small>${W.edit ? 'em andamento' : 'depois'}</small></li>
           <li><span class="dot"></span>Aprovação e liberação dos módulos<small>pendente</small></li></ul>
         <button class="btn" id="cad-entrar">${ic('arrow')}Entrar no Conectwork</button></div></div></section></div>`;
       document.getElementById('cad-entrar').onclick = () => { W = null; marcar(false); CW.sessao.recarregar(); };
       window.scrollTo(0, 0);
       return;
     }
-    const acesso = W.passo === 'acesso', s = acesso ? -1 : W.passo, n = PASSOS.length;
-    const titulo = acesso ? 'Crie seu acesso' : (W.edit ? 'Corrigir cadastro · ' : '') + PASSOS[s][0];
-    const sub = acesso ? 'Primeiro, o seu login. Depois vêm os dados da empresa. O cadastro leva cerca de 10 minutos.' : PASSOS[s][1] + '. Campos com * são obrigatórios.';
+    const P = PS(), acesso = W.passo === 'acesso', s = acesso ? -1 : W.passo, n = P.length;
+    const titulo = acesso ? 'Crie seu acesso' : (W.edit ? (W.completar ? 'Completar o cadastro · ' : 'Corrigir cadastro · ') : '') + P[s][0];
+    const sub = acesso ? 'Primeiro, o seu login. Depois, o essencial da empresa. Leva uns 2 minutos; o resto você completa depois.' : P[s][1] + '. Campos com * são obrigatórios.';
     const nErr = Object.keys(W.err).length;
-    const barra = `<div class="mbar"><span>${acesso ? 'Antes de começar · Crie seu acesso' : `Etapa ${s + 1} de ${n} · ${PASSOS[s][0]}`}</span><div class="track"><i style="width:${acesso ? 4 : (s + 1) / n * 100}%"></i></div></div>`;
-    const passos = `<ol class="wsteps">${[['Crie seu acesso', 'Seu login']].concat(PASSOS).map(([t, st], i) => { const j = i - 1, done = j < s || (i === 0 && !acesso), now = j === s;
+    const barra = `<div class="mbar"><span>${acesso ? 'Antes de começar · Crie seu acesso' : `Etapa ${s + 1} de ${n} · ${P[s][0]}`}</span><div class="track"><i style="width:${acesso ? 4 : (s + 1) / n * 100}%"></i></div></div>`;
+    const passos = `<ol class="wsteps">${[['Crie seu acesso', 'Seu login']].concat(P).map(([t, st], i) => { const j = i - 1, done = j < s || (i === 0 && !acesso), now = j === s;
       return `<li class="${done ? 'done' : now ? 'now' : ''}"><span class="n">${done ? ic('check') : i}</span><span>${t}<small>${st}</small></span></li>`; }).filter((x, i) => i > 0 || !W.edit).join('')}</ol>`;
-    const motivo = W.edit && W.motivo ? `<div class="banner warn">${ic('alert')}<span><strong>Ajuste pedido pela equipe Conectwork</strong>${esc(W.motivo)}</span></div>` : '';
+    const motivo = W.edit && W.motivo && !W.completar ? `<div class="banner warn">${ic('alert')}<span><strong>Ajuste pedido pela equipe Conectwork</strong>${esc(W.motivo)}</span></div>` : '';
     const msgErr = W.msg ? `<div class="banner danger" role="alert" id="cad-erro">${ic('alert')}<span>${esc(W.msg)}</span></div>`
-      : nErr ? `<div class="banner danger" role="alert" id="cad-erro">${ic('alert')}<span>${s === 5 ? 'Marque as declarações e as autorizações obrigatórias para enviar.' : `Corrija ${nErr === 1 ? 'o campo destacado' : 'os ' + nErr + ' campos destacados'} para continuar.`}</span></div>` : '';
-    const botao = acesso ? `Criar acesso e continuar${ic('arrow')}` : s === n - 1 ? `${ic('send')}${W.edit ? 'Reenviar para análise' : 'Enviar cadastro para análise'}` : `Continuar${ic('arrow')}`;
+      : nErr ? `<div class="banner danger" role="alert" id="cad-erro">${ic('alert')}<span>${s === n - 1 ? 'Marque as declarações e as autorizações obrigatórias para enviar.' : `Corrija ${nErr === 1 ? 'o campo destacado' : 'os ' + nErr + ' campos destacados'} para continuar.`}</span></div>` : '';
+    const botao = acesso ? `Criar acesso e continuar${ic('arrow')}` : s === n - 1 ? `${ic('send')}${W.edit ? (W.completar ? 'Enviar para aprovação' : 'Reenviar para análise') : 'Cadastrar a empresa'}` : `Continuar${ic('arrow')}`;
     el.innerHTML = `<div class="wiz" id="cad">${lado(barra, passos)}
       <section class="wiz-main"><form id="cad-form" novalidate>
         <div class="wiz-head"><div class="t"><div class="stepno">${acesso ? 'Antes de começar' : `Etapa ${s + 1} de ${n}`}</div><h1 id="cad-titulo">${esc(titulo)}</h1><p class="sub">${esc(sub)}</p></div>
@@ -376,9 +433,9 @@
         if (doc.exists) { W.err['dados.cnpj'] = 'Este CNPJ já tem cadastro no Conectwork. Se a empresa é sua, peça um convite a quem administra o cadastro dela.'; desenhar(); focarErro(); return; }
       } catch (e) { W.enviando = false; W.msg = CW.fb.mensagemErro(e); desenhar(); return; }
     }
-    if (p === PASSOS.length - 1) return enviar();
+    if (p === PS().length - 1) return enviar();
     W.passo = p + 1; W.err = {}; guardar(); desenhar(); window.scrollTo(0, 0);
-    const f = document.querySelector('#cad-form input:not([disabled]):not([type=file]):not([type=checkbox]), #cad-form select'); if (f && W.passo !== 5) f.focus({ preventScroll: true });
+    const f = document.querySelector('#cad-form input:not([disabled]):not([type=file]):not([type=checkbox]), #cad-form select'); if (f && W.passo !== PS().length - 1) f.focus({ preventScroll: true });
   }
   function focarErro() { const e = document.querySelector('#cad .has-err input, #cad .has-err select, #cad .opt.has-err, #cad .check.has-err input, #cad .up.has-err label'); if (e) e.focus(); else window.scrollTo(0, 0); }
 
@@ -434,11 +491,13 @@
         const id = W.edit, b = db.batch();
         b.update(db.doc('empresas/' + id), Object.assign({}, publico, { status: 'analise', enviadoEm: agora() }));
         b.update(db.doc('empresas/' + id + '/privado/cadastro'), Object.assign({}, privado, { reenviadoEm: agora() }));
-        b.set(db.collection('log').doc(), { em: agora(), uid: u.uid, quem, empresaId: id, acao: 'empresa.corrigir', texto: `Cadastro de ${publico.nome} corrigido e reenviado para análise.`, ref: id });
+        b.set(db.collection('log').doc(), { em: agora(), uid: u.uid, quem, empresaId: id, acao: W.completar ? 'empresa.completar' : 'empresa.corrigir', texto: W.completar ? `Cadastro de ${publico.nome} completado e enviado para aprovação.` : `Cadastro de ${publico.nome} corrigido e reenviado para análise.`, ref: id });
         await b.commit();
         W.fim = W.protocolo || 'reenviado';
       } else {
         const num = dig(d.dados.cnpj), empRef = db.collection('empresas').doc(), id = empRef.id;
+        const pubR = { tipo: d.tipo, nome: d.dados.fantasia || d.dados.razao, razao: d.dados.razao };
+        const privR = { resp: { nome: d.resp.nome, cel: d.resp.cel, email: String(d.resp.email || (u.email || '')).toLowerCase() }, cadastroRapido: true };
         let protocolo = '';
         await db.runTransaction(async tx => {
           const cRef = db.doc('contadores/protocolo'), nRef = db.doc('cnpjs/' + num);
@@ -449,15 +508,15 @@
           protocolo = `CW-${ano}-${String(seq).padStart(4, '0')}`;
           tx.set(cRef, { ano, n: seq });
           tx.set(nRef, { empresaId: id, criadoEm: agora() });
-          tx.set(empRef, Object.assign({}, publico, { status: 'analise', cnpj: d.dados.cnpj, cnpjNum: num, protocolo, criadoPor: u.uid, criadoEm: agora(), enviadoEm: agora() }));
-          tx.set(db.doc('empresas/' + id + '/privado/cadastro'), Object.assign({}, privado, { aceites: { verdade: true, termos: true, versao: VERSAO_TEXTOS } }));
+          tx.set(empRef, Object.assign({}, pubR, { status: 'basico', cnpj: d.dados.cnpj, cnpjNum: num, protocolo, criadoPor: u.uid, criadoEm: agora(), enviadoEm: agora() }));
+          tx.set(db.doc('empresas/' + id + '/privado/cadastro'), Object.assign({}, privR, { aceites: { verdade: true, termos: true, versao: VERSAO_TEXTOS } }));
           tx.set(db.doc('acessos/' + id + '_' + u.uid), { uid: u.uid, empresaId: id, nome: quem, email: (u.email || '').toLowerCase(), cargo: 'admin', extras: [], sem: [], ativo: true, criadoEm: agora() });
           AUTORIZACOES.forEach(a => {
             const reg = { uid: u.uid, finalidade: a.k, aceite: !!d.cons[a.k], texto: a.t, textoVersao: VERSAO_TEXTOS, canal: 'cadastro', em: agora() };
             tx.set(db.doc('consentimentos/' + u.uid + '_' + a.k), reg);
             tx.set(db.collection('consentimentos_log').doc(), reg);
           });
-          tx.set(db.collection('log').doc(), { em: agora(), uid: u.uid, quem, empresaId: id, acao: 'empresa.cadastrar', texto: `Cadastro da empresa ${publico.nome} enviado para análise (protocolo ${protocolo}).`, ref: id });
+          tx.set(db.collection('log').doc(), { em: agora(), uid: u.uid, quem, empresaId: id, acao: 'empresa.cadastrar', texto: `Empresa ${pubR.nome} cadastrada com o essencial (protocolo ${protocolo}). Falta completar o cadastro e mandar os documentos.`, ref: id });
         });
         W.fim = protocolo;
         apagarRasc();
@@ -482,7 +541,7 @@
     d.end = Object.assign({}, pv.end || {}); d.resp = Object.assign({}, pv.resp || {}); d.banco = Object.assign({}, pv.banco || {}); d.docs = Object.assign({}, pv.docs || {});
     d.aceite = { verdade: false, termos: true }; AUTORIZACOES.forEach(a => { d.cons[a.k] = true; });
     CW.app.desmontar();
-    W = { passo: 0, d, err: {}, edit: id, motivo: emp.motivo || '', protocolo: emp.protocolo || '' };
+    W = { passo: 0, d, err: {}, edit: id, motivo: emp.motivo || '', protocolo: emp.protocolo || '', completar: emp.status === 'basico' };
     desenhar(); window.scrollTo(0, 0);
   }
 
@@ -494,6 +553,7 @@
   /* ---------- módulo "Meu cadastro" (empresa ainda não aprovada) ---------- */
   const SIT = {
     mei: ['now', 'Cadastro rápido do MEI', 'gestão do negócio liberada'],
+    basico: ['now', 'Completar o cadastro', 'endereço, dados fiscais, conta e documentos'],
     analise: ['now', 'Conferência dos dados e documentos', 'em andamento'],
     pendencia: ['now', 'Ajuste pedido pela equipe', 'corrija e reenvie'],
     recusado: ['now', 'Cadastro recusado', 'veja o motivo'],
@@ -509,11 +569,15 @@
         async render(el, ctx) {
           const { esc, ic, formatarData } = U(), c = ctx.contexto, db = CW.fb.db();
           const e = CW.fb.dados(await db.doc('empresas/' + c.empresaId).get()) || c.empresa;
+          let pv0 = {}; if (e.status === 'basico') { try { pv0 = CW.fb.dados(await db.doc('empresas/' + c.empresaId + '/privado/cadastro').get()) || {}; } catch (er) {} }
+          const falta = pv => { const it = [['Dados fiscais (porte, regime, CNAE)', !!(pv.dados && pv.dados.cnae)], ['Endereço da empresa', !!(pv.end && pv.end.cep)], ['Responsável legal (CPF e cargo)', !!(pv.resp && pv.resp.cpf)], ['Conta para pagar e receber', !!(pv.banco && pv.banco.conta)]];
+            return `<ul class="es-cf" id="mc-falta" style="margin-top:16px">${it.map(([t, okk]) => `<li class="${okk ? 'ok' : 'no'}">${ic(okk ? 'check' : 'alert')}<span>${esc(t)}</span></li>`).join('')}<li class="no">${ic('file')}<span>Documentos: mande em <a href="#documentos" class="linkbtn" style="display:inline">Documentos</a></span></li></ul>`; };
           const st = e.status || 'analise', x = SIT[st] || SIT.analise;
-          const podeCorrigir = ['pendencia', 'mei'].includes(st) && !ctx.soLeitura && (c.acesso.cargo === 'admin' || e.criadoPor === ctx.sessao.usuario.uid);
+          const podeCorrigir = ['pendencia', 'mei', 'basico'].includes(st) && !ctx.soLeitura && (c.acesso.cargo === 'admin' || e.criadoPor === ctx.sessao.usuario.uid);
           const banner = st === 'pendencia'
             ? `<div class="banner warn" id="mc-motivo">${ic('alert')}<span><strong>A equipe Conectwork pediu um ajuste</strong>${esc(e.motivo || 'Confira os dados e reenvie.')}</span></div>`
             : st === 'suspenso' ? `<div class="banner danger" id="mc-motivo">${ic('lock')}<span><strong>O acesso da empresa está suspenso</strong>${esc(e.motivo || '')} Os dados continuam guardados. Para voltar a usar, fale com a equipe Conectwork.</span></div>`
+            : st === 'basico' ? `<div class="banner info" id="mc-motivo">${ic('star')}<span><strong>Falta completar o cadastro</strong>A empresa já está no Conectwork. Para contratar e ser contratada, complete o endereço, os dados fiscais e a conta, e mande os documentos. A equipe Conectwork aprova quando estiver tudo lá.</span></div>`
             : st === 'mei' ? `<div class="banner info" id="mc-motivo">${ic('star')}<span><strong>Seu MEI já usa o Conectwork</strong>Dinheiro, agenda, impostos e assistente estão liberados. Para receber pedidos e contratos de empresas da rede, complete o cadastro com os documentos: a equipe Conectwork confere e libera.</span></div>`
             : st === 'recusado' ? `<div class="banner danger" id="mc-motivo">${ic('alert')}<span><strong>O cadastro foi recusado</strong>${esc(e.motivo || '')} Se tiver dúvida, fale com a equipe Conectwork.</span></div>`
               : `<div class="banner info">${ic('clock')}<span><strong>Cadastro em análise</strong>A equipe Conectwork está conferindo os dados e os documentos. Quando terminar, as telas da empresa são liberadas.</span></div>`;
@@ -524,7 +588,8 @@
                 <ul class="tl"><li class="done"><span class="dot">${ic('check')}</span>Cadastro enviado<small>${esc(formatarData(e.criadoEm) || '')}</small></li>
                   <li class="${x[0]}"><span class="dot"></span>${x[1]}<small>${x[2]}</small></li>
                   <li><span class="dot"></span>Aprovação e liberação dos módulos<small>pendente</small></li></ul>
-                ${podeCorrigir ? `<button class="btn" id="mc-corrigir" style="margin-top:18px">${ic('edit')}${st === 'mei' ? 'Completar cadastro para receber pedidos' : 'Corrigir cadastro'}</button>` : ''}
+                ${podeCorrigir ? `<button class="btn" id="mc-corrigir" style="margin-top:18px">${ic('edit')}${st === 'mei' ? 'Completar cadastro para receber pedidos' : st === 'basico' ? 'Completar o cadastro' : 'Corrigir cadastro'}</button>` : ''}
+                ${st === 'basico' ? falta(pv0) : ''}
               </div></section>
               <section class="card"><div class="card-h"><span class="ic">${ic('building')}</span><h3>Empresa</h3></div><div class="card-b"><dl class="dl">
                 <div class="full"><dt>Razão social</dt><dd>${esc(e.razao || '—')}</dd></div>

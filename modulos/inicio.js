@@ -186,6 +186,8 @@
           const ajuste = !master && ((c.acesso.extras || []).length || (c.acesso.sem || []).length);
                     const aviso = !master && c.empresa.status === 'suspenso'
             ? `<div class="banner danger" id="ini-suspensa">${ic('lock')}<span><strong>O acesso da empresa está suspenso</strong>${esc(c.empresa.motivo || '')} Os dados continuam guardados. Para voltar a usar, fale com a equipe Conectwork.</span></div>`
+            : !master && c.empresa.status === 'basico'
+            ? `<div class="banner info" id="ini-analise">${ic('star')}<span><strong>Falta completar o cadastro da empresa</strong>Para contratar e ser contratada, complete o endereço, os dados fiscais e a conta, e mande os documentos. <a href="#meucadastro" class="linkbtn" id="ini-completar" style="display:inline">Completar o cadastro</a></span></div>`
             : !master && c.empresa.status !== 'aprovado'
             ? `<div class="banner warn" id="ini-analise">${ic('clock')}<span><strong>Cadastro da empresa ainda não aprovado</strong>Enquanto a equipe Conectwork analisa o cadastro, só algumas telas ficam liberadas.</span></div>` : '';
           const leitura = ctx.soLeitura ? `<div class="banner info" id="ini-leitura">${ic('shield')}<span><strong>Acesso só de leitura</strong>Você pode consultar as telas liberadas, mas não altera nada.</span></div>` : '';

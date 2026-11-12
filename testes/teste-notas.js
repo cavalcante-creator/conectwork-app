@@ -117,8 +117,33 @@ const TEXTO_PDF = `DANFSe v1.0 Documento Auxiliar da NFS-e\nChave de Acesso da N
   e = await espDoc('cz_2026-10-1');
   ok('N7 PDF escaneado: pede o número da nota e envia para conferência à mão', s7.num && /número/.test(er7) && e.status === 'nota_enviada' && e.nota.conferencia.manual && e.nota.chaveUnica === '04252011000110_99', JSON.stringify({ s7, er7, cu: e.nota && e.nota.chaveUnica }));
 
-  // N8 financeiro marca conferida; na manual, precisa marcar que abriu o arquivo
+  // N11 contestação da nota (12/11/2026): o financeiro contesta, a prestadora responde, o financeiro aceita a explicação
   await entrarComo('bruno@alfa.com.br');
+  await abrirEsp('cz_2026-10-2'); await page.click('#es-nf-contestar'); await page.waitForSelector('#ct-txt');
+  await page.click('dialog[open] [data-dlg-b="1"]'); await H.dorme(150); const er11 = await page.$eval('#ct-erro', x => x.innerText);
+  await page.check('#ct-mot input[value="0"]'); await page.fill('#ct-txt', 'A nota saiu com valor diferente da medição aprovada.');
+  await page.click('dialog[open] [data-dlg-b="1"]'); await page.waitForSelector('#es-ct', { timeout: 8000 });
+  e = await espDoc('cz_2026-10-2');
+  const semBotaoOk = !(await page.$('#es-nf-ok'));
+  ok('N11 o financeiro contesta a nota com o tipo e o motivo; a nota fica parada (sem "Nota conferida")',
+    /Marque/.test(er11) && e.status === 'nota_contestada' && e.contestacao.motivos[0] === 'Valor diferente do aprovado' && /medição aprovada/.test(e.contestacao.texto) && semBotaoOk && (await logs('nota.contestar')).length === 1, JSON.stringify({ er11, st: e.status }));
+  await entrarComo('zeca@zeta.com.br');
+  const pend11 = await page.waitForFunction(() => document.body.textContent.includes('Responder a contestação da nota'), null, { timeout: 8000 }).then(() => true).catch(() => false);
+  await abrirEsp('cz_2026-10-2'); await page.waitForSelector('#es-ct-txt');
+  const av11 = await page.$eval('#es-aviso', x => x.innerText);
+  await page.fill('#es-ct-txt', 'O valor inclui as horas extras aprovadas na medição.'); await page.click('#es-ct-enviar'); await page.waitForSelector('.es-ct-msgs li.prestador', { timeout: 8000 });
+  e = await espDoc('cz_2026-10-2');
+  ok('N12 a prestadora vê a contestação (no Início e no espelho) e responde',
+    pend11 && /contestou a nota/.test(av11) && e.status === 'nota_contestada' && e.contestacao.msgs.length === 1 && e.contestacao.msgs[0].lado === 'prestador', JSON.stringify({ pend11, av11, n: e.contestacao && e.contestacao.msgs.length }));
+  await entrarComo('bruno@alfa.com.br');
+  await abrirEsp('cz_2026-10-2'); await page.waitForSelector('#es-ct-aceitar');
+  await page.click('#es-ct-aceitar'); await page.waitForSelector('dialog[open]'); await page.click('dialog[open] [data-dlg-b="1"]'); await page.waitForSelector('#es-nf-ok', { timeout: 8000 });
+  e = await espDoc('cz_2026-10-2');
+  const hist12 = await page.$eval('#es-ct-hist', x => x.innerText).catch(() => '');
+  ok('N13 o financeiro aceita a explicação: a nota volta para conferir e a contestação fica no histórico',
+    e.status === 'nota_enviada' && e.contestacao === null && e.contestacoes.length === 1 && e.contestacoes[0].fim.como === 'aceita' && /encerrada/.test(hist12), JSON.stringify({ st: e.status, hist12 }));
+
+  // N8 financeiro marca conferida; na manual, precisa marcar que abriu o arquivo
   await abrirEsp('cz_2026-10-2'); await page.click('#es-nf-ok'); await page.waitForSelector('dialog[open]'); await page.click('dialog[open] [data-dlg-b="1"]'); await page.waitForSelector('#es-aviso', { timeout: 8000 }); await H.dorme(300);
   await abrirEsp('cz_2026-10-1'); await page.click('#es-nf-ok'); await page.waitForSelector('#nc-chk'); await page.click('dialog[open] [data-dlg-b="1"]'); const er8 = await page.$eval('#nc-erro', x => x.innerText);
   await page.check('#nc-chk'); await page.click('dialog[open] [data-dlg-b="1"]'); await H.dorme(600);

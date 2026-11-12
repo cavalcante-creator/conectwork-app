@@ -28,7 +28,7 @@
 
   /* ---------- menu: módulos com menu:false abrem pela rota, mas não aparecem no menu (ex.: Minhas autorizações).
      Profissional MEI (empresa só prestadora, porte MEI): menu enxuto, com nomes do dia a dia dele e "Ver todas as telas". */
-  const ENXUTO = ['inicio', 'dinheiro', 'agenda', 'ordens', 'titulos', 'negocio', 'espelhos', 'assistentemei', 'contratos', 'documentos', 'empresa', 'meucadastro'];
+  const ENXUTO = ['inicio', 'dinheiro', 'agenda', 'ordens', 'titulos', 'negocio', 'espelhos', 'assistentemei', 'contratos', 'servicos', 'cursos', 'documentos', 'empresa', 'meucadastro'];
   const NOMES_MEI = { ordens: 'Demandas', espelhos: 'Notas a emitir', titulos: 'A receber' };
   const ctxEmp = () => { const c = CW.sessao.contexto(); return c && c.tipo === 'empresa' ? c : null; };
   const chaveCompleto = () => 'cw.menu.completo.' + ((ctxEmp() || {}).empresaId || '');
@@ -57,7 +57,7 @@
   function alternarMenu() { try { if (enxuto()) localStorage.setItem(chaveCompleto(), '1'); else localStorage.removeItem(chaveCompleto()); } catch (e) {} montar(); }
 
   /* grupos do menu (09/11/2026): títulos pequenos separando o que é contratação, financeiro e empresa */
-  const GRUPO = { contratos: 'Contratação', ordens: 'Contratação', medicoes: 'Contratação', negocio: 'Contratação',
+  const GRUPO = { servicos: 'Contratação', contratos: 'Contratação', ordens: 'Contratação', medicoes: 'Contratação', negocio: 'Contratação',
     espelhos: 'Financeiro', titulos: 'Financeiro', relatorios: 'Financeiro',
     documentos: 'Empresa', empresa: 'Empresa', usuarios: 'Empresa', historico: 'Empresa', meucadastro: 'Empresa',
     cadastros: 'Rede', redeempresas: 'Rede', mensalidades: 'Rede', emissores: 'Rede', avisos: 'Rede', painelcidade: 'Rede', equipecw: 'Equipe' };

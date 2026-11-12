@@ -10,7 +10,7 @@
   const P = () => CW.permissoes;
   const C = () => CW.cadastro;
 
-  const CHIPS = [['analise', 'Em análise'], ['pendencia', 'Ajuste pedido'], ['aprovado', 'Aprovadas'], ['mei', 'MEI (cadastro rápido)'], ['recusado', 'Recusadas'], ['todos', 'Todas']];
+  const CHIPS = [['analise', 'Em análise'], ['pendencia', 'Ajuste pedido'], ['aprovado', 'Aprovadas'], ['basico', 'Falta completar'], ['mei', 'MEI (cadastro rápido)'], ['recusado', 'Recusadas'], ['todos', 'Todas']];
   let filtro = 'analise';
   let empresas = null;                 /* lista viva (onSnapshot) */
 
