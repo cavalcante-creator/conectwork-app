@@ -1725,3 +1725,11 @@ html.mei .shell .side,html.mei .shell .logo{background:#13265E}
 .cu-preco{font-size:14px}
 .cu-par{color:var(--muted);font-size:12.5px}
 .cu-a{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:auto;padding-top:6px}
+
+/* Pedir nota (12/11/2026): lote, prazo para emitir e a chave tarifa × quantidade */
+.es-lote{display:inline-block;font-size:11.5px;font-weight:600;color:var(--blue);background:var(--surface2);border-radius:6px;padding:1px 7px;vertical-align:1px}
+.es-atr{color:var(--danger);font-weight:600}
+.es-flote{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+.es-flote select{height:32px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-size:13px;padding:0 8px;max-width:180px}
+.sg-sw{display:inline-flex;align-items:center;gap:10px;cursor:pointer;font-size:14px}
+.sg-sw input{width:18px;height:18px;accent-color:var(--blue)}

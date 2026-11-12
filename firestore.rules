@@ -317,7 +317,7 @@ service cloud.firestore {
     // Valor = o da medição; vencimento = o do contrato (não muda no espelho); líquido = valor − retenções. A prestadora lê. Nada se apaga.
     function camposEspelho() { return ['medicaoId','contratoId','tomadorId','prestadorId','partes','tomadorNome','prestadorNome','prestadorCnpj','tomador',
       'periodo','competencia','descricao','valorCentavos','retencoes','liquidoCentavos','vencimentoDias','obs','status','versao',
-      'criadoPor','criadoPorNome','criadoEm','atualizadoPor','atualizadoPorNome','atualizadoEm','emissao','nota','recusadas','conferenciaNota','origem','osNumero','item','horas','prestadorCnpjNum','contestacao','contestacoes']; }
+      'criadoPor','criadoPorNome','criadoEm','atualizadoPor','atualizadoPorNome','atualizadoEm','emissao','nota','recusadas','conferenciaNota','origem','osNumero','item','horas','prestadorCnpjNum','contestacao','contestacoes','calc','prazoEmissao','lote']; }
     function centavos(v) { return v is int && v >= 0; }
     function espelhoValores(d) {
       let r = d.retencoes;
@@ -329,7 +329,30 @@ service cloud.firestore {
     }
     function espelhoCriar(id, d) {
       let o = 'origem' in d ? d.origem : 'medicao';
-      return (o == 'os' && espelhoCriarOs(id, d)) || (o == 'repasse' && espelhoCriarRep(id, d)) || (o != 'os' && o != 'repasse' && espelhoCriarMed(id, d));
+      return (o == 'os' && espelhoCriarOs(id, d)) || (o == 'repasse' && espelhoCriarRep(id, d)) || (o == 'avulso' && espelhoCriarAvulso(id, d))
+        || (o != 'os' && o != 'repasse' && o != 'avulso' && espelhoCriarMed(id, d));
+    }
+    // Pedido de nota (12/11/2026): para quem não tem medição nem painel de RH. Quem contrata (admin ou financeiro) diz à
+    // prestadora o que faturar: precisa de contrato ativo entre as duas; valor = base (ou tarifa x quantidade) + extra − desconto;
+    // vencimento = o do contrato; prazo para emitir e lote são opcionais. Id livre (o do pedido guardado, se houver).
+    function espelhoCriarAvulso(id, d) {
+      let c = get(caminho('contratos', d.contratoId)).data;
+      let k = d.calc;
+      return cargoEm(d.tomadorId, ['admin','financeiro'])
+        && d.keys().hasOnly(camposEspelho()) && d.medicaoId == id
+        && c.status == 'ativo' && c.tomadorId == d.tomadorId && c.prestadorId == d.prestadorId && d.partes == [d.tomadorId, d.prestadorId]
+        && d.periodo is string && d.periodo.matches('[0-9]{4}-(0[1-9]|1[0-2])') && d.competencia == d.periodo
+        && k.keys().hasOnly(['modo','base','tarifa','qtd100','un','extra','desconto']) && k.modo in ['valor','tarifa']
+        && centavos(k.base) && centavos(k.extra) && centavos(k.desconto)
+        && (k.modo == 'valor' || (centavos(k.tarifa) && k.qtd100 is int && k.qtd100 > 0 && k.base == math.round(k.tarifa * k.qtd100 / 100)
+              && k.un is string && k.un.size() <= 20))
+        && d.valorCentavos == k.base + k.extra - k.desconto && d.valorCentavos > 0
+        && d.vencimentoDias == c.vencimentoDias && espelhoValores(d)
+        && (d.prazoEmissao == null || (d.prazoEmissao is string && d.prazoEmissao.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')))
+        && (d.lote == null || (d.lote is string && d.lote.size() >= 1 && d.lote.size() <= 60))
+        && d.tomador.cnpj is string && d.tomador.razao is string
+        && d.status == 'aguardando_nota' && d.versao == 1
+        && d.criadoPor == request.auth.uid && d.criadoEm == request.time && d.atualizadoPor == request.auth.uid;
     }
     // Repasse ao MEI (10/11/2026): com a medição aprovada, a prestadora (admin ou financeiro) prepara o espelho da nota de cada
     // profissional MEI da memória. Id = medição_CNPJ do MEI (um por profissional e período). Quem toma = a prestadora;
@@ -496,6 +519,23 @@ service cloud.firestore {
         && getAfter(caminho('espelhos', request.resource.data.espelhoId)).data.prestadorId == request.resource.data.prestadorId
         && getAfter(caminho('espelhos', request.resource.data.espelhoId)).data.nota.chaveUnica == chave;
       allow update, delete: if false;
+    }
+
+    // ---------- Pedidos de nota guardados para enviar depois (12/11/2026) ----------
+    // Só quem contrata (admin ou financeiro) vê e mexe. A prestadora não vê: ela só recebe o espelho quando o pedido é enviado.
+    // Rascunho → enviada (com o espelho) ou descartada. Nada se apaga.
+    function pedidoNotaOk(d) {
+      return d.keys().hasOnly(['tomadorId','status','dados','espelhoId','criadoPor','criadoPorNome','criadoEm','atualizadoPor','atualizadoEm'])
+        && d.status in ['rascunho','enviada','descartada'] && d.dados is map && d.dados.size() <= 25 && d.atualizadoPor == request.auth.uid;
+    }
+    match /pedidosnota/{id} {
+      allow read: if cargoEm(resource.data.tomadorId, ['admin','financeiro']);
+      allow create: if cargoEm(request.resource.data.tomadorId, ['admin','financeiro']) && pedidoNotaOk(request.resource.data)
+        && request.resource.data.status == 'rascunho' && request.resource.data.criadoPor == request.auth.uid && request.resource.data.espelhoId == null;
+      allow update: if cargoEm(resource.data.tomadorId, ['admin','financeiro']) && resource.data.status == 'rascunho' && pedidoNotaOk(request.resource.data)
+        && request.resource.data.tomadorId == resource.data.tomadorId && request.resource.data.criadoPor == resource.data.criadoPor
+        && (request.resource.data.status != 'enviada' || (request.resource.data.espelhoId == id && existsAfter(caminho('espelhos', id))));
+      allow delete: if false;
     }
 
     // ---------- Títulos (contas a pagar e a receber) · id = id do espelho ----------

@@ -396,6 +396,31 @@ async function deve(nome, permitido, op) {
   await deve('Contestação: quem não é das duas empresas NÃO pede nota nova', false, () => updateDoc(doc(db('carla'), 'espelhos', 'e3'), nova('carla')));
   await deve('Contestação: a prestadora vai mandar a nota corrigida (volta a esperar a nota)', true, () => updateDoc(doc(db('beto'), 'espelhos', 'e3'), nova('beto')));
   await deve('Contestação: a nota contestada NÃO é enviada de novo', false, () => enviaNota('beto', 'e3', nota('beto', { envio: 'e3b', chaveUnica: CH3, chave: CH3 })));
+  /* pedir nota (12/11/2026): espelho sem medição, com contrato ativo; pedidos guardados só quem contrata vê */
+  const pna = (k, extra) => esp(k, Object.assign({ medicaoId: 'pn1', origem: 'avulso', periodo: '2026-11', competencia: '2026-11', osNumero: null,
+    calc: { modo: 'tarifa', base: 640000, tarifa: 4000, qtd100: 16000, un: 'hora', extra: 10000, desconto: 100000 }, valorCentavos: 550000, prazoEmissao: '2026-12-10', lote: 'Folha do dia 15' }, extra || {}));
+  await deve('Pedir nota: a prestadora NÃO pede nota a si mesma', false, () => setDoc(doc(db('beto'), 'espelhos', 'pn1'), pna('beto')));
+  await deve('Pedir nota: o RH do tomador NÃO pede', false, () => setDoc(doc(db('rita'), 'espelhos', 'pn1'), pna('rita')));
+  await deve('Pedir nota: NÃO sem contrato ativo', false, () => setDoc(doc(db('bruno'), 'espelhos', 'pn1'), pna('bruno', { contratoId: 'cx' })));
+  await deve('Pedir nota: NÃO com tarifa x quantidade que não fecha', false, () => setDoc(doc(db('bruno'), 'espelhos', 'pn1'), pna('bruno', { calc: { modo: 'tarifa', base: 700000, tarifa: 4000, qtd100: 16000, un: 'hora', extra: 10000, desconto: 100000 }, valorCentavos: 610000, liquidoCentavos: 574250 })));
+  await deve('Pedir nota: NÃO com valor que não é base + extra − desconto', false, () => setDoc(doc(db('bruno'), 'espelhos', 'pn1'), pna('bruno', { valorCentavos: 650000, liquidoCentavos: 614250 })));
+  await deve('Pedir nota: NÃO com vencimento diferente do contrato', false, () => setDoc(doc(db('bruno'), 'espelhos', 'pn1'), pna('bruno', { vencimentoDias: 30 })));
+  await deve('Pedir nota: NÃO com id diferente do medicaoId', false, () => setDoc(doc(db('bruno'), 'espelhos', 'pn9'), pna('bruno')));
+  await deve('Pedir nota: o financeiro do tomador pede a nota (tarifa x quantidade, extra, desconto, prazo e lote)', true, () => setDoc(doc(db('bruno'), 'espelhos', 'pn1'), pna('bruno')));
+  await deve('Pedir nota: com valor direto e sem prazo nem lote', true, () => setDoc(doc(db('ana'), 'espelhos', 'pn2'), pna('ana', { medicaoId: 'pn2', calc: { modo: 'valor', base: 550000, extra: 0, desconto: 0 }, prazoEmissao: null, lote: null })));
+  await deve('Pedir nota: a prestadora lê o pedido', true, () => getDoc(doc(db('beto'), 'espelhos', 'pn1')));
+  await deve('Pedir nota: o financeiro corrige as retenções', true, () => updateDoc(doc(db('bruno'), 'espelhos', 'pn1'), { retencoes: { iss: 0, inss: 0, ir: 0, pcc: 0 }, liquidoCentavos: 550000, versao: 2, atualizadoPor: P.bruno, atualizadoPorNome: 'Bruno', atualizadoEm: serverTimestamp() }));
+  await deve('Pedir nota: NÃO muda o prazo para emitir depois de enviado', false, () => updateDoc(doc(db('bruno'), 'espelhos', 'pn1'), { prazoEmissao: '2027-01-30', versao: 3, atualizadoPor: P.bruno, atualizadoEm: serverTimestamp() }));
+  const pd = (k, extra) => Object.assign({ tomadorId: 'alfa', status: 'rascunho', dados: { contratoId: 'cm', periodo: '2026-11', valorCentavos: 550000 }, espelhoId: null, criadoPor: P[k], criadoPorNome: k, criadoEm: serverTimestamp(), atualizadoPor: P[k], atualizadoEm: serverTimestamp() }, extra || {});
+  await deve('Pedido guardado: o financeiro guarda para enviar depois', true, () => setDoc(doc(db('bruno'), 'pedidosnota', 'pn3'), pd('bruno')));
+  await deve('Pedido guardado: o RH NÃO guarda', false, () => setDoc(doc(db('rita'), 'pedidosnota', 'pn4'), pd('rita')));
+  await deve('Pedido guardado: a prestadora NÃO lê', false, () => getDoc(doc(db('beto'), 'pedidosnota', 'pn3')));
+  await deve('Pedido guardado: NÃO marca "enviado" sem o espelho', false, () => updateDoc(doc(db('bruno'), 'pedidosnota', 'pn3'), { status: 'enviada', espelhoId: 'pn3', atualizadoPor: P.bruno, atualizadoEm: serverTimestamp() }));
+  await deve('Pedido guardado: enviar cria o espelho e marca o pedido (juntos)', true, () => { const f = db('bruno'), b = writeBatch(f);
+    b.set(doc(f, 'espelhos', 'pn3'), pna('bruno', { medicaoId: 'pn3' })); b.update(doc(f, 'pedidosnota', 'pn3'), { status: 'enviada', espelhoId: 'pn3', atualizadoPor: P.bruno, atualizadoEm: serverTimestamp() }); return b.commit(); });
+  await deve('Pedido guardado: depois de enviado NÃO volta a rascunho', false, () => updateDoc(doc(db('bruno'), 'pedidosnota', 'pn3'), { status: 'rascunho', atualizadoPor: P.bruno, atualizadoEm: serverTimestamp() }));
+  await deve('Pedido guardado: ninguém apaga', false, () => deleteDoc(doc(db('ana'), 'pedidosnota', 'pn3')));
+  await deve('Pedido guardado: o financeiro lista os guardados', true, () => getDocs(query(collection(db('bruno'), 'pedidosnota'), where('tomadorId', '==', 'alfa'), where('status', '==', 'rascunho'))));
   await deve('Nota: NÃO fica conferida sem criar o título junto', false, () => updateDoc(doc(db('bruno'), 'espelhos', 'cm_2026-11-1'), { status: 'nota_ok', conferenciaNota: { uid: P.bruno, nome: 'Bruno', em: serverTimestamp(), manual: false }, atualizadoEm: serverTimestamp() }));
   await deve('Nota: o financeiro marca a nota conferida (com o título junto)', true, () => { const f = db('bruno'), b = writeBatch(f);
     b.update(doc(f, 'espelhos', 'cm_2026-11-1'), { status: 'nota_ok', conferenciaNota: { uid: P.bruno, nome: 'Bruno', em: serverTimestamp(), manual: false }, atualizadoEm: serverTimestamp() });

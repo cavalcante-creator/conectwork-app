@@ -15,6 +15,21 @@
   const ST = { aguardando_nota: ['warn', 'Esperando a nota'], nota_enviada: ['info', 'Nota para conferir'], nota_ok: ['ok', 'Nota conferida'], nota_contestada: ['danger', 'Nota contestada'] };
   /* contestação da nota (12/11/2026): o tomador contesta com o motivo; as duas empresas conversam; o tomador aceita a explicação
      (a nota volta para conferir) ou alguém pede uma nota nova (volta a esperar a nota). A nota contestada não vira título. */
+  let filtroLote = '';
+  const podePedirNota = ctx => pode(ctx) && ((ctx.contexto && ctx.contexto.empresa) || {}).tipo !== 'prestador';   /* quem só presta não pede nota */
+  const hojeIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const dataDe = v => { const ms = !v ? 0 : typeof v.toMillis === 'function' ? v.toMillis() : v.seconds ? v.seconds * 1000 : (Date.parse(v) || 0); if (!ms) return ''; const d = new Date(ms); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  /* prazo para emitir (pedido de nota): "emitir até", "atrasada" enquanto espera, "fora do prazo" se a nota chegou depois */
+  function prazoSit(x) {
+    if (!x.prazoEmissao) return null;
+    if (x.nota && x.nota.enviadoEm) return dataDe(x.nota.enviadoEm) > x.prazoEmissao ? 'fora' : 'ok';
+    if (x.status !== 'aguardando_nota') return null;
+    return hojeIso() > x.prazoEmissao ? 'atrasada' : 'ate';
+  }
+  function prazoTag(x) {
+    const s = prazoSit(x), d = x.prazoEmissao ? CW.ui.formatarData(x.prazoEmissao) : '';
+    return s === 'ate' ? ` · emitir até ${d}` : s === 'atrasada' ? ` · <b class="es-atr">nota atrasada (prazo ${d})</b>` : s === 'fora' ? ` · <b class="es-atr">nota fora do prazo (${d})</b>` : '';
+  }
   const MOTIVOS_CT = ['Valor diferente do aprovado', 'CNPJ de quem emitiu', 'CNPJ da nossa empresa', 'Competência (mês) errada', 'Descrição do serviço', 'Retenções e impostos', 'Outro'];
   const ENVIA = ['admin', 'financeiro', 'operacional'];   /* quem da prestadora emite e envia a nota */
   const EMISSOR = 'https://www.nfse.gov.br/EmissorNacional';
@@ -76,16 +91,20 @@
   /* ---------- lista ---------- */
   function desenharLista(el, ctx) {
     const { esc, ic, avatar } = U();
-    document.getElementById('acoes').innerHTML = '';
+    document.getElementById('acoes').innerHTML = podePedirNota(ctx) ? `<button class="btn" id="es-pedir">${ic('plus')}Pedir nota</button>` : '';
+    const bp = document.getElementById('es-pedir'); if (bp) bp.onclick = () => CW.ir('espelhos/nova');
     if (!pronto) { el.innerHTML = `<div class="card"><div class="empty"><div class="giro"></div><span>Carregando os espelhos…</span></div></div>`; return; }
-    const todos = espT.concat(espP).sort((a, b) => String(b.periodo).localeCompare(String(a.periodo)));
+    const lotes = [...new Set(espT.concat(espP).map(x => x.lote).filter(Boolean))].sort();
+    if (filtroLote && !lotes.includes(filtroLote)) filtroLote = '';
+    const todos = espT.concat(espP).filter(x => !filtroLote || x.lote === filtroLote).sort((a, b) => String(b.periodo).localeCompare(String(a.periodo)));
+    const guard = pode(ctx) ? rascunhos : [];
     const comEsp = new Set(espT.map(x => x._id));
     const preparar = pode(ctx) ? medsAprov.concat(osAprov).filter(m => !comEsp.has(m._id)) : [];
     const emitir = espP.filter(x => x.status === 'aguardando_nota');
     const conferir = pode(ctx) ? espT.filter(x => x.status === 'nota_enviada') : [];
     const contest = espT.concat(espP).filter(x => x.status === 'nota_contestada');
     const outro = x => lado(x, ctx) === 'tomador' ? x.prestadorNome : x.tomadorNome;
-    const linhaEsp = x => `<tr class="click" data-abrir="${esc(x._id)}" tabindex="0"><td class="m-full"><div class="cell">${avatar(outro(x), '', lado(x, ctx) === 'tomador' ? x.prestadorId : x.tomadorId)}<div style="min-width:0"><strong>${esc(periodoTxt(x.periodo))}</strong><small>${esc(outro(x))} · ${lado(x, ctx) === 'tomador' ? 'você paga' : 'você emite a nota'}</small></div></div></td>
+    const linhaEsp = x => `<tr class="click" data-abrir="${esc(x._id)}" tabindex="0"><td class="m-full"><div class="cell">${avatar(outro(x), '', lado(x, ctx) === 'tomador' ? x.prestadorId : x.tomadorId)}<div style="min-width:0"><strong>${esc(periodoTxt(x.periodo))}</strong><small>${esc(outro(x))} · ${lado(x, ctx) === 'tomador' ? 'você paga' : 'você emite a nota'}${x.lote ? ` · <span class="es-lote">${esc(x.lote)}</span>` : ''}${prazoTag(x)}</small></div></div></td>
       <td class="r"><b>${esc(brl(x.valorCentavos))}</b><br><small class="hint">líquido ${esc(brl(x.liquidoCentavos))}</small></td><td>${pill(x.status)}</td></tr>`;
     const tab = (xs, id) => `<div class="scroll"><table class="resp" id="${id}"><thead><tr><th>Período</th><th class="r">Valor</th><th>Situação</th></tr></thead><tbody>${xs.map(linhaEsp).join('')}</tbody></table></div>`;
     el.innerHTML = `
@@ -94,14 +113,21 @@
         ${preparar.map(m => `<tr><td class="m-full"><div class="cell">${avatar(m.prestadorNome, '', m.prestadorId)}<div style="min-width:0"><strong>${esc(m.origem === 'os' ? 'OS ' + m.numero + ' · ' + m.titulo : periodoTxt(m.periodo))}</strong><small>${esc(m.prestadorNome)} · ${m.origem === 'os' ? 'entrega aceita' : 'aprovada'}${m.aprovacao && m.aprovacao.nome ? ' por ' + esc(m.aprovacao.nome) : ''}</small></div></div></td>
           <td class="r"><b>${esc(brl(m.valorCentavos))}</b></td><td class="r"><button class="btn sm" data-preparar="${esc(m._id)}">${ic('edit')}Preparar espelho</button></td></tr>`).join('')}
         </tbody></table></div></section>` : ''}
+      ${guard.length ? `<section class="card" id="es-guardados" style="margin-bottom:22px"><div class="card-h"><span class="ic">${ic('clock')}</span><h3>Pedidos de nota guardados</h3><span class="count">${guard.length}</span></div>
+        <div class="scroll"><table class="resp" id="es-tab-guardados"><thead><tr><th>Pedido</th><th class="r">Valor</th><th></th></tr></thead><tbody>
+        ${guard.map(r => { const d = r.dados || {}; return `<tr><td class="m-full"><div class="cell">${avatar(d.prestadorNome || '?')}<div style="min-width:0"><strong>${esc(compTxt(d.periodo) || 'Sem mês')}</strong><small>${esc(d.prestadorNome || '')}${d.lote ? ` · <span class="es-lote">${esc(d.lote)}</span>` : ''} · guardado por ${esc(r.criadoPorNome || '')}</small></div></div></td>
+          <td class="r"><b>${d.valorCentavos > 0 ? esc(brl(d.valorCentavos)) : '—'}</b></td><td class="r"><button class="btn sm sec" data-guardado="${esc(r._id)}">${ic('edit')}Abrir e enviar</button></td></tr>`; }).join('')}
+        </tbody></table></div></section>` : ''}
       ${contest.length ? `<section class="card" id="es-contest" style="margin-bottom:22px"><div class="card-h"><span class="ic">${ic('alert')}</span><h3>Notas contestadas</h3><span class="count">${contest.length}</span></div>${tab(contest, 'es-tab-contest')}</section>` : ''}
       ${conferir.length ? `<section class="card" id="es-conferir" style="margin-bottom:22px"><div class="card-h"><span class="ic">${ic('alert')}</span><h3>Notas para conferir</h3><span class="count">${conferir.length}</span></div>${tab(conferir, 'es-tab-conferir')}</section>` : ''}
       ${emitir.length ? `<section class="card" id="es-emitir" style="margin-bottom:22px"><div class="card-h"><span class="ic">${ic('receipt')}</span><h3>Notas a emitir</h3><span class="count">${emitir.length}</span></div>
         <div class="card-b" style="padding-bottom:0"><div class="banner ok">${ic('check')}<span><strong>Serviço aprovado: confira os dados e envie sua nota fiscal</strong>Abra o espelho: o botão leva ao emissor da nota e, quando você voltar, o Conectwork pede o PDF da nota.</span></div></div>
         ${tab(emitir, 'es-tab-emitir')}</section>` : ''}
-      <section class="card" id="es-lista"><div class="card-h"><span class="ic">${ic('receipt')}</span><h3>Espelhos da nota</h3><span class="count">${todos.length}</span></div>
-        ${todos.length ? tab(todos, 'es-tab') : `<div class="empty"><div class="ic">${ic('receipt')}</div><strong>Nenhum espelho ainda.</strong><span>Quando uma medição for aprovada, o financeiro de quem contrata prepara o espelho com os dados da nota.</span>${U().passos(['Contrato ativo entre as duas empresas', 'Medição ou entrega aprovada', 'O financeiro prepara o espelho e a prestadora emite a nota'])}</div>`}</section>`;
+      <section class="card" id="es-lista"><div class="card-h"><span class="ic">${ic('receipt')}</span><h3>Espelhos da nota</h3><span class="count">${todos.length}</span>${lotes.length ? `<label class="es-flote"><span>Lote</span><select id="es-flote"><option value="">Todos</option>${lotes.map(l => `<option${l === filtroLote ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label>` : ''}</div>
+        ${todos.length ? tab(todos, 'es-tab') : `<div class="empty"><div class="ic">${ic('receipt')}</div><strong>Nenhum espelho ainda.</strong><span>Quando uma medição for aprovada, o financeiro de quem contrata prepara o espelho com os dados da nota. Sem medição? Use "Pedir nota" e diga à prestadora o que faturar.</span>${U().passos(['Contrato ativo entre as duas empresas', 'Medição ou entrega aprovada (ou "Pedir nota")', 'O financeiro prepara o espelho e a prestadora emite a nota'])}</div>`}</section>`;
     el.querySelectorAll('[data-preparar]').forEach(b => b.onclick = () => CW.ir('espelhos/preparar/' + b.dataset.preparar));
+    el.querySelectorAll('[data-guardado]').forEach(b => b.onclick = () => CW.ir('espelhos/nova/' + b.dataset.guardado));
+    const fl = document.getElementById('es-flote'); if (fl) fl.onchange = () => { filtroLote = fl.value; desenharLista(el, ctx); };
     el.querySelectorAll('[data-abrir]').forEach(r => { const ir = () => CW.ir('espelhos/ver/' + r.dataset.abrir); r.onclick = ir; r.onkeydown = e => { if (e.key === 'Enter') ir(); }; });
   }
 
@@ -185,6 +211,142 @@
     };
   }
 
+  /* ---------- pedido de nota (12/11/2026): para quem não tem medição nem painel de RH ----------
+     Quem contrata diz à prestadora o que faturar: contrato ativo, competência, valor (ou tarifa × quantidade), extra, desconto,
+     retenções, prazo para emitir e lote (opcional). "Salvar para enviar depois" guarda em pedidosnota/ (a prestadora não vê);
+     "Salvar e enviar" cria o espelho (origem 'avulso') e daí segue o caminho de sempre: nota → conferência → título. */
+  const UNS = ['hora', 'dia', 'unidade', 'visita', 'mês'];
+  const mesAtual = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; };
+  const qtdTxt = q => String(q / 100).replace('.', ',');
+  let rascunhos = [];
+  async function desenharNova(el, ctx, rid) {
+    const { esc, ic, formatarDinheiro } = U(), db = CW.fb.db(), emp = ctx.contexto.empresaId;
+    const fim = (t, txt) => { el.innerHTML = `<div class="banner warn" id="sg-msg">${ic('alert')}<span><strong>${esc(t)}</strong>${esc(txt)}</span></div><div style="margin-top:14px"><button class="btn sec" id="es-volta">${ic('back')}Voltar para os espelhos</button></div>`; document.getElementById('es-volta').onclick = () => CW.ir('espelhos'); };
+    if (!pode(ctx)) return fim('Quem pede a nota é o Financeiro', 'Peça ao financeiro ou ao administrador da empresa.');
+    if (!podePedirNota(ctx)) return fim('Quem pede a nota é a empresa que contrata', 'A sua empresa só presta serviço: a nota é pedida por quem contrata você.');
+    el.innerHTML = `<div class="card"><div class="empty"><div class="giro"></div><span>Carregando os contratos…</span></div></div>`;
+    let cts = [], emp0 = {}, pv = {}, rs = null;
+    try {
+      const [a, b, c, r] = await Promise.all([db.collection('contratos').where('tomadorId', '==', emp).get(), db.doc('empresas/' + emp).get(), db.doc('empresas/' + emp + '/privado/cadastro').get(), rid ? db.doc('pedidosnota/' + rid).get() : Promise.resolve(null)]);
+      cts = CW.fb.lista(a).filter(x => x.status === 'ativo'); emp0 = CW.fb.dados(b) || ctx.contexto.empresa || {}; pv = CW.fb.dados(c) || {}; rs = r ? CW.fb.dados(r) : null;
+    } catch (err) { return fim('Não foi possível abrir', CW.fb.mensagemErro(err)); }
+    if (rid && (!rs || rs.status !== 'rascunho')) return fim('Pedido não encontrado', 'Ele pode já ter sido enviado ou descartado.');
+    if (!cts.length) return fim('Nenhum contrato ativo', 'O pedido de nota precisa de um contrato ativo com a prestadora. Faça o contrato em Contratos e espere as duas assinaturas.');
+    const v = (rs && rs.dados) || {}, en = pv.end || {};
+    const tom = { razao: emp0.razao || emp0.nome || '', cnpj: emp0.cnpj || '', im: (pv.dados || {}).im || '', endereco: endTxt(en), cidade: en.cidade || '', uf: en.uf || '' };
+    const lotes = [...new Set(espT.map(x => x.lote).filter(Boolean))].sort();
+    const din = c => c ? formatarDinheiro(c, false) : '';
+    document.getElementById('titulo').textContent = rs ? 'Pedido de nota guardado' : 'Pedir nota';
+    el.innerHTML = `<div style="margin-bottom:14px"><button class="linkbtn" id="sg-voltar">${ic('back')}Voltar</button></div>
+      <div class="banner info" style="margin-bottom:18px">${ic('receipt')}<span><strong>Diga à prestadora o que faturar</strong>Para quem não usa medição: a prestadora recebe o espelho com os dados, emite a nota e anexa no Conectwork. A nota é conferida com o contrato e este pedido.</span></div>
+      <div class="grid-main"><div class="stack"><section class="card"><div class="card-b"><form class="stack" id="sg-form" style="gap:16px" novalidate>
+        <div class="fgrid">
+          <label class="f c8"><span>Prestadora (contrato ativo)</span><select id="sg-ct"><option value="">Escolha a prestadora</option>${cts.map(c => `<option value="${esc(c._id)}"${v.contratoId === c._id ? ' selected' : ''}>${esc(c.prestadorNome || '')} · ${esc(String(c.objeto || '').slice(0, 60))}</option>`).join('')}</select></label>
+          <label class="f c4"><span>Competência (mês)</span><input id="sg-comp" type="month" value="${esc(v.periodo || mesAtual())}"></label>
+          <label class="f c12"><span>Lote <i>(opcional)</i></span><input id="sg-lote" maxlength="60" list="sg-lotes" placeholder="Ex.: Folha do dia 15" value="${esc(v.lote || '')}"><datalist id="sg-lotes">${lotes.map(l => `<option value="${esc(l)}">`).join('')}</datalist><em class="hint">O lote junta os pedidos que você quer acompanhar juntas. Em branco: sem lote.</em></label>
+        </div>
+        <div><p style="margin:0 0 8px;font-size:13px;font-weight:600">Valor</p>
+          <label class="sg-sw"><input type="checkbox" id="sg-tarifa"${v.modo === 'tarifa' ? ' checked' : ''}><span>Calcular pela tarifa × quantidade</span></label>
+          <div class="fgrid" style="margin-top:10px">
+            <label class="f c6" id="sg-b-valor"><span>Valor bruto</span><input id="sg-valor" data-mascara="dinheiro" inputmode="numeric" placeholder="0,00" value="${esc(din(v.modo !== 'tarifa' ? v.base : 0))}"></label>
+            <label class="f c4" id="sg-b-tar"><span>Tarifa</span><input id="sg-tar" data-mascara="dinheiro" inputmode="numeric" placeholder="0,00" value="${esc(din(v.tarifa))}"></label>
+            <label class="f c4" id="sg-b-qtd"><span>Quantidade</span><input id="sg-qtd" inputmode="decimal" placeholder="Ex.: 160" value="${esc(v.qtd100 ? qtdTxt(v.qtd100) : '')}"></label>
+            <label class="f c4" id="sg-b-un"><span>Por</span><select id="sg-un">${UNS.map(u => `<option${(v.un || 'hora') === u ? ' selected' : ''}>${u}</option>`).join('')}</select></label>
+            <label class="f c6"><span>Extra <i>(opcional)</i></span><input id="sg-extra" data-mascara="dinheiro" inputmode="numeric" placeholder="0,00" value="${esc(din(v.extra))}"><em class="hint">Valor a mais nesta nota.</em></label>
+            <label class="f c6"><span>Desconto <i>(opcional)</i></span><input id="sg-desc" data-mascara="dinheiro" inputmode="numeric" placeholder="0,00" value="${esc(din(v.desconto))}"><em class="hint">Desconto que já sai do valor da nota.</em></label>
+          </div>
+          <div class="md-total"><span>Valor da nota</span><b id="sg-total">—</b></div></div>
+        <label class="f"><span>Descrição sugerida da nota</span><textarea id="sg-txt" rows="3" maxlength="1000">${esc(v.descricao || '')}</textarea></label>
+        <div><p style="margin:0 0 4px;font-size:13px;font-weight:600">Retenções</p><p class="hint" style="margin:0 0 10px;font-size:12.5px">Informe o valor de cada retenção (deixe em branco o que não tem).</p>
+          <div class="fgrid">${RET.map(([k, n]) => `<label class="f c6"><span>${n}</span><input id="sg-r-${k}" data-mascara="dinheiro" inputmode="numeric" placeholder="0,00" value="${esc(din((v.retencoes || {})[k]))}"></label>`).join('')}</div></div>
+        <div class="md-total"><span>Líquido a pagar</span><b id="sg-liq">—</b></div>
+        <div class="fgrid">
+          <label class="f c6"><span>Prazo para emitir a nota <i>(opcional)</i></span><input id="sg-prazo" type="date" value="${esc(v.prazoEmissao || '')}"><em class="hint">A prestadora vê "emitir até" e a nota que chegar depois fica marcada "fora do prazo".</em></label>
+          <div class="c6"><dl class="dl"><div class="full"><dt>Vencimento previsto</dt><dd id="sg-venc">Escolha a prestadora</dd></div></dl></div>
+        </div>
+        <label class="f"><span>Observação para a prestadora <i>(opcional)</i></span><input id="sg-obs" maxlength="300" value="${esc(v.obs || '')}"></label>
+        <p class="err" id="sg-erro" role="alert"></p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">${rs ? `<button type="button" class="btn sec dangerous" id="sg-descartar">${ic('x')}Descartar</button>` : ''}<button type="button" class="btn sec" id="sg-guardar">${ic('clock')}Salvar para enviar depois</button><button type="submit" class="btn" id="sg-enviar">${ic('send')}Salvar e enviar</button></div>
+      </form></div></section></div>
+      <div class="stack"><section class="card"><div class="card-h"><span class="ic">${ic('building')}</span><h3>Quem toma o serviço (vai na nota)</h3></div><div class="card-b"><dl class="dl">
+        <div class="full"><dt>Razão social</dt><dd>${esc(tom.razao || '—')}</dd></div><div><dt>CNPJ</dt><dd>${esc(tom.cnpj || '—')}</dd></div><div><dt>Inscrição municipal</dt><dd>${esc(tom.im || '—')}</dd></div>
+        <div class="full"><dt>Endereço</dt><dd>${esc(tom.endereco || '—')}${tom.cidade ? ' · ' + esc(tom.cidade + '/' + tom.uf) : ''}</dd></div></dl>
+        <p class="hint" style="margin:12px 0 0;font-size:12.5px">Vêm do cadastro da sua empresa (Minha empresa).</p></div></section></div></div>`;
+    U().aplicarMascaras(el);
+    const g = x => document.getElementById(x), L = x => U().lerDinheiro(g(x).value) || 0;
+    const ctSel = () => cts.find(c => c._id === g('sg-ct').value);
+    const qtd100 = () => { const t = String(g('sg-qtd').value).trim().replace(/\./g, '').replace(',', '.'); const n = Number(t); return t && isFinite(n) && n > 0 ? Math.round(n * 100) : 0; };
+    const ler = () => {
+      const tar = g('sg-tarifa').checked, q = qtd100(), tarifa = L('sg-tar');
+      const base = tar ? Math.round(tarifa * q / 100) : L('sg-valor'), extra = L('sg-extra'), desconto = L('sg-desc');
+      const ret = {}; RET.forEach(([k]) => { ret[k] = L('sg-r-' + k); });
+      const valor = base + extra - desconto;
+      return { tar, calc: tar ? { modo: 'tarifa', base, tarifa, qtd100: q, un: g('sg-un').value, extra, desconto } : { modo: 'valor', base, extra, desconto }, valor, ret, liq: valor - somaRet(ret) };
+    };
+    let descAuto = !v.descricao;
+    const sugereDesc = () => { const c = ctSel(); if (!c || !descAuto) return; const comp = g('sg-comp').value; g('sg-txt').value = `Prestação de serviços: ${String(c.objeto || '').replace(/\.\s*$/, '')}. Competência: ${compTxt(comp)}. Conforme contrato.`; };
+    const atualiza = () => {
+      const x = ler(), c = ctSel();
+      ['sg-b-tar', 'sg-b-qtd', 'sg-b-un'].forEach(i => { g(i).hidden = !x.tar; }); g('sg-b-valor').hidden = x.tar;
+      g('sg-total').textContent = x.valor > 0 ? brl(x.valor) + (x.tar && x.calc.qtd100 ? ` · ${qtdTxt(x.calc.qtd100)} ${x.calc.un} × ${brl(x.calc.tarifa)}` : '') : '—';
+      g('sg-liq').textContent = x.valor > 0 ? brl(x.liq) : '—'; g('sg-liq').style.color = x.valor > 0 && !(x.liq > 0) ? 'var(--danger)' : '';
+      g('sg-venc').textContent = c ? vencTxt(c.vencimentoDias) + ' (vem do contrato)' : 'Escolha a prestadora';
+      g('sg-erro').textContent = '';
+    };
+    g('sg-txt').addEventListener('input', () => { descAuto = false; });
+    g('sg-ct').onchange = () => { sugereDesc(); atualiza(); }; g('sg-comp').onchange = () => { sugereDesc(); atualiza(); };
+    g('sg-form').addEventListener('input', atualiza); g('sg-form').addEventListener('change', atualiza); atualiza();
+    g('sg-voltar').onclick = () => CW.ir('espelhos');
+    const dadosForm = () => { const x = ler(), c = ctSel(); return Object.assign({ contratoId: c ? c._id : '', periodo: g('sg-comp').value, lote: g('sg-lote').value.trim(), modo: x.calc.modo, base: x.calc.base, tarifa: x.calc.tarifa || 0, qtd100: x.calc.qtd100 || 0, un: x.calc.un || '',
+      extra: x.calc.extra, desconto: x.calc.desconto, retencoes: x.ret, descricao: g('sg-txt').value.trim(), prazoEmissao: g('sg-prazo').value, obs: g('sg-obs').value.trim(), prestadorNome: c ? c.prestadorNome : '', valorCentavos: x.valor }); };
+    const agora = CW.fb.agora, uid = ctx.sessao.usuario.uid;
+    const ocupado = on => ['sg-guardar', 'sg-enviar', 'sg-descartar'].forEach(i => { if (g(i)) g(i).disabled = on; });
+    g('sg-guardar').onclick = async () => {
+      const d = dadosForm(), er = g('sg-erro');
+      if (!d.contratoId) { er.textContent = 'Escolha a prestadora.'; g('sg-ct').focus(); return; }
+      const b = db.batch(), ref = rid ? db.doc('pedidosnota/' + rid) : db.collection('pedidosnota').doc();
+      if (rid) b.update(ref, { dados: d, atualizadoPor: uid, atualizadoEm: agora() });
+      else b.set(ref, { tomadorId: emp, status: 'rascunho', dados: d, espelhoId: null, criadoPor: uid, criadoPorNome: quem(ctx), criadoEm: agora(), atualizadoPor: uid, atualizadoEm: agora() });
+      log(b, ctx, 'pedidonota.guardar', `Pedido de nota para ${d.prestadorNome} (${compTxt(d.periodo)}) guardado para enviar depois${d.valorCentavos > 0 ? ': ' + brl(d.valorCentavos) : ''}.`, ref.id);
+      ocupado(true);
+      try { await b.commit(); U().toast('Pedido guardado. A prestadora ainda não vê; envie quando estiver pronto.'); CW.ir('espelhos'); }
+      catch (err) { ocupado(false); er.textContent = CW.fb.mensagemErro(err); }
+    };
+    if (g('sg-descartar')) g('sg-descartar').onclick = async () => {
+      if (!(await U().confirmar('Descartar o pedido?', 'Ele sai da lista e não vai para a prestadora. Fica no histórico.', 'Descartar'))) return;
+      const b = db.batch(); b.update(db.doc('pedidosnota/' + rid), { status: 'descartada', atualizadoPor: uid, atualizadoEm: agora() });
+      log(b, ctx, 'pedidonota.descartar', `Pedido de nota para ${(v.prestadorNome || '')} (${compTxt(v.periodo)}) descartado.`, rid);
+      try { await b.commit(); U().toast('Pedido descartado.'); CW.ir('espelhos'); } catch (err) { g('sg-erro').textContent = CW.fb.mensagemErro(err); }
+    };
+    g('sg-form').onsubmit = async ev => {
+      ev.preventDefault();
+      const x = ler(), c = ctSel(), er = g('sg-erro'), desc = g('sg-txt').value.trim().replace(/\s+/g, ' '), comp = g('sg-comp').value, prazo = g('sg-prazo').value, lote = g('sg-lote').value.trim(), obs = g('sg-obs').value.trim();
+      if (!c) { er.textContent = 'Escolha a prestadora.'; g('sg-ct').focus(); return; }
+      if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(comp)) { er.textContent = 'Escolha o mês da competência.'; g('sg-comp').focus(); return; }
+      if (x.tar && !(x.calc.tarifa > 0)) { er.textContent = 'Informe a tarifa.'; g('sg-tar').focus(); return; }
+      if (x.tar && !(x.calc.qtd100 > 0)) { er.textContent = 'Informe a quantidade (ex.: 160 ou 7,5).'; g('sg-qtd').focus(); return; }
+      if (!x.tar && !(x.calc.base > 0)) { er.textContent = 'Informe o valor bruto.'; g('sg-valor').focus(); return; }
+      if (!(x.valor > 0)) { er.textContent = 'O desconto é maior que o valor. Confira os valores.'; g('sg-desc').focus(); return; }
+      if (desc.length < 10) { er.textContent = 'Escreva a descrição da nota (pelo menos 10 letras).'; g('sg-txt').focus(); return; }
+      if (!(x.liq > 0)) { er.textContent = 'As retenções somam mais que o valor da nota. Confira os valores.'; return; }
+      if (prazo && !U().validarData(prazo)) { er.textContent = 'O prazo para emitir não é uma data válida.'; g('sg-prazo').focus(); return; }
+      if (!tom.cnpj || !tom.razao) { er.textContent = 'Faltam a razão social ou o CNPJ da sua empresa. Confira em Minha empresa.'; return; }
+      const b = db.batch(), ref = rid ? db.doc('espelhos/' + rid) : db.collection('espelhos').doc(), id = ref.id;
+      const retTxt = RET.filter(([k]) => x.ret[k]).map(([k, n]) => `${n} ${brl(x.ret[k])}`).join(', ') || 'sem retenções';
+      b.set(ref, { medicaoId: id, contratoId: c._id, tomadorId: emp, prestadorId: c.prestadorId, partes: [emp, c.prestadorId],
+        tomadorNome: c.tomadorNome || emp0.nome || '', prestadorNome: c.prestadorNome || '', prestadorCnpj: c.prestadorCnpj || '', tomador: tom,
+        periodo: comp, competencia: comp, descricao: desc, origem: 'avulso', osNumero: null, calc: x.calc, prazoEmissao: prazo || null, lote: lote || null,
+        valorCentavos: x.valor, retencoes: x.ret, liquidoCentavos: x.liq, vencimentoDias: c.vencimentoDias, obs, status: 'aguardando_nota', versao: 1,
+        criadoPor: uid, criadoPorNome: quem(ctx), criadoEm: agora(), atualizadoPor: uid, atualizadoPorNome: quem(ctx), atualizadoEm: agora() });
+      if (rid) b.update(db.doc('pedidosnota/' + rid), { status: 'enviada', espelhoId: id, atualizadoPor: uid, atualizadoEm: agora() });
+      const calcTxt = x.tar ? ` (${qtdTxt(x.calc.qtd100)} ${x.calc.un} × ${brl(x.calc.tarifa)})` : '';
+      log(b, ctx, 'espelho.pedido', `Pedido de nota enviado para ${c.prestadorNome} (${compTxt(comp)}${lote ? ', lote ' + lote : ''}): ${brl(x.valor)}${calcTxt}${x.calc.extra ? ', extra ' + brl(x.calc.extra) : ''}${x.calc.desconto ? ', desconto ' + brl(x.calc.desconto) : ''}; ${retTxt}; líquido ${brl(x.liq)}${prazo ? '; emitir até ' + U().formatarData(prazo) : ''}.`, id);
+      ocupado(true);
+      try { await b.commit(); U().toast('Pedido enviado. Agora a prestadora emite a nota.'); CW.ir('espelhos/ver/' + id); }
+      catch (err) { ocupado(false); er.textContent = CW.fb.mensagemErro(err); }
+    };
+  }
+
   /* ---------- ver ---------- */
   async function desenharVer(el, ctx, id) {
     const { esc, ic, formatarDataHora, formatarDinheiro } = U();
@@ -209,13 +371,13 @@
           <div><dt>Prestadora</dt><dd>${esc(x.prestadorNome)}${x.prestadorCnpj ? '<br><span class="hint">' + esc(x.prestadorCnpj) + '</span>' : ''}</dd></div>
           <div><dt>Competência</dt><dd>${esc(compTxt(x.competencia))}</dd></div>
           ${cp('Descrição do serviço', x.descricao, 'desc', 1)}
-          ${cp('Valor do serviço', brl(x.valorCentavos), 'valor')}<div><dt>Período da medição</dt><dd>${esc(periodoTxt(x.periodo))}</dd></div>
+          ${cp('Valor do serviço', brl(x.valorCentavos), 'valor')}${x.origem === 'avulso' ? `<div><dt>Prazo para emitir</dt><dd id="es-prazo">${x.prazoEmissao ? esc(U().formatarData(x.prazoEmissao)) + (prazoSit(x) === 'atrasada' ? ' <b class="es-atr">· atrasada</b>' : prazoSit(x) === 'fora' ? ' <b class="es-atr">· chegou fora do prazo</b>' : '') : 'Sem prazo'}</dd></div>${x.lote ? `<div><dt>Lote</dt><dd>${esc(x.lote)}</dd></div>` : ''}` : `<div><dt>Período da medição</dt><dd>${esc(periodoTxt(x.periodo))}</dd></div>`}
           ${x.obs ? `<div class="full"><dt>Observação</dt><dd>${esc(x.obs)}</dd></div>` : ''}</dl></div></section>
         ${x.nota ? cartaoNota(x, ctx) : ''}
         ${zapEsp(x, ctx)}
       </div><div class="stack">
         <section class="card" id="es-valores"><div class="card-h"><span class="ic">${ic('wallet')}</span><h3>Valores</h3></div><div class="card-b stack" style="gap:12px">
-          <div class="scroll"><table><tbody><tr><td>Valor aprovado</td><td class="r"><b>${esc(brl(x.valorCentavos))}</b></td></tr>
+          <div class="scroll"><table><tbody>${x.origem === 'avulso' && x.calc ? `<tr><td>${x.calc.modo === 'tarifa' ? `${esc(String(x.calc.qtd100 / 100).replace('.', ','))} ${esc(x.calc.un || '')} × ${esc(brl(x.calc.tarifa))}` : 'Valor bruto'}</td><td class="r">${esc(brl(x.calc.base))}</td></tr>${x.calc.extra ? `<tr><td>Extra</td><td class="r">+ ${esc(brl(x.calc.extra))}</td></tr>` : ''}${x.calc.desconto ? `<tr><td>Desconto</td><td class="r">− ${esc(brl(x.calc.desconto))}</td></tr>` : ''}` : ''}<tr><td>${x.origem === 'avulso' ? 'Valor da nota' : 'Valor aprovado'}</td><td class="r"><b>${esc(brl(x.valorCentavos))}</b></td></tr>
           ${RET.map(([k, n]) => `<tr><td>${n}</td><td class="r">${(x.retencoes || {})[k] ? '− ' + esc(brl(x.retencoes[k])) + ` <button class="iconbtn sm" data-copiar="r_${k}" aria-label="Copiar ${n}" title="Copiar">${ic('copy')}</button>` : '<span class="hint">—</span>'}</td></tr>`).join('')}</tbody></table></div>
           ${temRet ? '' : '<p class="hint" style="margin:0;font-size:12.5px">Sem retenções informadas.</p>'}
           <div class="md-total"><span>Líquido a pagar</span><b id="es-liq">${esc(brl(x.liquidoCentavos))}</b></div>
@@ -224,10 +386,11 @@
         </div></section>
         <section class="card" id="es-andamento"><div class="card-h"><span class="ic">${ic('clock')}</span><h3>Andamento</h3></div><div class="card-b stack" style="gap:14px">
           <ul class="tl">${x.origem === 'repasse' ? `<li class="done"><span class="dot">${ic('check')}</span>Horas aprovadas${x.horas != null ? ': ' + esc(String(x.horas).replace('.', ',')) + ' h' : ''}<small>${l === 'tomador' ? `<a href="#medicoes/ver/${esc(x.medicaoId)}" class="linkbtn" style="font-size:12px">ver a medição</a>` : 'medição aprovada pela empresa onde você trabalhou'}</small></li>`
+            : x.origem === 'avulso' ? `<li class="done"><span class="dot">${ic('check')}</span>Nota pedida por ${esc(x.tomadorNome)}${x.lote ? ' · lote ' + esc(x.lote) : ''}<small>sem medição: o valor foi informado por quem contrata</small></li>`
             : `<li class="done"><span class="dot">${ic('check')}</span>${x.origem === 'os' ? 'Entrega aceita (OS ' + esc(x.osNumero) + ')' : 'Medição aprovada'}<small><a href="#${x.origem === 'os' ? 'ordens' : 'medicoes'}/ver/${esc(x.medicaoId)}" class="linkbtn" style="font-size:12px">${x.origem === 'os' ? 'ver a OS' : 'ver a medição'}</a></small></li>`}
             <li class="done"><span class="dot">${ic('check')}</span>Espelho preparado${x.versao > 1 ? ` (versão ${x.versao})` : ''}<small>${esc(formatarDataHora(x.criadoEm))} · ${esc(x.criadoPorNome || '')}${x.versao > 1 ? ` · corrigido ${esc(formatarDataHora(x.atualizadoEm))} por ${esc(x.atualizadoPorNome || '')}` : ''}</small></li>
             <li class="${x.nota ? 'done' : x.status === 'aguardando_nota' ? 'now' : ''}"><span class="dot">${x.nota ? ic('check') : ''}</span>Nota fiscal enviada pela prestadora<small>${x.nota ? esc(formatarDataHora(x.nota.enviadoEm) + ' · ' + (x.nota.enviadoPorNome || '')) : x.emissao ? 'emissor aberto ' + esc(formatarDataHora(x.emissao.em)) : 'esperando'}</small></li>
-            <li class="${x.status === 'nota_ok' ? 'done' : x.status === 'nota_enviada' ? 'now' : ''}"><span class="dot">${x.status === 'nota_ok' ? ic('check') : ''}</span>Conferência: contrato + medição + nota<small>${x.conferenciaNota ? esc(formatarDataHora(x.conferenciaNota.em) + ' · ' + x.conferenciaNota.nome) : ''}</small></li></ul>
+            <li class="${x.status === 'nota_ok' ? 'done' : x.status === 'nota_enviada' ? 'now' : ''}"><span class="dot">${x.status === 'nota_ok' ? ic('check') : ''}</span>Conferência: contrato + ${x.origem === 'avulso' ? 'pedido' : 'medição'} + nota<small>${x.conferenciaNota ? esc(formatarDataHora(x.conferenciaNota.em) + ' · ' + x.conferenciaNota.nome) : ''}</small></li></ul>
           ${l === 'tomador' && x.status === 'aguardando_nota' && pode(ctx) ? `<div><button class="btn sec" id="es-corrigir">${ic('edit')}Corrigir o espelho</button></div>` : ''}
         </div></section></div></div>`;
     document.getElementById('es-voltar').onclick = () => CW.ir('espelhos');
@@ -244,14 +407,14 @@
     if (l === 'prestador' && x.status === 'aguardando_nota') {
       const E = emissorCache || { origem: 'padrao', nome: 'Emissor Nacional' }, onde = E.cidade ? E.cidade + '/' + E.uf : '';
       const porque = E.origem === 'empresa' ? 'Site definido pela sua empresa.' : E.origem === 'cidade' ? `Site da prefeitura de ${onde}, escolhido pela cidade da sua empresa.` : `Emissor Nacional (gov.br)${onde ? ', o padrão para ' + onde : ''}.`;
-      return recTxt + `<div class="banner ok" id="es-aviso">${ic('check')}<span><strong>Serviço aprovado: confira os dados e envie sua nota fiscal</strong>1. Toque em "Emitir a nota": o emissor abre numa janela por cima do Conectwork. Preencha com os dados abaixo (use os botões de copiar). 2. Feche a janela e anexe o PDF da nota (ou o XML).</span></div>
+      return recTxt + `<div class="banner ok" id="es-aviso">${ic('check')}<span><strong>${x.origem === 'avulso' ? 'A ' + esc(x.tomadorNome) + ' pediu a nota' : 'Serviço aprovado'}: confira os dados e envie sua nota fiscal${x.prazoEmissao ? ` até ${esc(U().formatarData(x.prazoEmissao))}` : ''}</strong>${prazoSit(x) === 'atrasada' ? '<b class="es-atr">O prazo para emitir já passou. </b>' : ''}1. Toque em "Emitir a nota": o emissor abre numa janela por cima do Conectwork. Preencha com os dados abaixo (use os botões de copiar). 2. Feche a janela e anexe o PDF da nota (ou o XML).</span></div>
         ${podeEnviar(ctx) ? `<section class="card" id="es-passos" style="margin:14px 0 22px"><div class="card-b stack" style="gap:12px">
           ${x.emissao ? `<p style="margin:0;font-size:13.5px" id="es-voltou">${ic('clock')} Emissor aberto ${esc(formatarDataHora(x.emissao.em))} por ${esc(x.emissao.nome)}. <b>${janAberta() ? 'O emissor está aberto numa janela por cima. Quando terminar, feche a janela: o Conectwork pede a nota.' : 'Já emitiu? Anexe a nota.'}</b>${janAberta() ? ` <button class="linkbtn" id="es-jan-frente" style="display:inline">Mostrar a janela do emissor</button>` : ''}</p>` : ''}
           <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ${x.emissao ? 'sec' : ''}" id="es-emitir-bt">${ic('send')}Emitir a nota ${E.origem === 'padrao' ? 'no Emissor Nacional' : 'no site da prefeitura'}</button>
             <button class="btn ${x.emissao ? '' : 'sec'}" id="es-anexar">${ic('upload')}Anexar a nota (PDF ou XML)</button></div>
           <p class="hint" style="margin:0;font-size:12.5px" id="es-site">${esc(porque)} <button class="linkbtn" id="es-outro-site" style="font-size:12.5px;display:inline">Não é esse o site?</button></p></div></section>` : ''}`;
     }
-    if (l === 'tomador' && x.status === 'aguardando_nota') return recTxt + `<div class="banner info" id="es-aviso">${ic('clock')}<span><strong>Esperando a nota da ${esc(x.prestadorNome)}</strong>${x.emissao ? 'A prestadora abriu o emissor em ' + esc(formatarDataHora(x.emissao.em)) + '. ' : 'A prestadora já vê o espelho. '}A nota é conferida com o contrato, a medição e este espelho.</span></div>`;
+    if (l === 'tomador' && x.status === 'aguardando_nota') return recTxt + `<div class="banner info" id="es-aviso">${ic('clock')}<span><strong>Esperando a nota da ${esc(x.prestadorNome)}${x.prazoEmissao ? (prazoSit(x) === 'atrasada' ? ` · prazo ${esc(U().formatarData(x.prazoEmissao))} já passou` : ` até ${esc(U().formatarData(x.prazoEmissao))}`) : ''}</strong>${x.emissao ? 'A prestadora abriu o emissor em ' + esc(formatarDataHora(x.emissao.em)) + '. ' : 'A prestadora já vê o espelho. '}A nota é conferida com o contrato, a medição e este espelho.</span></div>`;
     if (x.status === 'nota_enviada') return `<div class="banner ${l === 'tomador' ? 'warn' : 'info'}" id="es-aviso">${ic(l === 'tomador' ? 'alert' : 'clock')}<span><strong>${l === 'tomador' ? 'Nota chegou: confira' : 'Nota enviada'}</strong>${l === 'tomador' ? 'Veja a conferência abaixo, abra o arquivo se precisar e marque "Nota conferida" ou recuse com o motivo.' : 'A ' + esc(x.tomadorNome) + ' confere a nota com o contrato, a medição e o espelho.'}</span></div>`;
     if (x.status === 'nota_contestada') return `<div class="banner danger" id="es-aviso">${ic('alert')}<span><strong>${l === 'tomador' ? 'Nota contestada' : 'A ' + esc(x.tomadorNome) + ' contestou a nota'}</strong>${l === 'tomador' ? 'A nota fica parada e não vira título até você aceitar a explicação ou pedir uma nota nova.' : 'Veja o motivo abaixo: responda explicando ou mande a nota corrigida.'}</span></div>`;
     if (x.status === 'nota_ok') return `<div class="banner ok" id="es-aviso">${ic('check')}<span><strong>Nota conferida</strong>Contrato, medição e nota batem. O título foi para Pagar e receber. <a href="#titulos/ver/${esc(x._id)}" class="linkbtn" id="es-titulo">Ver o título</a></span></div>`;
@@ -270,7 +433,7 @@
     const { esc, ic, formatarDataHora } = U(), n = x.nota, cf = n.conferencia || {}, N = CW.nfse;
     const itens = (cf.itens || []).map(i => `<li class="${i.ok ? 'ok' : 'no'}">${ic(i.ok ? 'check' : 'alert')}<span>${esc(i.txt)}</span></li>`).join('');
     const pr = N ? N.fmtCnpj(x.prestadorCnpj) : x.prestadorCnpj;
-    const tripla = `<ul class="es-cf" id="es-tripla"><li class="ok">${ic('check')}<span>${x.origem === 'repasse' ? `Profissional MEI da medição: ${esc(x.prestadorNome)} (${esc(pr)})` : `Contrato ativo com ${esc(x.prestadorNome)} (${esc(pr)})`}</span></li><li class="ok">${ic('check')}<span>${x.origem === 'repasse' ? 'Linha da medição aprovada' : 'Medição aprovada'}: ${esc(brl(x.valorCentavos))}</span></li>
+    const tripla = `<ul class="es-cf" id="es-tripla"><li class="ok">${ic('check')}<span>${x.origem === 'repasse' ? `Profissional MEI da medição: ${esc(x.prestadorNome)} (${esc(pr)})` : `Contrato ativo com ${esc(x.prestadorNome)} (${esc(pr)})`}</span></li><li class="ok">${ic('check')}<span>${x.origem === 'repasse' ? 'Linha da medição aprovada' : x.origem === 'avulso' ? 'Pedido de nota' : 'Medição aprovada'}: ${esc(brl(x.valorCentavos))}</span></li>
       <li class="${cf.ok ? 'ok' : 'no'}">${ic(cf.ok ? 'check' : 'alert')}<span>${cf.ok ? 'A nota bate com o espelho' : cf.manual ? 'Nota para conferir à mão' : 'A nota tem diferenças'}</span></li></ul>`;
     const botoes = lado(x, ctx) === 'tomador' && x.status === 'nota_enviada' && pode(ctx)
       ? `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ok" id="es-nf-ok">${ic('check')}Nota conferida</button><button class="btn sec" id="es-nf-contestar">${ic('alert')}Contestar a nota</button><button class="btn dangerous" id="es-nf-recusar">${ic('x')}Recusar a nota</button></div>` : '';
@@ -535,7 +698,7 @@
     id: 'espelhos', nome: 'Espelhos da nota', nomeCurto: 'Espelhos', icone: 'receipt', ordem: 27,
     para: ['empresa'], contrato: ['contratos', 'cobrancas'], semContrato: ctx => CW.repasse ? CW.repasse.ehMei(ctx) : false, semAprovacao: ctx => CW.repasse ? CW.repasse.meiSemAprov(ctx) : false,
     iniciar(ctx) {
-      espT = []; espP = []; medsAprov = []; osAprov = []; pronto = false; emissorCache = null;
+      espT = []; espP = []; medsAprov = []; osAprov = []; rascunhos = []; pronto = false; emissorCache = null;
       const db = CW.fb.db(), emp = ctx.contexto.empresaId, ok = { t: false, p: false, m: false };
       const redesenha = () => {
         if (!(ok.t && ok.p && ok.m)) return; pronto = true;
@@ -546,6 +709,7 @@
       CW.inscrever('espelhos-t', () => db.collection('espelhos').where('tomadorId', '==', emp), s => { espT = CW.fb.lista(s); ok.t = true; redesenha(); });
       CW.inscrever('espelhos-p', () => db.collection('espelhos').where('prestadorId', '==', emp), s => { espP = CW.fb.lista(s); ok.p = true; redesenha(); });
       if (pode(ctx)) CW.inscrever('espelhos-os', () => db.collection('ordens').where('tomadorId', '==', emp), s => { osAprov = CW.fb.lista(s).filter(o => ['aceita_total', 'aceita_parcial'].includes(o.status)).map(o => deOs(o)); redesenha(); }, () => {});
+      if (pode(ctx)) CW.inscrever('espelhos-pn', () => db.collection('pedidosnota').where('tomadorId', '==', emp).where('status', '==', 'rascunho'), s => { rascunhos = CW.fb.lista(s); redesenha(); }, () => {});
       if (pode(ctx)) CW.inscrever('espelhos-m', () => db.collection('medicoes').where('tomadorId', '==', emp), s => { medsAprov = CW.fb.lista(s).filter(m => m.status === 'aprovada'); ok.m = true; redesenha(); });
       else ok.m = true;
       return () => { pronto = false; };
@@ -561,7 +725,7 @@
       if (!pronto) return [];
       const comEsp = new Set(espT.map(x => x._id)), out = [];
       if (pode(ctx)) medsAprov.concat(osAprov).filter(m => !comEsp.has(m._id)).forEach(m => out.push({ txt: 'Preparar o espelho da nota', sub: `${m.prestadorNome} · ${periodoTxt(m.periodo)} · ${brl(m.valorCentavos)}`, rota: 'espelhos/preparar/' + m._id }));
-      if (podeEnviar(ctx)) espP.filter(x => x.status === 'aguardando_nota').forEach(x => out.push({ txt: (x.recusadas || []).length ? 'Enviar outra nota (a anterior foi recusada)' : 'Emitir e enviar a nota fiscal', sub: `${x.tomadorNome} · ${periodoTxt(x.periodo)} · ${brl(x.valorCentavos)}`, rota: 'espelhos/ver/' + x._id }));
+      if (podeEnviar(ctx)) espP.filter(x => x.status === 'aguardando_nota').forEach(x => out.push({ txt: (x.recusadas || []).length ? 'Enviar outra nota (a anterior foi recusada)' : prazoSit(x) === 'atrasada' ? 'Emitir a nota fiscal (o prazo já passou)' : 'Emitir e enviar a nota fiscal', sub: `${x.tomadorNome} · ${periodoTxt(x.periodo)} · ${brl(x.valorCentavos)}${x.prazoEmissao ? ' · até ' + U().formatarData(x.prazoEmissao) : ''}`, rota: 'espelhos/ver/' + x._id }));
       const ultLado = x => { const ms = (x.contestacao && x.contestacao.msgs) || []; return ms.length ? ms[ms.length - 1].lado : 'tomador'; };
       if (podeEnviar(ctx)) espP.filter(x => x.status === 'nota_contestada' && ultLado(x) === 'tomador').forEach(x => out.push({ txt: 'Responder a contestação da nota', sub: `${x.tomadorNome} · ${periodoTxt(x.periodo)} · ${brl(x.valorCentavos)}`, rota: 'espelhos/ver/' + x._id }));
       if (pode(ctx)) espT.filter(x => x.status === 'nota_contestada' && ultLado(x) === 'prestador').forEach(x => out.push({ txt: 'Ver a resposta da contestação da nota', sub: `${x.prestadorNome} · ${periodoTxt(x.periodo)} · ${brl(x.valorCentavos)}`, rota: 'espelhos/ver/' + x._id }));
@@ -570,6 +734,7 @@
     },
     telas: {
       lista: { nome: 'Espelhos da nota', sub: 'Dados da nota fiscal de cada medição aprovada: quem contrata prepara, a prestadora emite.', render: (el, ctx) => desenharLista(el, ctx) },
+      nova: { nome: 'Pedir nota', sub: 'Diga à prestadora o que faturar quando não há medição: valor, prazo para emitir e lote.', render: (el, ctx) => desenharNova(el, ctx, ctx.params[0]) },
       preparar: { nome: 'Preparar espelho', sub: 'Confira os dados, informe as retenções e envie para a prestadora emitir a nota.', render: (el, ctx) => desenharPreparar(el, ctx, ctx.params[0]) },
       ver: { nome: 'Espelho da nota', sub: 'Os dados para emitir a nota fiscal, as retenções e o líquido.', render: (el, ctx) => desenharVer(el, ctx, ctx.params[0]) }
     }
