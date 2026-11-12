@@ -62,7 +62,20 @@
     const v = c || { modalidade: 'continua', prestadorId: '', objeto: '', periodicidade: 'quinzena', vencimentoDias: 1, inicio: '', fim: '' };
     if (pre && pre.cnpj) {
       const pr = prestadoras.find(e => U().dig(e.cnpj) === pre.cnpj);
-      if (!pr) { await U().dialogo({ titulo: 'A prestadora ainda não está no Conectwork', corpo: `<p style="margin:0">A empresa de CNPJ ${esc(pre.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5'))} ainda não está cadastrada e aprovada no Conectwork. Peça para a equipe Conectwork pré-cadastrar a empresa (Cadastros › Pré-cadastrar empresa) e depois registre o contrato.</p>` }); return; }
+      if (!pr) {
+        const cnF = pre.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5'), sou = !!(CW.sessao.estado() || {}).master && CW.cadastrosMaster;
+        let nome = '';
+        const r = await U().dialogo({ titulo: 'A prestadora ainda não está no Conectwork', corpo: sou
+            ? `<div class="stack" style="gap:10px"><p style="margin:0">A empresa de CNPJ ${esc(cnF)} ainda não está no Conectwork. Como você é da equipe Conectwork, dá para pré-cadastrar agora e seguir com o contrato. Os dados e documentos dela ficam pendentes (ela completa depois).</p>
+              <label class="f"><span>Nome da empresa</span><input id="ct-pcn" maxlength="120" value="${esc(pre.nome || '')}"></label><p class="err" id="ct-pce" role="alert"></p></div>`
+            : `<p style="margin:0">A empresa de CNPJ ${esc(cnF)} ainda não está cadastrada e aprovada no Conectwork. Peça para a equipe Conectwork pré-cadastrar a empresa (Cadastros › Pré-cadastrar empresa) e depois registre o contrato.</p>`,
+          botoes: sou ? [{ texto: 'Voltar', valor: null, classe: 'sec' }, { texto: 'Pré-cadastrar e seguir', valor: 'ok', antes: d => { nome = d.querySelector('#ct-pcn').value.trim().replace(/\s+/g, ' '); if (nome.length < 2) { d.querySelector('#ct-pce').textContent = 'Escreva o nome da empresa.'; return false; } return true; } }] : undefined });
+        if (r !== 'ok') return;
+        try { await CW.cadastrosMaster.preCadEmpresa({ cnpj: pre.cnpj, nome, tipo: 'prestador', como: 'pelo registro do contrato' }); }
+        catch (e) { U().toast(e.message || CW.fb.mensagemErro(e), 'erro'); return; }
+        U().toast(nome + ' pré-cadastrada no Conectwork. Agora registre o contrato.');
+        return formulario(ctx, c, pre);
+      }
       v.prestadorId = pr._id; if (pre.periodicidade) v.periodicidade = pre.periodicidade;
     }
     const exist = !c && !!(pre && pre.existente);

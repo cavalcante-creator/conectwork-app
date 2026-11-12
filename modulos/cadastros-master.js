@@ -324,6 +324,26 @@
     });
     return { empresaId: id, convite: cvRef ? cvRef.id : '' };
   }
+  /* pré-cadastro de uma empresa direto de outra tela (12/11/2026, foto "A prestadora ainda não está no Conectwork"): só para a equipe
+     Conectwork; mesma gravação do "Pré-cadastrar empresa" (aprovada, preCadastro, documentos pendentes), sem acesso de admin. */
+  async function preCadEmpresa(x) {
+    const st = CW.sessao.estado(), u = CW.fb.auth().currentUser; if (!st.master || !u) throw new Error('Só a equipe Conectwork pré-cadastra empresas.');
+    const quem = (st.perfil && st.perfil.nome) || u.email, db = CW.fb.db(), agora = CW.fb.agora, num = dig(x.cnpj), plano = x.plano || 'profissional';
+    const mods = (P().PLANOS[plano] || { modulos: [] }).modulos.slice(), empRef = db.collection('empresas').doc(), id = empRef.id, cnpj = U().mascara.cnpj(num);
+    await db.runTransaction(async tx => {
+      const cRef = db.doc('contadores/protocolo'), nRef = db.doc('cnpjs/' + num);
+      const c = await tx.get(cRef), n = await tx.get(nRef);
+      if (n.exists) { const e = new Error('Este CNPJ já tem cadastro no Conectwork (talvez ainda em análise). Abra em Cadastros e aprove.'); e.code = 'cw/cnpj-repetido'; throw e; }
+      const ano = new Date().getFullYear(), atual = c.exists ? c.data() : null, seq = atual && atual.ano === ano ? atual.n + 1 : 1, protocolo = `CW-${ano}-${String(seq).padStart(4, '0')}`;
+      tx.set(cRef, { ano, n: seq }); tx.set(nRef, { empresaId: id, criadoEm: agora() });
+      tx.set(empRef, { tipo: x.tipo || 'prestador', status: 'aprovado', nome: x.nome, razao: '', cnpj, cnpjNum: num, cidade: '', uf: '', protocolo,
+        criadoPor: u.uid, criadoEm: agora(), enviadoEm: agora(), plano, modulos: mods, preCadastro: true, avaliadoEm: agora(), avaliadoPor: quem });
+      tx.set(db.doc('empresas/' + id + '/privado/cadastro'), { dados: x.porte ? { porte: x.porte } : {}, end: {}, resp: {}, banco: {}, docs: {}, preCadastro: true });
+      tx.set(db.collection('log').doc(), { em: agora(), uid: u.uid, quem, empresaId: id, acao: 'empresa.precadastro', texto: `Pré-cadastro de ${x.nome} (CNPJ ${cnpj}) pela equipe Conectwork, ${x.como || 'pelo contrato'}, no plano ${P().nomePlano(plano)}. Dados e documentos pendentes.`, ref: id });
+    });
+    return id;
+  }
+  CW.cadastrosMaster = { preCadEmpresa };
   /* convite novo para um MEI já pré-cadastrado (o RH completou o e-mail depois) */
   async function conviteMei(empresaId, x, u, quem) {
     const db = CW.fb.db(), ref = db.collection('convites').doc(), b = db.batch();

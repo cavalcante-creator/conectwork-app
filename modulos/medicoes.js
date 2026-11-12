@@ -339,7 +339,7 @@
         <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">${espera.length ? `<button class="btn" id="mi-vercont">${ic('file')}Ver o contrato</button>` : adm ? `<button class="btn" id="mi-regcont">${ic('file')}Registrar o contrato que já existe</button>` : ''}${voltar}</div>`;
       document.getElementById('mi-voltar').onclick = () => CW.ir('medicoes');
       const vc = document.getElementById('mi-vercont'); if (vc) vc.onclick = () => { try { sessionStorage.setItem('cw.medVoltar', rota); } catch (e) { /* */ } CW.ir('contratos/ver/' + espera[0]._id); };
-      const rc = document.getElementById('mi-regcont'); if (rc) rc.onclick = () => CW.contratos.novo(ctx, { cnpj: r.cnpj, periodicidade: /-[12]$/.test(r.periodo) ? 'quinzena' : 'mes', existente: true, voltar: rota });
+      const rc = document.getElementById('mi-regcont'); if (rc) rc.onclick = () => CW.contratos.novo(ctx, { cnpj: r.cnpj, nome: String(r.prestadorNome || '').toLowerCase().replace(/(^|\s)\S/g, m => m.toUpperCase()), periodicidade: /-[12]$/.test(r.periodo) ? 'quinzena' : 'mes', existente: true, voltar: rota });
       return;
     }
     const okPer = cts.filter(c => periodoOk(r.periodo, c.periodicidade));
