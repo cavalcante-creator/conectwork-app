@@ -772,6 +772,22 @@ async function deve(nome, permitido, op) {
   await deve('Inscrição: ninguém apaga', false, () => deleteDoc(doc(db('caio'), 'inscricoes', 'o1_meic')));
   await deve('Cidade: o MEI NÃO vira parceiro mudando a própria empresa', false, () => updateDoc(doc(db('caio'), 'empresas', 'meic'), { modulos: ['cidade'] }));
 
+  /* fila de MEIs do painel do RH (12/11/2026): admin/RH de quem contrata põe na fila; a equipe Conectwork processa */
+  const fm = (k, extra) => Object.assign({ cnpj: '12.345.678/0001-95', cnpjNum: '12345678000195', nome: 'Joao Teste Silva', email: 'joao@teste.com', tel: '51999990000', prestadora: 'Zenith', prestCnpj: '04252011000110',
+    empresaId: 'alfa', enviadoPor: P[k], enviadoPorNome: k, em: serverTimestamp(), st: 'pendente' }, extra || {});
+  await env.withSecurityRulesDisabled(async c => { const f = c.firestore(); await updateDoc(doc(f, 'empresas', 'alfa'), { status: 'aprovado' }); await setDoc(doc(f, 'acessos', 'alfa_' + P.rita), { uid: P.rita, empresaId: 'alfa', nome: 'Rita', email: EM.rita, cargo: 'rh', extras: [], sem: [], ativo: true }); });
+  await deve('Fila MEI: o RH de quem contrata põe na fila', true, () => setDoc(doc(db('rita'), 'filamei', '12345678000195'), fm('rita')));
+  await deve('Fila MEI: o financeiro NÃO põe na fila', false, () => setDoc(doc(db('bruno'), 'filamei', '12345678000196'), fm('bruno', { cnpjNum: '12345678000196' })));
+  await deve('Fila MEI: NÃO com o id diferente do CNPJ', false, () => setDoc(doc(db('rita'), 'filamei', '99999999000199'), fm('rita')));
+  await deve('Fila MEI: NÃO já marcado como feito', false, () => setDoc(doc(db('rita'), 'filamei', '12345678000197'), fm('rita', { cnpjNum: '12345678000197', st: 'feito' })));
+  await deve('Fila MEI: NÃO com campo a mais (CPF)', false, () => setDoc(doc(db('rita'), 'filamei', '12345678000198'), fm('rita', { cnpjNum: '12345678000198', cpf: '12345678909' })));
+  await deve('Fila MEI: quem é de fora NÃO lê', false, () => getDoc(doc(db('carla'), 'filamei', '12345678000195')));
+  await deve('Fila MEI: a equipe Conectwork grava o resultado', true, () => updateDoc(doc(db('master'), 'filamei', '12345678000195'), { st: 'feito', res: { empresaMei: 'x', convite: 'tok', conviteEmail: 'joao@teste.com' } }));
+  await deve('Fila MEI: o RH lê o resultado', true, () => getDoc(doc(db('rita'), 'filamei', '12345678000195')));
+  await deve('Fila MEI: o RH NÃO mexe no resultado', false, () => updateDoc(doc(db('rita'), 'filamei', '12345678000195'), { res: { convite: 'outro' }, em: serverTimestamp(), enviadoPor: P.rita, st: 'pendente' }));
+  await deve('Fila MEI: o RH manda de novo com o e-mail novo (volta a pendente)', true, () => updateDoc(doc(db('rita'), 'filamei', '12345678000195'), { email: 'joao2@teste.com', em: serverTimestamp(), enviadoPor: P.rita, st: 'pendente' }));
+  await deve('Fila MEI: ninguém apaga', false, () => deleteDoc(doc(db('rita'), 'filamei', '12345678000195')));
+
   await env.cleanup();
   const falhas = res.filter(r => !r.ok).length;
   console.log(`\n${res.length - falhas} de ${res.length} testes de regras passaram.`);

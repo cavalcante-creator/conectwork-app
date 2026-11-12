@@ -165,6 +165,28 @@ service cloud.firestore {
       allow delete: if master() || admin(resource.data.empresaId);
     }
 
+    // ---------- Fila de MEIs vinda do painel do RH (12/11/2026, "assim que o RH cadastra no painel já pré-cadastra") ----------
+    // id = CNPJ só números. Quem contrata (admin ou RH de empresa aprovada) põe na fila o MEI que presta serviço para a prestadora;
+    // a equipe Conectwork (master) faz o pré-cadastro e grava o resultado (st, res). Quem pôs na fila lê o resultado (convite).
+    function camposFilaMei() { return ['cnpj','cnpjNum','nome','email','tel','prestadora','prestCnpj','empresaId','enviadoPor','enviadoPorNome','em','st']; }
+    function filaMeiOk(id, d) {
+      return cargoEm(d.empresaId, ['admin','rh']) && get(caminho('empresas', d.empresaId)).data.status == 'aprovado'
+        && d.cnpjNum is string && d.cnpjNum.matches('[0-9]{14}') && id == d.cnpjNum
+        && d.nome is string && d.nome.size() >= 3 && d.nome.size() <= 120
+        && d.email is string && d.email.size() <= 120 && d.email == d.email.lower()
+        && d.tel is string && d.tel.size() <= 13 && d.prestadora is string && d.prestadora.size() <= 120
+        && d.st == 'pendente' && d.enviadoPor == request.auth.uid && d.em == request.time;
+    }
+    match /filamei/{id} {
+      allow read: if master() || membro(resource.data.empresaId);
+      allow create: if master() || (request.resource.data.keys().hasOnly(camposFilaMei()) && filaMeiOk(id, request.resource.data));
+      allow update: if master()
+        || (resource.data.empresaId == request.resource.data.empresaId
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nome','email','tel','prestadora','prestCnpj','enviadoPor','enviadoPorNome','em','st'])
+            && filaMeiOk(id, request.resource.data));
+      allow delete: if false;
+    }
+
     // ---------- Contratos (equipe contínua) · docs/PLANO-COBRANCA-NOTAS.md ----------
     // Lê quem é das duas empresas (e a equipe master). Muda só o administrador de cada lado, e só do jeito previsto:
     // corrigir/cancelar (tomador, antes de assinado), assinar (cada lado o seu), propor e responder mudança de vencimento

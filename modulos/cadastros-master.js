@@ -305,6 +305,63 @@
     });
     return out;
   }
+  /* um MEI: o pré-cadastro de sempre numa transação + convite de admin para o e-mail (se houver). Usado pelo lote e pela fila do painel. */
+  async function preCadMei(x, u, quem, como) {
+    const db = CW.fb.db(), agora = CW.fb.agora, mods = (P().PLANOS.gratuito || { modulos: ['cobrancas'] }).modulos.slice();
+    const empRef = db.collection('empresas').doc(), id = empRef.id, cvRef = x.email ? db.collection('convites').doc() : null, nomeNeg = x.nome;
+    await db.runTransaction(async tx => {
+      const cRef = db.doc('contadores/protocolo'), nRef = db.doc('cnpjs/' + x.num);
+      const c = await tx.get(cRef), n = await tx.get(nRef);
+      if (n.exists) { const e = new Error('cnpj'); e.code = 'cw/cnpj-repetido'; e.empresaId = (n.data() || {}).empresaId || ''; throw e; }
+      const ano = new Date().getFullYear(), atual = c.exists ? c.data() : null, seq = atual && atual.ano === ano ? atual.n + 1 : 1, protocolo = `CW-${ano}-${String(seq).padStart(4, '0')}`;
+      tx.set(cRef, { ano, n: seq }); tx.set(nRef, { empresaId: id, criadoEm: agora() });
+      tx.set(empRef, { tipo: 'prestador', status: 'aprovado', nome: nomeNeg, razao: '', cnpj: x.cnpj, cnpjNum: x.num, cidade: '', uf: '', protocolo,
+        criadoPor: u.uid, criadoEm: agora(), enviadoEm: agora(), plano: 'gratuito', modulos: mods, preCadastro: true, avaliadoEm: agora(), avaliadoPor: quem });
+      tx.set(db.doc('empresas/' + id + '/privado/cadastro'), { dados: { porte: 'MEI' }, end: {}, resp: x.tel ? { nome: x.nome, celular: x.tel } : { nome: x.nome }, banco: {}, docs: {}, preCadastro: true });
+      if (cvRef) tx.set(cvRef, { email: x.email, nome: x.nome, tel: x.tel || '', empresaId: id, empresaNome: nomeNeg, cargo: 'admin', criadoPor: u.uid, criadoPorNome: quem, criadoEm: agora(), usado: false });
+      tx.set(db.collection('log').doc(), { em: agora(), uid: u.uid, quem, empresaId: id, acao: 'empresa.precadastro',
+        texto: `Pré-cadastro do MEI ${nomeNeg} (CNPJ ${x.cnpj}) pela equipe Conectwork, ${como}${x.prest ? ', presta serviço para ' + x.prest : ''}.${x.email ? ' Convite de administrador(a) para ' + x.email + '.' : ''}`, ref: id });
+    });
+    return { empresaId: id, convite: cvRef ? cvRef.id : '' };
+  }
+  /* convite novo para um MEI já pré-cadastrado (o RH completou o e-mail depois) */
+  async function conviteMei(empresaId, x, u, quem) {
+    const db = CW.fb.db(), ref = db.collection('convites').doc(), b = db.batch();
+    b.set(ref, { email: x.email, nome: x.nome, tel: x.tel || '', empresaId, empresaNome: x.nome, cargo: 'admin', criadoPor: u.uid, criadoPorNome: quem, criadoEm: CW.fb.agora(), usado: false });
+    b.set(db.collection('log').doc(), { em: CW.fb.agora(), uid: u.uid, quem, empresaId, acao: 'convite.criar', texto: `Convite de administrador(a) do MEI para ${x.email} (fila do painel do RH).`, ref: ref.id });
+    await b.commit(); return ref.id;
+  }
+  /* ---------- fila do painel do RH (12/11/2026, "assim que o RH faz o cadastro no painel já pré-cadastra"): com a equipe Conectwork
+     logada, cada MEI que chega em filamei (pendente) é pré-cadastrado sozinho; o resultado (empresa e convite) volta para a fila e o
+     painel do RH mostra o convite para mandar. CNPJ que já tinha cadastro fica "ja" (sem convite: o MEI já tem dono). */
+  let filaProc = false, fila = [];
+  async function processarFila() {
+    if (filaProc) return; filaProc = true;
+    try {
+      const st = CW.sessao.estado(), u = CW.fb.auth().currentUser; if (!u || !st.master) return;
+      const quem = (st.perfil && st.perfil.nome) || u.email, db = CW.fb.db();
+      const pend = fila.filter(z => z.st === 'pendente'); let feitos = 0;
+      for (const f of pend) { feitos++;
+        const x = { nome: String(f.nome || ''), cnpj: f.cnpj || U().mascara.cnpj(f.cnpjNum), num: f.cnpjNum, email: String(f.email || '').toLowerCase(), tel: f.tel || '', prest: f.prestadora || '' };
+        const ant = f.res || {}; let res;
+        try {
+          if (ant.empresaMei) {
+            const conv = x.email && x.email !== ant.conviteEmail ? await conviteMei(ant.empresaMei, x, u, quem) : ant.convite || '';
+            res = { empresaMei: ant.empresaMei, convite: conv, conviteEmail: conv === ant.convite ? (ant.conviteEmail || '') : x.email, msg: '', em: CW.fb.agora() };
+            await db.doc('filamei/' + f._id).update({ st: ant.ja ? 'ja' : 'feito', res: Object.assign({}, ant, res) }); continue;
+          }
+          const r = await preCadMei(x, u, quem, 'pela fila do painel do RH');
+          res = { empresaMei: r.empresaId, convite: r.convite, conviteEmail: r.convite ? x.email : '', msg: '', em: CW.fb.agora() };
+          await db.doc('filamei/' + f._id).update({ st: 'feito', res });
+        } catch (err) {
+          if (err && err.code === 'cw/cnpj-repetido') await db.doc('filamei/' + f._id).update({ st: 'ja', res: { empresaMei: err.empresaId || '', ja: true, convite: '', conviteEmail: '', msg: 'Este CNPJ já tinha cadastro no Conectwork.', em: CW.fb.agora() } });
+          else await db.doc('filamei/' + f._id).update({ st: 'erro', res: Object.assign({}, ant, { msg: CW.fb.mensagemErro(err), em: CW.fb.agora() }) }).catch(() => {});
+        }
+      }
+      if (feitos) U().toast(`Fila do painel do RH: ${feitos} MEI${feitos === 1 ? '' : 's'} processado${feitos === 1 ? '' : 's'}. O RH já pode mandar os convites pelo painel.`);
+    } finally { filaProc = false; }
+  }
+
   async function preVarios() {
     const { esc } = U(); let txt = '';
     const v = await U().dialogo({ titulo: 'Pré-cadastrar vários MEIs', sub: 'Cole a lista que o painel do RH copia (Pagamento dos PJ › Conectwork › Convidar os PJ › "Copiar a lista para o Conectwork"). Uma pessoa por linha: Nome; CNPJ; Prestadora; Celular; E-mail.',
@@ -316,27 +373,14 @@
     });
     if (v !== 'ok') return;
     const xs = lerLista(txt).filter(x => !x.erro), u = CW.fb.auth().currentUser, st = CW.sessao.estado(), quem = (st.perfil && st.perfil.nome) || u.email;
-    const db = CW.fb.db(), agora = CW.fb.agora, mods = (P().PLANOS.gratuito || { modulos: ['cobrancas'] }).modulos.slice(), res = [];
+    const res = [];
     U().toast('Pré-cadastrando ' + xs.length + '…');
     for (const x of xs) {
       const ja = (empresas || []).find(e => dig(e.cnpj) === x.num);
       if (ja) { res.push(Object.assign({ st: 'ja', empresaId: ja._id }, x)); continue; }
-      const empRef = db.collection('empresas').doc(), id = empRef.id, cvRef = x.email ? db.collection('convites').doc() : null, nomeNeg = x.nome;
       try {
-        await db.runTransaction(async tx => {
-          const cRef = db.doc('contadores/protocolo'), nRef = db.doc('cnpjs/' + x.num);
-          const c = await tx.get(cRef), n = await tx.get(nRef);
-          if (n.exists) { const e = new Error('cnpj'); e.code = 'cw/cnpj-repetido'; throw e; }
-          const ano = new Date().getFullYear(), atual = c.exists ? c.data() : null, seq = atual && atual.ano === ano ? atual.n + 1 : 1, protocolo = `CW-${ano}-${String(seq).padStart(4, '0')}`;
-          tx.set(cRef, { ano, n: seq }); tx.set(nRef, { empresaId: id, criadoEm: agora() });
-          tx.set(empRef, { tipo: 'prestador', status: 'aprovado', nome: nomeNeg, razao: '', cnpj: x.cnpj, cnpjNum: x.num, cidade: '', uf: '', protocolo,
-            criadoPor: u.uid, criadoEm: agora(), enviadoEm: agora(), plano: 'gratuito', modulos: mods, preCadastro: true, avaliadoEm: agora(), avaliadoPor: quem });
-          tx.set(db.doc('empresas/' + id + '/privado/cadastro'), { dados: { porte: 'MEI' }, end: {}, resp: x.tel ? { nome: x.nome, celular: x.tel } : { nome: x.nome }, banco: {}, docs: {}, preCadastro: true });
-          if (cvRef) tx.set(cvRef, { email: x.email, nome: x.nome, tel: x.tel || '', empresaId: id, empresaNome: nomeNeg, cargo: 'admin', criadoPor: u.uid, criadoPorNome: quem, criadoEm: agora(), usado: false });
-          tx.set(db.collection('log').doc(), { em: agora(), uid: u.uid, quem, empresaId: id, acao: 'empresa.precadastro',
-            texto: `Pré-cadastro do MEI ${nomeNeg} (CNPJ ${x.cnpj}) pela equipe Conectwork, em lote${x.prest ? ', presta serviço para ' + x.prest : ''}.${x.email ? ' Convite de administrador(a) para ' + x.email + '.' : ''}`, ref: id });
-        });
-        res.push(Object.assign({ st: 'ok', empresaId: id, convite: cvRef ? cvRef.id : '' }, x));
+        const r = await preCadMei(x, u, quem, 'em lote');
+        res.push(Object.assign({ st: 'ok' }, r, x));
       } catch (err) { res.push(Object.assign({ st: 'erro', msg: err && err.code === 'cw/cnpj-repetido' ? 'CNPJ já tem cadastro' : CW.fb.mensagemErro(err) }, x)); }
     }
     mostrarLote(res);
@@ -366,7 +410,8 @@
         const el = document.getElementById('view'), at = CW.app.atual();
         if (el && at && at.modulo === 'cadastros' && at.tela === 'lista') desenharLista(el);
       });
-      return () => { empresas = null; };
+      CW.inscrever('cadastros-filamei', () => CW.fb.db().collection('filamei').where('st', '==', 'pendente'), snap => { fila = CW.fb.lista(snap); if (fila.length) processarFila(); });
+      return () => { empresas = null; fila = []; };
     },
     telas: {
       lista: { nome: 'Cadastros', sub: 'Empresas que pediram para entrar no Conectwork. Confira os dados e os documentos antes de aprovar.', render: el => desenharLista(el) },
