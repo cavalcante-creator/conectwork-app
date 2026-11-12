@@ -29,6 +29,18 @@ const b64url = o => Buffer.from(JSON.stringify(o), 'utf8').toString('base64').re
   const c = Object.entries(await srv()).filter(([k]) => /^contratos\//.test(k)).map(([, v]) => v)[0] || {};
   ok('C3 contrato registrado: objeto com "já existente, assinado em 10/03/2025", início = a data, esperando assinatura', /já existente, assinado em 10\/03\/2025/.test(c.objeto) && c.inicio === '2025-03-10' && c.status === 'assinatura' && c.prestadorId === 'zeta', JSON.stringify(c));
   ok('C4 no contrato aparece que a medição do painel do RH espera por ele', /A medição do painel do RH espera este contrato/.test(await page.$eval('#ct-medespera', e => e.innerText)));
+  // C4b contrato antigo: a prestadora (aqui a Ana, admin das duas) só confirma; com "pelas duas" confirma os dois lados
+  await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('__srv')); s.docs['acessos/zeta_uANA'] = { uid: 'uANA', empresaId: 'zeta', cargo: 'admin', extras: [], sem: [], ativo: true };
+    const k = Object.keys(s.docs).find(x => /^contratos\//.test(x)); s.docs[k].triagem = { resultado: 'compativel', r: {}, uid: 'uANA', nome: 'Ana', em: '2026-11-12T00:00:00Z', parecer: null }; localStorage.setItem('__srv', JSON.stringify(s)); });
+  const cid0 = Object.keys(await srv()).find(x => /^contratos\//.test(x)).split('/')[1];
+  await page.reload(); await page.waitForSelector('.shell', { timeout: 8000 }).catch(() => null); if (await page.$('#lg-email')) await H.entrar(page, 'ana@alfa.com.br', 'senha123');
+  await page.waitForSelector('.shell', { timeout: 8000 }).catch(() => null); await H.dorme(500);
+  await page.evaluate(id => { location.hash = '#contratos/ver/' + id; }, cid0); await page.waitForSelector('#ct-papel', { timeout: 8000 });
+  const pap = await page.$eval('#ct-assinar-box', e => e.innerText);
+  ok('C4b contrato antigo: "já foi assinado no papel", sem "Li e concordo", com "Confirmar também pela" a outra', /já foi assinado no papel em 10\/03\/2025/.test(pap) && !/Li e concordo/.test(pap) && /Confirmar também pela Zeta/.test(pap), pap.slice(0, 300));
+  await page.check('#ct-li'); await page.click('#ct-assinar'); await H.dorme(1800);
+  const cc = (await srv())['contratos/' + cid0];
+  ok('C4c confirmado pelas duas: ativo, assinaturas com papel:true', cc.status === 'ativo' && cc.assinaturas.tomador.papel === true && cc.assinaturas.prestador.papel === true, JSON.stringify(cc.assinaturas));
   // contrato ativo (triagem e assinaturas feitas): aparece "Voltar para a medição"
   await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('__srv')); const k = Object.keys(s.docs).find(x => /^contratos\//.test(x)); s.docs[k].status = 'ativo'; localStorage.setItem('__srv', JSON.stringify(s)); });
   const cid = Object.keys(await srv()).find(x => /^contratos\//.test(x)).split('/')[1];

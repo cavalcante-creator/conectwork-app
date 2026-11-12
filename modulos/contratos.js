@@ -154,7 +154,21 @@
       : `<div class="banner info" id="ct-medespera">${ic('clock')}<span><strong>A medição do painel do RH espera este contrato</strong>Faça a triagem e assine. Quando a ${esc(c.prestadorNome)} confirmar no Conectwork, o contrato fica ativo e aparece aqui o botão para voltar à medição.</span></div>`;
     const semTriagem = l === 'tomador' && CW.triagem && !CW.triagem.libera(c);
     if (pode && c.status === 'assinatura' && !as[l] && semTriagem) acoes += `<div class="banner warn" id="ct-sem-triagem">${ic('shield')}<span><strong>Antes de assinar: triagem</strong>${c.triagem && c.triagem.resultado === 'nao_publicar' ? 'A triagem indica que este serviço não deve ser contratado neste modelo.' : c.triagem ? 'Registre o parecer jurídico favorável para liberar a assinatura.' : 'Faça a triagem do contrato (7 perguntas) para liberar a assinatura.'}</span></div>`;
-    if (pode && c.status === 'assinatura' && !as[l] && !semTriagem) acoes += `<div class="stack" style="gap:10px" id="ct-assinar-box">
+    /* contrato que já existe no papel (12/11/2026, "não posso assinar porque já é antigo"): não se assina de novo; cada empresa só
+       confirma que o contrato em papel vale (assinaturas.<lado>.papel = true). Quem é admin das duas confirma pelas duas de uma vez. */
+    const exist = /^Contrato já existente, assinado em (\d{2}\/\d{2}\/\d{4})/.exec(c.objeto || '');
+    const outroId = l === 'tomador' ? c.prestadorId : c.tomadorId;
+    const admOutro = !!exist && (CW.sessao.estado().opcoes || []).some(x => x.tipo === 'empresa' && x.empresaId === outroId && x.acesso && x.acesso.cargo === 'admin' && x.acesso.ativo !== false)
+      && !(c.assinaturas || {})[o] && (o === 'prestador' || !CW.triagem || CW.triagem.libera(c));
+    if (pode && c.status === 'assinatura' && !as[l] && !semTriagem && exist) acoes += `<div class="stack" style="gap:10px" id="ct-assinar-box">
+        <div class="banner info" id="ct-papel">${ic('file')}<span><strong>Este contrato já foi assinado no papel em ${esc(exist[1])}</strong>Não precisa assinar de novo. Aqui cada empresa só confirma que ele continua valendo, para as medições e as notas passarem pelo Conectwork.</span></div>
+        ${l === 'prestador' ? `<p style="margin:0;font-size:13px;font-weight:500">Interlocutor da prestadora <span class="hint" style="font-weight:400">(opcional: quem responde pelo serviço)</span></p>
+          <div class="fgrid"><label class="f c12"><span>Nome</span><input id="ct-int-nome" maxlength="120"></label><label class="f c6"><span>E-mail</span><input id="ct-int-email" type="email" maxlength="120"></label><label class="f c6"><span>Celular</span><input id="ct-int-cel" data-mascara="celular" inputmode="tel"></label></div>` : ''}
+        <label class="check"><input type="checkbox" id="ct-li"><span>Confirmo que o contrato assinado em ${esc(exist[1])} continua valendo para a ${esc(l === 'tomador' ? c.tomadorNome : c.prestadorNome)}.</span></label>
+        ${admOutro ? `<label class="check"><input type="checkbox" id="ct-ambas" checked><span>Confirmar também pela ${esc(l === 'tomador' ? c.prestadorNome : c.tomadorNome)} (você é administrador(a) das duas)</span></label>` : ''}
+        <p class="err" id="ct-erro2" role="alert"></p>
+        <button class="btn" id="ct-assinar">${ic('check')}Confirmar o contrato já assinado</button></div>`;
+    else if (pode && c.status === 'assinatura' && !as[l] && !semTriagem) acoes += `<div class="stack" style="gap:10px" id="ct-assinar-box">
         ${l === 'prestador' ? `<p style="margin:0;font-size:13px;font-weight:500">${c.modalidade === 'os' ? 'Contato para as ordens de serviço <span class="hint" style="font-weight:400">(opcional)</span>' : 'Interlocutor da prestadora (quem responde pelo serviço)'}</p>
           <div class="fgrid"><label class="f c12"><span>Nome</span><input id="ct-int-nome" maxlength="120"></label><label class="f c6"><span>E-mail</span><input id="ct-int-email" type="email" maxlength="120"></label><label class="f c6"><span>Celular</span><input id="ct-int-cel" data-mascara="celular" inputmode="tel"></label></div>` : ''}
         <label class="check"><input type="checkbox" id="ct-li"><span>Li e concordo com este contrato em nome da ${esc(l === 'tomador' ? c.tomadorNome : c.prestadorNome)}.</span></label>
@@ -208,15 +222,28 @@
     if (as) as.onclick = () => {
       const er = $('ct-erro2'); er.textContent = '';
       let inter = null;
-      if (l === 'prestador' && !(c.modalidade === 'os' && !$('ct-int-nome').value.trim())) {
+      const papel = !!$('ct-papel');
+      if (l === 'prestador' && !((c.modalidade === 'os' || papel) && !$('ct-int-nome').value.trim())) {
         inter = { nome: $('ct-int-nome').value.trim().replace(/\s+/g, ' '), email: $('ct-int-email').value.trim().toLowerCase(), cel: $('ct-int-cel').value.trim() };
         if (inter.nome.split(' ').length < 2) { er.textContent = 'Informe nome e sobrenome do interlocutor.'; return; }
         if (!U().validarEmail(inter.email)) { er.textContent = 'E-mail do interlocutor inválido.'; return; }
         if (inter.cel && !U().validarCelular(inter.cel)) { er.textContent = 'Celular do interlocutor inválido (DDD + 9 dígitos) ou deixe em branco.'; return; }
       }
-      if (!$('ct-li').checked) { er.textContent = 'Marque "Li e concordo" para assinar.'; return; }
+      if (!$('ct-li').checked) { er.textContent = papel ? 'Marque a confirmação para seguir.' : 'Marque "Li e concordo" para assinar.'; return; }
+      const duas = papel && $('ct-ambas') && $('ct-ambas').checked;
+      const sig = () => Object.assign({ uid: ctx.sessao.usuario.uid, nome: quem(ctx), em: agora() }, papel ? { papel: true } : {});
+      if (duas) {   /* duas gravações: o lado do outro só vale para quem é admin dele (a regra confere) */
+        const ord = l === 'prestador' ? ['prestador', 'tomador'] : ['tomador', 'prestador'];
+        (async () => { try {
+          for (let i = 0; i < 2; i++) { const b = db.batch(), u = { ['assinaturas.' + ord[i]]: sig(), atualizadoEm: agora() };
+            if (ord[i] === 'prestador' && inter) u.interlocutor = inter; if (i === 1) { u.status = 'ativo'; u.ativadoEm = agora(); }
+            b.update(ref, u); log(b, ctx, 'contrato.assinar', `Contrato já assinado no papel confirmado pela ${ord[i] === 'tomador' ? c.tomadorNome : c.prestadorNome}${i === 1 ? ': agora está ativo' : ''}.`, c._id); await b.commit(); }
+          U().toast('Contrato confirmado pelas duas empresas. Agora está ativo.');
+        } catch (e) { U().toast(CW.fb.mensagemErro(e), 'erro'); } refazer(); })();
+        return;
+      }
       const ambos = !!(c.assinaturas || {})[o];
-      const upd = { ['assinaturas.' + l]: { uid: ctx.sessao.usuario.uid, nome: quem(ctx), em: agora() }, atualizadoEm: agora() };
+      const upd = { ['assinaturas.' + l]: sig(), atualizadoEm: agora() };
       if (inter) upd.interlocutor = inter;
       if (ambos) { upd.status = 'ativo'; upd.ativadoEm = agora(); }
       grava(b => { b.update(ref, upd); log(b, ctx, 'contrato.assinar', `Contrato com ${nomeOutro(c, ctx)} assinado${ambos ? ' pelas duas empresas: agora está ativo' : ''}.`, c._id); },
