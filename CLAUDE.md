@@ -214,3 +214,6 @@ A **equipe Conectwork** (master) não é cargo: é quem tem o documento `master/
 - O link `#medicoes/importar/<resumo>` aceita `parte` (`[a-z0-9]{3,30}`): vira **outra medição da mesma quinzena** (`medicoes/{contrato}_{período}_{parte}`, campo `parte`), só com aquele PJ: a prestadora faz uma nota só para ele. Na lista aparece "nota separada: Nome".
 - **Mandar de novo** a mesma medição (mesmo id) enquanto ela está `enviada` ou `divergencia` abre "Atualização da medição vinda do painel do RH" e substitui os profissionais (correção de sempre, `medicao.corrigir`); depois de confirmada/aprovada, avisa que não muda mais e sugere mandar os que faltam como nota separada.
 - **Regra:** `medicaoCriar` aceita `id == contrato_período` ou `contrato_período_parte` com `parte` no formato. Testes: `teste-regras.js` (488), `teste-medicoes.js` M8b.
+
+## Link que abre numa empresa (12/11/2026, "direcionar para o login da Colafix")
+- `?empresa=<CNPJ só números>` no endereço (`guardarPara`/`empresaPedida` em `js/sessao.js`): guarda em `sessionStorage cw.para`, tira do endereço e, depois do login (ou já logado), entra direto nessa empresa sem perguntar. Se o login não tem acesso a ela, avisa ("Entre com o login dessa empresa") e segue como sempre. A senha nunca vai no link. O painel do RH da Colafix usa isso nos links do Pagamento dos PJ. Teste: `teste-linkempresa.js` (3).

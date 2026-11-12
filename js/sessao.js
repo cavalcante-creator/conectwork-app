@@ -360,6 +360,13 @@
       if (CW.entrada.continuarCadastro && CW.entrada.cadastroAberto && CW.entrada.cadastroAberto()) { CW.entrada.continuarCadastro(); return; }
       telaSemAcesso(); return;
     }
+    const pedida = empresaPedida();
+    if (typeof pedida === 'string') { entrarEm(pedida); return; }
+    if (pedida && pedida.semAcesso) {
+      try { sessionStorage.removeItem(CHAVE_PARA); } catch (e) { /* sem armazenamento */ }
+      const cn = pedida.semAcesso.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+      setTimeout(() => { if (CW.ui && CW.ui.toast) CW.ui.toast(`O link era para a empresa de CNPJ ${cn}, mas este login não tem acesso a ela. Entre com o login dessa empresa.`, 'erro'); }, 600);
+    }
     if (st.opcoes.length === 1) { entrarEm(st.opcoes[0].chave); return; }
     let guardada = null; try { guardada = sessionStorage.getItem(chaveGuardada()); } catch (e) { /* sem armazenamento */ }
     if (guardada && st.opcoes.some(o => o.chave === guardada)) { entrarEm(guardada); return; }   /* F5 não pergunta de novo */
@@ -520,7 +527,26 @@
     CW.fb.auth().onAuthStateChanged(aoMudarLogin);
   }
 
+  /* link que já diz a empresa (12/11/2026, painel da Colafix: "direcionar para o login da Colafix no Conectwork"):
+     ?empresa=<CNPJ só números> guarda a empresa pedida e sai do endereço; depois do login, se a pessoa tem acesso a ela,
+     entra direto nela (sem a tela de escolher). Não faz login sozinho: a senha nunca passa pelo link. */
+  const CHAVE_PARA = 'cw.para';
+  function guardarPara() {
+    try {
+      const q = new URLSearchParams(location.search), c = String(q.get('empresa') || '').replace(/\D/g, '');
+      if (c.length === 14) sessionStorage.setItem(CHAVE_PARA, c);
+      if (q.has('empresa')) { q.delete('empresa'); const r = q.toString(); history.replaceState(null, '', location.pathname + (r ? '?' + r : '') + location.hash); }
+    } catch (e) { /* sem armazenamento */ }
+  }
+  function empresaPedida() {
+    let c = ''; try { c = sessionStorage.getItem(CHAVE_PARA) || ''; } catch (e) { /* sem armazenamento */ }
+    if (!c) return null;
+    const o = st.opcoes.find(x => x.tipo === 'empresa' && String((x.empresa && x.empresa.cnpj) || '').replace(/\D/g, '') === c);
+    if (o) { try { sessionStorage.removeItem(CHAVE_PARA); } catch (e) { /* sem armazenamento */ } return o.chave; }
+    return { semAcesso: c };
+  }
   function iniciar() {
+    guardarPara();
     if (!window.firebase) { telaSemConexao(); return; }
     if (!CW.fb.iniciar()) { telaConfig(); return; }
     const acao = lerAcao();
