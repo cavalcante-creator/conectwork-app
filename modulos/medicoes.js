@@ -237,10 +237,14 @@
     const st = m.status;
     let acoes = '';
     const separa = t => `<div class="banner info" id="md-separa">${ic('shield')}<span><strong>Outra pessoa ${t}</strong>Você está nas duas empresas desta medição. Funções separadas: quem lança pela empresa que contrata não confere pela prestadora, e quem confere não aprova.</span></div>`;
-    if (l === 'prestador' && st === 'enviada' && pode(ctx, CONFIRMA) && m.criadoPor === eu) acoes = separa('confere pela prestadora');
-    else if (l === 'prestador' && st === 'enviada' && pode(ctx, CONFIRMA)) acoes = `<button class="btn ok" id="md-confirmar">${ic('check')}Confirmar a medição</button><button class="btn dangerous" id="md-divergir">${ic('alert')}Apontar divergência</button>`;
+    /* exceção do piloto (12/11/2026, "faça uma exceção"): a equipe Conectwork faz os passos mesmo tendo feito o anterior; fica marcado */
+    const exc = !!(CW.sessao.estado() || {}).master, excAv = `<p class="hint" id="md-excecao" style="margin:0;font-size:12.5px;width:100%">Exceção do piloto: você fez o passo anterior, mas como equipe Conectwork pode seguir. Fica registrado na medição.</p>`;
+    if (l === 'prestador' && st === 'enviada' && pode(ctx, CONFIRMA) && m.criadoPor === eu && !exc) acoes = separa('confere pela prestadora');
+    else if (l === 'prestador' && st === 'enviada' && pode(ctx, CONFIRMA)) acoes = `<button class="btn ok" id="md-confirmar">${ic('check')}Confirmar a medição</button><button class="btn dangerous" id="md-divergir">${ic('alert')}Apontar divergência</button>` + (m.criadoPor === eu ? excAv : '');
     if (l === 'tomador' && (st === 'enviada' || st === 'divergencia') && pode(ctx, LANCA)) acoes = `<button class="btn ${st === 'divergencia' ? '' : 'sec'}" id="md-corrigir">${ic('edit')}Corrigir${st === 'divergencia' ? ' e reenviar' : ''}</button><button class="btn ghost" id="md-cancelar">Cancelar medição</button>`;
-    if (l === 'tomador' && st === 'confirmada_prestadora' && pode(ctx, APROVA) && m.confirmacao && m.confirmacao.uid === eu && m.criadoPor !== eu) acoes = separa('aprova');
+    const bloqAp = m.criadoPor === eu || (m.confirmacao && m.confirmacao.uid === eu);
+    if (l === 'tomador' && st === 'confirmada_prestadora' && pode(ctx, APROVA) && exc && bloqAp) acoes = `<button class="btn ok" id="md-aprovar">${ic('check')}Aprovar a medição</button>` + excAv;
+    else if (l === 'tomador' && st === 'confirmada_prestadora' && pode(ctx, APROVA) && m.confirmacao && m.confirmacao.uid === eu && m.criadoPor !== eu) acoes = separa('aprova');
     else if (l === 'tomador' && st === 'confirmada_prestadora' && pode(ctx, APROVA)) acoes = m.criadoPor === eu
       ? `<div class="banner info">${ic('shield')}<span><strong>Outra pessoa aprova</strong>Você lançou esta medição. Funções separadas: quem lança não aprova sozinho. Peça ao aprovador técnico.</span></div>`
       : `<button class="btn ok" id="md-aprovar">${ic('check')}Aprovar a medição</button>`;
@@ -265,8 +269,8 @@
       </div><div class="stack">
         <section class="card" id="md-passos"><div class="card-h"><span class="ic">${ic('clock')}</span><h3>Andamento</h3></div><div class="card-b stack" style="gap:16px">
           <ul class="tl">${passo(true, false, 'Medição enviada', formatarDataHora(m.criadoEm) + ' · ' + (m.criadoPorNome || ''))}
-            ${passo(!!m.confirmacao, st === 'enviada' || st === 'divergencia', 'Conferida pela prestadora', m.confirmacao ? formatarDataHora(m.confirmacao.em) + ' · ' + m.confirmacao.nome : st === 'divergencia' ? 'divergência apontada' : 'esperando')}
-            ${passo(!!m.aprovacao, st === 'confirmada_prestadora', 'Aprovada pelo aprovador técnico', m.aprovacao ? formatarDataHora(m.aprovacao.em) + ' · ' + m.aprovacao.nome : 'esperando')}</ul>
+            ${passo(!!m.confirmacao, st === 'enviada' || st === 'divergencia', 'Conferida pela prestadora', m.confirmacao ? formatarDataHora(m.confirmacao.em) + ' · ' + m.confirmacao.nome + (m.confirmacao.excecao ? ' (exceção do piloto)' : '') : st === 'divergencia' ? 'divergência apontada' : 'esperando')}
+            ${passo(!!m.aprovacao, st === 'confirmada_prestadora', 'Aprovada pelo aprovador técnico', m.aprovacao ? formatarDataHora(m.aprovacao.em) + ' · ' + m.aprovacao.nome + (m.aprovacao.excecao ? ' (exceção do piloto)' : '') : 'esperando')}</ul>
           ${acoes ? `<div style="display:flex;gap:8px;flex-wrap:wrap" id="md-acoes">${acoes}</div>` : ''}
           ${zap ? `<div id="md-zap">${zap}</div>` : ''}
           ${st === 'aprovada' && l === 'prestador' && (m.memoria || []).some(x => x.cnpj) ? `<div><button class="btn" id="md-repasse">${ic('users')}Notas dos profissionais MEI</button><p class="hint" style="margin:6px 0 0;font-size:12.5px">Cada profissional MEI emite a nota dele para a sua empresa pelo valor da linha.</p></div>` : ''}
@@ -287,7 +291,7 @@
     $('md-voltar').onclick = () => CW.ir('medicoes');
     const c1 = $('md-confirmar');
     if (c1) c1.onclick = async () => { if (!(await U().confirmar('Confirmar a medição?', `Você confere que a medição de ${pt} está certa: ${brl(m.valorCentavos)}. Depois, o aprovador técnico da ${m.tomadorNome} aprova.`, 'Confirmar'))) return;
-      grava(b => { b.update(ref, { status: 'confirmada_prestadora', confirmacao: assinatura(), atualizadoEm: agora() }); log(b, ctx, 'medicao.confirmar', `Medição de ${pt} (${m.tomadorNome}) confirmada: ${brl(m.valorCentavos)}.`, m._id); }, 'Medição confirmada.'); };
+      grava(b => { b.update(ref, { status: 'confirmada_prestadora', confirmacao: Object.assign(assinatura(), m.criadoPor === ctx.sessao.usuario.uid ? { excecao: true } : {}), atualizadoEm: agora() }); log(b, ctx, 'medicao.confirmar', `Medição de ${pt} (${m.tomadorNome}) confirmada: ${brl(m.valorCentavos)}.`, m._id); }, 'Medição confirmada.'); };
     const dv = $('md-divergir');
     if (dv) dv.onclick = async () => {
       let mot = null;
@@ -303,7 +307,7 @@
       grava(b => { b.update(ref, { status: 'cancelada', atualizadoEm: agora() }); log(b, ctx, 'medicao.cancelar', `Medição de ${pt} (${m.prestadorNome}) cancelada.`, m._id); }, 'Medição cancelada.'); };
     const ap = $('md-aprovar');
     if (ap) ap.onclick = async () => { if (!(await U().confirmar('Aprovar a medição?', `${pt} · ${m.prestadorNome}: ${brl(m.valorCentavos)}. Depois de aprovada, o financeiro prepara o espelho da nota.`, 'Aprovar'))) return;
-      grava(b => { b.update(ref, { status: 'aprovada', aprovacao: assinatura(), atualizadoEm: agora() }); log(b, ctx, 'medicao.aprovar', `Medição de ${pt} (${m.prestadorNome}) aprovada: ${brl(m.valorCentavos)}.`, m._id); }, 'Medição aprovada.'); };
+      grava(b => { const me = ctx.sessao.usuario.uid; b.update(ref, { status: 'aprovada', aprovacao: Object.assign(assinatura(), m.criadoPor === me || (m.confirmacao && m.confirmacao.uid === me) ? { excecao: true } : {}), atualizadoEm: agora() }); log(b, ctx, 'medicao.aprovar', `Medição de ${pt} (${m.prestadorNome}) aprovada: ${brl(m.valorCentavos)}.`, m._id); }, 'Medição aprovada.'); };
   }
 
   /* ---------- importar do painel do RH: #medicoes/importar/<resumo em base64url> ---------- */

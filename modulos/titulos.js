@@ -99,12 +99,13 @@
     let acoes = '';
     const vez = minhaVez(t, ctx);
     if (l === 'tomador') {
-      if (st === 'aprovado' && tem(ctx, ['admin', 'financeiro'])) acoes += t.aprovacao.uid === eu(ctx)
+      const exc = !!(CW.sessao.estado() || {}).master, excAv = `<p class="hint" id="tt-excecao" style="margin:0;font-size:12.5px;width:100%">Exceção do piloto: você fez o passo anterior, mas como equipe Conectwork pode seguir. Fica registrado no pagamento.</p>`;
+      if (st === 'aprovado' && tem(ctx, ['admin', 'financeiro'])) acoes += t.aprovacao.uid === eu(ctx) && exc ? `<button class="btn ok" id="tt-liberar">${ic('check')}Liberar para pagamento</button>` + excAv : t.aprovacao.uid === eu(ctx)
         ? `<div class="banner info">${ic('shield')}<span><strong>Outra pessoa libera</strong>Você conferiu a nota. Funções separadas: quem confere a nota não libera o pagamento sozinho.</span></div>`
         : `<button class="btn ok" id="tt-liberar">${ic('check')}Liberar para pagamento</button>`;
       if (c.revisao && ['aprovado', 'liberado'].includes(st) && tem(ctx, ['admin', 'financeiro'])) acoes += `<button class="btn" id="tt-revisar">${ic('shield')}Revisar a troca de conta</button>`;
       if (st === 'liberado' && tem(ctx, ['admin', 'tesouraria'])) acoes += !c.ok ? `<p class="hint" style="margin:0">Esperando a prestadora informar a conta para receber.</p>` : c.revisao ? `<p class="hint" style="margin:0;color:var(--warn)">A prestadora trocou a conta: o financeiro precisa revisar antes de agendar.</p>` : `<button class="btn" id="tt-agendar">${ic('clock')}Agendar o pagamento</button>`;
-      if (st === 'agendado' && tem(ctx, ['admin', 'tesouraria'])) acoes += (t.liberacao || {}).uid === eu(ctx)
+      if (st === 'agendado' && tem(ctx, ['admin', 'tesouraria'])) acoes += (t.liberacao || {}).uid === eu(ctx) && exc ? `<button class="btn ok" id="tt-liquidar">${ic('upload')}Confirmar o pagamento (com comprovante)</button>` + excAv : (t.liberacao || {}).uid === eu(ctx)
         ? `<div class="banner info">${ic('shield')}<span><strong>Outra pessoa confirma</strong>Você liberou este pagamento. Funções separadas: quem libera não confirma o pagamento sozinho.</span></div>`
         : `<button class="btn ok" id="tt-liquidar">${ic('upload')}Confirmar o pagamento (com comprovante)</button>`;
     } else if (tem(ctx, ['admin', 'financeiro'])) {
@@ -163,7 +164,7 @@
     $('tt-voltar').onclick = () => CW.ir('titulos');
     const lib = $('tt-liberar');
     if (lib) lib.onclick = async () => { if (!(await U0.confirmar('Liberar para pagamento?', `${t.prestadorNome} · ${brl(t.liquidoCentavos)} · vence ${dataTxt(vencimento(t))}. Depois, a tesouraria agenda e paga.`, 'Liberar'))) return;
-      grava(b => { b.update(ref, { status: 'liberado', liberacao: ass(), atualizadoEm: agora() }); log(b, ctx, 'titulo.liberar', `Pagamento de ${brl(t.liquidoCentavos)} para ${t.prestadorNome} (${periodoTxt(t.periodo)}) liberado.`, t._id); }, 'Pagamento liberado.'); };
+      grava(b => { b.update(ref, { status: 'liberado', liberacao: Object.assign(ass(), t.aprovacao && t.aprovacao.uid === eu(ctx) ? { excecao: true } : {}), atualizadoEm: agora() }); log(b, ctx, 'titulo.liberar', `Pagamento de ${brl(t.liquidoCentavos)} para ${t.prestadorNome} (${periodoTxt(t.periodo)}) liberado.`, t._id); }, 'Pagamento liberado.'); };
     const rv = $('tt-revisar');
     if (rv) rv.onclick = async () => {
       let ok = false;
@@ -207,7 +208,7 @@
       const b64 = String(await lerComo(arq, 'readAsDataURL')).replace(/^data:[^,]*,/, ''), envio = Math.random().toString(36).slice(2, 10), partes = Math.max(1, Math.ceil(b64.length / PEDACO));
       grava(b => {
         for (let k = 0; k < partes; k++) b.set(db.doc(`titulos/${t._id}/arquivos/${envio}-${k}`), { d: b64.slice(k * PEDACO, (k + 1) * PEDACO), k, envio, em: agora() });
-        b.update(ref, { status: 'liquidado', liquidacao: Object.assign(ass(), { data: res.data, comprovante: { envio, partes, nome: arq.name.slice(0, 120), tipo: arq.type || '', tam: arq.size } }), atualizadoEm: agora() });
+        b.update(ref, { status: 'liquidado', liquidacao: Object.assign(ass(), (t.liberacao || {}).uid === eu(ctx) ? { excecao: true } : {}, { data: res.data, comprovante: { envio, partes, nome: arq.name.slice(0, 120), tipo: arq.type || '', tam: arq.size } }), atualizadoEm: agora() });
         log(b, ctx, 'titulo.liquidar', `Pagamento de ${brl(t.liquidoCentavos)} para ${t.prestadorNome} confirmado em ${dataTxt(res.data)}, com comprovante.`, t._id);
       }, 'Pagamento confirmado. A prestadora vê o comprovante.');
     };

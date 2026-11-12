@@ -310,7 +310,9 @@ service cloud.firestore {
     }
     function medicaoConfirmar(r, d) {
       return cargoEm(r.prestadorId, ['admin','financeiro']) && r.status == 'enviada' && d.status == 'confirmada_prestadora'
-        && request.auth.uid != r.criadoPor   // quem lançou pela empresa que contrata não confirma pela prestadora
+        // quem lançou pela empresa que contrata não confirma pela prestadora; exceção do piloto (12/11/2026): a equipe Conectwork
+        // pode, marcando confirmacao.excecao (fica registrado na medição)
+        && (request.auth.uid != r.criadoPor || (master() && d.confirmacao.excecao == true))
         && d.confirmacao.uid == request.auth.uid && mudou().hasOnly(['status','confirmacao','atualizadoEm']);
     }
     function medicaoDivergir(r, d) {
@@ -320,7 +322,8 @@ service cloud.firestore {
     }
     function medicaoAprovar(r, d) {
       return cargoEm(r.tomadorId, ['admin','aprovador']) && r.status == 'confirmada_prestadora' && d.status == 'aprovada'
-        && d.aprovacao.uid == request.auth.uid && request.auth.uid != r.criadoPor && request.auth.uid != r.confirmacao.uid
+        && d.aprovacao.uid == request.auth.uid
+        && ((request.auth.uid != r.criadoPor && request.auth.uid != r.confirmacao.uid) || (master() && d.aprovacao.excecao == true))
         && mudou().hasOnly(['status','aprovacao','atualizadoEm']);
     }
     function medicaoCancelar(r, d) {
@@ -586,7 +589,7 @@ service cloud.firestore {
     }
     function tituloLiberar(r, d) {
       return cargoEm(r.tomadorId, ['admin','financeiro']) && r.status == 'aprovado' && d.status == 'liberado'
-        && request.auth.uid != r.aprovacao.uid && d.liberacao.uid == request.auth.uid && mudou().hasOnly(['status','liberacao','atualizadoEm']);
+        && (request.auth.uid != r.aprovacao.uid || (master() && d.liberacao.excecao == true)) && d.liberacao.uid == request.auth.uid && mudou().hasOnly(['status','liberacao','atualizadoEm']);
     }
     function tituloAgendar(r, d) {
       return cargoEm(r.tomadorId, ['admin','tesouraria']) && r.status == 'liberado' && d.status == 'agendado'
@@ -597,7 +600,7 @@ service cloud.firestore {
     function tituloLiquidar(id, r, d) {
       let cp = d.liquidacao.comprovante;
       return cargoEm(r.tomadorId, ['admin','tesouraria']) && r.status == 'agendado' && d.status == 'liquidado'
-        && request.auth.uid != r.liberacao.uid && d.liquidacao.uid == request.auth.uid && d.liquidacao.data is string
+        && (request.auth.uid != r.liberacao.uid || (master() && d.liquidacao.excecao == true)) && d.liquidacao.uid == request.auth.uid && d.liquidacao.data is string
         && cp.partes is int && cp.partes >= 1 && cp.partes <= 6
         && existsAfter(/databases/$(database)/documents/titulos/$(id)/arquivos/$(cp.envio + '-' + string(cp.partes - 1)))
         && mudou().hasOnly(['status','liquidacao','atualizadoEm']);

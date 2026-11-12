@@ -779,6 +779,20 @@ async function deve(nome, permitido, op) {
   await deve('Contrato: admin das duas empresas assina pela prestadora', true, () => updateDoc(doc(db('ana'), 'contratos', 'cdup'), { 'assinaturas.prestador': { uid: P.ana, nome: 'Ana', em: serverTimestamp() }, interlocutor: { nome: 'Ana', email: EM.ana, cel: '' }, atualizadoEm: serverTimestamp() }));
   await deve('Contrato: quem NÃO é admin da prestadora não assina por ela', false, () => updateDoc(doc(db('rita'), 'contratos', 'cdup'), { 'assinaturas.tomador': { uid: P.rita, nome: 'Rita', em: serverTimestamp() }, atualizadoEm: serverTimestamp() }));
   await env.withSecurityRulesDisabled(async c => { await deleteDoc(doc(c.firestore(), 'acessos', 'beta_' + P.ana)); });
+  /* exceção do piloto (12/11/2026): a equipe Conectwork, admin das duas empresas, lança, confirma e aprova; fica marcado (excecao) */
+  await env.withSecurityRulesDisabled(async c => { const f = c.firestore();
+    await setDoc(doc(f, 'acessos', 'alfa_' + P.master), { uid: P.master, empresaId: 'alfa', nome: 'Iasmyn', email: EM.master, cargo: 'admin', extras: [], sem: [], ativo: true });
+    await setDoc(doc(f, 'acessos', 'beta_' + P.master), { uid: P.master, empresaId: 'beta', nome: 'Iasmyn', email: EM.master, cargo: 'admin', extras: [], sem: [], ativo: true });
+    await setDoc(doc(f, 'medicoes', 'mx1'), Object.assign(med('master'), { criadoEm: '2026-11-12T00:00:00Z', atualizadoEm: '2026-11-12T00:00:00Z' }));
+    await setDoc(doc(f, 'medicoes', 'mx2'), Object.assign(med('ana'), { criadoPor: P.ana, criadoEm: '2026-11-12T00:00:00Z', atualizadoEm: '2026-11-12T00:00:00Z' }));
+    await setDoc(doc(f, 'acessos', 'beta_' + P.ana), { uid: P.ana, empresaId: 'beta', nome: 'Ana', email: EM.ana, cargo: 'admin', extras: [], sem: [], ativo: true }); });
+  const cf = (k, x) => ({ status: 'confirmada_prestadora', confirmacao: Object.assign({ uid: P[k], nome: k, em: serverTimestamp() }, x || {}), atualizadoEm: serverTimestamp() });
+  const ap = (k, x) => ({ status: 'aprovada', aprovacao: Object.assign({ uid: P[k], nome: k, em: serverTimestamp() }, x || {}), atualizadoEm: serverTimestamp() });
+  await deve('Exceção: a equipe NÃO confirma o que lançou sem marcar a exceção', false, () => updateDoc(doc(db('master'), 'medicoes', 'mx1'), cf('master')));
+  await deve('Exceção: a equipe confirma o que lançou marcando a exceção', true, () => updateDoc(doc(db('master'), 'medicoes', 'mx1'), cf('master', { excecao: true })));
+  await deve('Exceção: a equipe aprova o que lançou e confirmou marcando a exceção', true, () => updateDoc(doc(db('master'), 'medicoes', 'mx1'), ap('master', { excecao: true })));
+  await deve('Exceção: quem NÃO é da equipe continua sem confirmar o que lançou, mesmo marcando', false, () => updateDoc(doc(db('ana'), 'medicoes', 'mx2'), cf('ana', { excecao: true })));
+  await env.withSecurityRulesDisabled(async c => { const f = c.firestore(); await deleteDoc(doc(f, 'acessos', 'beta_' + P.ana)); await deleteDoc(doc(f, 'acessos', 'alfa_' + P.master)); await deleteDoc(doc(f, 'acessos', 'beta_' + P.master)); });
   /* fila de MEIs do painel do RH (12/11/2026): admin/RH de quem contrata põe na fila; a equipe Conectwork processa */
   const fm = (k, extra) => Object.assign({ cnpj: '12.345.678/0001-95', cnpjNum: '12345678000195', nome: 'Joao Teste Silva', email: 'joao@teste.com', tel: '51999990000', prestadora: 'Zenith', prestCnpj: '04252011000110',
     empresaId: 'alfa', enviadoPor: P[k], enviadoPorNome: k, em: serverTimestamp(), st: 'pendente' }, extra || {});
