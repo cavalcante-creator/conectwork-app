@@ -45,7 +45,7 @@ const { ok, fim } = H.placar('autorizacoes');
   await entrarComo('lia@lia.com.br'); await page.waitForFunction(() => !!document.getElementById('menu-alt'), null, { timeout: 8000 });
   const m2 = await menu();
   ok('M1 profissional MEI vê o menu enxuto: Início, Agenda, Demandas, A receber, Meu negócio, Notas a emitir, Assistente, Contratos, Documentos e Minha empresa',
-    m2.map(x => x.split(':')[0]).join() === 'inicio,agenda,ordens,titulos,nacidade,negocio,espelhos,assistentemei,contratos,documentos,empresa' && m2.includes('ordens:Demandas') && m2.includes('espelhos:Notas a emitir') && m2.includes('titulos:A receber'), JSON.stringify(m2));
+    m2.map(x => x.split(':')[0]).join() === 'inicio,agenda,ordens,titulos,nacidade,negocio,espelhos,assistentemei,contratos,servicos,cursos,documentos,empresa' && m2.includes('ordens:Demandas') && m2.includes('espelhos:Notas a emitir') && m2.includes('titulos:A receber'), JSON.stringify(m2));
 
   // M1b quem só presta serviço não abre ordem de serviço: recebe as da empresa que contrata
   await page.evaluate(() => { location.hash = '#ordens'; }); await page.waitForSelector('#os-lista', { timeout: 8000 });

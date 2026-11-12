@@ -1,4 +1,4 @@
-/* Teste de tela do cadastro de empresa (Etapa 1, parte 1): "Crie seu acesso", as 6 etapas com validações reais,
+/* Teste de tela do cadastro de empresa: "Crie seu acesso", o essencial (cadastro simplificado, 12/11/2026), "Completar o cadastro" (as 6 etapas) com validações reais,
    rascunho só no navegador, CNPJ repetido, envio (empresa, área privada, CNPJ reservado, acesso admin,
    autorizações e histórico), protocolo, "Meu cadastro" e "Corrigir cadastro". Só dados inventados. */
 const H = require('./harness');
@@ -19,7 +19,7 @@ const CNPJ = '11.444.777/0001-61', CNPJ_USADO = '04.252.011/0001-10', CPF = '529
   // C1 do login, "Cadastrar empresa" abre "Crie seu acesso"
   await H.preparar(page, d); await page.goto(H.BASE);
   await page.waitForSelector('#lg-cadastrar'); await page.click('#lg-cadastrar'); await page.waitForSelector('#cad-titulo');
-  ok('C1 "Cadastrar empresa" no login abre "Crie seu acesso" (antes das 6 etapas)', await titulo() === 'Crie seu acesso');
+  ok('C1 "Cadastrar empresa" no login abre "Crie seu acesso" (antes do essencial da empresa)', await titulo() === 'Crie seu acesso');
 
   // C2 validações do acesso
   await continuar();
@@ -35,98 +35,109 @@ const CNPJ = '11.444.777/0001-61', CNPJ_USADO = '04.252.011/0001-10', CPF = '529
   await preenche([['cad-acesso-email', 'ana@alfa.com.br'], ['cad-acesso-senha2', 'Delta2026']]); await continuar(); await H.dorme(200);
   ok('C3 e-mail que já tem acesso: avisa no campo e sugere entrar', /já tem um acesso/.test(await erro('#cad-acesso-email')), await erro('#cad-acesso-email'));
 
-  // C4 cria a conta, manda a confirmação do e-mail, grava o perfil e vai para a Etapa 1
+  // C4 cria a conta, manda a confirmação do e-mail, grava o perfil e vai para "Sua empresa" (cadastro simplificado: 2 etapas)
   await page.fill('#cad-acesso-email', 'carla.nova@delta.com.br'); await continuar(); await page.waitForSelector('#cad-dados-cnpj', { timeout: 6000 }); await H.dorme(300);
   const l4 = await log(), docs4 = await srv();
   const uid = Object.keys(docs4).find(k => /^usuarios\//.test(k) && docs4[k].email === 'carla.nova@delta.com.br');
-  ok('C4 cria a conta, envia a confirmação do e-mail, grava o perfil e abre a Etapa 1 de 6',
-    l4.some(x => x[0] === 'criaConta') && l4.some(x => x[0] === 'verificacao') && !!uid && docs4[uid].nome === 'Carla Nunes' && await titulo() === 'Tipo e empresa'
-    && await page.$eval('.stepno', e => e.innerText) === 'Etapa 1 de 6', JSON.stringify({ uid, t: await titulo() }));
+  ok('C4 cria a conta, envia a confirmação do e-mail, grava o perfil e abre "Sua empresa" (Etapa 1 de 2)',
+    l4.some(x => x[0] === 'criaConta') && l4.some(x => x[0] === 'verificacao') && !!uid && docs4[uid].nome === 'Carla Nunes' && await titulo() === 'Sua empresa'
+    && await page.$eval('.stepno', e => e.innerText) === 'Etapa 1 de 2' && !(await page.$('#cad-end-cep')) && !(await page.$('#cad-dados-cnae')), JSON.stringify({ uid, t: await titulo() }));
   const UID = uid.split('/')[1];
 
-  // C5 Etapa 1: vazia, CNPJ inválido, CNPJ que já existe, MEI com regime errado
-  await continuar();
+  // C5 o essencial: tipo, CNPJ pelo dígito, razão social, responsável (já vem do login) e celular; CNPJ que já existe
+  await page.fill('#cad-resp-nome', ''); await continuar();
   const c5a = await page.$$eval('#cad .has-err', x => x.length);
   await page.click('[data-tipo="ambos"]');
-  await preenche([['cad-dados-cnpj', '11.111.111/1111-11'], ['cad-dados-abertura', '2019-03-10'], ['cad-dados-porte', 'MEI'], ['cad-dados-razao', 'Delta Manutenção Ltda'], ['cad-dados-fantasia', 'Delta'],
-    ['cad-dados-regime', 'Simples Nacional'], ['cad-dados-cnae', '3314-7/10 Manutenção de máquinas'], ['cad-dados-im', '12345']]);
+  await preenche([['cad-dados-cnpj', '11.111.111/1111-11'], ['cad-dados-razao', 'Delta Manutenção Ltda'], ['cad-dados-fantasia', 'Delta'], ['cad-resp-nome', 'Carla'], ['cad-resp-cel', '(51) 3333-4444']]);
   await continuar();
-  const c5b = [await erro('#cad-dados-cnpj'), await erro('#cad-dados-regime')];
-  await preenche([['cad-dados-cnpj', CNPJ_USADO], ['cad-dados-porte', 'Microempresa (ME)']]); await continuar(); await H.dorme(200);
+  const c5b = [await erro('#cad-dados-cnpj'), await erro('#cad-resp-nome'), await erro('#cad-resp-cel')];
+  await preenche([['cad-dados-cnpj', CNPJ_USADO], ['cad-resp-nome', 'Carla Nunes'], ['cad-resp-cel', CEL]]); await continuar(); await H.dorme(200);
   const c5c = await erro('#cad-dados-cnpj');
-  ok('C5 Etapa 1: campos obrigatórios, CNPJ pelo dígito, MEI só com SIMEI e CNPJ que já tem cadastro', c5a >= 8 && /CNPJ inválido/.test(c5b[0]) && /MEI/.test(c5b[1]) && /já tem cadastro/.test(c5c), JSON.stringify({ c5a, c5b, c5c }));
+  ok('C5 o essencial: campos obrigatórios, CNPJ pelo dígito, nome e sobrenome, celular real e CNPJ que já tem cadastro', c5a >= 4 && /CNPJ inválido/.test(c5b[0]) && /sobrenome/.test(c5b[1]) && /Celular inválido/.test(c5b[2]) && /já tem cadastro/.test(c5c), JSON.stringify({ c5a, c5b, c5c }));
 
-  // C6 Etapa 1 certa → Etapa 2; a máscara do CNPJ funciona
+  // C6 certo → Confirmar (com o resumo); a máscara do CNPJ funciona
   await page.fill('#cad-dados-cnpj', ''); await page.type('#cad-dados-cnpj', '11444777000161'); const mascara = await page.$eval('#cad-dados-cnpj', e => e.value);
-  await continuar(); await page.waitForSelector('#cad-end-cep');
-  ok('C6 Etapa 1 completa vai para Endereço (CNPJ com máscara)', mascara === CNPJ && await titulo() === 'Endereço', mascara);
+  await continuar(); await page.waitForSelector('#cad-resumo');
+  const res6 = await page.$eval('#cad-resumo', e => e.innerText);
+  ok('C6 o essencial certo vai para Confirmar, com o resumo e o aviso de que o resto fica para depois', mascara === CNPJ && await titulo() === 'Confirmar' && /Delta Manutenção Ltda/.test(res6) && /Contrata e presta/.test(res6) && !!(await page.$('#cad-depois')), mascara);
 
-  // C7 recarregar a página no meio: continua de onde parou, com o que já foi digitado (rascunho só neste aparelho)
-  await page.fill('#cad-end-cep', '94000'); await page.reload(); await page.waitForSelector('#cad-titulo', { timeout: 8000 }); await H.dorme(200);
-  const c7 = { t: await titulo(), cep: await page.$eval('#cad-end-cep', e => e.value).catch(() => null), banco: Object.keys(await srv()).filter(k => /empresas\/|cnpjs\/11444/.test(k) && !/alfa|beta|gama/.test(k)),
-    rasc: await page.evaluate(u => !!localStorage.getItem('cw.cad.' + u), UID) };
-  ok('C7 recarregou: continua em Endereço com o que já tinha digitado; nada foi para o banco ainda', c7.t === 'Endereço' && c7.cep === '94000' && c7.rasc && !c7.banco.length, JSON.stringify(c7));
+  // C7 recarregar no meio: continua de onde parou; nada foi para o banco ainda
+  await page.reload(); await page.waitForSelector('#cad-titulo', { timeout: 8000 }); await H.dorme(200);
+  const c7 = { t: await titulo(), banco: Object.keys(await srv()).filter(k => /empresas\/|cnpjs\/11444/.test(k) && !/alfa|beta|gama/.test(k)), rasc: await page.evaluate(u => !!localStorage.getItem('cw.cad.' + u), UID) };
+  ok('C7 recarregou: continua em Confirmar; nada foi para o banco ainda', c7.t === 'Confirmar' && c7.rasc && !c7.banco.length, JSON.stringify(c7));
 
-  // C8 Endereço, Responsável (CPF e celular reais), Banco (Pix CNPJ precisa ser o da empresa)
-  await continuar(); const c8a = await erro('#cad-end-cep');
-  await preenche([['cad-end-cep', '94000-000'], ['cad-end-logradouro', 'Rua das Flores'], ['cad-end-numero', '100'], ['cad-end-bairro', 'Centro'], ['cad-end-cidade', 'Gravataí'], ['cad-end-uf', 'RS']]);
-  await continuar(); await page.waitForSelector('#cad-resp-cpf');
-  const nomeResp = await page.$eval('#cad-resp-nome', e => e.value), emailResp = await page.$eval('#cad-resp-email', e => e.value);
-  await preenche([['cad-resp-cpf', '123.456.789-00'], ['cad-resp-cargo', 'Sócia'], ['cad-resp-cel', '(51) 3333-4444']]); await continuar();
-  const c8b = [await erro('#cad-resp-cpf'), await erro('#cad-resp-cel')];
-  await preenche([['cad-resp-cpf', CPF], ['cad-resp-cel', CEL]]); await continuar(); await page.waitForSelector('#cad-banco-banco');
-  await preenche([['cad-banco-banco', '341 · Itaú Unibanco'], ['cad-banco-tipoConta', 'Corrente'], ['cad-banco-agencia', '1234'], ['cad-banco-conta', '56789-0'], ['cad-banco-pixTipo', 'CNPJ'], ['cad-banco-pix', '00.000.000/0001-91']]);
-  await continuar(); const c8c = await erro('#cad-banco-pix');
-  await page.fill('#cad-banco-pix', CNPJ); await continuar(); await page.waitForSelector('[data-doc]');
-  ok('C8 CEP com 8 números, responsável já vem com o nome e e-mail do login, CPF e celular reais, Pix CNPJ = CNPJ da empresa',
-    /8 números/.test(c8a) && nomeResp === 'Carla Nunes' && emailResp === 'carla.nova@delta.com.br' && /CPF inválido/.test(c8b[0]) && /Celular inválido/.test(c8b[1]) && /CNPJ da empresa/.test(c8c) && await titulo() === 'Documentos',
-    JSON.stringify({ c8a, nomeResp, emailResp, c8b, c8c }));
-
-  // C9 Documentos: obrigatórios, até 10 MB, PDF/JPG/PNG; sem pedir certificado digital (segredo só no servidor)
-  await continuar(); const c9a = await page.$$eval('#cad .up.has-err', x => x.length);
-  await page.setInputFiles('[data-doc="contrato"]', { name: 'grande.pdf', mimeType: 'application/pdf', buffer: Buffer.alloc(11 * 1024 * 1024) }); await H.dorme(150);
-  const c9b = await page.$eval('#cad-doc-contrato', e => e.innerText);
-  await page.setInputFiles('[data-doc="cartao"]', { name: 'planilha.xlsx', mimeType: 'application/octet-stream', buffer: Buffer.from('x') }); await H.dorme(150);
-  const c9c = await page.$eval('#cad-doc-cartao', e => e.innerText);
-  for (const [k, n] of [['contrato', 'contrato-social.pdf'], ['cartao', 'cartao-cnpj.pdf'], ['endereco', 'conta-luz.jpg'], ['identidade', 'rg-carla.png']])
-    { await page.setInputFiles(`[data-doc="${k}"]`, { name: n, mimeType: 'application/pdf', buffer: Buffer.alloc(2048) }); await H.dorme(120); }
-  const c9d = { n: await page.$$eval('#cad .up.ok', x => x.length), certificado: await page.$('[data-doc="certificado"]'), nome: await page.$eval('#cad-doc-endereco', e => e.innerText) };
-  await continuar();
-  ok('C9 documentos: 4 obrigatórios, recusa arquivo de mais de 10 MB e formato errado, guarda nome e tamanho; não pede certificado digital',
-    c9a === 4 && /10 MB/.test(c9b) && /PDF, JPG ou PNG/.test(c9c) && c9d.n === 4 && !c9d.certificado && /conta-luz\.jpg · 2 KB/.test(c9d.nome) && await titulo() === 'Revisão', JSON.stringify({ c9a, c9b, c9c, c9d: { n: c9d.n, nome: c9d.nome } }));
-
-  // C10 Revisão: declarações e autorizações separadas (cursos e ofertas desmarcados por padrão)
+  // C10 Confirmar: declarações e autorizações separadas (cursos e ofertas desmarcados por padrão)
   const c10a = await page.$$eval('[data-cons]', x => x.map(c => [c.dataset.cons, c.checked]));
   await continuar(); const c10b = await page.$eval('#cad-erro', e => e.innerText).catch(() => '');
   await page.click('[data-texto="termos"]'); await page.waitForSelector('dialog[open]'); const c10c = await page.$eval('dialog[open]', e => e.innerText); await page.click('dialog[open] [data-dlg-b="0"]');
-  ok('C10 revisão: autorizações separadas; WhatsApp e e-mail marcados, cursos e ofertas DESMARCADOS; sem marcar as obrigatórias não envia',
+  ok('C10 confirmar: autorizações separadas; WhatsApp e e-mail marcados, cursos e ofertas DESMARCADOS; sem marcar as obrigatórias não envia',
     JSON.stringify(c10a) === JSON.stringify([['operacional', false], ['contrato', false], ['cobranca', false], ['whatsapp', true], ['email', true], ['cursos', false], ['ofertas', false]]) && /declarações e as autorizações obrigatórias/.test(c10b) && /Termos de uso/.test(c10c),
     JSON.stringify({ c10a, c10b }));
 
-  // C11 envio: tudo numa transação; protocolo CW-AAAA-0001; rascunho apagado
+  // C11 envio: tudo numa transação; empresa entra com o essencial (status basico); protocolo; rascunho apagado
   for (const k of ['verdade', 'termos']) await page.check(`[data-aceite="${k}"]`);
   for (const k of ['operacional', 'contrato', 'cobranca']) await page.check(`[data-cons="${k}"]`);
   await page.uncheck('[data-cons="whatsapp"]');
   await continuar(); await page.waitForSelector('#cad-protocolo', { timeout: 6000 });
-  const prot = await page.$eval('#cad-protocolo', e => e.innerText), docs = await srv(), ano = new Date().getFullYear();
+  const prot = await page.$eval('#cad-protocolo', e => e.innerText), docs = await srv(), ano = new Date().getFullYear(), fim11 = await page.$eval('#cad-fim', e => e.innerText);
   const empK = Object.keys(docs).find(k => /^empresas\/[^/]+$/.test(k) && docs[k].cnpjNum === '11444777000161'), EMP = empK && empK.split('/')[1];
   const e11 = docs[empK] || {}, p11 = docs['empresas/' + EMP + '/privado/cadastro'] || {}, a11 = docs['acessos/' + EMP + '_' + UID] || {};
   const cons = ['operacional', 'contrato', 'cobranca', 'whatsapp', 'email', 'cursos', 'ofertas'].map(k => [k, (docs['consentimentos/' + UID + '_' + k] || {}).aceite]);
   const logs = Object.values(docs).filter(x => x.acao === 'empresa.cadastrar' && x.empresaId === EMP);
   const rascunho = await page.evaluate(u => localStorage.getItem('cw.cad.' + u), UID);
-  ok('C11 envio: protocolo CW-AAAA-0001, empresa em análise sem plano nem módulos, área privada, CNPJ reservado, acesso admin, 7 autorizações, histórico; rascunho apagado',
-    prot === `CW-${ano}-0001` && e11.status === 'analise' && e11.tipo === 'ambos' && e11.nome === 'Delta' && e11.cnpj === CNPJ && !('modulos' in e11) && !('plano' in e11)
-    && p11.resp && p11.resp.cpf === CPF && p11.banco.agencia === '1234' && p11.docs.endereco.nome === 'conta-luz.jpg' && (docs['cnpjs/11444777000161'] || {}).empresaId === EMP
+  ok('C11 envio: protocolo CW-AAAA-0001, empresa com o essencial (Falta completar) sem plano nem módulos, CNPJ reservado, acesso admin, 7 autorizações, histórico; rascunho apagado',
+    prot === `CW-${ano}-0001` && e11.status === 'basico' && e11.tipo === 'ambos' && e11.nome === 'Delta' && e11.razao === 'Delta Manutenção Ltda' && e11.cnpj === CNPJ && !('modulos' in e11) && !('plano' in e11)
+    && p11.resp && p11.resp.cel === CEL && p11.resp.nome === 'Carla Nunes' && p11.cadastroRapido === true && !p11.banco && (docs['cnpjs/11444777000161'] || {}).empresaId === EMP
     && a11.cargo === 'admin' && a11.ativo === true && JSON.stringify(cons) === JSON.stringify([['operacional', true], ['contrato', true], ['cobranca', true], ['whatsapp', false], ['email', true], ['cursos', false], ['ofertas', false]])
-    && logs.length === 1 && /protocolo CW-/.test(logs[0].texto) && !/529\.982/.test(JSON.stringify(logs)) && rascunho === null && (await log()).some(x => x[0] === 'transacao'),
+    && logs.length === 1 && /Falta completar/.test(logs[0].texto) && rascunho === null && /complete o cadastro/.test(fim11) && (await log()).some(x => x[0] === 'transacao'),
     JSON.stringify({ prot, st: e11.status, cons, logs: logs.length, rascunho }));
 
-  // C12 entra no app em análise: Início + "Meu cadastro" com o protocolo; sem "Corrigir" (não foi pedido ajuste)
-  await page.click('#cad-entrar'); await page.waitForSelector('#menu', { timeout: 8000 }); await H.dorme(200);
+  // C12 entra no app: Início com "Completar o cadastro", Meu cadastro com a lista do que falta e o botão
+  await page.click('#cad-entrar'); await page.waitForSelector('#menu', { timeout: 8000 }); await H.dorme(300);
   const menu = await page.$$eval('#menu [data-mod]', x => x.map(b => b.dataset.mod));
-  await page.evaluate(() => { location.hash = '#meucadastro'; }); await page.waitForSelector('#mc-protocolo'); await H.dorme(150);
-  const c12 = { menu, prot: await page.$eval('#mc-protocolo', e => e.innerText), corrigir: !!(await page.$('#mc-corrigir')), pill: await page.$eval('#mc-situacao .pill', e => e.innerText) };
-  ok('C12 entra no app com a empresa em análise: menu Início + Meu cadastro + Documentos; protocolo e situação; sem "Corrigir"', JSON.stringify(menu) === '["inicio","meucadastro","documentos"]' && c12.prot === prot && !c12.corrigir && c12.pill === 'Em análise', JSON.stringify(c12));
+  const ini12 = !!(await page.$('#ini-completar'));
+  await page.evaluate(() => { location.hash = '#meucadastro'; }); await page.waitForSelector('#mc-protocolo'); await H.dorme(200);
+  const c12 = { menu, ini12, prot: await page.$eval('#mc-protocolo', e => e.innerText), bt: await page.$eval('#mc-corrigir', e => e.innerText).catch(() => ''), pill: await page.$eval('#mc-situacao .pill', e => e.innerText), falta: await page.$eval('#mc-falta', e => e.innerText).catch(() => '') };
+  ok('C12 entra no app com a empresa cadastrada: menu Início + Meu cadastro + Documentos; Início e Meu cadastro mostram o que falta e "Completar o cadastro"',
+    JSON.stringify(menu) === '["inicio","meucadastro","documentos"]' && c12.ini12 && c12.prot === prot && /Completar o cadastro/.test(c12.bt) && c12.pill === 'Falta completar' && /Endereço/.test(c12.falta) && /Documentos/.test(c12.falta), JSON.stringify(c12));
+
+  // C8 "Completar o cadastro" abre as 6 etapas com o CNPJ travado: dados fiscais, endereço, responsável (CPF real), banco (Pix CNPJ)
+  await page.click('#mc-corrigir'); await page.waitForSelector('#cad-dados-razao');
+  const t8 = await titulo(), trava8 = await page.$eval('#cad-dados-cnpj', e => e.disabled), razao8 = await page.$eval('#cad-dados-razao', e => e.value);
+  await continuar(); const c8z = await page.$$eval('#cad .has-err', x => x.length);
+  await preenche([['cad-dados-abertura', '2019-03-10'], ['cad-dados-porte', 'Microempresa (ME)'], ['cad-dados-regime', 'Simples Nacional'], ['cad-dados-cnae', '3314-7/10 Manutenção de máquinas'], ['cad-dados-im', '12345']]);
+  await continuar(); await page.waitForSelector('#cad-end-cep');
+  await page.fill('#cad-end-cep', '94000'); await continuar(); const c8a = await erro('#cad-end-cep');
+  await preenche([['cad-end-cep', '94000-000'], ['cad-end-logradouro', 'Rua das Flores'], ['cad-end-numero', '100'], ['cad-end-bairro', 'Centro'], ['cad-end-cidade', 'Gravataí'], ['cad-end-uf', 'RS']]);
+  await continuar(); await page.waitForSelector('#cad-resp-cpf');
+  const nomeResp = await page.$eval('#cad-resp-nome', e => e.value), celResp = await page.$eval('#cad-resp-cel', e => e.value);
+  await preenche([['cad-resp-cpf', '123.456.789-00'], ['cad-resp-cargo', 'Sócia']]); await continuar();
+  const c8b = await erro('#cad-resp-cpf');
+  await preenche([['cad-resp-cpf', CPF]]); await continuar(); await page.waitForSelector('#cad-banco-banco');
+  await preenche([['cad-banco-banco', '341 · Itaú Unibanco'], ['cad-banco-tipoConta', 'Corrente'], ['cad-banco-agencia', '1234'], ['cad-banco-conta', '56789-0'], ['cad-banco-pixTipo', 'CNPJ'], ['cad-banco-pix', '00.000.000/0001-91']]);
+  await continuar(); const c8c = await erro('#cad-banco-pix');
+  await page.fill('#cad-banco-pix', CNPJ); await continuar(); await page.waitForSelector('[data-doc]');
+  ok('C8 "Completar o cadastro": as 6 etapas com o CNPJ travado e o que já tinha; dados fiscais, CEP com 8 números, responsável e celular já vêm, CPF real, Pix CNPJ = CNPJ da empresa',
+    t8 === 'Completar o cadastro · Tipo e empresa' && trava8 && razao8 === 'Delta Manutenção Ltda' && c8z >= 4 && /8 números/.test(c8a) && nomeResp === 'Carla Nunes' && celResp === CEL && /CPF inválido/.test(c8b) && /CNPJ da empresa/.test(c8c) && await titulo() === 'Completar o cadastro · Documentos',
+    JSON.stringify({ t8, trava8, c8z, c8a, nomeResp, c8b, c8c }));
+
+  // C9 Documentos: podem ficar para depois; recusa arquivo de mais de 10 MB e formato errado; não pede certificado digital
+  const c9a = !!(await page.$('#cad-docs-depois'));
+  await page.setInputFiles('[data-doc="contrato"]', { name: 'grande.pdf', mimeType: 'application/pdf', buffer: Buffer.alloc(11 * 1024 * 1024) }); await H.dorme(150);
+  const c9b = await page.$eval('#cad-doc-contrato', e => e.innerText);
+  await page.setInputFiles('[data-doc="cartao"]', { name: 'planilha.xlsx', mimeType: 'application/octet-stream', buffer: Buffer.from('x') }); await H.dorme(150);
+  const c9c = await page.$eval('#cad-doc-cartao', e => e.innerText);
+  await page.setInputFiles('[data-doc="endereco"]', { name: 'conta-luz.jpg', mimeType: 'image/jpeg', buffer: Buffer.alloc(2048) }); await H.dorme(150);
+  const c9d = { certificado: await page.$('[data-doc="certificado"]'), nome: await page.$eval('#cad-doc-endereco', e => e.innerText) };
+  await continuar();
+  ok('C9 documentos: podem ficar para depois (segue com 1 de 4), recusa arquivo de mais de 10 MB e formato errado, guarda nome e tamanho; não pede certificado digital',
+    c9a && /10 MB/.test(c9b) && /PDF, JPG ou PNG/.test(c9c) && !c9d.certificado && /conta-luz\.jpg · 2 KB/.test(c9d.nome) && await titulo() === 'Completar o cadastro · Revisão', JSON.stringify({ c9a, c9b, c9c, nome: c9d.nome }));
+  await page.check('[data-aceite="verdade"]'); await continuar(); await page.waitForSelector('#cad-fim', { timeout: 6000 });
+  const d9 = await srv(), e9 = d9['empresas/' + EMP], p9 = d9['empresas/' + EMP + '/privado/cadastro'], log9 = Object.values(d9).filter(x => x.acao === 'empresa.completar');
+  ok('C9b completar envia para aprovação: empresa em análise, área privada completa, cidade e histórico',
+    e9.status === 'analise' && e9.cidade === 'Gravataí' && p9.resp.cpf === CPF && p9.banco.agencia === '1234' && p9.docs.endereco.nome === 'conta-luz.jpg' && log9.length === 1 && /Cadastro completo enviado/.test(await page.$eval('#cad-fim', e => e.innerText)),
+    JSON.stringify({ st: e9.status, log: log9.length }));
+  await page.click('#cad-entrar'); await page.waitForSelector('#menu', { timeout: 8000 });
 
   // C13 equipe pede ajuste → "Corrigir cadastro" com o motivo; CNPJ travado; reenvia em análise e grava no histórico
   await page.evaluate(id => { const s = JSON.parse(localStorage.getItem('__srv')); Object.assign(s.docs['empresas/' + id], { status: 'pendencia', motivo: 'O comprovante de endereço está ilegível.' }); localStorage.setItem('__srv', JSON.stringify(s)); }, EMP);
@@ -148,7 +159,7 @@ const CNPJ = '11.444.777/0001-61', CNPJ_USADO = '04.252.011/0001-10', CPF = '529
   await H.entrar(page, 'carla@outra.com.br', 'senha123'); await page.waitForSelector('#sa-cadastrar', { timeout: 8000 });
   await page.click('#sa-cadastrar'); await page.waitForSelector('#cad-titulo');
   const c14 = { t: await titulo(), passos: await page.$$eval('.wsteps li', x => x.length) };
-  ok('C14 já logada sem empresa: "Cadastrar minha empresa" começa direto na Etapa 1', c14.t === 'Tipo e empresa', JSON.stringify(c14));
+  ok('C14 já logada sem empresa: "Cadastrar minha empresa" começa direto em "Sua empresa"', c14.t === 'Sua empresa', JSON.stringify(c14));
 
   // C15 celular: barra de cima com a etapa, sem rolagem para o lado
   await page.setViewportSize({ width: 390, height: 844 }); await H.dorme(250);
@@ -158,7 +169,7 @@ const CNPJ = '11.444.777/0001-61', CNPJ_USADO = '04.252.011/0001-10', CPF = '529
       htmlTopo: getComputedStyle(document.documentElement).paddingTop, barraTopo: getComputedStyle(document.querySelector('.wiz-side')).paddingTop };
     document.documentElement.style.removeProperty('--sa-t'); return r; });
   ok('C15b celular: campos com letra 16px (o iPhone não dá zoom) e a área da ilha entra uma vez só no topo', c15b.fonte >= 16 && c15b.htmlTopo === '0px' && c15b.barraTopo === '59px', JSON.stringify(c15b));
-  ok('C15 celular: barra de cima "Etapa 1 de 6", lista de etapas escondida, sem rolagem para o lado', /Etapa 1 de 6/.test(c15.barra) && !c15.lado && c15.passosVis === 'none', JSON.stringify(c15));
+  ok('C15 celular: barra de cima "Etapa 1 de 2", lista de etapas escondida, sem rolagem para o lado', /Etapa 1 de 2/.test(c15.barra) && !c15.lado && c15.passosVis === 'none', JSON.stringify(c15));
   await page.setViewportSize({ width: 1280, height: 900 });
 
   // C16 Sair do cadastro: pergunta e volta para a tela de antes; o rascunho fica

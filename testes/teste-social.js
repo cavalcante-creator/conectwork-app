@@ -45,7 +45,7 @@ const { ok, fim } = H.placar('social');
   const t5a = await page.$eval('#cad-google', b => b.innerText);
   await page.click('#cad-google'); await page.waitForSelector('#cad-dados-cnpj', { timeout: 8000 });
   await page.click('[data-tipo="contratante"]');
-  ok('S5 cadastro: "Continuar com Google" no "Crie seu acesso" leva direto para a Etapa 1', t5a === 'Continuar com Google' && await page.$eval('#cad-titulo', e => e.innerText) === 'Tipo e empresa', t5a);
+  ok('S5 cadastro: "Continuar com Google" no "Crie seu acesso" leva direto para "Sua empresa"', t5a === 'Continuar com Google' && await page.$eval('#cad-titulo', e => e.innerText) === 'Sua empresa', t5a);
   const resp = await page.evaluate(() => { const r = JSON.parse(Object.entries(localStorage).find(([k]) => /^cw\.cad\.u/.test(k))[1]); return r.d.resp; });
   ok('S5b o responsável já vem com o nome e o e-mail da conta Google', resp.nome === 'Nova Pessoa' && resp.email === 'nova.pessoa@delta.com.br', JSON.stringify(resp));
   await page.click('#cad-sair'); await page.waitForSelector('dialog[open]'); await page.click('dialog[open] [data-dlg-b="1"]'); await page.waitForSelector('#sa-sair', { timeout: 6000 });

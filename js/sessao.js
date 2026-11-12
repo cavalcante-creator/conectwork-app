@@ -297,7 +297,7 @@
   }
 
   /* ---------- dados ---------- */
-  const STATUS = { mei: ['info', 'MEI · gestão liberada'], analise: ['warn', 'Em análise'], pendencia: ['warn', 'Ajuste pedido'], aprovado: ['ok', 'Aprovada'], recusado: ['danger', 'Recusada'], suspenso: ['danger', 'Suspensa'] };
+  const STATUS = { basico: ['info', 'Falta completar'], mei: ['info', 'MEI · gestão liberada'], analise: ['warn', 'Em análise'], pendencia: ['warn', 'Ajuste pedido'], aprovado: ['ok', 'Aprovada'], recusado: ['danger', 'Recusada'], suspenso: ['danger', 'Suspensa'] };
   const pillStatus = s => { const x = STATUS[s] || ['info', s || 'Sem situação']; return `<span class="pill ${x[0]}">${U().esc(x[1])}</span>`; };
   const nomeEmpresa = id => { const e = st.empresas[id]; return (e && (e.nome || e.razao)) || 'uma empresa'; };
   const primeiroNome = () => String((st.perfil && st.perfil.nome) || st.usuario.email || '').split(/[\s@]/)[0];

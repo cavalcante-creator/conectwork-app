@@ -2,7 +2,7 @@
    (com CW.registrarModulo({...}), ver js/app.js) e acrescente o nome aqui.
    Os arquivos rodam na ordem da lista; depois do último, o app liga (CW.iniciar). */
 (function () {
-  const MODULOS = ['inicio', 'avisar', 'logos', 'cadastro', 'cadastromei', 'cadastros-master', 'rede', 'mensalidades', 'equipe-cw', 'avisos', 'emissores', 'usuarios', 'convite', 'historico', 'minha-empresa', 'avaliacoes', 'triagem', 'dossie', 'contratos', 'ordens', 'negocio', 'medicoes', 'nfse', 'assistente', 'espelhos', 'repasse', 'titulos', 'relatorios', 'documentos', 'autorizacoes', 'meusdados', 'agenda', 'assistentemei', 'dinheiro', 'meudas', 'painelcidade', 'cidade', 'ajuda'];
+  const MODULOS = ['inicio', 'avisar', 'logos', 'cadastro', 'cadastromei', 'cadastros-master', 'rede', 'mensalidades', 'equipe-cw', 'avisos', 'emissores', 'usuarios', 'convite', 'historico', 'minha-empresa', 'avaliacoes', 'triagem', 'dossie', 'servicos', 'contratos', 'ordens', 'negocio', 'medicoes', 'nfse', 'assistente', 'espelhos', 'repasse', 'titulos', 'relatorios', 'documentos', 'cursos', 'autorizacoes', 'meusdados', 'agenda', 'assistentemei', 'dinheiro', 'meudas', 'painelcidade', 'cidade', 'ajuda'];
   let faltam = MODULOS.length;
   const pronto = () => { if (--faltam === 0) window.CW.iniciar(); };
   if (!faltam) { window.CW.iniciar(); return; }

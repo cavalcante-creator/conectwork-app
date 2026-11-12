@@ -81,7 +81,8 @@
   }
 
   /* ---------- nova OS ---------- */
-  async function nova(ctx, c0) {
+  async function nova(ctx, c0, pre) {
+    pre = pre || {};
     const { esc, lerDinheiro } = U(), db = CW.fb.db(), emp = ctx.contexto.empresaId;
     let cts;
     try { cts = c0 ? [c0] : CW.fb.lista(await db.collection('contratos').where('tomadorId', '==', emp).get()).filter(c => c.modalidade === 'os' && c.status === 'ativo'); } catch (e) { U().toast(CW.fb.mensagemErro(e), 'erro'); return; }
@@ -90,7 +91,7 @@
     await U().dialogo({ titulo: 'Nova ordem de serviço', sub: 'Descreva a entrega, não as horas. O profissional decide como e quando faz.',
       corpo: `<form class="fgrid" id="os-form" novalidate>
         <label class="f c12"><span>Contrato</span><select id="os-ct" ${cts.length === 1 ? 'disabled' : ''}>${cts.map(c => `<option value="${esc(c._id)}">${esc(c.prestadorNome)} · ${esc(c.objeto.slice(0, 60))}</option>`).join('')}</select></label>
-        <label class="f c12"><span>O que será entregue</span><input id="os-tit" maxlength="120" placeholder="Ex.: Revisão do quadro elétrico da linha 2"></label>
+        <label class="f c12"><span>O que será entregue</span><input id="os-tit" maxlength="120" value="${esc(pre.titulo || '')}" placeholder="Ex.: Revisão do quadro elétrico da linha 2"></label>
         <label class="f c12"><span>Escopo da entrega</span><textarea id="os-esc" rows="4" maxlength="2000" placeholder="O resultado esperado e como saber que está pronto. Ex.: trocar disjuntores, testar e entregar o relatório com fotos."></textarea></label>
         <label class="f c6"><span>Prazo da entrega</span><input id="os-prazo" type="date" min="${hoje()}"></label>
         <label class="f c6"><span>Valor da entrega</span><input id="os-valor" data-mascara="dinheiro" inputmode="numeric" placeholder="0,00"><em class="hint">Valor fechado pela entrega, não por hora.</em></label>
@@ -256,5 +257,5 @@
       ver: { nome: 'Ordem de serviço', sub: 'Escopo, prazo, valor, entrega e aceite.', render: (el, ctx) => desenharVer(el, ctx, ctx.params[0]) }
     }
   });
-  CW.ordens = { blocoContrato, lista: () => osT.concat(osP) };
+  CW.ordens = { blocoContrato, lista: () => osT.concat(osP), nova };
 })();

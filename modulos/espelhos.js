@@ -12,7 +12,10 @@
   const U = () => CW.ui;
   const PREPARA = ['admin', 'financeiro'];
   const RET = [['iss', 'ISS'], ['inss', 'INSS'], ['ir', 'IR'], ['pcc', 'PIS/COFINS/CSLL']];
-  const ST = { aguardando_nota: ['warn', 'Esperando a nota'], nota_enviada: ['info', 'Nota para conferir'], nota_ok: ['ok', 'Nota conferida'] };
+  const ST = { aguardando_nota: ['warn', 'Esperando a nota'], nota_enviada: ['info', 'Nota para conferir'], nota_ok: ['ok', 'Nota conferida'], nota_contestada: ['danger', 'Nota contestada'] };
+  /* contestação da nota (12/11/2026): o tomador contesta com o motivo; as duas empresas conversam; o tomador aceita a explicação
+     (a nota volta para conferir) ou alguém pede uma nota nova (volta a esperar a nota). A nota contestada não vira título. */
+  const MOTIVOS_CT = ['Valor diferente do aprovado', 'CNPJ de quem emitiu', 'CNPJ da nossa empresa', 'Competência (mês) errada', 'Descrição do serviço', 'Retenções e impostos', 'Outro'];
   const ENVIA = ['admin', 'financeiro', 'operacional'];   /* quem da prestadora emite e envia a nota */
   const EMISSOR = 'https://www.nfse.gov.br/EmissorNacional';
   const MAX_ARQ = 3 * 1024 * 1024, PEDACO = 700000;
@@ -80,6 +83,7 @@
     const preparar = pode(ctx) ? medsAprov.concat(osAprov).filter(m => !comEsp.has(m._id)) : [];
     const emitir = espP.filter(x => x.status === 'aguardando_nota');
     const conferir = pode(ctx) ? espT.filter(x => x.status === 'nota_enviada') : [];
+    const contest = espT.concat(espP).filter(x => x.status === 'nota_contestada');
     const outro = x => lado(x, ctx) === 'tomador' ? x.prestadorNome : x.tomadorNome;
     const linhaEsp = x => `<tr class="click" data-abrir="${esc(x._id)}" tabindex="0"><td class="m-full"><div class="cell">${avatar(outro(x), '', lado(x, ctx) === 'tomador' ? x.prestadorId : x.tomadorId)}<div style="min-width:0"><strong>${esc(periodoTxt(x.periodo))}</strong><small>${esc(outro(x))} · ${lado(x, ctx) === 'tomador' ? 'você paga' : 'você emite a nota'}</small></div></div></td>
       <td class="r"><b>${esc(brl(x.valorCentavos))}</b><br><small class="hint">líquido ${esc(brl(x.liquidoCentavos))}</small></td><td>${pill(x.status)}</td></tr>`;
@@ -90,6 +94,7 @@
         ${preparar.map(m => `<tr><td class="m-full"><div class="cell">${avatar(m.prestadorNome, '', m.prestadorId)}<div style="min-width:0"><strong>${esc(m.origem === 'os' ? 'OS ' + m.numero + ' · ' + m.titulo : periodoTxt(m.periodo))}</strong><small>${esc(m.prestadorNome)} · ${m.origem === 'os' ? 'entrega aceita' : 'aprovada'}${m.aprovacao && m.aprovacao.nome ? ' por ' + esc(m.aprovacao.nome) : ''}</small></div></div></td>
           <td class="r"><b>${esc(brl(m.valorCentavos))}</b></td><td class="r"><button class="btn sm" data-preparar="${esc(m._id)}">${ic('edit')}Preparar espelho</button></td></tr>`).join('')}
         </tbody></table></div></section>` : ''}
+      ${contest.length ? `<section class="card" id="es-contest" style="margin-bottom:22px"><div class="card-h"><span class="ic">${ic('alert')}</span><h3>Notas contestadas</h3><span class="count">${contest.length}</span></div>${tab(contest, 'es-tab-contest')}</section>` : ''}
       ${conferir.length ? `<section class="card" id="es-conferir" style="margin-bottom:22px"><div class="card-h"><span class="ic">${ic('alert')}</span><h3>Notas para conferir</h3><span class="count">${conferir.length}</span></div>${tab(conferir, 'es-tab-conferir')}</section>` : ''}
       ${emitir.length ? `<section class="card" id="es-emitir" style="margin-bottom:22px"><div class="card-h"><span class="ic">${ic('receipt')}</span><h3>Notas a emitir</h3><span class="count">${emitir.length}</span></div>
         <div class="card-b" style="padding-bottom:0"><div class="banner ok">${ic('check')}<span><strong>Serviço aprovado: confira os dados e envie sua nota fiscal</strong>Abra o espelho: o botão leva ao emissor da nota e, quando você voltar, o Conectwork pede o PDF da nota.</span></div></div>
@@ -248,6 +253,7 @@
     }
     if (l === 'tomador' && x.status === 'aguardando_nota') return recTxt + `<div class="banner info" id="es-aviso">${ic('clock')}<span><strong>Esperando a nota da ${esc(x.prestadorNome)}</strong>${x.emissao ? 'A prestadora abriu o emissor em ' + esc(formatarDataHora(x.emissao.em)) + '. ' : 'A prestadora já vê o espelho. '}A nota é conferida com o contrato, a medição e este espelho.</span></div>`;
     if (x.status === 'nota_enviada') return `<div class="banner ${l === 'tomador' ? 'warn' : 'info'}" id="es-aviso">${ic(l === 'tomador' ? 'alert' : 'clock')}<span><strong>${l === 'tomador' ? 'Nota chegou: confira' : 'Nota enviada'}</strong>${l === 'tomador' ? 'Veja a conferência abaixo, abra o arquivo se precisar e marque "Nota conferida" ou recuse com o motivo.' : 'A ' + esc(x.tomadorNome) + ' confere a nota com o contrato, a medição e o espelho.'}</span></div>`;
+    if (x.status === 'nota_contestada') return `<div class="banner danger" id="es-aviso">${ic('alert')}<span><strong>${l === 'tomador' ? 'Nota contestada' : 'A ' + esc(x.tomadorNome) + ' contestou a nota'}</strong>${l === 'tomador' ? 'A nota fica parada e não vira título até você aceitar a explicação ou pedir uma nota nova.' : 'Veja o motivo abaixo: responda explicando ou mande a nota corrigida.'}</span></div>`;
     if (x.status === 'nota_ok') return `<div class="banner ok" id="es-aviso">${ic('check')}<span><strong>Nota conferida</strong>Contrato, medição e nota batem. O título foi para Pagar e receber. <a href="#titulos/ver/${esc(x._id)}" class="linkbtn" id="es-titulo">Ver o título</a></span></div>`;
     return '';
   }
@@ -267,7 +273,7 @@
     const tripla = `<ul class="es-cf" id="es-tripla"><li class="ok">${ic('check')}<span>${x.origem === 'repasse' ? `Profissional MEI da medição: ${esc(x.prestadorNome)} (${esc(pr)})` : `Contrato ativo com ${esc(x.prestadorNome)} (${esc(pr)})`}</span></li><li class="ok">${ic('check')}<span>${x.origem === 'repasse' ? 'Linha da medição aprovada' : 'Medição aprovada'}: ${esc(brl(x.valorCentavos))}</span></li>
       <li class="${cf.ok ? 'ok' : 'no'}">${ic(cf.ok ? 'check' : 'alert')}<span>${cf.ok ? 'A nota bate com o espelho' : cf.manual ? 'Nota para conferir à mão' : 'A nota tem diferenças'}</span></li></ul>`;
     const botoes = lado(x, ctx) === 'tomador' && x.status === 'nota_enviada' && pode(ctx)
-      ? `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ok" id="es-nf-ok">${ic('check')}Nota conferida</button><button class="btn dangerous" id="es-nf-recusar">${ic('x')}Recusar a nota</button></div>` : '';
+      ? `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ok" id="es-nf-ok">${ic('check')}Nota conferida</button><button class="btn sec" id="es-nf-contestar">${ic('alert')}Contestar a nota</button><button class="btn dangerous" id="es-nf-recusar">${ic('x')}Recusar a nota</button></div>` : '';
     return `<section class="card" id="es-nf"><div class="card-h"><span class="ic">${ic('file')}</span><h3>Nota fiscal${n.numero ? ' nº ' + esc(n.numero) : ''}</h3><span style="margin-left:auto">${pill(x.status)}</span></div><div class="card-b stack" style="gap:14px">
       ${tripla}
       <dl class="dl"><div><dt>Arquivo</dt><dd>${esc(n.nomeArquivo)} · ${esc(n.tipo.toUpperCase())} · ${esc(tamTxt(n.tam || 0))}</dd></div><div><dt>Enviada</dt><dd>${esc(formatarDataHora(n.enviadoEm))} · ${esc(n.enviadoPorNome || '')}</dd></div>
@@ -275,7 +281,22 @@
       ${itens ? `<div><p style="margin:0 0 6px;font-size:13px;font-weight:500">O que o Conectwork conferiu</p><ul class="es-cf" id="es-cf">${itens}</ul></div>` : ''}
       ${cf.manual && lado(x, ctx) === 'tomador' ? `<p class="hint" style="margin:0;font-size:12.5px;color:var(--warn)">Não deu para conferir tudo pelo arquivo: abra a nota e confira o CNPJ de quem emitiu, o CNPJ da sua empresa, o valor e a competência.</p>` : ''}
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sec" id="es-nf-baixar">${ic('file')}Abrir o arquivo da nota</button></div>
-      ${botoes}</div></section>`;
+      ${botoes}</div></section>${cartaoContest(x, ctx)}`;
+  }
+
+  function cartaoContest(x, ctx) {
+    const { esc, ic, formatarDataHora } = U(), c = x.contestacao, l = lado(x, ctx), feitas = x.contestacoes || [];
+    const podeL = l === 'tomador' ? pode(ctx) : podeEnviar(ctx);
+    const conversa = cc => `<ul class="es-ct-msgs">${[{ lado: 'tomador', t: cc.texto, nome: cc.nome, em: cc.em, abre: true }].concat(cc.msgs || []).map(m => `<li class="${m.lado}">
+      <small>${esc(m.lado === 'tomador' ? x.tomadorNome : x.prestadorNome)} · ${esc(m.nome || '')} · ${esc(formatarDataHora(m.em))}</small><p>${esc(m.t)}</p></li>`).join('')}</ul>`;
+    const hist = feitas.length ? `<details class="es-ct-hist" id="es-ct-hist"><summary>${feitas.length} contestaç${feitas.length === 1 ? 'ão encerrada' : 'ões encerradas'}</summary>${feitas.map(f => `<div class="es-ct-h"><b>${esc((f.motivos || []).join(', '))}</b> · ${f.fim.como === 'aceita' ? 'explicação aceita' : 'pedida uma nota nova'} por ${esc(f.fim.nome || '')} em ${esc(formatarDataHora(f.fim.em))}${conversa(f)}</div>`).join('')}</details>` : '';
+    if (!c) return hist ? `<section class="card" id="es-ct"><div class="card-b">${hist}</div></section>` : '';
+    const acoes = !podeL ? '' : `<label class="f" style="margin:0"><span>${l === 'tomador' ? 'Escrever para a prestadora' : 'Responder à ' + esc(x.tomadorNome)}</span><textarea id="es-ct-txt" rows="3" maxlength="1000" placeholder="${l === 'tomador' ? 'Ex.: Mesmo assim o valor não bate: a medição aprovou R$ 5.500,00.' : 'Ex.: O valor inclui as horas extras aprovadas na medição.'}"></textarea></label><p class="err" id="es-ct-erro"></p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sec" id="es-ct-enviar">${ic('send')}Enviar ${l === 'tomador' ? 'mensagem' : 'resposta'}</button>
+      ${l === 'tomador' ? `<button class="btn ok" id="es-ct-aceitar">${ic('check')}Aceitar a explicação</button>` : ''}
+      <button class="btn ${l === 'prestador' ? '' : 'dangerous'}" id="es-ct-nova">${ic('file')}${l === 'prestador' ? 'Vou mandar a nota corrigida' : 'Pedir uma nota nova'}</button></div>`;
+    return `<section class="card" id="es-ct"><div class="card-h"><span class="ic">${ic('alert')}</span><h3>Contestação da nota</h3><span style="margin-left:auto">${pill('nota_contestada')}</span></div><div class="card-b stack" style="gap:12px">
+      <p style="margin:0;font-size:13.5px"><b>Motivo:</b> ${esc((c.motivos || []).join(', '))}</p>${conversa(c)}${acoes}${hist}</div></section>`;
   }
 
   function ligarNota(el, ctx, x) {
@@ -322,6 +343,45 @@
       grava(b => { b.update(ref, { status: 'nota_ok', conferenciaNota: { uid: ctx.sessao.usuario.uid, nome: quem(ctx), em: agora(), manual }, atualizadoEm: agora() });
         if (CW.titulos) CW.titulos.criarNoLote(b, ctx, x);
         log(b, ctx, 'nota.conferir', `Nota${x.nota.numero ? ' nº ' + x.nota.numero : ''} de ${x.prestadorNome} (${periodoTxt(x.periodo)}) conferida${manual ? ' à mão' : ''}: ${brl(x.valorCentavos)}.`, x._id); }, 'Nota conferida.');
+    };
+    const ct = $('es-nf-contestar');
+    if (ct) ct.onclick = async () => {
+      let r = null;
+      await U().dialogo({ titulo: 'Contestar a nota', sub: `A ${x.prestadorNome} vê o motivo e responde ou manda a nota corrigida. Enquanto isso, a nota não vira título.`,
+        corpo: `<p style="margin:0 0 8px;font-size:13px;font-weight:500">O que está diferente?</p><div class="chips" id="ct-mot" style="flex-wrap:wrap">${MOTIVOS_CT.map((m, i) => `<label class="check" style="margin:0 12px 6px 0"><input type="checkbox" value="${i}"> <span>${U().esc(m)}</span></label>`).join('')}</div>
+          <label class="f" style="margin-top:10px"><span>Explique a divergência</span><textarea id="ct-txt" rows="4" maxlength="1000" placeholder="Ex.: A nota saiu com R$ 6.000,00; a medição aprovada é de R$ 5.500,00."></textarea></label><p class="err" id="ct-erro"></p>`,
+        botoes: [{ texto: 'Voltar', valor: null, classe: 'sec' }, { texto: 'Contestar a nota', valor: 'ok', classe: 'dangerous', antes: d => {
+          const ms = [...d.querySelectorAll('#ct-mot input:checked')].map(i => MOTIVOS_CT[+i.value]), t = d.querySelector('#ct-txt').value.trim();
+          if (!ms.length) { d.querySelector('#ct-erro').textContent = 'Marque o que está diferente na nota.'; return false; }
+          if (t.length < 10) { d.querySelector('#ct-erro').textContent = 'Explique a divergência (pelo menos 10 letras).'; return false; }
+          r = { ms, t }; return true; } }] });
+      if (!r) return;
+      grava(b => { b.update(ref, { status: 'nota_contestada', contestacao: { motivos: r.ms, texto: r.t, uid: ctx.sessao.usuario.uid, nome: quem(ctx), em: new Date().toISOString(), chaveUnica: x.nota.chaveUnica, msgs: [] }, atualizadoEm: agora() });
+        log(b, ctx, 'nota.contestar', `Nota${x.nota.numero ? ' nº ' + x.nota.numero : ''} de ${x.prestadorNome} (${periodoTxt(x.periodo)}) contestada: ${r.ms.join(', ')}. ${r.t}`, x._id); }, 'Nota contestada. A prestadora vê o motivo.');
+    };
+    const ctTxt = () => { const t = ($('es-ct-txt') || {}).value; return String(t || '').trim(); };
+    const ctErro = m => { const e = $('es-ct-erro'); if (e) e.textContent = m; };
+    const ce = $('es-ct-enviar');
+    if (ce) ce.onclick = () => {
+      const t = ctTxt(); if (t.length < 2) { ctErro('Escreva a mensagem.'); return; }
+      const c = x.contestacao, l = lado(x, ctx);
+      grava(b => { b.update(ref, { contestacao: Object.assign({}, c, { msgs: (c.msgs || []).concat([{ lado: l, t, uid: ctx.sessao.usuario.uid, nome: quem(ctx), em: new Date().toISOString() }]) }), atualizadoEm: agora() });
+        log(b, ctx, 'nota.contestacao.msg', `${l === 'tomador' ? 'Mensagem' : 'Resposta'} na contestação da nota de ${periodoTxt(x.periodo)}: ${t}`, x._id); }, l === 'tomador' ? 'Mensagem enviada.' : 'Resposta enviada.');
+    };
+    const fecha = como => Object.assign({}, x.contestacao, { fim: { como, uid: ctx.sessao.usuario.uid, nome: quem(ctx), em: new Date().toISOString() } });
+    const ca = $('es-ct-aceitar');
+    if (ca) ca.onclick = async () => {
+      if (!(await U().confirmar('Aceitar a explicação?', 'A contestação fecha e a nota volta para "Nota para conferir". Depois, marque "Nota conferida" para gerar o título.', 'Aceitar a explicação'))) return;
+      grava(b => { b.update(ref, { status: 'nota_enviada', contestacao: null, contestacoes: (x.contestacoes || []).concat([fecha('aceita')]), atualizadoEm: agora() });
+        log(b, ctx, 'nota.contestacao.aceita', `Explicação aceita na contestação da nota de ${x.prestadorNome} (${periodoTxt(x.periodo)}).`, x._id); }, 'Explicação aceita. Confira a nota.');
+    };
+    const cn = $('es-ct-nova');
+    if (cn) cn.onclick = async () => {
+      const l = lado(x, ctx);
+      if (!(await U().confirmar(l === 'prestador' ? 'Mandar a nota corrigida?' : 'Pedir uma nota nova?', l === 'prestador' ? 'Cancele esta nota no emissor, emita a nota certa e anexe aqui. A contestação fecha e o espelho volta a esperar a nota.' : 'A prestadora cancela esta nota no emissor e envia outra. A contestação fecha e o espelho volta a esperar a nota.', l === 'prestador' ? 'Vou mandar a corrigida' : 'Pedir nota nova'))) return;
+      const n = x.nota, c = x.contestacao, item = { numero: n.numero || '', chaveUnica: n.chaveUnica, nomeArquivo: n.nomeArquivo, envio: n.envio, partes: n.partes, tipo: n.tipo, enviadoPorNome: n.enviadoPorNome || '', motivo: ('Contestada: ' + c.texto).slice(0, 500), uid: ctx.sessao.usuario.uid, nome: quem(ctx), em: new Date().toISOString() };
+      grava(b => { b.update(ref, { status: 'aguardando_nota', nota: null, emissao: null, recusadas: (x.recusadas || []).concat([item]), contestacao: null, contestacoes: (x.contestacoes || []).concat([fecha('nova_nota')]), atualizadoEm: agora() });
+        log(b, ctx, 'nota.contestacao.novanota', `Contestação da nota de ${periodoTxt(x.periodo)}: ${l === 'prestador' ? 'a prestadora vai mandar a nota corrigida' : 'pedida uma nota nova'}.`, x._id); }, l === 'prestador' ? 'Pode emitir a nota corrigida e anexar.' : 'Pedida uma nota nova à prestadora.');
     };
     const rc = $('es-nf-recusar');
     if (rc) rc.onclick = async () => {
@@ -502,6 +562,9 @@
       const comEsp = new Set(espT.map(x => x._id)), out = [];
       if (pode(ctx)) medsAprov.concat(osAprov).filter(m => !comEsp.has(m._id)).forEach(m => out.push({ txt: 'Preparar o espelho da nota', sub: `${m.prestadorNome} · ${periodoTxt(m.periodo)} · ${brl(m.valorCentavos)}`, rota: 'espelhos/preparar/' + m._id }));
       if (podeEnviar(ctx)) espP.filter(x => x.status === 'aguardando_nota').forEach(x => out.push({ txt: (x.recusadas || []).length ? 'Enviar outra nota (a anterior foi recusada)' : 'Emitir e enviar a nota fiscal', sub: `${x.tomadorNome} · ${periodoTxt(x.periodo)} · ${brl(x.valorCentavos)}`, rota: 'espelhos/ver/' + x._id }));
+      const ultLado = x => { const ms = (x.contestacao && x.contestacao.msgs) || []; return ms.length ? ms[ms.length - 1].lado : 'tomador'; };
+      if (podeEnviar(ctx)) espP.filter(x => x.status === 'nota_contestada' && ultLado(x) === 'tomador').forEach(x => out.push({ txt: 'Responder a contestação da nota', sub: `${x.tomadorNome} · ${periodoTxt(x.periodo)} · ${brl(x.valorCentavos)}`, rota: 'espelhos/ver/' + x._id }));
+      if (pode(ctx)) espT.filter(x => x.status === 'nota_contestada' && ultLado(x) === 'prestador').forEach(x => out.push({ txt: 'Ver a resposta da contestação da nota', sub: `${x.prestadorNome} · ${periodoTxt(x.periodo)} · ${brl(x.valorCentavos)}`, rota: 'espelhos/ver/' + x._id }));
       if (pode(ctx)) espT.filter(x => x.status === 'nota_enviada').forEach(x => out.push({ txt: 'Conferir a nota fiscal', sub: `${x.prestadorNome} · ${periodoTxt(x.periodo)} · ${brl(x.valorCentavos)}`, rota: 'espelhos/ver/' + x._id }));
       return out;
     },

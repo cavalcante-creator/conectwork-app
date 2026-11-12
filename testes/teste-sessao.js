@@ -54,7 +54,7 @@ const MODS_TESTE = () => {
   ok('S-fundo dentro do app a página volta ao fundo normal (só as telas de entrada são azuis)', !fx.cls && fx.body !== 'rgb(8, 22, 56)', JSON.stringify(fx));
   await page.evaluate(MODS_TESTE); await H.dorme(200);
   let m = await menu();
-  ok('S8 admin vê tudo o que a empresa contratou (não vê "conta", que a Alfa não contratou)', JSON.stringify(m) === JSON.stringify(['inicio', 'pagar', 'receber', 'equipeteste', 'profissionais', 'contratos', 'ordens', 'medicoes', 'negocio', 'espelhos', 'titulos', 'relatorios', 'nacidade', 'documentos', 'empresa', 'historico']), m.join(','));
+  ok('S8 admin vê tudo o que a empresa contratou (não vê "conta", que a Alfa não contratou)', JSON.stringify(m) === JSON.stringify(['inicio', 'pagar', 'receber', 'equipeteste', 'profissionais', 'servicos', 'contratos', 'ordens', 'medicoes', 'negocio', 'espelhos', 'titulos', 'relatorios', 'cursos', 'nacidade', 'documentos', 'empresa', 'historico']), m.join(','));
 
   // S9 rota por hash com tela e parâmetros
   await page.evaluate(() => { location.hash = '#pagar/detalhe/C-1001/x'; }); await page.waitForSelector('#tela-detalhe');
@@ -81,7 +81,7 @@ const MODS_TESTE = () => {
   q = await quem();
   ok('S14 entra na empresa escolhida; contador vê o aviso de só leitura e o botão de troca', q.empresa === 'Beta Indústria' && q.cargo === 'Contador (só leitura)' && q.leitura && q.troca, JSON.stringify(q));
   await page.evaluate(MODS_TESTE); await H.dorme(200); m = await menu();
-  ok('S15 menu do contador: só pagar, receber, relatórios e espelhos (além do início)', JSON.stringify(m) === JSON.stringify(['inicio', 'pagar', 'receber', 'ordens', 'espelhos', 'titulos', 'relatorios', 'documentos']), m.join(','));
+  ok('S15 menu do contador: só pagar, receber, relatórios e espelhos (além do início)', JSON.stringify(m) === JSON.stringify(['inicio', 'pagar', 'receber', 'ordens', 'espelhos', 'titulos', 'relatorios', 'cursos', 'documentos']), m.join(','));
   await page.click('#trocar-empresa'); await page.waitForSelector('#trocar-lista');
   const atual = await page.evaluate(() => document.querySelector('#trocar-lista [aria-current="true"]').dataset.ctx);
   await page.click('#trocar-lista [data-ctx="empresa:alfa"]'); await H.dorme(400);
@@ -90,12 +90,12 @@ const MODS_TESTE = () => {
   await page.reload(); await page.waitForSelector('#ini-nome', { timeout: 8000 }); q = await quem();
   ok('S17 F5 continua na empresa escolhida (não pergunta de novo)', q.empresa === 'Alfa Serviços', JSON.stringify(q));
   await page.evaluate(MODS_TESTE); await H.dorme(200); m = await menu();
-  ok('S18 menu do financeiro: pagar, receber, relatórios, medições, espelhos e Minha empresa (conta não contratada; usuários e histórico são do admin)', JSON.stringify(m) === JSON.stringify(['inicio', 'pagar', 'receber', 'contratos', 'ordens', 'medicoes', 'negocio', 'espelhos', 'titulos', 'relatorios', 'nacidade', 'documentos', 'empresa']), m.join(','));
+  ok('S18 menu do financeiro: pagar, receber, relatórios, medições, espelhos e Minha empresa (conta não contratada; usuários e histórico são do admin)', JSON.stringify(m) === JSON.stringify(['inicio', 'pagar', 'receber', 'contratos', 'ordens', 'medicoes', 'negocio', 'espelhos', 'titulos', 'relatorios', 'cursos', 'nacidade', 'documentos', 'empresa']), m.join(','));
 
   // S19 ajuste individual: extras e sem
   await page.evaluate(() => { const a = CW.sessao.estado().contexto.acesso; a.extras = ['profissionais']; a.sem = ['pagar']; CW.app.montar(); }); await H.dorme(200);
   m = await menu();
-  ok('S19 ajuste por pessoa: "extras" acrescenta e "sem" tira telas do cargo', JSON.stringify(m) === JSON.stringify(['inicio', 'receber', 'profissionais', 'contratos', 'ordens', 'medicoes', 'negocio', 'espelhos', 'titulos', 'relatorios', 'nacidade', 'documentos', 'empresa']), m.join(','));
+  ok('S19 ajuste por pessoa: "extras" acrescenta e "sem" tira telas do cargo', JSON.stringify(m) === JSON.stringify(['inicio', 'receber', 'profissionais', 'contratos', 'ordens', 'medicoes', 'negocio', 'espelhos', 'titulos', 'relatorios', 'cursos', 'nacidade', 'documentos', 'empresa']), m.join(','));
 
   // S20 celular: barra de baixo com até 4 + Mais
   await page.evaluate(() => { const a = CW.sessao.estado().contexto.acesso; a.cargo = 'admin'; a.extras = []; a.sem = []; CW.app.montar(); });
@@ -113,7 +113,7 @@ const MODS_TESTE = () => {
   await H.entrar(page, 'iasmyn@conectwork.com.br', 'senha123'); await page.waitForSelector('#rd-numeros', { timeout: 8000 });
   q = { sub: await page.$eval('#quem-sub', e => e.innerText) };
   await page.evaluate(MODS_TESTE); await H.dorme(200); m = await menu();
-  ok('S22 equipe Conectwork (master/{uid}): entra como "Equipe Conectwork", o Início é o Painel da rede e vê só as telas da equipe, nenhuma de empresa', q.sub === 'Equipe Conectwork' && JSON.stringify(m) === '["inicio","cadastros","redeempresas","mensalidades","emissores","painelcidade","avisos","equipecw","historico"]', JSON.stringify(q) + ' menu=' + m);
+  ok('S22 equipe Conectwork (master/{uid}): entra como "Equipe Conectwork", o Início é o Painel da rede e vê só as telas da equipe, nenhuma de empresa', q.sub === 'Equipe Conectwork' && JSON.stringify(m) === '["inicio","cadastros","redeempresas","mensalidades","emissores","painelcidade","avisos","equipecw","cursos","historico"]', JSON.stringify(q) + ' menu=' + m);
   const s23 = await page.evaluate(async () => { const r = await CW.registrarLog('teste', 'Teste master.'); return JSON.parse(localStorage.getItem('__srv')).docs[r.path].empresaId; });
   ok('S23 histórico gravado pela equipe master vai com empresaId "master"', s23 === 'master', s23);
   await sair();

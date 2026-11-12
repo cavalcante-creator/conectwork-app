@@ -204,6 +204,11 @@ async function deve(nome, permitido, op) {
   await deve('MEI: NÃO nasce aprovado por conta própria', false, () => cadastro('carla', 'mei3', { status: 'aprovado', tipo: 'prestador' }, { num: '11222333000181' }));
   await deve('MEI: o dono completa o cadastro (mei → em análise)', true, () => updateDoc(doc(db('edu'), 'empresas', 'mei1'), { status: 'analise', enviadoEm: serverTimestamp() }));
 
+  /* ---------- cadastro simplificado da empresa (12/11/2026) ---------- */
+  await deve('Cadastro simples: empresa que contrata nasce com o essencial (status basico)', true, () => cadastro('carla', 'bas1', { status: 'basico', tipo: 'contratante' }, { num: '11222333000181' }));
+  await deve('Cadastro simples: o dono completa e manda para análise (basico → em análise)', true, () => updateDoc(doc(db('carla'), 'empresas', 'bas1'), { status: 'analise', cidade: 'Gravataí', uf: 'RS', enviadoEm: serverTimestamp() }));
+  await deve('Cadastro simples: NÃO se aprova sozinha', false, () => updateDoc(doc(db('carla'), 'empresas', 'bas1'), { status: 'aprovado' }));
+
   /* ---------- dinheiro do MEI (10/11/2026) ---------- */
   const mv = extra => Object.assign({ empresaId: 'alfa', tipo: 'entrada', valorCentavos: 20000, data: '2026-11-09', descricao: 'Venda de bolos', categoria: 'Venda', forma: 'pix', situacao: 'pago', vencimento: '', cliente: '',
     origem: 'manual', removido: false, pagoEm: '2026-11-09', criadoPor: P.ana, criadoPorNome: 'Ana', criadoEm: serverTimestamp(), atualizadoEm: serverTimestamp() }, extra || {});
@@ -366,6 +371,31 @@ async function deve(nome, permitido, op) {
   await deve('Nota: o financeiro recusa com motivo (fica na lista de recusadas)', true, () => updateDoc(doc(db('bruno'), 'espelhos', 'cm_2026-11-1'), { status: 'aguardando_nota', nota: null, emissao: null, recusadas: [{ uid: P.bruno, nome: 'Bruno', motivo: 'Competência errada na nota.', chaveUnica: '1'.repeat(50) }], atualizadoEm: serverTimestamp() }));
   await deve('Nota: a nota recusada NÃO é enviada de novo', false, () => enviaNota('beto', 'cm_2026-11-1', nota('beto', { envio: 'x4' })));
   await deve('Nota: a prestadora envia outra nota', true, () => enviaNota('beto', 'cm_2026-11-1', nota('beto', { envio: 'x5', chaveUnica: '2'.repeat(50), chave: '2'.repeat(50) })));
+  /* contestação da nota (12/11/2026) */
+  const CH2 = '2'.repeat(50), E1 = 'cm_2026-11-1';
+  const cont = (k, extra) => Object.assign({ motivos: ['Valor'], texto: 'O valor da nota não bate com a medição aprovada.', uid: P[k], nome: k, em: '2026-11-12T10:00:00Z', chaveUnica: CH2, msgs: [] }, extra || {});
+  await deve('Contestação: a prestadora NÃO contesta a própria nota', false, () => updateDoc(doc(db('beto'), 'espelhos', E1), { status: 'nota_contestada', contestacao: cont('beto'), atualizadoEm: serverTimestamp() }));
+  await deve('Contestação: o RH do tomador NÃO contesta', false, () => updateDoc(doc(db('rita'), 'espelhos', E1), { status: 'nota_contestada', contestacao: cont('rita'), atualizadoEm: serverTimestamp() }));
+  await deve('Contestação: NÃO contesta sem motivo escrito', false, () => updateDoc(doc(db('bruno'), 'espelhos', E1), { status: 'nota_contestada', contestacao: cont('bruno', { texto: 'errado' }), atualizadoEm: serverTimestamp() }));
+  await deve('Contestação: NÃO contesta sem escolher o tipo', false, () => updateDoc(doc(db('bruno'), 'espelhos', E1), { status: 'nota_contestada', contestacao: cont('bruno', { motivos: [] }), atualizadoEm: serverTimestamp() }));
+  await deve('Contestação: o financeiro do tomador contesta a nota com o motivo', true, () => updateDoc(doc(db('bruno'), 'espelhos', E1), { status: 'nota_contestada', contestacao: cont('bruno'), atualizadoEm: serverTimestamp() }));
+  await deve('Contestação: nota contestada NÃO vira conferida', false, () => { const f = db('bruno'), b = writeBatch(f); b.update(doc(f, 'espelhos', E1), { status: 'nota_ok', conferenciaNota: { uid: P.bruno, nome: 'Bruno', em: serverTimestamp(), manual: false }, atualizadoEm: serverTimestamp() }); return b.commit(); });
+  await deve('Contestação: a prestadora responde', true, () => updateDoc(doc(db('beto'), 'espelhos', E1), { contestacao: cont('bruno', { msgs: [{ lado: 'prestador', t: 'O valor inclui as horas extras aprovadas na medição.', uid: P.beto, nome: 'Beto', em: '2026-11-12T11:00:00Z' }] }), atualizadoEm: serverTimestamp() }));
+  await deve('Contestação: NÃO responde no nome da outra empresa', false, () => updateDoc(doc(db('beto'), 'espelhos', E1), { contestacao: cont('bruno', { msgs: [{ lado: 'prestador', t: 'O valor inclui as horas extras aprovadas na medição.', uid: P.beto, nome: 'Beto', em: '2026-11-12T11:00:00Z' }, { lado: 'tomador', t: 'Ok', uid: P.beto, nome: 'Beto', em: '2026-11-12T11:01:00Z' }] }), atualizadoEm: serverTimestamp() }));
+  await deve('Contestação: NÃO muda o motivo depois de aberta', false, () => updateDoc(doc(db('beto'), 'espelhos', E1), { contestacao: cont('bruno', { texto: 'Outro texto, bem diferente do original.', msgs: [{ lado: 'prestador', t: 'O valor inclui as horas extras aprovadas na medição.', uid: P.beto, nome: 'Beto', em: '2026-11-12T11:00:00Z' }, { lado: 'prestador', t: 'mais', uid: P.beto, nome: 'Beto', em: '2026-11-12T11:02:00Z' }] }), atualizadoEm: serverTimestamp() }));
+  const fechada = (k, como) => Object.assign(cont('bruno', { msgs: [{ lado: 'prestador', t: 'O valor inclui as horas extras aprovadas na medição.', uid: P.beto, nome: 'Beto', em: '2026-11-12T11:00:00Z' }] }), { fim: { como, uid: P[k], nome: k, em: '2026-11-12T12:00:00Z' } });
+  await deve('Contestação: a prestadora NÃO aceita a própria explicação', false, () => updateDoc(doc(db('beto'), 'espelhos', E1), { status: 'nota_enviada', contestacao: null, contestacoes: [fechada('beto', 'aceita')], atualizadoEm: serverTimestamp() }));
+  await deve('Contestação: o tomador aceita a explicação (a nota volta para conferir)', true, () => updateDoc(doc(db('bruno'), 'espelhos', E1), { status: 'nota_enviada', contestacao: null, contestacoes: [fechada('bruno', 'aceita')], atualizadoEm: serverTimestamp() }));
+  /* outro espelho: contestada e a prestadora manda nota nova */
+  await env.withSecurityRulesDisabled(async c => { await setDoc(doc(c.firestore(), 'espelhos', 'e3'), esp('bruno', { medicaoId: 'e3' })); });
+  const CH3 = '4'.repeat(50);
+  await deve('Contestação: nota do 2º espelho enviada', true, () => enviaNota('beto', 'e3', nota('beto', { envio: 'e3a', chaveUnica: CH3, chave: CH3 })));
+  await deve('Contestação: 2º espelho contestado', true, () => updateDoc(doc(db('bruno'), 'espelhos', 'e3'), { status: 'nota_contestada', contestacao: cont('bruno', { chaveUnica: CH3, motivos: ['Competência'] }), atualizadoEm: serverTimestamp() }));
+  const nova = (k) => ({ status: 'aguardando_nota', nota: null, emissao: null, recusadas: [{ uid: P[k], nome: k, motivo: 'Contestada: o valor da nota não bate.', chaveUnica: CH3 }],
+    contestacao: null, contestacoes: [Object.assign(cont('bruno', { chaveUnica: CH3, motivos: ['Competência'] }), { fim: { como: 'nova_nota', uid: P[k], nome: k, em: '2026-11-12T12:00:00Z' } })], atualizadoEm: serverTimestamp() });
+  await deve('Contestação: quem não é das duas empresas NÃO pede nota nova', false, () => updateDoc(doc(db('carla'), 'espelhos', 'e3'), nova('carla')));
+  await deve('Contestação: a prestadora vai mandar a nota corrigida (volta a esperar a nota)', true, () => updateDoc(doc(db('beto'), 'espelhos', 'e3'), nova('beto')));
+  await deve('Contestação: a nota contestada NÃO é enviada de novo', false, () => enviaNota('beto', 'e3', nota('beto', { envio: 'e3b', chaveUnica: CH3, chave: CH3 })));
   await deve('Nota: NÃO fica conferida sem criar o título junto', false, () => updateDoc(doc(db('bruno'), 'espelhos', 'cm_2026-11-1'), { status: 'nota_ok', conferenciaNota: { uid: P.bruno, nome: 'Bruno', em: serverTimestamp(), manual: false }, atualizadoEm: serverTimestamp() }));
   await deve('Nota: o financeiro marca a nota conferida (com o título junto)', true, () => { const f = db('bruno'), b = writeBatch(f);
     b.update(doc(f, 'espelhos', 'cm_2026-11-1'), { status: 'nota_ok', conferenciaNota: { uid: P.bruno, nome: 'Bruno', em: serverTimestamp(), manual: false }, atualizadoEm: serverTimestamp() });
@@ -410,6 +440,41 @@ async function deve(nome, permitido, op) {
   await deve('Medição: outra pessoa da prestadora confirma', true, () => updateDoc(doc(db('aldo'), 'medicoes', 'cm_2027-01-1'), { status: 'confirmada_prestadora', confirmacao: { uid: P.aldo, nome: 'Aldo', em: serverTimestamp() }, atualizadoEm: serverTimestamp() }));
   await deve('Medição: quem confirmou pela prestadora NÃO aprova pelo tomador', false, () => updateDoc(doc(db('aldo'), 'medicoes', 'cm_2027-01-1'), { status: 'aprovada', aprovacao: { uid: P.aldo, nome: 'Aldo', em: serverTimestamp() }, atualizadoEm: serverTimestamp() }));
   await env.withSecurityRulesDisabled(async c => { const d = c.firestore(); await deleteDoc(doc(d, 'acessos', 'beta_' + P.rita)); await deleteDoc(doc(d, 'acessos', 'beta_' + P.aldo)); });
+
+  /* ---------- catálogo de serviços (12/11/2026) ---------- */
+  const se = (k, extra) => Object.assign({ empresaId: 'alfa', nome: 'Calibração da balança', cat: 'Manutenção industrial', desc: '', removido: false, criadoPor: P[k], criadoPorNome: k, criadoEm: serverTimestamp(), atualizadoEm: serverTimestamp() }, extra || {});
+  await deve('Serviços: o admin cadastra um serviço específico', true, () => setDoc(doc(db('ana'), 'servicosesp', 's1'), se('ana')));
+  await deve('Serviços: o financeiro NÃO cadastra serviço específico', false, () => setDoc(doc(db('bruno'), 'servicosesp', 's2'), se('bruno')));
+  await deve('Serviços: NÃO cadastra na empresa de outro', false, () => setDoc(doc(db('ana'), 'servicosesp', 's3'), se('ana', { empresaId: 'beta' })));
+  await deve('Serviços: membro da empresa lê', true, () => getDoc(doc(db('bruno'), 'servicosesp', 's1')));
+  await deve('Serviços: quem é de outra empresa NÃO lê', false, () => getDoc(doc(db('beto'), 'servicosesp', 's1')));
+  await deve('Serviços: o admin tira do catálogo (nada se apaga)', true, () => updateDoc(doc(db('ana'), 'servicosesp', 's1'), { removido: true, atualizadoEm: serverTimestamp() }));
+  await deve('Serviços: ninguém apaga', false, () => deleteDoc(doc(db('ana'), 'servicosesp', 's1')));
+  const of = (k, emp, extra) => Object.assign({ empresaId: emp, gerais: ['manutencao-eletrica'], especificos: ['Pintura epóxi'], atualizadoPor: P[k], atualizadoEm: serverTimestamp() }, extra || {});
+  await deve('Serviços: a prestadora marca o que oferece', true, () => setDoc(doc(db('beto'), 'ofertaserv', 'beta'), of('beto', 'beta')));
+  await deve('Serviços: NÃO marca no lugar de outra empresa', false, () => setDoc(doc(db('ana'), 'ofertaserv', 'beta'), of('ana', 'beta')));
+  await deve('Serviços: quem contrata vê quem oferece', true, () => getDocs(query(collection(db('ana'), 'ofertaserv'), where('gerais', 'array-contains', 'manutencao-eletrica'))));
+
+  /* ---------- cursos dos parceiros (12/11/2026) ---------- */
+  await env.withSecurityRulesDisabled(async c => { await updateDoc(doc(c.firestore(), 'empresas', 'beta'), { modulos: ['cobrancas', 'cursos'] }); });
+  const cu = (k, extra) => Object.assign({ empresaId: 'beta', parceiroNome: 'Beta', titulo: 'NR-10 Básico', desc: '', modalidade: 'online', cidade: '', cargaHoras: 40, inicio: '', precoCentavos: 45000, publico: 'todos',
+    link: 'https://cursos.exemplo.com.br/nr10', status: 'publicado', removido: false, criadoPor: P[k], criadoPorNome: k, criadoEm: serverTimestamp(), atualizadoEm: serverTimestamp() }, extra || {});
+  await deve('Cursos: o admin do parceiro publica um curso', true, () => setDoc(doc(db('beto'), 'cursos', 'cu1'), cu('beto')));
+  await deve('Cursos: empresa sem o módulo de cursos NÃO publica', false, () => setDoc(doc(db('ana'), 'cursos', 'cu2'), cu('ana', { empresaId: 'alfa' })));
+  await deve('Cursos: NÃO publica sem o site da inscrição (https)', false, () => setDoc(doc(db('beto'), 'cursos', 'cu3'), cu('beto', { link: 'http://x.com' })));
+  await deve('Cursos: quem está logado vê o curso publicado', true, () => getDoc(doc(db('carla'), 'cursos', 'cu1')));
+  await deve('Cursos: quem se interessa marca uma vez (sem dados pessoais)', true, () => setDoc(doc(db('ana'), 'cursos', 'cu1', 'interesses', P.ana), { uid: P.ana, empresaId: 'alfa', em: serverTimestamp() }));
+  await deve('Cursos: NÃO marca interesse no nome de outra pessoa', false, () => setDoc(doc(db('ana'), 'cursos', 'cu1', 'interesses', P.bruno), { uid: P.bruno, empresaId: 'alfa', em: serverTimestamp() }));
+  await deve('Cursos: o parceiro vê quantos se interessaram', true, () => getDocs(collection(db('beto'), 'cursos', 'cu1', 'interesses')));
+  await deve('Cursos: quem não é do parceiro NÃO vê os interessados', false, () => getDocs(collection(db('carla'), 'cursos', 'cu1', 'interesses')));
+  await deve('Cursos: o parceiro pausa o curso', true, () => updateDoc(doc(db('beto'), 'cursos', 'cu1'), { status: 'pausado', atualizadoEm: serverTimestamp() }));
+  await deve('Cursos: curso pausado NÃO aparece para quem é de fora', false, () => getDoc(doc(db('carla'), 'cursos', 'cu1')));
+  await deve('Cursos: ninguém apaga', false, () => deleteDoc(doc(db('beto'), 'cursos', 'cu1')));
+  await deve('Cursos: o parceiro NÃO registra a própria porcentagem', false, () => setDoc(doc(db('beto'), 'parcerias', 'beta'), { empresaId: 'beta', pctBp: 0, obs: '', em: serverTimestamp(), por: P.beto, porNome: 'Beto' }));
+  await deve('Cursos: a equipe Conectwork registra a porcentagem combinada', true, () => setDoc(doc(db('master'), 'parcerias', 'beta'), { empresaId: 'beta', pctBp: 1000, obs: 'Sobre cada inscrição.', em: serverTimestamp(), por: P.master, porNome: 'Equipe' }));
+  await deve('Cursos: o parceiro lê a porcentagem dele', true, () => getDoc(doc(db('beto'), 'parcerias', 'beta')));
+  await deve('Cursos: outra empresa NÃO lê a porcentagem', false, () => getDoc(doc(db('ana'), 'parcerias', 'beta')));
+  await deve('Cursos: NÃO registra porcentagem acima de 100%', false, () => setDoc(doc(db('master'), 'parcerias', 'beta'), { empresaId: 'beta', pctBp: 10001, obs: '', em: serverTimestamp(), por: P.master, porNome: 'Equipe' }));
 
   /* ---------- títulos (contas a pagar e a receber) ---------- */
   P.tito = 'uTITO'; EM.tito = 'tito@alfa.com.br';
