@@ -53,7 +53,7 @@
     if (!lista) { el.innerHTML = `<div class="card"><div class="empty"><div class="giro"></div><span>Carregando as medições…</span></div></div>`; return; }
     document.getElementById('acoes').innerHTML = pode(ctx, LANCA) ? `<button class="btn" id="md-nova">${ic('plus')}Nova medição</button>` : '';
     const minhas = lista.filter(m => precisaDeMim(m, ctx));
-    const linha = m => `<tr class="click" data-abrir="${esc(m._id)}" tabindex="0"><td class="m-full"><div class="cell">${avatar(outraParte(m, ctx), '', lado(m, ctx) === 'tomador' ? m.prestadorId : m.tomadorId)}<div style="min-width:0"><strong>${esc(periodoTxt(m.periodo))}</strong><small>${esc(outraParte(m, ctx))} · ${lado(m, ctx) === 'tomador' ? 'você contrata' : 'você presta o serviço'}${m.origem === 'integracao' ? ' · veio do painel do RH' : ''}</small></div></div></td>
+    const linha = m => `<tr class="click" data-abrir="${esc(m._id)}" tabindex="0"><td class="m-full"><div class="cell">${avatar(outraParte(m, ctx), '', lado(m, ctx) === 'tomador' ? m.prestadorId : m.tomadorId)}<div style="min-width:0"><strong>${esc(periodoTxt(m.periodo))}</strong><small>${esc(outraParte(m, ctx))} · ${lado(m, ctx) === 'tomador' ? 'você contrata' : 'você presta o serviço'}${m.origem === 'integracao' ? ' · veio do painel do RH' : ''}${m.parte ? ' · nota separada: ' + esc((m.memoria || []).map(x => x.nome).join(', ')) : ''}</small></div></div></td>
       <td class="r"><b>${esc(brl(m.valorCentavos))}</b></td><td>${pill(m.status)}</td></tr>`;
     const tabela = (xs, id) => `<div class="scroll"><table class="resp" id="${id}"><thead><tr><th>Período</th><th class="r">Valor</th><th>Situação</th></tr></thead><tbody>${xs.map(linha).join('')}</tbody></table></div>`;
     el.innerHTML = `${minhas.length ? `<section class="card" id="md-minhas" style="margin-bottom:22px"><div class="card-h"><span class="ic">${ic('alert')}</span><h3>Precisa de você</h3><span class="count">${minhas.length}</span></div>${tabela(minhas, 'md-tab-minhas')}</section>` : ''}
@@ -73,7 +73,7 @@
     let cts;
     try { cts = m ? null : await contratosAtivos(ctx); } catch (e) { U().toast(CW.fb.mensagemErro(e), 'erro'); return; }
     if (cts && !cts.length) { await U().dialogo({ titulo: 'Nenhum contrato ativo', corpo: '<p style="margin:0">Para lançar uma medição, a sua empresa precisa de um contrato de equipe contínua ativo (assinado pelas duas empresas). Veja em Contratos.</p>' }); return; }
-    let itens = (m ? m.memoria : pre ? pre.itens : []).map(x => Object.assign({ nome: x.nome, horas: x.horas, valorCentavos: x.valorCentavos }, x.cnpj ? { cnpj: x.cnpj } : {}));
+    let itens = (pre ? pre.itens : m ? m.memoria : []).map(x => Object.assign({ nome: x.nome, horas: x.horas, valorCentavos: x.valorCentavos }, x.cnpj ? { cnpj: x.cnpj } : {}));
     if (!itens.length) itens = [{ nome: '', horas: '', valorCentavos: 0 }];
     const ctSel = m ? m.contratoId : pre ? pre.contratoId : (cts.length === 1 ? cts[0]._id : '');
     const per = id => (m ? m.periodicidade : ((cts || []).find(c => c._id === id) || {}).periodicidade) || 'quinzena';
@@ -210,14 +210,15 @@
         log(b, ctx, 'medicao.corrigir', `Medição de ${periodoTxt(m.periodo)} (${m.prestadorNome}) corrigida e reenviada: ${brl(dados.valorCentavos)}.`, m._id);
         await b.commit(); U().toast('Medição corrigida e reenviada para a prestadora.'); desenharDetalhe(document.getElementById('view'), ctx, m._id); return;
       }
-      const c = pre ? pre.contrato : cts.find(x => x._id === dados.contratoId), id = c._id + '_' + dados.periodo, ref = db.doc('medicoes/' + id);
+      const c = pre ? pre.contrato : cts.find(x => x._id === dados.contratoId), parte = pre && pre.parte ? pre.parte : '', id = c._id + '_' + dados.periodo + (parte ? '_' + parte : ''), ref = db.doc('medicoes/' + id);
       const ja = await ref.get();
       if (ja.exists) { U().toast(`Já existe medição de ${periodoTxt(dados.periodo)} para ${c.prestadorNome}. Abrimos ela para você.`, 'erro'); CW.ir('medicoes/ver/' + id); return; }
       b.set(ref, { contratoId: c._id, tomadorId: c.tomadorId, prestadorId: c.prestadorId, partes: [c.tomadorId, c.prestadorId], tomadorNome: c.tomadorNome, prestadorNome: c.prestadorNome,
         periodicidade: c.periodicidade, periodo: dados.periodo, valorCentavos: dados.valorCentavos, memoria: dados.memoria, obs: dados.obs,
         origem: pre ? 'integracao' : 'manual', ref: pre ? pre.ref : '', status: 'enviada', divergencia: null, confirmacao: null, aprovacao: null,
+        ...(parte ? { parte } : {}),
         criadoPor: ctx.sessao.usuario.uid, criadoPorNome: quem(ctx), criadoEm: agora(), atualizadoEm: agora() });
-      log(b, ctx, 'medicao.enviar', `Medição de ${periodoTxt(dados.periodo)} de ${c.prestadorNome} enviada para conferência: ${brl(dados.valorCentavos)}${pre ? ' (veio do painel do RH)' : ''}.`, id);
+      log(b, ctx, 'medicao.enviar', `Medição de ${periodoTxt(dados.periodo)} de ${c.prestadorNome}${parte ? ' (nota separada: ' + dados.memoria.map(x => x.nome).join(', ') + ')' : ''} enviada para conferência: ${brl(dados.valorCentavos)}${pre ? ' (veio do painel do RH)' : ''}.`, id);
       await b.commit(); U().toast('Medição enviada. Agora a prestadora confere.'); CW.ir('medicoes/ver/' + id);
     } catch (e) { U().toast(CW.fb.mensagemErro(e), 'erro'); }
   }
@@ -312,7 +313,7 @@
       const json = decodeURIComponent(Array.from(atob(pad)).map(ch => '%' + ch.charCodeAt(0).toString(16).padStart(2, '0')).join(''));
       const r = JSON.parse(json);
       if (r.v !== 1 || !/^\d{14}$/.test(String(r.cnpj || '')) || !Array.isArray(r.itens) || !r.itens.length || !Number.isInteger(r.total) || !/^\d{4}-\d{2}(-[12])?$/.test(r.periodo || '')) return null;
-      return { periodo: r.periodo, cnpj: r.cnpj, prestadorNome: String(r.nome || ''), total: r.total, ref: String(r.ref || '').slice(0, 80),
+      return { periodo: r.periodo, cnpj: r.cnpj, prestadorNome: String(r.nome || ''), total: r.total, ref: String(r.ref || '').slice(0, 80), parte: /^[a-z0-9]{3,30}$/.test(String(r.parte || '')) ? String(r.parte) : '',
         itens: r.itens.slice(0, 300).map(x => Object.assign({ nome: String(x.n || '').slice(0, 120), horas: x.h == null ? null : Number(x.h), valorCentavos: Math.round(Number(x.v) || 0) },
           /^\d{14}$/.test(String(x.c || '')) && U().validarCNPJ(String(x.c)) ? { cnpj: String(x.c) } : {})) };   /* c = CNPJ do MEI (10/11/2026): cada um recebe o espelho da nota dele */
     } catch (e) { return null; }
@@ -329,11 +330,19 @@
     if (!cts.length) return fimTela('warn', `Nenhum contrato ativo com ${r.prestadorNome || 'essa prestadora'}`, `Para receber a medição, a ${ctx.contexto.nome} precisa de um contrato de equipe contínua ativo com a prestadora de CNPJ ${r.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5')}.`);
     const okPer = cts.filter(c => periodoOk(r.periodo, c.periodicidade));
     if (!okPer.length) return fimTela('warn', 'O período não combina com o contrato', `O painel mandou ${periodoTxt(r.periodo)}, mas o contrato com ${cts[0].prestadorNome} é ${cts[0].periodicidade === 'mes' ? 'mensal' : 'por quinzena'}.`);
-    const c = okPer[0];
-    el.innerHTML = `<div class="banner info" id="mi-msg">${ic('list')}<span><strong>Medição recebida do painel do RH</strong>${esc(c.prestadorNome)} · ${esc(periodoTxt(r.periodo))} · ${esc(brl(r.total))} (${r.itens.length} profissionais). Confira e envie para a prestadora.</span></div>
-      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="mi-abrir">${ic('edit')}Conferir e enviar</button>${voltar}</div>`;
+    const c = okPer[0], id = c._id + '_' + r.periodo + (r.parte ? '_' + r.parte : '');
+    /* a medição deste período (ou esta nota separada) já existe: enquanto a prestadora não confirmou, o painel pode mandar de novo
+       e a medição é atualizada (ex.: um PJ foi antes e os outros entram depois na mesma nota) */
+    let ja = null;
+    try { ja = CW.fb.dados(await CW.fb.db().doc('medicoes/' + id).get()); } catch (e) { ja = null; }
+    if (ja && !['enviada', 'divergencia'].includes(ja.status)) return fimTela('warn', `A ${r.parte ? 'nota separada' : 'medição'} de ${periodoTxt(r.periodo)} já foi ${ja.status === 'aprovada' ? 'aprovada' : ja.status === 'cancelada' ? 'cancelada' : 'confirmada pela prestadora'}`,
+      r.parte ? 'Ela não muda mais por aqui. Se precisar, mande de novo pelo painel como outra nota.' : `Ela não muda mais por aqui. Os PJ que faltam podem ir como "nota separada" pelo painel do RH.`);
+    if (ja) ja._id = id;
+    const sep = r.parte ? ` · <b>nota separada</b> (${esc(r.itens.map(x => x.nome).join(', '))})` : '';
+    el.innerHTML = `<div class="banner info" id="mi-msg">${ic('list')}<span><strong>${ja ? 'Atualização da medição vinda do painel do RH' : 'Medição recebida do painel do RH'}</strong>${esc(c.prestadorNome)} · ${esc(periodoTxt(r.periodo))} · ${esc(brl(r.total))} (${r.itens.length} profissiona${r.itens.length === 1 ? 'l' : 'is'})${sep}. ${ja ? `Antes: ${esc(brl(ja.valorCentavos))} (${(ja.memoria || []).length}). Confira e reenvie para a prestadora.` : 'Confira e envie para a prestadora.'}</span></div>
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="mi-abrir">${ic('edit')}${ja ? 'Conferir e atualizar' : 'Conferir e enviar'}</button>${voltar}</div>`;
     document.getElementById('mi-voltar').onclick = () => CW.ir('medicoes');
-    const abrir = () => formulario(ctx, null, Object.assign({}, r, { contratoId: c._id, contrato: c }));
+    const abrir = () => formulario(ctx, ja, Object.assign({}, r, { contratoId: c._id, contrato: c }));
     document.getElementById('mi-abrir').onclick = abrir;
     abrir();
   }

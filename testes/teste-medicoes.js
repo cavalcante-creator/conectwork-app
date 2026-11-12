@@ -104,6 +104,23 @@ const b64url = o => Buffer.from(JSON.stringify(o), 'utf8').toString('base64').re
     /não bate com o total/.test(e8) && pre.per === '2026-10-1' && pre.travado && pre.n === 2 && pre.total === 'R$ 7.120,50' && mi && mi.origem === 'integracao' && mi.ref === '2026-10-1:ZETA' && mi.memoria[0].horas === 96.8,
     JSON.stringify({ e8, pre, origem: mi && mi.origem }));
 
+  // M8b o painel manda de novo (mais um PJ junto): a medição da quinzena é atualizada; e uma "nota separada" vira outra medição
+  const r2 = Object.assign({}, resumo, { total: 712050 + 150000, itens: resumo.itens.concat([{ n: 'Caio Reis', h: 40, v: 150000 }]) });
+  await page.evaluate(p => { location.hash = '#medicoes'; setTimeout(() => { location.hash = '#medicoes/importar/' + p; }, 50); }, b64url(r2)); await page.waitForSelector('#md-its .md-it:nth-child(3)', { timeout: 8000 });
+  const b8 = await page.$eval('#mi-msg', e => e.innerText);
+  await dlgOk(); await page.waitForSelector('#md-passos', { timeout: 8000 });
+  const ms8 = (await meds()).filter(x => x.periodo === '2026-10-1');
+  const sep = { v: 1, periodo: '2026-10-1', cnpj: '04252011000110', nome: 'ZETA', ref: '2026-10-1:ZETA:pjx01', parte: 'pjx01', total: 90000, itens: [{ n: 'Lia Souza', h: 24, v: 90000 }] };
+  await page.evaluate(p => { location.hash = '#medicoes'; setTimeout(() => { location.hash = '#medicoes/importar/' + p; }, 50); }, b64url(sep)); await page.waitForSelector('#md-its .md-it', { timeout: 8000 });
+  const b8s = await page.$eval('#mi-msg', e => e.innerText);
+  await dlgOk(); await page.waitForSelector('#md-passos', { timeout: 8000 });
+  const srv8 = await page.evaluate(() => JSON.parse(localStorage.getItem('__srv')).docs);
+  const ids8 = Object.keys(srv8).filter(k => /^medicoes\/[^/]*2026-10-1/.test(k));
+  const sp = Object.entries(srv8).find(([k]) => /_pjx01$/.test(k));
+  ok('M8b mandar de novo atualiza a medição da quinzena (3 profissionais, mesma medição); a nota separada vira outra medição só com o PJ',
+    /Atualização/.test(b8) && ms8.length === 1 && ms8[0].memoria.length === 3 && ms8[0].valorCentavos === 862050 && /nota separada/.test(b8s) && sp && sp[1].parte === 'pjx01' && sp[1].memoria.length === 1 && sp[1].valorCentavos === 90000 && ids8.length === 2,
+    JSON.stringify({ b8: b8.slice(0, 120), b8s: b8s.slice(0, 160), ids8 }));
+
   // M9 link quebrado e quem não pode lançar
   await page.evaluate(() => { location.hash = '#medicoes/importar/xyz'; }); await page.waitForSelector('#mi-msg', { timeout: 8000 });
   const m9a = await page.$eval('#mi-msg', e => e.innerText);

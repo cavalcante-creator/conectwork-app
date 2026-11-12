@@ -260,13 +260,15 @@ service cloud.firestore {
     // Aprova: admin ou aprovador técnico do tomador, e nunca quem lançou (funções separadas). Nada se apaga.
     function cargoEm(emp, lista) { return membro(emp) && get(acessoDoc(emp)).data.cargo in lista; }
     function camposMedicao() { return ['contratoId','tomadorId','prestadorId','partes','tomadorNome','prestadorNome','periodicidade','periodo',
-      'valorCentavos','memoria','obs','origem','ref','status','divergencia','confirmacao','aprovacao','criadoPor','criadoPorNome','criadoEm','atualizadoEm']; }
+      'valorCentavos','memoria','obs','origem','ref','status','divergencia','confirmacao','aprovacao','criadoPor','criadoPorNome','criadoEm','atualizadoEm','parte']; }
     function periodoOk(p, per) { return per == 'quinzena' ? p.matches('[0-9]{4}-(0[1-9]|1[0-2])-[12]') : p.matches('[0-9]{4}-(0[1-9]|1[0-2])'); }
     function medicaoCriar(id, d) {
       let c = get(caminho('contratos', d.contratoId)).data;
       return cargoEm(d.tomadorId, ['admin','rh'])
         && d.keys().hasOnly(camposMedicao())
-        && id == d.contratoId + '_' + d.periodo
+        // uma medição por período; "nota separada" (12/11/2026): a mesma quinzena pode ter medições à parte (id + '_' + parte)
+        && (id == d.contratoId + '_' + d.periodo
+            || ('parte' in d && d.parte is string && d.parte.matches('[a-z0-9]{3,30}') && id == d.contratoId + '_' + d.periodo + '_' + d.parte))
         && c.status == 'ativo' && c.tomadorId == d.tomadorId && c.prestadorId == d.prestadorId
         && d.partes == [d.tomadorId, d.prestadorId] && d.periodicidade == c.periodicidade && periodoOk(d.periodo, c.periodicidade)
         && d.valorCentavos is int && d.valorCentavos > 0 && d.memoria is list && d.memoria.size() > 0 && d.memoria.size() <= 300

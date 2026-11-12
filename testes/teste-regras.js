@@ -299,6 +299,11 @@ async function deve(nome, permitido, op) {
     periodo: '2026-11-1', valorCentavos: 500000, memoria: [{ nome: 'Pedro Lima', horas: 80, valorCentavos: 500000 }], obs: '', origem: 'manual', ref: '', status: 'enviada',
     divergencia: null, confirmacao: null, aprovacao: null, criadoPor: P[k], criadoPorNome: k, criadoEm: serverTimestamp(), atualizadoEm: serverTimestamp() }, extra || {});
   await deve('Medição: o RH do tomador lança com contrato ativo', true, () => setDoc(doc(db('rita'), 'medicoes', 'cm_2026-11-1'), med('rita')));
+  /* nota separada (12/11/2026): a mesma quinzena com uma medição à parte para um PJ (id + '_' + parte) */
+  await deve('Medição: nota separada com a parte certa no id', true, () => setDoc(doc(db('rita'), 'medicoes', 'cm_2026-11-1_pjf40'), med('rita', { parte: 'pjf40' })));
+  await deve('Medição: NÃO com a parte diferente do id', false, () => setDoc(doc(db('rita'), 'medicoes', 'cm_2026-11-1_outra'), med('rita', { parte: 'pjf40' })));
+  await deve('Medição: NÃO com parte fora do formato', false, () => setDoc(doc(db('rita'), 'medicoes', 'cm_2026-11-1_A B'), med('rita', { parte: 'A B' })));
+  await deve('Medição: NÃO com sufixo no id sem a parte', false, () => setDoc(doc(db('rita'), 'medicoes', 'cm_2026-11-1_xyz'), med('rita')));
   await deve('Medição: o financeiro do tomador NÃO lança', false, () => setDoc(doc(db('bruno'), 'medicoes', 'cm_2026-11-2'), med('bruno', { periodo: '2026-11-2' })));
   await deve('Medição: NÃO com contrato que ainda espera assinatura', false, () => setDoc(doc(db('rita'), 'medicoes', 'cx_2026-11-1'), med('rita', { contratoId: 'cx' })));
   await deve('Medição: o id é contrato_período (NÃO aceita outro)', false, () => setDoc(doc(db('rita'), 'medicoes', 'qualquer'), med('rita', { periodo: '2026-10-2' })));
