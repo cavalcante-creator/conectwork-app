@@ -27,6 +27,9 @@
   function abrir() {
     let r = null; try { r = JSON.parse(sessionStorage.getItem(RASC) || 'null'); } catch (e) { /* nada */ }
     F = Object.assign(vazio(), r || {});
+    let cv = null; try { cv = JSON.parse(sessionStorage.getItem('cw.meiConvite') || 'null'); } catch (e) { cv = null; }
+    if (cv && cv.cnpj && !U().dig(F.cnpj)) F.cnpj = cv.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+    if (cv && cv.nome && !F.nome) F.nome = cv.nome;
     const u = usuario(), s = CW.sessao && CW.sessao.estado();
     if (u) { F.email = (u.email || '').toLowerCase(); if (!F.nome) F.nome = (s && s.perfil && s.perfil.nome) || u.displayName || ''; }
     marcar(true); desenhar();
@@ -131,7 +134,7 @@
         tx.set(db.collection('log').doc(), { em: agora(), uid: u.uid, quem: nomePessoa, empresaId: id, acao: 'empresa.mei', texto: `Cadastro rápido do MEI ${nomeNeg} (protocolo ${protocolo}): ${F.atividade}, ${F.segmento}, ${F.cidade}/${F.uf}.`, ref: id });
       });
       try { sessionStorage.setItem('cw.porte.' + id, 'MEI'); sessionStorage.removeItem(RASC); } catch (x) { /* sem armazenamento */ }
-      marcar(false); enviando = false; F = null;
+      marcar(false); enviando = false; F = null; try { sessionStorage.removeItem('cw.meiConvite'); } catch (e) { /* sem armazenamento */ }
       U().toast('Pronto! O seu Conectwork está pronto para usar.');
       await CW.sessao.recarregar();
     } catch (er) {

@@ -127,6 +127,7 @@
       <p class="lg-termos" id="lg-termos">Ao entrar, você concorda com os <b>Termos de uso</b> e a <b>Política de privacidade</b>.</p></div>`);
     const bc = document.getElementById('lg-cadastrar'); if (bc) bc.onclick = cadastrarEmpresa;
     const bm = document.getElementById('lg-mei'); if (bm) bm.onclick = cadastrarMei;
+    if (bm && modo !== 'esqueci') abrirConviteMei();
     const bv = document.getElementById('lg-convite'); if (bv) bv.onclick = abrirConvite;
     app().querySelectorAll('[data-lg-modo]').forEach(b => b.onclick = () => telaLogin(b.dataset.lgModo === 'esqueci' ? 'esqueci' : 'login'));
     const f = document.getElementById('lg-form'); if (f) f.onsubmit = ev => { ev.preventDefault(); entrar(); };
@@ -263,6 +264,7 @@
       <div><button class="linkbtn" id="sa-sair">${ic('logout')}Sair</button></div>`);
     document.getElementById('sa-cadastrar').onclick = cadastrarEmpresa;
     document.getElementById('sa-mei').onclick = cadastrarMei;
+    abrirConviteMei();
     document.getElementById('sa-convite').onclick = abrirConvite;
     document.getElementById('sa-sair').onclick = sair;
   }
@@ -531,11 +533,19 @@
      ?empresa=<CNPJ só números> guarda a empresa pedida e sai do endereço; depois do login, se a pessoa tem acesso a ela,
      entra direto nela (sem a tela de escolher). Não faz login sozinho: a senha nunca passa pelo link. */
   const CHAVE_PARA = 'cw.para';
+  function abrirConviteMei() {
+    let v = null; try { v = sessionStorage.getItem('cw.meiConvite'); if (v && sessionStorage.getItem('cw.meiConvite.aberto') !== '1') sessionStorage.setItem('cw.meiConvite.aberto', '1'); else v = null; } catch (e) { v = null; }
+    if (v) setTimeout(cadastrarMei, 0);
+  }
   function guardarPara() {
     try {
       const q = new URLSearchParams(location.search), c = String(q.get('empresa') || '').replace(/\D/g, '');
       if (c.length === 14) sessionStorage.setItem(CHAVE_PARA, c);
-      if (q.has('empresa')) { q.delete('empresa'); const r = q.toString(); history.replaceState(null, '', location.pathname + (r ? '?' + r : '') + location.hash); }
+      /* convite do MEI (12/11/2026, painel do RH: "nenhum dos PJ está cadastrado"): ?mei=<CNPJ>&nome=<primeiro nome> abre o
+         cadastro rápido "Sou MEI" já com o CNPJ e o nome (modulos/cadastromei.js lê cw.meiConvite). */
+      const mc = String(q.get('mei') || '').replace(/\D/g, '');
+      if (mc.length === 14) sessionStorage.setItem('cw.meiConvite', JSON.stringify({ cnpj: mc, nome: String(q.get('nome') || '').slice(0, 80) }));
+      if (q.has('empresa') || q.has('mei') || q.has('nome')) { ['empresa', 'mei', 'nome'].forEach(k => q.delete(k)); const r = q.toString(); history.replaceState(null, '', location.pathname + (r ? '?' + r : '') + location.hash); }
     } catch (e) { /* sem armazenamento */ }
   }
   function empresaPedida() {
