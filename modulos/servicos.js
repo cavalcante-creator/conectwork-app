@@ -50,13 +50,15 @@
     const { esc, ic } = U();
     if (!pronto) { el.innerHTML = `<div class="card"><div class="empty"><div class="giro"></div><span>Carregando o catálogo…</span></div></div>`; carregar(ctx).then(() => { if (CW.app.atual() && CW.app.atual().modulo === 'servicos') desenhar(el, ctx); }); return; }
     const of = new Set((oferta && oferta.gerais) || []), ofEsp = (oferta && oferta.especificos) || [];
-    const podeOf = presta(ctx) && pode(ctx, OFERTA), podeEd = pode(ctx, EDITA), podePedir = contrata(ctx) && pode(ctx, ['admin', 'solicitante']);
-    document.getElementById('acoes').innerHTML = podeEd ? `<button class="btn" id="sv-novo">${ic('plus')}Serviço específico</button>` : '';
+    /* 13/11/2026 ("MEI só presta serviço"): quem só presta não cadastra serviço "que a empresa contrata" nem vê "Pedir"/"Quem faz";
+       o botão de cima vira "Outro serviço que ofereço" (vai para "Outros serviços que oferecemos") */
+    const podeOf = presta(ctx) && pode(ctx, OFERTA), podeEd = contrata(ctx) && pode(ctx, EDITA), podePedir = contrata(ctx) && pode(ctx, ['admin', 'solicitante']);
+    document.getElementById('acoes').innerHTML = podeEd ? `<button class="btn" id="sv-novo">${ic('plus')}Serviço específico</button>` : !contrata(ctx) && podeOf ? `<button class="btn" id="sv-novo-of">${ic('plus')}Outro serviço que ofereço</button>` : '';
     const gs = GERAIS.filter(g => (!F.cat || g.cat === F.cat) && (!F.q || casa(g.nome + ' ' + g.cat, F.q)));
     const es = esp.filter(x => (!F.cat || x.cat === F.cat) && (!F.q || casa(x.nome + ' ' + (x.cat || '') + ' ' + (x.desc || ''), F.q)));
     const cartao = (id, nome, sub, esp1) => `<div class="sv-it" data-sv="${esc(id)}"><div class="t"><strong>${esc(nome)}</strong>${sub ? `<small>${esc(sub)}</small>` : ''}</div>
       <div class="a">${podePedir ? `<button class="btn sm" data-pedir="${esc(nome)}">${ic('send')}Pedir</button>` : ''}
-        ${!esp1 ? `<button class="btn sec sm" data-quem="${esc(id)}" data-nome="${esc(nome)}">${ic('users')}Quem faz</button>` : ''}
+        ${!esp1 && contrata(ctx) ? `<button class="btn sec sm" data-quem="${esc(id)}" data-nome="${esc(nome)}">${ic('users')}Quem faz</button>` : ''}
         ${!esp1 && podeOf ? `<label class="check sv-of"><input type="checkbox" data-of="${esc(id)}" ${of.has(id) ? 'checked' : ''}><span>Oferecemos</span></label>` : ''}
         ${esp1 && podeEd ? `<button class="iconbtn sm" data-ed="${esc(id)}" aria-label="Mudar ${esc(nome)}" title="Mudar">${ic('edit')}</button>` : ''}</div></div>`;
     const porCat = CATS.filter(c => gs.some(g => g.cat === c)).map(c => `<div class="sv-cat"><div class="fsec">${esc(c)}</div><div class="sv-grade">${gs.filter(g => g.cat === c).map(g => cartao(g.id, g.nome, '', false)).join('')}</div></div>`).join('');
@@ -65,10 +67,10 @@
       <section class="card" id="sv-filtro" style="margin:14px 0"><div class="card-b" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <label class="f" style="flex:1 1 240px;margin:0"><input id="sv-q" type="search" aria-label="Procurar serviço" placeholder="Procurar serviço (ex.: elétrica, limpeza)" value="${esc(F.q)}"></label>
         <div class="filters" style="flex-wrap:wrap"><button class="chip" data-cat="" aria-pressed="${!F.cat}">Todas</button>${CATS.map(c => `<button class="chip" data-cat="${esc(c)}" aria-pressed="${F.cat === c}">${esc(c)}</button>`).join('')}</div></div></section>
-      <section class="card" id="sv-esp" style="margin-bottom:14px"><div class="card-h"><span class="ic">${ic('star')}</span><h3>Serviços específicos da empresa</h3><span class="count">${esp.length}</span></div><div class="card-b">
-        ${es.length ? `<div class="sv-grade">${es.map(x => cartao(x._id, x.nome, [x.cat, x.desc].filter(Boolean).join(' · '), true)).join('')}</div>`
+      <section class="card" id="sv-esp" style="margin-bottom:14px"><div class="card-h"><span class="ic">${ic('star')}</span><h3>${contrata(ctx) ? 'Serviços específicos da empresa' : 'Outros serviços que ofereço'}</h3>${contrata(ctx) ? `<span class="count">${esp.length}</span>` : ''}</div><div class="card-b">
+        ${!contrata(ctx) ? '' : es.length ? `<div class="sv-grade">${es.map(x => cartao(x._id, x.nome, [x.cat, x.desc].filter(Boolean).join(' · '), true)).join('')}</div>`
           : `<p class="hint" style="margin:0">${esp.length ? 'Nenhum serviço específico com esse filtro.' : 'Sua empresa ainda não cadastrou serviços específicos. Use para o que não está na lista geral (ex.: "Calibração da balança da linha 2").'}</p>`}
-        ${presta(ctx) ? `<div class="fsec" style="margin-top:16px">Outros serviços que oferecemos</div><p class="hint" style="margin:0 0 8px;font-size:12.5px">O que sua empresa faz e não está na lista geral. Aparece para quem procura na rede.</p>
+        ${presta(ctx) ? `${contrata(ctx) ? '<div class="fsec" style="margin-top:16px">Outros serviços que oferecemos</div>' : ''}<p class="hint" style="margin:0 0 8px;font-size:12.5px">O que sua empresa faz e não está na lista geral. Aparece para quem procura na rede.</p>
           <div id="sv-ofesp">${ofEsp.length ? ofEsp.map((t, i) => `<span class="chip" style="margin:0 6px 6px 0">${esc(t)}${podeOf ? ` <button class="linkbtn" data-tiraesp="${i}" aria-label="Tirar ${esc(t)}">×</button>` : ''}</span>`).join('') : '<span class="hint">Nenhum.</span>'}</div>
           ${podeOf ? `<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><input id="sv-ofesp-in" maxlength="80" placeholder="Ex.: Pintura epóxi de piso industrial" style="flex:1 1 220px"><button class="btn sec sm" id="sv-ofesp-add">${ic('plus')}Acrescentar</button></div>` : ''}` : ''}
       </div></section>
@@ -82,10 +84,12 @@
     if (q) q.oninput = () => { F.q = q.value; const p = q.selectionStart; desenhar(el, ctx); const n = document.getElementById('sv-q'); if (n) { n.focus(); try { n.setSelectionRange(p, p); } catch (e) {} } };
     el.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => { F.cat = b.dataset.cat; desenhar(el, ctx); });
     const nv = document.getElementById('sv-novo'); if (nv) nv.onclick = () => editar(el, ctx, null);
+    const no = document.getElementById('sv-novo-of'); if (no) no.onclick = () => { const i = document.getElementById('sv-ofesp-in'); if (i) { i.scrollIntoView({ behavior: 'smooth', block: 'center' }); i.focus(); } };
     el.querySelectorAll('[data-ed]').forEach(b => b.onclick = () => editar(el, ctx, esp.find(x => x._id === b.dataset.ed)));
     el.querySelectorAll('[data-pedir]').forEach(b => b.onclick = () => { if (CW.ordens && CW.ordens.nova) CW.ordens.nova(ctx, null, { titulo: b.dataset.pedir }); });
     el.querySelectorAll('[data-quem]').forEach(b => b.onclick = () => quemFaz(ctx, b.dataset.quem, b.dataset.nome));
     el.querySelectorAll('[data-of]').forEach(c => c.onchange = () => gravarOferta(el, ctx, c.dataset.of, c.checked));
+    const inp = document.getElementById('sv-ofesp-in'); if (inp) inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); const a = document.getElementById('sv-ofesp-add'); if (a) a.click(); } };
     const add = document.getElementById('sv-ofesp-add');
     if (add) add.onclick = () => { const i = document.getElementById('sv-ofesp-in'), t = i.value.trim().replace(/\s+/g, ' ');
       if (t.length < 3) { U().toast('Escreva o serviço (pelo menos 3 letras).', 'erro'); return; }
