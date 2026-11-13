@@ -1859,3 +1859,4 @@ body:has(#mei-registrar) .mei-assist{bottom:calc(92px + env(safe-area-inset-bott
 .sv-add input:focus{outline:0;border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,92,240,.18)}
 @media (min-width:901px){.sv-chips{flex-wrap:wrap;overflow:visible}}
 @media (max-width:420px){.sv-top{flex-wrap:wrap}.sv-of{margin-left:50px}}
+.sv-ofesp-box.so{margin-top:0;padding-top:0;border-top:0}

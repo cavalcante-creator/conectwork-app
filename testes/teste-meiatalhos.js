@@ -65,6 +65,14 @@ const { ok, fim } = H.placar('meiatalhos');
   const pos = await page.evaluate(() => { const t = document.getElementById('tema').getBoundingClientRect(), c = document.getElementById('crumbs').getBoundingClientRect(), b = document.getElementById('busca-abrir').getBoundingClientRect(); return { t: Math.round(t.left), c: Math.round(c.right), b: Math.round(b.left), y: Math.round(t.top) }; });
   if (process.env.SHOT) await page.screenshot({ path: '/tmp/tema-pos.png', clip: { x: 0, y: 0, width: 1280, height: 120 } });
   ok('A10 no computador, o botão do tema fica no espaço entre o nome da tela e a busca', pos.t > pos.c && pos.t < pos.b && pos.y < 64, JSON.stringify(pos));
+  // A11 Catálogo de serviços para o MEI (só presta): sem "Serviço específico", sem Pedir/Quem faz; "Outro serviço que ofereço"
+  await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('__srv')); Object.assign(s.docs['empresas/meic'], { status: 'aprovado', preCadastro: true }); localStorage.setItem('__srv', JSON.stringify(s)); });
+  await page.reload(); await page.waitForSelector('.shell', { timeout: 10000 }); await H.dorme(800);
+  await page.evaluate(() => { location.hash = '#servicos'; }); await page.waitForSelector('#sv-gerais', { timeout: 10000 }); await H.dorme(500);
+  const sv = await page.evaluate(() => ({ novo: !!document.getElementById('sv-novo'), of: !!document.getElementById('sv-novo-of'), quem: document.querySelectorAll('[data-quem]').length, pedir: document.querySelectorAll('[data-pedir]').length, marca: document.querySelectorAll('[data-of]').length, tit: document.querySelector('#sv-esp h3').innerText }));
+  await page.click('#sv-novo-of'); await H.dorme(300); await page.fill('#sv-ofesp-in', 'Instalação de ar-condicionado'); await page.press('#sv-ofesp-in', 'Enter'); await H.dorme(800);
+  const ofs = ((await page.evaluate(() => JSON.parse(localStorage.getItem('__srv')).docs['ofertaserv/meic'])) || {}).especificos || [];
+  ok('A11 Catálogo do MEI: sem "Serviço específico", "Pedir" e "Quem faz"; marca o que oferece e acrescenta "Outro serviço que ofereço"', !sv.novo && sv.of && !sv.quem && !sv.pedir && sv.marca > 10 && /Outros serviços que ofereço/.test(sv.tit) && ofs.includes('Instalação de ar-condicionado'), JSON.stringify({ sv, ofs }));
   const temas = []; await page.evaluate(() => { document.documentElement.dataset.theme = 'light'; try { localStorage.setItem('cw.tema', 'light'); } catch (e) {} });
   for (let i = 0; i < 3; i++) { await page.click('#tema'); await H.dorme(150); temas.push(await page.$eval('#tema', e => e.innerText.trim())); }
   ok('A7 o botão de tema segue a ordem Claro → Escuro → Automático → Claro', temas.join() === 'Escuro,Automático,Claro', temas.join());
