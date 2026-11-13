@@ -23,6 +23,8 @@
   const slug = t => String(t).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   const GERAIS = []; SERV.forEach(([cat, xs]) => xs.forEach(n => GERAIS.push({ id: slug(n), nome: n, cat })));
   const CATS = SERV.map(x => x[0]);
+  const CIC = { 'Limpeza e conservação': 'home', 'Portaria e recepção': 'lock', 'Manutenção predial': 'building', 'Manutenção industrial': 'bolt', 'Produção e logística': 'inbox',
+    'Tecnologia': 'net', 'Escritório e gestão': 'clipboard', 'Segurança e saúde': 'shield', 'Eventos e alimentação': 'users' };
   const EDITA = ['admin', 'solicitante', 'operacional'];       /* cadastram os serviços específicos */
   const OFERTA = ['admin', 'operacional'];                       /* marcam o que a prestadora oferece */
   const norm = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -54,26 +56,36 @@
     document.getElementById('acoes').innerHTML = podeEd ? `<button class="btn" id="sv-novo">${ic('plus')}Serviço específico</button>` : '';
     const gs = GERAIS.filter(g => (!F.cat || g.cat === F.cat) && (!F.q || casa(g.nome + ' ' + g.cat, F.q)));
     const es = esp.filter(x => (!F.cat || x.cat === F.cat) && (!F.q || casa(x.nome + ' ' + (x.cat || '') + ' ' + (x.desc || ''), F.q)));
-    const cartao = (id, nome, sub, esp1) => `<div class="sv-it" data-sv="${esc(id)}"><div class="t"><strong>${esc(nome)}</strong>${sub ? `<small>${esc(sub)}</small>` : ''}</div>
+    /* visual de 13/11/2026 ("o layout está muito básico"): cabeçalho com resumo e busca, categorias com ícone e quantidade,
+       cartão com o ícone da categoria, "Pedir" em destaque, "Quem faz" discreto e "Oferecemos" como etiqueta que liga e desliga */
+    const icCat = c => ic(CIC[c] || 'grid'), corCat = c => 'c' + (Math.max(0, CATS.indexOf(c)) % 6);
+    const cartao = (id, nome, sub, esp1, cat) => `<div class="sv-it${!esp1 && of.has(id) ? ' oferece' : ''}" data-sv="${esc(id)}">
+      <div class="sv-top"><span class="sv-ic ${esp1 ? 'esp' : corCat(cat)}">${esp1 ? ic('star') : icCat(cat)}</span><div class="t"><strong>${esc(nome)}</strong>${sub ? `<small>${esc(sub)}</small>` : ''}</div>
+        ${esp1 && podeEd ? `<button class="iconbtn sm" data-ed="${esc(id)}" aria-label="Mudar ${esc(nome)}" title="Mudar">${ic('edit')}</button>` : ''}
+        ${!esp1 && podeOf ? `<label class="sv-of" title="Marque se a sua empresa faz este serviço"><input type="checkbox" data-of="${esc(id)}" ${of.has(id) ? 'checked' : ''}><span>${ic('check')}Oferecemos</span></label>` : ''}</div>
       <div class="a">${podePedir ? `<button class="btn sm" data-pedir="${esc(nome)}">${ic('send')}Pedir</button>` : ''}
-        ${!esp1 ? `<button class="btn sec sm" data-quem="${esc(id)}" data-nome="${esc(nome)}">${ic('users')}Quem faz</button>` : ''}
-        ${!esp1 && podeOf ? `<label class="check sv-of"><input type="checkbox" data-of="${esc(id)}" ${of.has(id) ? 'checked' : ''}><span>Oferecemos</span></label>` : ''}
-        ${esp1 && podeEd ? `<button class="iconbtn sm" data-ed="${esc(id)}" aria-label="Mudar ${esc(nome)}" title="Mudar">${ic('edit')}</button>` : ''}</div></div>`;
-    const porCat = CATS.filter(c => gs.some(g => g.cat === c)).map(c => `<div class="sv-cat"><div class="fsec">${esc(c)}</div><div class="sv-grade">${gs.filter(g => g.cat === c).map(g => cartao(g.id, g.nome, '', false)).join('')}</div></div>`).join('');
+        ${!esp1 ? `<button class="sv-quem-bt" data-quem="${esc(id)}" data-nome="${esc(nome)}">${ic('users')}Quem faz</button>` : ''}</div></div>`;
+    const porCat = CATS.filter(c => gs.some(g => g.cat === c)).map(c => { const xs = gs.filter(g => g.cat === c), n = xs.filter(g => of.has(g.id)).length;
+      return `<div class="sv-cat"><div class="sv-cat-h"><span class="sv-ic sm ${corCat(c)}">${icCat(c)}</span><h4>${esc(c)}</h4><span class="sv-n">${xs.length}</span>${podeOf && n ? `<span class="sv-n of">${n} oferecido${n === 1 ? '' : 's'}</span>` : ''}</div>
+        <div class="sv-grade">${xs.map(g => cartao(g.id, g.nome, '', false, c)).join('')}</div></div>`; }).join('');
+    const nCat = c => GERAIS.filter(g => g.cat === c).length;
+    const frase = contrata(ctx) && presta(ctx) ? 'Peça serviços para a sua empresa e marque os que vocês oferecem na rede.' : contrata(ctx) ? 'Escolha o serviço que precisa: "Pedir" abre a ordem de serviço já com o nome; "Quem faz" mostra as empresas da rede.' : 'Marque os serviços que a sua empresa faz: quem procura na rede encontra vocês.';
     el.innerHTML = `
-      <div class="banner info" id="sv-ajuda">${ic('grid')}<span><strong>${contrata(ctx) && presta(ctx) ? 'Peça e ofereça serviços' : contrata(ctx) ? 'Escolha o serviço que precisa' : 'Marque os serviços que sua empresa faz'}</strong>${contrata(ctx) ? 'Serviços gerais (a lista do Conectwork) e os específicos que a sua empresa cadastra. "Pedir" abre a ordem de serviço com o nome do serviço; "Quem faz" mostra quem oferece na rede. ' : ''}${presta(ctx) ? 'Marque "Oferecemos" nos serviços que sua empresa presta: assim ela aparece em "Quem faz" para quem contrata.' : ''}</span></div>
-      <section class="card" id="sv-filtro" style="margin:14px 0"><div class="card-b" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-        <label class="f" style="flex:1 1 240px;margin:0"><input id="sv-q" type="search" aria-label="Procurar serviço" placeholder="Procurar serviço (ex.: elétrica, limpeza)" value="${esc(F.q)}"></label>
-        <div class="filters" style="flex-wrap:wrap"><button class="chip" data-cat="" aria-pressed="${!F.cat}">Todas</button>${CATS.map(c => `<button class="chip" data-cat="${esc(c)}" aria-pressed="${F.cat === c}">${esc(c)}</button>`).join('')}</div></div></section>
-      <section class="card" id="sv-esp" style="margin-bottom:14px"><div class="card-h"><span class="ic">${ic('star')}</span><h3>Serviços específicos da empresa</h3><span class="count">${esp.length}</span></div><div class="card-b">
+      <section class="sv-topo" id="sv-filtro">
+        <div class="sv-topo-t"><div><h2>Encontre o serviço</h2><p id="sv-ajuda">${esc(frase)}</p></div>
+          <div class="sv-res"><span><b>${GERAIS.length}</b>serviços</span><span><b>${CATS.length}</b>categorias</span>${presta(ctx) ? `<span><b>${of.size + ofEsp.length}</b>vocês oferecem</span>` : `<span><b>${esp.length}</b>da empresa</span>`}</div></div>
+        <label class="sv-busca">${ic('busca')}<input id="sv-q" type="search" aria-label="Procurar serviço" placeholder="Procurar serviço (ex.: elétrica, limpeza)" value="${esc(F.q)}"></label>
+        <div class="sv-chips"><button class="chip" data-cat="" aria-pressed="${!F.cat}">Todas <span>${GERAIS.length}</span></button>${CATS.map(c => `<button class="chip" data-cat="${esc(c)}" aria-pressed="${F.cat === c}">${icCat(c)}${esc(c)} <span>${nCat(c)}</span></button>`).join('')}</div>
+      </section>
+      <section class="card sv-bloco" id="sv-esp"><div class="card-h"><span class="ic">${ic('star')}</span><h3>Serviços específicos da empresa</h3><span class="count">${esp.length}</span></div><div class="card-b">
         ${es.length ? `<div class="sv-grade">${es.map(x => cartao(x._id, x.nome, [x.cat, x.desc].filter(Boolean).join(' · '), true)).join('')}</div>`
-          : `<p class="hint" style="margin:0">${esp.length ? 'Nenhum serviço específico com esse filtro.' : 'Sua empresa ainda não cadastrou serviços específicos. Use para o que não está na lista geral (ex.: "Calibração da balança da linha 2").'}</p>`}
-        ${presta(ctx) ? `<div class="fsec" style="margin-top:16px">Outros serviços que oferecemos</div><p class="hint" style="margin:0 0 8px;font-size:12.5px">O que sua empresa faz e não está na lista geral. Aparece para quem procura na rede.</p>
-          <div id="sv-ofesp">${ofEsp.length ? ofEsp.map((t, i) => `<span class="chip" style="margin:0 6px 6px 0">${esc(t)}${podeOf ? ` <button class="linkbtn" data-tiraesp="${i}" aria-label="Tirar ${esc(t)}">×</button>` : ''}</span>`).join('') : '<span class="hint">Nenhum.</span>'}</div>
-          ${podeOf ? `<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><input id="sv-ofesp-in" maxlength="80" placeholder="Ex.: Pintura epóxi de piso industrial" style="flex:1 1 220px"><button class="btn sec sm" id="sv-ofesp-add">${ic('plus')}Acrescentar</button></div>` : ''}` : ''}
+          : `<div class="sv-vazio">${ic('star')}<span>${esp.length ? 'Nenhum serviço específico com esse filtro.' : 'O que a sua empresa contrata e não está na lista geral (ex.: "Calibração da balança da linha 2").'}</span>${podeEd && !esp.length ? `<button class="btn sec sm" id="sv-novo2">${ic('plus')}Cadastrar</button>` : ''}</div>`}
+        ${presta(ctx) ? `<div class="sv-ofesp-box"><div class="fsec">Outros serviços que oferecemos</div><p class="hint" style="margin:0 0 10px;font-size:12.5px">O que a sua empresa faz e não está na lista geral. Aparece para quem procura na rede.</p>
+          <div id="sv-ofesp" class="sv-tags">${ofEsp.length ? ofEsp.map((t, i) => `<span class="sv-tag">${ic('check')}${esc(t)}${podeOf ? ` <button class="linkbtn" data-tiraesp="${i}" aria-label="Tirar ${esc(t)}">×</button>` : ''}</span>`).join('') : '<span class="hint">Nenhum ainda.</span>'}</div>
+          ${podeOf ? `<div class="sv-add"><input id="sv-ofesp-in" maxlength="80" placeholder="Ex.: Pintura epóxi de piso industrial"><button class="btn sec sm" id="sv-ofesp-add">${ic('plus')}Acrescentar</button></div>` : ''}</div>` : ''}
       </div></section>
-      <section class="card" id="sv-gerais"><div class="card-h"><span class="ic">${ic('grid')}</span><h3>Serviços gerais</h3><span class="count">${gs.length}</span>${presta(ctx) ? `<span class="hint" style="margin-left:auto;font-size:12.5px">${of.size} marcado${of.size === 1 ? '' : 's'} como oferecido${of.size === 1 ? '' : 's'}</span>` : ''}</div><div class="card-b">
-        ${porCat || '<p class="hint" style="margin:0">Nenhum serviço com esse filtro.</p>'}</div></section>`;
+      <section class="sv-bloco" id="sv-gerais"><div class="sv-gerais-h"><h3>Serviços gerais</h3><span class="count">${gs.length}</span>${presta(ctx) ? `<span class="hint" style="margin-left:auto;font-size:12.5px">${of.size} marcado${of.size === 1 ? '' : 's'} como oferecido${of.size === 1 ? '' : 's'}</span>` : ''}</div>
+        ${porCat || `<div class="card"><div class="empty"><div class="ic">${ic('busca')}</div><strong>Nenhum serviço com esse filtro.</strong><span>Tente outra palavra ou escolha "Todas".</span></div></div>`}</section>`;
     ligar(el, ctx);
   }
 
@@ -82,6 +94,7 @@
     if (q) q.oninput = () => { F.q = q.value; const p = q.selectionStart; desenhar(el, ctx); const n = document.getElementById('sv-q'); if (n) { n.focus(); try { n.setSelectionRange(p, p); } catch (e) {} } };
     el.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => { F.cat = b.dataset.cat; desenhar(el, ctx); });
     const nv = document.getElementById('sv-novo'); if (nv) nv.onclick = () => editar(el, ctx, null);
+    const nv2 = document.getElementById('sv-novo2'); if (nv2) nv2.onclick = () => editar(el, ctx, null);
     el.querySelectorAll('[data-ed]').forEach(b => b.onclick = () => editar(el, ctx, esp.find(x => x._id === b.dataset.ed)));
     el.querySelectorAll('[data-pedir]').forEach(b => b.onclick = () => { if (CW.ordens && CW.ordens.nova) CW.ordens.nova(ctx, null, { titulo: b.dataset.pedir }); });
     el.querySelectorAll('[data-quem]').forEach(b => b.onclick = () => quemFaz(ctx, b.dataset.quem, b.dataset.nome));
