@@ -1782,3 +1782,13 @@ body:has(#mei-registrar) .mei-assist{bottom:calc(92px + env(safe-area-inset-bott
 .mei-chat-b .as-msgs{padding:14px}
 .mei-chat-b .as-form{padding:10px 14px 14px}
 .mei-chat-b .as-form .btn{padding-inline:12px}
+/* aviso "CNPJ copiado" (13/11/2026) */
+.mh-copiado{position:fixed;left:50%;top:calc(76px + env(safe-area-inset-top,0px));z-index:60;transform:translateX(-50%);display:flex;align-items:center;gap:12px;max-width:min(560px,calc(100vw - 32px));padding:14px 18px;border-radius:14px;background:#0E8A55;color:#fff;box-shadow:0 18px 40px -16px rgba(0,0,0,.5);font-size:14.5px;animation:mhCopIn 200ms cubic-bezier(.23,1,.32,1);transition:opacity 300ms,transform 300ms}
+.mh-copiado .ic{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.2);flex:0 0 auto}
+.mh-copiado b{display:block;font-size:16px}
+.mh-copiado.sai{opacity:0;transform:translateX(-50%) translateY(-8px)}
+@keyframes mhCopIn{from{opacity:0;transform:translateX(-50%) translateY(-8px)}}
+@media (prefers-reduced-motion:reduce){.mh-copiado{animation:none;transition:none}}
+#mh-cartao.copiado{color:#14814A;font-weight:600;text-decoration:none}
+:root[data-theme="dark"] #mh-cartao.copiado{color:#4ADE80}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #mh-cartao.copiado{color:#4ADE80}}

@@ -197,7 +197,7 @@
   /* padrão = escuro (sem nada guardado). A pessoa pode trocar: escuro → claro → automático (segue o aparelho) → escuro */
   function tema() { return document.documentElement.dataset.theme || 'auto'; }
   function trocarTema() {
-    const ord = ['dark', 'light', 'auto'], prox = ord[(ord.indexOf(tema()) + 1) % 3];
+    const ord = ['light', 'dark', 'auto'], prox = ord[(ord.indexOf(tema()) + 1) % 3];
     if (prox === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = prox;
     try { if (prox === 'dark') localStorage.removeItem('cw.tema'); else localStorage.setItem('cw.tema', prox); } catch (e) { /* sem armazenamento: vale só nesta visita */ }
     return prox;

@@ -210,16 +210,27 @@
     document.getElementById('mh-alerta').onclick = () => CW.ir('mei/das');
     const dm = document.getElementById('mh-demandas'); if (dm) dm.onclick = () => CW.ir('ordens');
     document.getElementById('mh-sino').onclick = () => { const pv = document.getElementById('ini-pv'); if (pv && !pv.hidden) pv.scrollIntoView({ behavior: 'smooth', block: 'start' }); else U().toast('Nada esperando você agora.'); };
-    const cp = document.getElementById('mh-copiar'); if (cp) cp.onclick = async () => { try { await navigator.clipboard.writeText(U().dig(e.cnpj)); U().toast('CNPJ copiado.'); } catch (x) { U().toast('CNPJ: ' + cnpj); } };
+    const cp = document.getElementById('mh-copiar'); if (cp) cp.onclick = async () => { try { await navigator.clipboard.writeText(U().dig(e.cnpj)); avisoCopiado(); } catch (x) { U().toast('CNPJ: ' + cnpj); } };
     /* 13/11/2026: "cartão CNPJ" já copia o CNPJ (o site da Receita pede o número): é só colar */
-    const ca = document.getElementById('mh-cartao'); if (ca) ca.onclick = ev => { try { navigator.clipboard.writeText(U().dig(e.cnpj)).then(() => U().toast('CNPJ copiado: no site da Receita, é só colar (Ctrl+V).'), () => {}); } catch (x) { /* sem área de transferência */ }
+    /* aviso que fica à vista (13/11/2026, "crie um aviso que o CNPJ foi copiado"): o link vira "CNPJ copiado ✓" e um aviso grande aparece */
+    const avisoCopiado = receita => {
+      const ca2 = document.getElementById('mh-cartao'); if (receita && ca2 && !ca2.dataset.txt) { ca2.dataset.txt = ca2.innerHTML; ca2.innerHTML = ic('check') + 'CNPJ copiado'; ca2.classList.add('copiado'); setTimeout(() => { ca2.innerHTML = ca2.dataset.txt; delete ca2.dataset.txt; ca2.classList.remove('copiado'); }, 5000); }
+      let a = document.getElementById('mh-copiado'); if (a) a.remove();
+      a = document.createElement('div'); a.id = 'mh-copiado'; a.className = 'mh-copiado'; a.setAttribute('role', 'status');
+      a.innerHTML = `<span class="ic">${ic('check')}</span><span><b>CNPJ copiado</b>${esc(cnpj)} · ${receita ? 'no site da Receita, clique no campo e cole (Ctrl+V)' : 'é só colar onde precisar (Ctrl+V)'}</span>`;
+      document.body.appendChild(a); setTimeout(() => a.classList.add('sai'), 4200); setTimeout(() => a.remove(), 4600); };
+    const ca = document.getElementById('mh-cartao'); if (ca) ca.onclick = ev => { try { navigator.clipboard.writeText(U().dig(e.cnpj)).then(() => avisoCopiado(true), () => U().toast('CNPJ: ' + cnpj)); } catch (x) { /* sem área de transferência */ }
       /* 13/11/2026: abre numa janela por cima (como o login do Google); no celular ou se o navegador bloquear, numa aba */
       const cel = window.matchMedia && matchMedia('(max-width:760px), (pointer:coarse)').matches; if (cel) return;
       const L = Math.min(1000, screen.availWidth - 40), A = Math.min(800, screen.availHeight - 60);
       const esq = Math.max(0, (window.screenX || 0) + (window.outerWidth - L) / 2), topo = Math.max(0, (window.screenY || 0) + (window.outerHeight - A) / 2);
       let w = null; try { w = window.open('about:blank', 'cw-receita', `popup=yes,width=${Math.round(L)},height=${Math.round(A)},left=${Math.round(esq)},top=${Math.round(topo)}`); } catch (x) { w = null; }
       if (!w) return;   /* bloqueada: o link segue e abre numa aba */
-      ev.preventDefault(); try { w.opener = null; } catch (x) {} try { w.location.href = CARTAO_CNPJ; } catch (x) {} try { w.focus(); } catch (x) {} };
+      ev.preventDefault();
+      /* a janela por cima também mostra que o CNPJ foi copiado, por um instante, antes de abrir o site da Receita */
+      try { w.document.write(`<!doctype html><meta charset="utf-8"><title>CNPJ copiado</title><body style="margin:0;display:grid;place-items:center;height:100vh;font-family:system-ui,sans-serif;background:#081638;color:#fff;text-align:center"><div><div style="font-size:44px">✓</div><h1 style="margin:8px 0;font-size:24px">CNPJ copiado</h1><p style="font-size:20px;margin:0 0 6px"><b>${esc(cnpj)}</b></p><p style="opacity:.8;margin:0">Abrindo o site da Receita… clique no campo do CNPJ e cole (Ctrl+V).</p></div></body>`); w.document.close(); } catch (x) {}
+      try { w.opener = null; } catch (x) {} try { w.focus(); } catch (x) {}
+      setTimeout(() => { try { w.location.href = CARTAO_CNPJ; } catch (x) {} }, 1300); };
     const rede = document.getElementById('mei-rede'); if (rede) rede.onclick = () => CW.ir('meucadastro');
     const ps = CW.app.pendencias(); meiAtualiza(ps); pvDesenha(ps); mostraPv(ps);
     meiLimite(ctx);
