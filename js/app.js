@@ -79,7 +79,8 @@
   function posicionarTopo() {
     const dir = document.getElementById('topo-dir'), side = document.querySelector('.shell .side'); if (!dir || !side) return;
     const emp = document.querySelector('.shell .empbloco'), uc = document.querySelector('.shell .usercard'), tema = document.getElementById('tema');
-    if (telaGrande()) { if (emp) dir.appendChild(emp); if (tema) dir.appendChild(tema); if (uc) dir.appendChild(uc); }
+    /* 13/11/2026: no computador, o botão do tema fica no espaço livre da barra, entre o nome da tela e a busca */
+    if (telaGrande()) { if (emp) dir.appendChild(emp); const bt = document.getElementById('busca-abrir'); if (tema && bt) bt.before(tema); else if (tema) dir.appendChild(tema); if (uc) dir.appendChild(uc); }
     else { const logo = side.querySelector('.logo'); if (emp && logo) logo.after(emp); if (uc) side.appendChild(uc); if (tema) dir.parentNode.appendChild(tema); }
   }
   if (window.matchMedia) { const mq = matchMedia('(min-width: 901px)'); (mq.addEventListener ? mq.addEventListener('change', posicionarTopo) : mq.addListener(posicionarTopo)); }

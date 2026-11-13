@@ -62,6 +62,9 @@ const { ok, fim } = H.placar('meiatalhos');
   const dl = await page.evaluate(() => (document.querySelector('dialog[open]') || {}).innerText || '');
   ok('A9 Documentos: "Emitir" copia o CNPJ e abre por cima; fechando a janela, abre "Enviar" da certidão (e o cartão CNPJ também tem "Emitir")', okR(ce) && /certidaointernet/.test(ce.href) && /certidão federal/.test(ce.av) && /Enviar · Certidão de débitos federais/.test(dl) && temCartao, JSON.stringify({ ce, dl: dl.slice(0, 80), temCartao }));
   await page.keyboard.press('Escape'); await H.dorme(300);
+  const pos = await page.evaluate(() => { const t = document.getElementById('tema').getBoundingClientRect(), c = document.getElementById('crumbs').getBoundingClientRect(), b = document.getElementById('busca-abrir').getBoundingClientRect(); return { t: Math.round(t.left), c: Math.round(c.right), b: Math.round(b.left), y: Math.round(t.top) }; });
+  if (process.env.SHOT) await page.screenshot({ path: '/tmp/tema-pos.png', clip: { x: 0, y: 0, width: 1280, height: 120 } });
+  ok('A10 no computador, o botão do tema fica no espaço entre o nome da tela e a busca', pos.t > pos.c && pos.t < pos.b && pos.y < 64, JSON.stringify(pos));
   const temas = []; await page.evaluate(() => { document.documentElement.dataset.theme = 'light'; try { localStorage.setItem('cw.tema', 'light'); } catch (e) {} });
   for (let i = 0; i < 3; i++) { await page.click('#tema'); await H.dorme(150); temas.push(await page.$eval('#tema', e => e.innerText.trim())); }
   ok('A7 o botão de tema segue a ordem Claro → Escuro → Automático → Claro', temas.join() === 'Escuro,Automático,Claro', temas.join());
