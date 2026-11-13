@@ -17,7 +17,7 @@ const { ok, fim } = H.placar('meiatalhos');
   const jan = await page.evaluate(() => ({ a: window.__janArgs, href: window.__jan.location.href, hash: location.hash }));
   ok('A1b o cartão CNPJ abre numa janela por cima (como o login do Google), sem sair do Conectwork', jan.a && /popup=yes/.test(jan.a[2]) && /receita\.fazenda\.gov\.br/.test(jan.href) && /inicio/.test(jan.hash), JSON.stringify(jan));
   const cp = await page.evaluate(() => window.__cp); const t1 = await page.evaluate(() => ({ av: (document.getElementById('mh-copiado') || {}).innerText || '', link: document.getElementById('mh-cartao').innerText, jan: window.__escrito || '' }));
-  ok('A1 "cartão CNPJ" copia o CNPJ (só números) e avisa: aviso grande, o link vira "CNPJ copiado" e a janela por cima mostra o CNPJ antes de abrir a Receita', cp === '33000167000101' && /CNPJ copiado/.test(t1.av) && /33\.000\.167\/0001-01/.test(t1.av) && /CNPJ copiado/.test(t1.link) && /CNPJ copiado/.test(t1.jan), JSON.stringify(t1));
+  ok('A1 "cartão CNPJ" copia o CNPJ (só números) e avisa: aviso grande, o link vira "CNPJ copiado" e a janela por cima abre direto o site da Receita', cp === '33000167000101' && /CNPJ copiado/.test(t1.av) && /33\.000\.167\/0001-01/.test(t1.av) && /CNPJ copiado/.test(t1.link) && !t1.jan, JSON.stringify(t1));
   const fab = await page.evaluate(() => { const b = document.getElementById('mei-assist'); if (!b) return null; const r = b.getBoundingClientRect(); return { vis: !b.hidden, direita: innerWidth - r.right < 40, embaixo: innerHeight - r.bottom < 120 }; });
   ok('A2 o Assistente aparece num botão redondo no canto de baixo, à direita', fab && fab.vis && fab.direita && fab.embaixo, JSON.stringify(fab));
   await page.click('#mei-assist'); await page.waitForSelector('#mei-chat #as-form', { timeout: 8000 });
@@ -53,7 +53,7 @@ const { ok, fim } = H.placar('meiatalhos');
   const g = await testaReceita('#mei/das', '#das-gerar', 'PGMEI');
   const dsel = 'a[data-receita*="DASN"]';
   const dc = await testaReceita('#negocio', dsel, 'DASN');
-  const okR = r => r.cp === '33000167000101' && /popup=yes/.test(r.pop) && /receita\.fazenda\.gov\.br/.test(r.href) && r.jan && /CNPJ copiado/.test(r.av);
+  const okR = r => r.cp === '33000167000101' && /popup=yes/.test(r.pop) && /receita\.fazenda\.gov\.br/.test(r.href) && !r.jan && /CNPJ copiado/.test(r.av);
   ok('A8 "Gerar a guia" e "Fazer a declaração" copiam o CNPJ, avisam e abrem o site numa janela por cima', okR(g) && okR(dc) && /pgmei/.test(g.href) && /dasnsimei/.test(dc.href) && /PGMEI/.test(g.av) && /DASN/.test(dc.av), JSON.stringify({ g, dc }));
   // A9 Documentos: "Emitir" a certidão copia o CNPJ, abre por cima e, ao fechar a janela, já abre o envio do arquivo
   const ce = await testaReceita('#documentos', 'a[data-emitir="cnd_federal"]', 'certidão');

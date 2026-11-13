@@ -225,7 +225,7 @@
   /* agenda e assistente do MEI (10/11/2026): leem a situação fiscal que esta tela já calculou, e carregar/contas sob pedido */
   /* ---------- sites da Receita (cartão CNPJ, PGMEI, DASN-SIMEI) · 13/11/2026 ----------
      Os três pedem o CNPJ: ao tocar, o Conectwork copia o CNPJ, mostra o aviso grande e abre o site numa janela por cima
-     (como o login do Google). A janela mostra "CNPJ copiado" por um instante antes do site. No celular ou com a janela
+     (como o login do Google), direto no site. No celular ou com a janela
      bloqueada, o link segue e abre numa aba (o CNPJ já foi copiado). Links com data-receita usam isto sozinhos. */
   const cnpjAgora = () => { const c = CW.sessao.contexto() || {}; return String(((c.empresa || {}).cnpj) || ''); };
   function avisoCnpj(cnpj, site, link) {
@@ -250,9 +250,8 @@
     if (!w) return;   /* bloqueada: o link segue e abre numa aba */
     if (ev) ev.preventDefault();
     const esc = U().esc;
-    try { w.document.write(`<!doctype html><meta charset="utf-8"><title>CNPJ copiado</title><body style="margin:0;display:grid;place-items:center;height:100vh;font-family:system-ui,sans-serif;background:#081638;color:#fff;text-align:center"><div><div style="font-size:44px">✓</div><h1 style="margin:8px 0;font-size:24px">CNPJ copiado</h1>${cnpj ? `<p style="font-size:20px;margin:0 0 6px"><b>${esc(cnpj)}</b></p>` : ''}<p style="opacity:.8;margin:0">Abrindo ${esc(o.titulo || site)}… clique no campo do CNPJ e cole (Ctrl+V).</p></div></body>`); w.document.close(); } catch (x) {}
-    try { w.opener = null; } catch (x) {} try { w.focus(); } catch (x) {}
-    setTimeout(() => { try { w.location.href = url; } catch (x) {} }, 1300);
+    /* 13/11/2026 ("não tem necessidade" da tela "CNPJ copiado" na janela): abre o site direto; o aviso verde fica no Conectwork */
+    try { w.opener = null; } catch (x) {} try { w.location.href = url; } catch (x) {} try { w.focus(); } catch (x) {}
     /* ao fechar a janela (ex.: Documentos: emitiu a certidão), o Conectwork segue sozinho (pede o arquivo) */
     if (typeof o.aoFechar === 'function') { const t = setInterval(() => { let fechou = false; try { fechou = w.closed; } catch (x) {} if (fechou) { clearInterval(t); o.aoFechar(); } }, 700); setTimeout(() => clearInterval(t), 30 * 60 * 1000); }
   }
