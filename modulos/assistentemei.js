@@ -149,7 +149,7 @@
     const bt = document.getElementById('mei-assist'); if (bt) { bt.classList.remove('aberto'); bt.setAttribute('aria-expanded', 'false'); }
   }
   CW.registrarModulo({
-    id: 'assistentemei', nome: 'Assistente', icone: 'help', ordem: 27.5,
+    id: 'assistentemei', nome: 'Assistente', icone: 'help', ordem: 27.5, menu: false,   /* 13/11/2026: fora do menu, tem o botão redondo próprio */
     para: ['empresa'], livre: true, semAprovacao: ctx => meiSemAprov(ctx),
     mostrar: ctx => ['prestador', 'ambos'].includes((ctx.empresa || {}).tipo) && ehMei(ctx),
     iniciar() { conversa = []; dados = null; botao(true); return () => { conversa = []; dados = null; botao(false); }; },
