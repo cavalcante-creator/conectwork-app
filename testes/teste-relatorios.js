@@ -7,6 +7,7 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFklEQVR
 (async () => {
   const { browser, page, erros } = await H.abrir();
   const { d } = H.seed(d => {
+    d.docs['logos/alfa'] = { d: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHgAAAB4CAIAAAC2BqGFAAACYUlEQVR4nO3dQU5jMRAA0R/ETVhxCE7PIVhxlrCwhKJEgtjuLvvbVetZuJ9aJhMJfLler4fl9zL6ALskNJTQUEJDCQ0lNJTQUEJDCQ0lNJTQUEJDCQ0lNNTr6AP83/f7xzP/7O3rM/skPV0m/D76Sdm/m819IugQ38cmER8PneT72FjxkdAY8W2juMdADyG+jeemoYcT30Zyo5+jp1I+2PNAGz0b8V3AahMbPbnygZwwHXp+5VL2OROvjrMQ35V0jWRt9EmVj7STp0CfV7mUcf546LMrl8KnCIZeQ7kUO4tf/ENFQq+0zqXAicKg11MuRc0VA72qcilkOu9oqADotde51D9jL/QOyqXOSb06oLqg91nnUs+8bjRUO/Ru61xqntqNhmqE3nOdS22zu9FQQkO1QO98b5QaBNxoKKGhqqG9N0q1Dm40lNBQQkMJDVUH7U/C26o03GgooaGEhhIaSmgooaGEhhIaSmgooaGEhhIaqg56kr/mMklVGm40lNBQQkMJDVUN7c/DUq2DGw0lNFQLtLdHg4AbDSU0VCP0zrdH2+xuNFQ79J5L3Ty1Gw3VBb3bUvfM60ZD9ULvs9SdkwZs9A7W/TN6dUDFQK+91CHThW30qtZRc0VeHetZB07kHQ0VDL3SUsfOEr/Ra1iHT5FydZzdOuP8WXf0ea2TTp7+DsuJfgc0dTnSP3WcZbWzz0l8vJvfGjgh+ijZhNcItgTof1hmW23yPL5nCOULnVC+OQs1Hvo3X1Gm813wMfnSvVXkF/9QQkMJDSU0lNBQQkMJDSU0lNBQQkMJDSU0lNBQP6PG1asEgQspAAAAAElFTkSuQmCC', por: 'uX' };   /* logo de exemplo (círculo vermelho) para o PDF e o Excel */
     delete d.docs['acessos/beta_uBRUNO'];
     Object.assign(d.docs['empresas/alfa'], { modulos: ['equipe', 'cobrancas'], cnpj: '11.444.777/0001-61', tipo: 'contratante' });
     d.users['zeca@zeta.com.br'] = { uid: 'uZECA', pass: 'senha123' }; d.docs['usuarios/uZECA'] = { nome: 'Zeca Moura', email: 'zeca@zeta.com.br' };
@@ -77,6 +78,7 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFklEQVR
   await entrarComo('ana@alfa.com.br');
   await page.evaluate(() => { location.hash = '#empresa'; }); await page.waitForSelector('#me-logo', { timeout: 8000 });
   await page.setInputFiles('#me-logo-arq', { name: 'logo.png', mimeType: 'image/png', buffer: PNG }); await page.waitForSelector('#me-logo .avatar.com-logo img', { timeout: 8000 });
+  await page.waitForFunction(() => ((JSON.parse(localStorage.getItem('__srv')).docs['logos/alfa'] || {}).por) === 'uANA', null, { timeout: 8000 }).catch(() => null);
   const lg = JSON.parse(await page.evaluate(() => localStorage.getItem('__srv'))).docs['logos/alfa'];
   ok('L1 o admin envia a logo em Minha empresa: fica guardada (imagem reduzida) e aparece no lugar das iniciais', lg && /^data:image\/png;base64,/.test(lg.d) && lg.por === 'uANA', lg && lg.d.slice(0, 40));
 

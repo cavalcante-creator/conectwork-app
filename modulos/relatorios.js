@@ -77,7 +77,7 @@
     const porEmpresa = Array.from(pe.values()).sort((a, b) => (b.notasPagar + b.notasReceber + b.pago + b.recebido) - (a.notasPagar + a.notasReceber + a.pago + a.recebido));
     const e0 = ctx.contexto.empresa || {}, perfil = (ctx.sessao && ctx.sessao.perfil) || {};
     return {
-      mes, mesAnterior: mesAnt(mes), empresa: ctx.contexto.nome, cnpj: e0.cnpj || '', quem: perfil.nome || ((ctx.sessao && ctx.sessao.usuario) || {}).email || '', hist, ant, porEmpresa, resumo, ret,
+      mes, mesAnterior: mesAnt(mes), empresa: ctx.contexto.nome, empresaId: ctx.contexto.empresaId, cnpj: e0.cnpj || '', quem: perfil.nome || ((ctx.sessao && ctx.sessao.usuario) || {}).email || '', hist, ant, porEmpresa, resumo, ret,
       notas: notas.map(e => ({ id: e._id, lado: ladoTxt(e), empresa: outro(e), periodo: periodoTxt(e.periodo), numero: e.nota.numero || '', chave: e.nota.chave || '', valor: e.valorCentavos,
         r: RET.map(([k]) => (e.retencoes || {})[k] || 0), liquido: e.liquidoCentavos, situacao: ST_ESP[e.status] || e.status, titulo: titDe[e._id] ? (ST_TIT[titDe[e._id].status] || '') : '' })),
       semNota: semNota.map(e => ({ lado: ladoTxt(e), empresa: outro(e), periodo: periodoTxt(e.periodo), valor: e.valorCentavos })),
@@ -156,6 +156,16 @@
       } catch (e) { res(null); }
     });
   }
+  /* a logo da empresa (a mesma de Minha empresa), já encaixada no quadradinho; sem logo, null (13/11/2026, "pode incluir a logo da pessoa?") */
+  async function logoEmpresa(R) {
+    try {
+      if (!CW.logos || !R.empresaId) return null;
+      const u = await CW.logos.buscar(R.empresaId); if (!u) return null;
+      const o = await Promise.race([CW.logos.organizar(u), new Promise(r => setTimeout(() => r(null), 3000))]);
+      const url = (o && o.url) || u, m = /^data:image\/(png|jpe?g);base64,/i.exec(url || '');
+      return m ? { url, tipo: /png/i.test(m[1]) ? 'png' : 'jpeg', fundo: (o && o.fundo) || '#FFFFFF' } : null;
+    } catch (e) { return null; }
+  }
   /* gráfico dos últimos 6 meses (recebido x pago) desenhado num canvas, para o Excel */
   function graficoPng(R) {
     try {
@@ -181,18 +191,22 @@
     const hex = c => 'FF' + c.map(x => x.toString(16).padStart(2, '0')).join('').toUpperCase();
     const MOEDA = '"R$" #,##0.00;[Red]-"R$" #,##0.00', fill = c => ({ type: 'pattern', pattern: 'solid', fgColor: { argb: c } });
     const borda = { bottom: { style: 'thin', color: { argb: 'FFE3E8F2' } } };
-    const [logo, graf] = await Promise.all([logoPng(), Promise.resolve(graficoPng(R))]);
+    const [logo, graf, lemp] = await Promise.all([logoPng(), Promise.resolve(graficoPng(R)), logoEmpresa(R)]);
     const logoId = logo ? wb.addImage({ base64: logo, extension: 'png' }) : null;
+    const lempId = lemp ? wb.addImage({ base64: lemp.url, extension: lemp.tipo }) : null;
     /* faixa do alto de cada aba: marca, título, empresa e competência */
     const faixa = (ws, titulo, ncol) => {
       ws.properties.tabColor = { argb: hex(NAVY) };
-      for (let r = 1; r <= 3; r++) for (let c = 1; c <= Math.max(ncol, 6); c++) ws.getCell(r, c).fill = fill(hex(NAVY));
+      const ult = Math.max(ncol, 6) + (lempId != null ? 1 : 0);   /* uma coluna a mais na faixa para a logo da empresa */
+      if (lempId != null && (ws.getColumn(ult).width || 0) < 10) ws.getColumn(ult).width = 10;
+      for (let r = 1; r <= 3; r++) for (let c = 1; c <= ult; c++) ws.getCell(r, c).fill = fill(hex(NAVY));
       ws.getRow(1).height = 30; ws.getRow(2).height = 18; ws.getRow(3).height = 16;
       ws.getCell('B1').value = titulo; ws.getCell('B1').font = { name: 'Calibri', size: 17, bold: true, color: { argb: 'FFFFFFFF' } };
       ws.getCell('B2').value = `${R.empresa}${R.cnpj ? ' · CNPJ ' + cnpjTxt(R.cnpj) : ''} · competência ${mesTxt(R.mes)}`; ws.getCell('B2').font = { size: 11, color: { argb: 'FFC8D5F3' } };
       ws.getCell('B3').value = `Gerado em ${agoraTxt()}${R.quem ? ' por ' + R.quem : ''} · Conectwork`; ws.getCell('B3').font = { size: 9, color: { argb: 'FF8FA3CC' } };
       ws.getColumn(1).width = Math.max(ws.getColumn(1).width || 0, 7);
       if (logoId != null) ws.addImage(logoId, { tl: { col: 0.15, row: 0.2 }, ext: { width: 40, height: 40 } });
+      if (lempId != null) ws.addImage(lempId, { tl: { col: ult - 1 + 0.1, row: 0.2 }, ext: { width: 54, height: 54 } });   /* a logo da empresa no canto direito da faixa */
       ws.views = [{ state: 'frozen', ySplit: 5, showGridLines: false }];
       ws.pageSetup = { orientation: 'landscape', paperSize: 9, fitToPage: true, fitToWidth: 1, fitToHeight: 0, margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 } };
       ws.headerFooter = { oddFooter: `&L${titulo} · ${R.empresa}&RPágina &P de &N` };
@@ -281,7 +295,7 @@
   async function pdf(R) {
     await carregaScript(CDN.jspdf, () => !!(window.jspdf && window.jspdf.jsPDF));
     await carregaScript(CDN.auto, () => !!(window.jspdf.jsPDF.API && window.jspdf.jsPDF.API.autoTable));
-    const logo = await logoPng();
+    const [logo, lemp] = await Promise.all([logoPng(), logoEmpresa(R)]);
     const doc = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' }), W = 297, M = 12;
     const cor = (f, c) => doc[f](c[0], c[1], c[2]);
     const tituloPagina = () => {
@@ -290,8 +304,12 @@
       doc.setTextColor(255, 255, 255); doc.setFont(undefined, 'bold'); doc.setFontSize(17); doc.text('Relatório do mês', M + 23, 14);
       doc.setFont(undefined, 'normal'); doc.setFontSize(10); doc.setTextColor(200, 213, 243); doc.text(`${R.empresa}${R.cnpj ? '  ·  CNPJ ' + cnpjTxt(R.cnpj) : ''}`, M + 23, 21);
       doc.setFontSize(8.5); doc.setTextColor(143, 163, 204); doc.text(`Gerado em ${agoraTxt()}${R.quem ? ' por ' + R.quem : ''}`, M + 23, 26);
-      doc.setFontSize(8.5); doc.setTextColor(143, 163, 204); doc.text('COMPETÊNCIA', W - M, 11, { align: 'right' });
-      doc.setFont(undefined, 'bold'); doc.setFontSize(16); doc.setTextColor(255, 255, 255); doc.text(mesTxt(R.mes), W - M, 20, { align: 'right' }); doc.setFont(undefined, 'normal');
+      /* a logo da empresa num quadradinho com a cor de fundo dela, à direita, ao lado da competência */
+      const dx = lemp ? 30 : 0;
+      if (lemp) { try { const hx = String(lemp.fundo || '#FFFFFF').replace('#', ''), rgb = hx.length === 6 ? [0, 2, 4].map(i => parseInt(hx.slice(i, i + 2), 16)) : [255, 255, 255];
+        doc.setFillColor(rgb[0], rgb[1], rgb[2]); doc.roundedRect(W - M - 22, 4, 22, 22, 3, 3, 'F'); doc.addImage(lemp.url, lemp.tipo.toUpperCase(), W - M - 21, 5, 20, 20); } catch (e) { /* sem a logo */ } }
+      doc.setFontSize(8.5); doc.setTextColor(143, 163, 204); doc.text('COMPETÊNCIA', W - M - dx, 11, { align: 'right' });
+      doc.setFont(undefined, 'bold'); doc.setFontSize(16); doc.setTextColor(255, 255, 255); doc.text(mesTxt(R.mes), W - M - dx, 20, { align: 'right' }); doc.setFont(undefined, 'normal');
     };
     tituloPagina();
     let y = 39;
