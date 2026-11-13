@@ -61,6 +61,14 @@
     const b = document.getElementById('menu-recolher'); if (b) { b.title = v ? 'Abrir o menu' : 'Recolher o menu (tela maior)'; b.setAttribute('aria-label', v ? 'Abrir o menu' : 'Recolher o menu'); b.setAttribute('aria-expanded', String(!v)); }
     document.querySelectorAll('#menu [data-mod]').forEach(x => { x.title = v ? (x.querySelector('span') || {}).textContent || '' : ''; });
   }
+  /* empresa pré-cadastrada (pela equipe ou pela fila do painel do RH): o primeiro login do administrador dela grava entrouEm,
+     para a prestadora saber em Meus profissionais quem já entrou (13/11/2026). A equipe Conectwork não conta. */
+  function marcarEntrada() {
+    const c = ctxEmp(); if (!c || !c.empresa || c.empresa.preCadastro !== true || c.empresa.entrouEm) return;
+    if ((CW.sessao.estado() || {}).master || (c.acesso || {}).cargo !== 'admin' || c.verComo) return;
+    const k = 'cw.entrou.' + c.empresaId; try { if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, '1'); } catch (e) { /* segue */ }
+    CW.fb.db().doc('empresas/' + c.empresaId).update({ entrouEm: CW.fb.agora() }).then(() => { c.empresa.entrouEm = true; }).catch(() => {});
+  }
   function alternarMenu() { try { if (enxuto()) localStorage.setItem(chaveCompleto(), '1'); else localStorage.removeItem(chaveCompleto()); } catch (e) {} montar(); }
 
   /* grupos do menu (09/11/2026): títulos pequenos separando o que é contratação, financeiro e empresa */
@@ -156,7 +164,7 @@
     window.addEventListener('hashchange', desenhar);
     document.addEventListener('keydown', atalhoBusca);
     desenhar();
-    conferirPorte();
+    conferirPorte(); marcarEntrada();
   }
 
   function desmontar() {

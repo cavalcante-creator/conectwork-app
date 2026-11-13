@@ -1883,3 +1883,6 @@ body:has(#mei-registrar) .mei-assist{bottom:calc(92px + env(safe-area-inset-bott
 .pf-emp .pf-it{background:var(--surface2);box-shadow:none}
 .mh-eq{margin-left:6px}
 @media (max-width:600px){.pf-grade{grid-template-columns:1fr}.pf-emp{padding:14px}}
+.pf-selo.warn{background:rgba(217,119,6,.1);border-color:rgba(217,119,6,.3);color:#B45309}
+:root[data-theme="dark"] .pf-selo.warn{color:#FBBF24}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .pf-selo.warn{color:#FBBF24}}

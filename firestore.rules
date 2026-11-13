@@ -79,7 +79,10 @@ service cloud.firestore {
             && resource.data.status in ['pendencia','mei','basico']   // MEI do cadastro rápido e empresa do cadastro simplificado completam o cadastro
             && request.resource.data.status == 'analise'
             && request.resource.data.diff(resource.data).affectedKeys()
-                 .hasOnly(['status','nome','razao','cidade','uf','tipo','enviadoEm']));   // o CNPJ não muda na correção
+                 .hasOnly(['status','nome','razao','cidade','uf','tipo','enviadoEm']))   // o CNPJ não muda na correção
+        // empresa pré-cadastrada: o primeiro login do administrador dela marca que ela entrou (13/11/2026; "Pré-cadastrado · ainda não entrou")
+        || (admin(emp) && resource.data.get('preCadastro', false) == true && resource.data.get('entrouEm', null) == null
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['entrouEm']) && request.resource.data.entrouEm == request.time);
       allow delete: if false;
 
       match /privado/{doc} {

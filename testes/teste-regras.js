@@ -850,6 +850,10 @@ async function deve(nome, permitido, op) {
   await deve('Equipe: NÃO troca o CNPJ do profissional', false, () => updateDoc(doc(db('ana'), 'equipe', EQ), { cnpjNum: '11222333000181' }));
   await deve('Equipe: o MEI NÃO muda o registro da prestadora', false, () => updateDoc(doc(db('zeca'), 'equipe', EQ), { funcao: 'Dono' }));
   await deve('Equipe: ninguém apaga (encerra o vínculo)', false, () => deleteDoc(doc(db('ana'), 'equipe', EQ)));
+  await env.withSecurityRulesDisabled(async c => { const f = c.firestore(); await setDoc(doc(f, 'empresas', 'meiz'), { nome: 'Zeca Elétrica', cnpj: '33.000.167/0001-01', status: 'aprovado', preCadastro: true, tipo: 'prestador', criadoPor: 'uX', modulos: [] }); });
+  await deve('Entrou: o admin da empresa pré-cadastrada marca que entrou', true, () => updateDoc(doc(db('zeca'), 'empresas', 'meiz'), { entrouEm: serverTimestamp() }));
+  await deve('Entrou: NÃO marca de novo', false, () => updateDoc(doc(db('zeca'), 'empresas', 'meiz'), { entrouEm: serverTimestamp() }));
+  await deve('Entrou: quem não é admin da empresa NÃO marca', false, () => updateDoc(doc(db('carla'), 'empresas', 'meiz'), { entrouEm: serverTimestamp() }));
   await deve('Equipe: a equipe Conectwork põe na equipe (fila do painel do RH)', true, () => setDoc(doc(db('master'), 'equipe', 'beta_33000167000101'), eq('master', { prestadoraId: 'beta', prestadoraNome: 'Beta' })));
   await deve('Fila MEI: o RH manda a função e a admissão do PJ', true, () => updateDoc(doc(db('rita'), 'filamei', '12345678000195'), { funcao: 'Eletricista', desde: '2025-03-10', em: serverTimestamp(), enviadoPor: P.rita, st: 'pendente' }));
   await deve('Fila MEI: NÃO com a função comprida demais', false, () => updateDoc(doc(db('rita'), 'filamei', '12345678000195'), { funcao: 'x'.repeat(81), em: serverTimestamp(), enviadoPor: P.rita, st: 'pendente' }));

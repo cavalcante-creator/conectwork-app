@@ -31,6 +31,8 @@
   async function carregar(ctx) {
     const db = CW.fb.db(), emp = ctx.contexto.empresaId;
     lista = CW.fb.lista(await db.collection('equipe').where('prestadoraId', '==', emp).get());
+    /* pré-cadastrado ou já entrou? (empresas/{mei}: preCadastro sem entrouEm = ainda não entrou; empresa que não dá para ler = MEI do cadastro rápido, entrou) */
+    await Promise.all(lista.filter(x => x.meiEmpresaId).slice(0, 80).map(async x => { try { const e = CW.fb.dados(await db.doc('empresas/' + x.meiEmpresaId).get()); x._entrou = !(e && e.preCadastro === true && !e.entrouEm); } catch (e) { x._entrou = true; } }));
     /* quem entrou no Conectwork depois: liga a conta do MEI pelo CNPJ (sem leitura a mais para quem já tem) */
     if (pode(ctx)) {
       const sem = lista.filter(x => !x.meiEmpresaId && x.ativo).slice(0, 30);
@@ -45,7 +47,10 @@
     return `<div class="pf-it${x.ativo ? '' : ' enc'}" data-pf="${esc(x._id)}">
       <div class="pf-top">${avatar(x.nome, '', '').replace('<span class="avatar ', `<span data-meilogo="${esc(x.meiEmpresaId && x.meiEmpresaId !== x.prestadoraId ? x.meiEmpresaId : '')}" data-prestlogo="${esc(x.prestadoraId)}" class="avatar `)}<div class="t"><strong>${esc(x.nome)}</strong><small>${esc(x.funcao || (gerencia ? 'Função não informada' : 'Profissional da equipe'))}</small></div></div>
       <div class="pf-meta">${x.cidade ? `<span>${ic('building')}${esc(x.cidade)}${x.uf ? '/' + esc(x.uf) : ''}</span>` : ''}${x.desde ? `<span>${ic('clock')}Na equipe desde ${esc(desdeTxt(x.desde))}</span>` : ''}${gerencia ? `<span>${ic('file')}MEI ${esc(fmtCnpj(x.cnpjNum))}</span>` : ''}</div>
-      <div class="pf-selos">${x.meiEmpresaId && x.meiEmpresaId === x.prestadoraId ? `<span class="pf-selo enc">${ic('alert')}O CNPJ deste MEI está ligado à própria ${esc(x.prestadoraNome)}: confira em Cadastros</span>` : x.meiEmpresaId ? `<span class="pf-selo ok">${ic('check')}MEI com conta no Conectwork</span>` : `<span class="pf-selo">${ic('file')}CNPJ do MEI conferido</span>`}
+      <div class="pf-selos">${x.meiEmpresaId && x.meiEmpresaId === x.prestadoraId ? `<span class="pf-selo enc">${ic('alert')}O CNPJ deste MEI está ligado à própria ${esc(x.prestadoraNome)}: confira em Cadastros</span>` : !gerencia ? `<span class="pf-selo">${ic('file')}CNPJ do MEI conferido</span>`
+          : !x.meiEmpresaId ? `<span class="pf-selo">${ic('file')}Ainda sem cadastro no Conectwork</span>`
+          : x._entrou === false ? `<span class="pf-selo warn" title="A equipe Conectwork ou o painel do RH já deixou o cadastro pronto; falta ele aceitar o convite e entrar.">${ic('clock')}Pré-cadastrado · ainda não entrou</span>`
+          : `<span class="pf-selo ok">${ic('check')}Entrou no Conectwork</span>`}
         ${gerencia ? (x.ativo ? (x.publico ? `<span class="pf-selo info">${ic('eye')}Os clientes veem</span>` : `<span class="pf-selo">${ic('eyeoff')}Só para vocês</span>`) : `<span class="pf-selo enc">Vínculo encerrado${x.encerradoEm ? ' em ' + esc(U().formatarData(x.encerradoEm)) : ''}</span>`) : ''}</div>
       ${gerencia && pode(ctx) ? `<div class="pf-a"><button class="btn sec sm" data-pf-ed="${esc(x._id)}">${ic('edit')}Editar</button>
         ${!x.meiEmpresaId && x.ativo ? `<button class="linkbtn" data-pf-conv="${esc(x._id)}" style="font-size:13px">${ic('copy')}Convidar</button>` : ''}
