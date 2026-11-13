@@ -850,6 +850,9 @@ async function deve(nome, permitido, op) {
   await deve('Equipe: NÃO troca o CNPJ do profissional', false, () => updateDoc(doc(db('ana'), 'equipe', EQ), { cnpjNum: '11222333000181' }));
   await deve('Equipe: o MEI NÃO muda o registro da prestadora', false, () => updateDoc(doc(db('zeca'), 'equipe', EQ), { funcao: 'Dono' }));
   await deve('Equipe: ninguém apaga (encerra o vínculo)', false, () => deleteDoc(doc(db('ana'), 'equipe', EQ)));
+  await deve('Equipe: a equipe Conectwork põe na equipe (fila do painel do RH)', true, () => setDoc(doc(db('master'), 'equipe', 'beta_33000167000101'), eq('master', { prestadoraId: 'beta', prestadoraNome: 'Beta' })));
+  await deve('Fila MEI: o RH manda a função e a admissão do PJ', true, () => updateDoc(doc(db('rita'), 'filamei', '12345678000195'), { funcao: 'Eletricista', desde: '2025-03-10', em: serverTimestamp(), enviadoPor: P.rita, st: 'pendente' }));
+  await deve('Fila MEI: NÃO com a função comprida demais', false, () => updateDoc(doc(db('rita'), 'filamei', '12345678000195'), { funcao: 'x'.repeat(81), em: serverTimestamp(), enviadoPor: P.rita, st: 'pendente' }));
 
   await env.cleanup();
   const falhas = res.filter(r => !r.ok).length;

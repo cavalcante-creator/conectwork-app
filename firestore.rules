@@ -168,13 +168,14 @@ service cloud.firestore {
     // ---------- Fila de MEIs vinda do painel do RH (12/11/2026, "assim que o RH cadastra no painel já pré-cadastra") ----------
     // id = CNPJ só números. Quem contrata (admin ou RH de empresa aprovada) põe na fila o MEI que presta serviço para a prestadora;
     // a equipe Conectwork (master) faz o pré-cadastro e grava o resultado (st, res). Quem pôs na fila lê o resultado (convite).
-    function camposFilaMei() { return ['cnpj','cnpjNum','nome','email','tel','prestadora','prestCnpj','empresaId','enviadoPor','enviadoPorNome','em','st']; }
+    function camposFilaMei() { return ['cnpj','cnpjNum','nome','email','tel','prestadora','prestCnpj','funcao','desde','empresaId','enviadoPor','enviadoPorNome','em','st']; }
     function filaMeiOk(id, d) {
       return cargoEm(d.empresaId, ['admin','rh']) && get(caminho('empresas', d.empresaId)).data.status == 'aprovado'
         && d.cnpjNum is string && d.cnpjNum.matches('[0-9]{14}') && id == d.cnpjNum
         && d.nome is string && d.nome.size() >= 3 && d.nome.size() <= 120
         && d.email is string && d.email.size() <= 120 && d.email == d.email.lower()
         && d.tel is string && d.tel.size() <= 13 && d.prestadora is string && d.prestadora.size() <= 120
+        && d.get('funcao', '') is string && d.get('funcao', '').size() <= 80 && d.get('desde', '') is string && d.get('desde', '').size() <= 10
         && d.st == 'pendente' && d.enviadoPor == request.auth.uid && d.em == request.time;
     }
     match /filamei/{id} {
@@ -182,14 +183,14 @@ service cloud.firestore {
       allow create: if master() || (request.resource.data.keys().hasOnly(camposFilaMei()) && filaMeiOk(id, request.resource.data));
       allow update: if master()
         || (resource.data.empresaId == request.resource.data.empresaId
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nome','email','tel','prestadora','prestCnpj','enviadoPor','enviadoPorNome','em','st'])
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nome','email','tel','prestadora','prestCnpj','funcao','desde','enviadoPor','enviadoPorNome','em','st'])
             && filaMeiOk(id, request.resource.data));
       allow delete: if false;
     }
 
     // ---------- Equipe da prestadora · "Meus profissionais" (13/11/2026) ----------
     // equipe/{prestadora}_{CNPJ do MEI}: o profissional que trabalha pela prestadora (vínculo de prestação de serviço, nunca emprego).
-    // Grava quem é da prestadora (admin, operacional, RH, financeiro); lê a prestadora, o próprio MEI (selo "Equipe …"), a equipe
+    // Grava quem é da prestadora (admin, operacional, RH, financeiro) e a equipe Conectwork (a fila do painel do RH monta a equipe); lê a prestadora, o próprio MEI (selo "Equipe …"), a equipe
     // Conectwork e, se estiver visível e ativo, quem está logado (os clientes da prestadora veem a equipe sem tratar direto com o MEI).
     function camposEquipe() { return ['prestadoraId','prestadoraNome','cnpj','cnpjNum','nome','funcao','cidade','uf','desde','meiEmpresaId','ativo','publico',
       'encerradoEm','criadoPor','criadoPorNome','criadoEm','atualizadoEm','atualizadoPor']; }
@@ -202,9 +203,9 @@ service cloud.firestore {
     match /equipe/{id} {
       allow read: if master() || membro(resource.data.prestadoraId) || (resource.data.get('meiEmpresaId', null) != null && membro(resource.data.meiEmpresaId))
         || (logado() && resource.data.publico == true && resource.data.ativo == true);
-      allow create: if cargoEm(request.resource.data.prestadoraId, ['admin','operacional','rh','financeiro']) && equipeOk(id, request.resource.data)
+      allow create: if (master() || cargoEm(request.resource.data.prestadoraId, ['admin','operacional','rh','financeiro'])) && equipeOk(id, request.resource.data)
         && request.resource.data.criadoPor == request.auth.uid;
-      allow update: if cargoEm(resource.data.prestadoraId, ['admin','operacional','rh','financeiro']) && equipeOk(id, request.resource.data)
+      allow update: if (master() || cargoEm(resource.data.prestadoraId, ['admin','operacional','rh','financeiro'])) && equipeOk(id, request.resource.data)
         && request.resource.data.prestadoraId == resource.data.prestadoraId && request.resource.data.cnpjNum == resource.data.cnpjNum
         && request.resource.data.criadoPor == resource.data.criadoPor;
       allow delete: if false;

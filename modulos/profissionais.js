@@ -56,7 +56,7 @@
   async function desenhar(el, ctx) {
     const { esc, ic } = U();
     const mst = !!(CW.sessao.estado() || {}).master && pode(ctx) && CW.cadastrosMaster;   /* "Colar lista": só a equipe Conectwork, para o cadastro inicial (13/11/2026) */
-    document.getElementById('acoes').innerHTML = (mst ? `<button class="btn sec" id="pf-colar">${ic('clipboard')}Colar lista</button>` : '') + (pode(ctx) ? `<button class="btn sec" id="pf-trazer">${ic('list')}Trazer das medições</button><button class="btn" id="pf-novo">${ic('plus')}Adicionar profissional</button>` : '');
+    document.getElementById('acoes').innerHTML = (mst ? `<button class="btn sec" id="pf-painel">${ic('inbox')}Trazer do painel do RH</button><button class="btn sec" id="pf-colar">${ic('clipboard')}Colar lista</button>` : '') + (pode(ctx) ? `<button class="btn sec" id="pf-trazer">${ic('list')}Trazer das medições</button><button class="btn" id="pf-novo">${ic('plus')}Adicionar profissional</button>` : '');
     if (!lista) { el.innerHTML = `<div class="card"><div class="empty"><div class="giro"></div><span>Carregando a equipe…</span></div></div>`;
       try { await carregar(ctx); } catch (e) { el.innerHTML = `<div class="banner danger">${ic('alert')}<span><strong>Não foi possível abrir a equipe.</strong>${esc(CW.fb.mensagemErro(e))}</span></div>`; return; } }
     const ativos = lista.filter(x => x.ativo), fns = [...new Set(ativos.map(x => x.funcao).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt'));
@@ -84,6 +84,7 @@
     ['pf-novo', 'pf-novo2'].forEach(id => { const b = $(id); if (b) b.onclick = () => editar(el, ctx, null); });
     ['pf-trazer', 'pf-trazer2'].forEach(id => { const b = $(id); if (b) b.onclick = () => trazer(el, ctx); });
     const cl = $('pf-colar'); if (cl) cl.onclick = () => colar(el, ctx);
+    const pn = $('pf-painel'); if (pn) pn.onclick = () => doPainel(el, ctx);
     el.querySelectorAll('[data-pf-ed]').forEach(b => b.onclick = () => editar(el, ctx, lista.find(x => x._id === b.dataset.pfEd)));
     el.querySelectorAll('[data-pf-conv]').forEach(b => b.onclick = async () => { const x = lista.find(y => y._id === b.dataset.pfConv), t = convite(ctx, x);
       try { await navigator.clipboard.writeText(t); U().toast('Convite copiado. Mande para ' + x.nome.split(' ')[0] + ' (WhatsApp ou e-mail).'); } catch (e) { U().toast(t); } });
@@ -237,6 +238,36 @@
       el.querySelectorAll('.pf-it').forEach(c => { c.hidden = !!F.q && !casa(c.innerText, F.q); }); const n = document.getElementById('pf-q2'); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) {} } };
   }
 
+  /* ---------- direto do painel do RH (13/11/2026, "podemos tirar direto do painel?") ----------
+     O painel do RH já manda cada PJ para a fila `filamei` com a prestadora (prestCnpj), a função e a admissão. Quando a equipe
+     Conectwork processa a fila, o PJ também entra na equipe da prestadora (daFila). "Trazer do painel do RH" faz o mesmo de uma vez
+     para quem já passou pela fila. Quem já estava na equipe só ganha a função e a conta do MEI, se faltavam. */
+  async function daFila(f, mei, u, quemNome) {
+    const db = CW.fb.db(), pc = dig(f.prestCnpj), num = dig(f.cnpjNum); if (pc.length !== 14 || num.length !== 14) return '';
+    const c = CW.fb.dados(await db.doc('cnpjs/' + pc).get()); if (!c || !c.empresaId) return '';
+    const prest = c.empresaId, ref = db.doc('equipe/' + prest + '_' + num), agora = CW.fb.agora;
+    let ja = null; try { ja = CW.fb.dados(await ref.get()); } catch (e) { ja = null; }
+    if (ja) { const up = {}; if (!ja.funcao && f.funcao) up.funcao = String(f.funcao).slice(0, 80); if (!ja.meiEmpresaId && mei) up.meiEmpresaId = mei;
+      if (Object.keys(up).length) await ref.update(Object.assign(up, { atualizadoEm: agora(), atualizadoPor: u.uid })); return 'ja'; }
+    let pnome = String(f.prestadora || ''); try { const e = CW.fb.dados(await db.doc('empresas/' + prest).get()); if (e && e.nome) pnome = e.nome; } catch (e) { /* fica o nome do painel */ }
+    const b = db.batch();
+    b.set(ref, { prestadoraId: prest, prestadoraNome: pnome.slice(0, 120), cnpj: fmtCnpj(num), cnpjNum: num, nome: String(f.nome || '').slice(0, 120), funcao: String(f.funcao || '').slice(0, 80), cidade: '', uf: '',
+      desde: /^\d{4}-\d{2}-\d{2}$/.test(f.desde || '') ? f.desde : hoje(), meiEmpresaId: mei || null, ativo: true, publico: true, encerradoEm: null, criadoPor: u.uid, criadoPorNome: quemNome, criadoEm: agora(), atualizadoEm: agora(), atualizadoPor: u.uid });
+    b.set(db.collection('log').doc(), { em: agora(), uid: u.uid, quem: quemNome, empresaId: prest, acao: 'equipe.entrar', texto: `${f.nome} (MEI ${fmtCnpj(num)}) entrou na equipe pela fila do painel do RH.`, ref: prest + '_' + num });
+    await b.commit(); return 'novo';
+  }
+  async function doPainel(el, ctx) {
+    const db = CW.fb.db(), e0 = ctx.contexto.empresa || {}, meu = dig(e0.cnpjNum || e0.cnpj), u = CW.fb.auth().currentUser, st = CW.sessao.estado(), qn = (st.perfil && st.perfil.nome) || u.email;
+    if (meu.length !== 14) { U().toast('Falta o CNPJ desta empresa no cadastro.', 'erro'); return; }
+    let fs = []; try { fs = CW.fb.lista(await db.collection('filamei').where('prestCnpj', '==', meu).get()); } catch (e) { U().toast(CW.fb.mensagemErro(e), 'erro'); return; }
+    const prontos = fs.filter(f => (f.res || {}).empresaMei), pend = fs.filter(f => f.st === 'pendente').length;
+    if (!fs.length) { await U().dialogo({ titulo: 'Trazer do painel do RH', corpo: `<p style="margin:0">O painel do RH ainda não mandou nenhum PJ da ${U().esc(ctx.contexto.nome)}. No painel: Pagamento dos PJ › Conectwork › Convidar os PJ › "Ligar o painel ao Conectwork".</p>` }); return; }
+    let novos = 0, jas = 0;
+    for (const f of prontos) { try { const r = await daFila(f, f.res.empresaMei, u, qn); if (r === 'novo') novos++; else if (r === 'ja') jas++; } catch (e) { /* segue com os outros */ } }
+    lista = null; await desenhar(el, ctx);
+    await U().dialogo({ titulo: 'Trazido do painel do RH', corpo: `<p style="margin:0">${novos} profissiona${novos === 1 ? 'l entrou' : 'is entraram'} na equipe${jas ? `; ${jas} já estava${jas === 1 ? '' : 'm'}` : ''}.${pend ? ` ${pend} ainda na fila: abra Cadastros (equipe Conectwork) para pré-cadastrar e depois traga de novo.` : ''}</p>` });
+  }
+
   /* ---------- selo do MEI: de quais equipes ele faz parte ---------- */
   async function minhasEquipes(empresaId) {
     try { return CW.fb.lista(await CW.fb.db().collection('equipe').where('meiEmpresaId', '==', empresaId).get()).filter(x => x.ativo); } catch (e) { return []; }
@@ -258,5 +289,5 @@
       de: { nome: 'Equipe da prestadora', sub: 'Os profissionais desta prestadora.', render: (el, ctx) => desenharEquipes(el, ctx, ctx.params[0]) }
     }
   });
-  CW.profissionais = { minhasEquipes };
+  CW.profissionais = { minhasEquipes, daFila };
 })();

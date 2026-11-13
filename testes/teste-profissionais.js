@@ -15,6 +15,10 @@ const { ok, fim } = H.placar('profissionais');
     d.docs['empresas/meic'] = { nome: 'Carlos Ramos', cnpj: '33.000.167/0001-01', status: 'mei', tipo: 'prestador', modulos: [], criadoPor: 'uCARL' };
     d.docs['empresas/meic/privado/cadastro'] = { dados: { porte: 'MEI' } };
     d.docs['cnpjs/33000167000101'] = { empresaId: 'meic' };
+    d.docs['cnpjs/04252011000110'] = { empresaId: 'nexo' };
+    d.docs['empresas/meir'] = { nome: 'Rui Alves', cnpj: '66.778.899/0001-86', status: 'aprovado', preCadastro: true, tipo: 'prestador', modulos: [], criadoPor: 'uX' };
+    d.docs['filamei/66778899000186'] = { cnpj: '66.778.899/0001-86', cnpjNum: '66778899000186', nome: 'Rui Alves', email: '', tel: '', prestadora: 'Nexus', prestCnpj: '04252011000110', funcao: 'Soldador', desde: '2025-05-02', empresaId: 'col', st: 'feito', res: { empresaMei: 'meir' } };
+    d.docs['filamei/33000167000101'] = { cnpj: '33.000.167/0001-01', cnpjNum: '33000167000101', nome: 'Carlos Ramos', email: '', tel: '', prestadora: 'Nexus', prestCnpj: '04252011000110', funcao: 'Eletricista de manutenção', desde: '2025-01-02', empresaId: 'col', st: 'feito', res: { empresaMei: 'meic' } };
     d.docs['contratos/cn'] = { modalidade: 'continua', tomadorId: 'col', prestadorId: 'nexo', partes: ['col', 'nexo'], tomadorNome: 'Colina Indústria', prestadorNome: 'Nexo Serviços', objeto: 'Equipe de manutenção.', periodicidade: 'quinzena', vencimentoDias: 3, inicio: '2026-01-01', status: 'ativo', assinaturas: {} };
     d.docs['medicoes/cn_2026-09-2'] = { contratoId: 'cn', tomadorId: 'col', prestadorId: 'nexo', partes: ['col', 'nexo'], tomadorNome: 'Colina Indústria', prestadorNome: 'Nexo Serviços', periodicidade: 'quinzena', periodo: '2026-09-2', valorCentavos: 650000,
       memoria: [{ nome: 'Carlos Ramos', horas: 96, valorCentavos: 350000, cnpj: '33000167000101' }, { nome: 'Bia Costa', horas: 90, valorCentavos: 300000, cnpj: '11222333000181' }, { nome: 'Sem Cnpj Teste', horas: 10, valorCentavos: 1000 }], status: 'aprovada', criadoPor: 'uRH' };
@@ -65,6 +69,11 @@ const { ok, fim } = H.placar('profissionais');
   const S6 = await srv(), l6 = S6['equipe/nexo_55667788000186'], emp6 = l6 && S6['empresas/' + l6.meiEmpresaId], cv6 = Object.values(S6).find(x => x.email === 'lia@exemplo.com' && x.cargo === 'admin');
   ok('P6 "Colar lista" (equipe Conectwork): prévia, pré-cadastra o MEI novo (com convite) e coloca na equipe com a função e a cidade; quem já estava não muda; linha com CNPJ inválido avisa',
     /1 entram na equipe/.test(prev) && /1 já estão/.test(prev) && /1 com problema/.test(prev) && l6 && l6.funcao === 'Pintora' && l6.cidade === 'Canoas' && l6.uf === 'RS' && emp6 && emp6.preCadastro === true && !!cv6 && /1 profissional na equipe/.test(fimTxt) && S6['equipe/nexo_33000167000101'].funcao === '', JSON.stringify({ prev, fimTxt: fimTxt.slice(0, 200), l6 }));
+  await page.click('dialog[open] [data-dlg-b="0"]').catch(() => null); await H.dorme(300);
+  // P8 "Trazer do painel do RH": quem passou pela fila do painel entra na equipe (com a função e a admissão); quem já estava ganha a função
+  await page.click('#pf-painel'); await page.waitForSelector('dialog[open]', { timeout: 10000 }); await H.dorme(500); const d8 = await page.$eval('dialog[open]', e => e.innerText);
+  const S8 = await srv(), r8 = S8['equipe/nexo_66778899000186'];
+  ok('P8 "Trazer do painel do RH": o PJ da fila entra na equipe com a função e a admissão do painel; quem já estava ganha a função que faltava', r8 && r8.funcao === 'Soldador' && r8.desde === '2025-05-02' && r8.meiEmpresaId === 'meir' && S8['equipe/nexo_33000167000101'].funcao === 'Eletricista de manutenção' && /1 profissional entrou/.test(d8) && /1 já estava/.test(d8), JSON.stringify({ d8, r8 }));
   await page.click('dialog[open] [data-dlg-b="0"]').catch(() => null);
   await entrarComo('dono@nexo.com.br'); await page.evaluate(() => { location.hash = '#profissionais'; }); await page.waitForSelector('#pf-topo', { timeout: 8000 });
   ok('P7 o botão "Colar lista" só aparece para a equipe Conectwork', !(await page.$('#pf-colar')));

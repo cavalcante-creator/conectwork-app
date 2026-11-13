@@ -9,7 +9,8 @@ const { ok, fim } = H.placar('filamei');
   const { d } = H.seed(d => {
     d.docs['empresas/gama'].cnpj = '11.444.777/0001-61';
     d.docs['filamei/04252011000110'] = fm('04252011000110', '04.252.011/0001-10');
-    d.docs['filamei/12345678000195'] = fm('12345678000195', '12.345.678/0001-95', { nome: 'Ana Souza Teste', email: '' });
+    d.docs['filamei/12345678000195'] = fm('12345678000195', '12.345.678/0001-95', { nome: 'Ana Souza Teste', email: '', prestCnpj: '55667788000186', prestadora: 'Alfa', funcao: 'Pintora', desde: '2025-04-01' });
+    d.docs['cnpjs/55667788000186'] = { empresaId: 'alfa' };   /* a prestadora do PJ no Conectwork: o PJ entra na equipe dela (13/11/2026) */
     d.docs['filamei/11444777000161'] = fm('11444777000161', '11.444.777/0001-61', { nome: 'Gama Ja Tem' });
     d.docs['cnpjs/11444777000161'] = { empresaId: 'gama' };
   });
@@ -21,6 +22,8 @@ const { ok, fim } = H.placar('filamei');
   ok('F1 com a equipe logada, o MEI da fila é pré-cadastrado sozinho, com convite para o e-mail', j.st === 'feito' && j.res && j.res.empresaMei && j.res.convite && D['convites/' + j.res.convite].email === 'joao@teste.com'
     && D['empresas/' + j.res.empresaMei].status === 'aprovado' && D['empresas/' + j.res.empresaMei + '/privado/cadastro'].dados.porte === 'MEI', JSON.stringify(j));
   ok('F2 sem e-mail: cadastrado, sem convite', a.st === 'feito' && a.res.empresaMei && !a.res.convite, JSON.stringify(a));
+  const eqA = D['equipe/alfa_12345678000195'];
+  ok('F2b o PJ da fila também entra na equipe da prestadora (Meus profissionais), com a função e a admissão do painel', eqA && eqA.meiEmpresaId === a.res.empresaMei && eqA.funcao === 'Pintora' && eqA.desde === '2025-04-01' && eqA.ativo && eqA.publico, JSON.stringify(eqA));
   ok('F3 CNPJ que já tinha cadastro fica "ja", sem convite', g.st === 'ja' && g.res.empresaMei === 'gama' && !g.res.convite, JSON.stringify(g));
   // o RH completou o e-mail da Ana: volta pendente e ganha convite (sem cadastrar de novo)
   await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('__srv')); Object.assign(s.docs['filamei/12345678000195'], { email: 'ana@teste.com', st: 'pendente' }); localStorage.setItem('__srv', JSON.stringify(s)); });

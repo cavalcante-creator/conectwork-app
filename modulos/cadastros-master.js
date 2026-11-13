@@ -371,6 +371,8 @@
      logada, cada MEI que chega em filamei (pendente) é pré-cadastrado sozinho; o resultado (empresa e convite) volta para a fila e o
      painel do RH mostra o convite para mandar. CNPJ que já tinha cadastro fica "ja" (sem convite: o MEI já tem dono). */
   let filaProc = false, fila = [];
+  /* 13/11/2026: o PJ da fila também entra na equipe da prestadora (Meus profissionais); se der errado, a fila segue */
+  const naEquipe = async (f, mei, u, quem) => { try { if (CW.profissionais && CW.profissionais.daFila) await CW.profissionais.daFila(f, mei, u, quem); } catch (e) { console.warn('equipe', e); } };
   async function processarFila() {
     if (filaProc) return; filaProc = true;
     try {
@@ -384,12 +386,15 @@
           if (ant.empresaMei) {
             const conv = x.email && x.email !== ant.conviteEmail ? await conviteMei(ant.empresaMei, x, u, quem) : ant.convite || '';
             res = { empresaMei: ant.empresaMei, convite: conv, conviteEmail: conv === ant.convite ? (ant.conviteEmail || '') : x.email, msg: '', em: CW.fb.agora() };
-            await db.doc('filamei/' + f._id).update({ st: ant.ja ? 'ja' : 'feito', res: Object.assign({}, ant, res) }); continue;
+            await db.doc('filamei/' + f._id).update({ st: ant.ja ? 'ja' : 'feito', res: Object.assign({}, ant, res) });
+            await naEquipe(f, ant.empresaMei, u, quem); continue;
           }
           const r = await preCadMei(x, u, quem, 'pela fila do painel do RH');
           res = { empresaMei: r.empresaId, convite: r.convite, conviteEmail: r.convite ? x.email : '', msg: '', em: CW.fb.agora() };
           await db.doc('filamei/' + f._id).update({ st: 'feito', res });
+          await naEquipe(f, r.empresaId, u, quem);
         } catch (err) {
+          if (err && err.code === 'cw/cnpj-repetido') { await naEquipe(f, err.empresaId || '', u, quem); }
           if (err && err.code === 'cw/cnpj-repetido') await db.doc('filamei/' + f._id).update({ st: 'ja', res: { empresaMei: err.empresaId || '', ja: true, convite: '', conviteEmail: '', msg: 'Este CNPJ já tinha cadastro no Conectwork.', em: CW.fb.agora() } });
           else await db.doc('filamei/' + f._id).update({ st: 'erro', res: Object.assign({}, ant, { msg: CW.fb.mensagemErro(err), em: CW.fb.agora() }) }).catch(() => {});
         }
