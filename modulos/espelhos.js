@@ -104,7 +104,10 @@
     const conferir = pode(ctx) ? espT.filter(x => x.status === 'nota_enviada') : [];
     const contest = espT.concat(espP).filter(x => x.status === 'nota_contestada');
     const outro = x => lado(x, ctx) === 'tomador' ? x.prestadorNome : x.tomadorNome;
-    const linhaEsp = x => `<tr class="click" data-abrir="${esc(x._id)}" tabindex="0"><td class="m-full"><div class="cell">${avatar(outro(x), '', lado(x, ctx) === 'tomador' ? x.prestadorId : x.tomadorId)}<div style="min-width:0"><strong>${esc(periodoTxt(x.periodo))}</strong><small>${esc(outro(x))} · ${lado(x, ctx) === 'tomador' ? 'você paga' : 'você emite a nota'}${x.lote ? ` · <span class="es-lote">${esc(x.lote)}</span>` : ''}${prazoTag(x)}</small></div></div></td>
+    /* 13/11/2026 ("sem precisar entrar um por um, não pode só direcionar ela direto?"): quem emite pelos MEIs (acesso na empresa
+       do MEI) toca na nota do MEI e já cai nela, dentro da empresa do MEI, pronta para emitir */
+    const acsMei = ((CW.sessao.estado() || {}).acessos || []).filter(a => a.ativo), meuMei = x => x.origem === 'repasse' && lado(x, ctx) === 'tomador' && acsMei.some(a => a.empresaId === x.prestadorId);
+    const linhaEsp = x => `<tr class="click" ${meuMei(x) ? `data-abrir-mei="${esc(x.prestadorId)}" ` : ''}data-abrir="${esc(x._id)}" tabindex="0"><td class="m-full"><div class="cell">${avatar(outro(x), '', lado(x, ctx) === 'tomador' ? x.prestadorId : x.tomadorId)}<div style="min-width:0"><strong>${esc(periodoTxt(x.periodo))}</strong><small>${esc(outro(x))} · ${lado(x, ctx) === 'tomador' ? (meuMei(x) && x.status === 'aguardando_nota' ? 'você emite por ele(a) · toque para emitir' : 'você paga') : 'você emite a nota'}${x.lote ? ` · <span class="es-lote">${esc(x.lote)}</span>` : ''}${prazoTag(x)}</small></div></div></td>
       <td class="r"><b>${esc(brl(x.valorCentavos))}</b><br><small class="hint">líquido ${esc(brl(x.liquidoCentavos))}</small></td><td>${pill(x.status)}</td></tr>`;
     const tab = (xs, id) => `<div class="scroll"><table class="resp" id="${id}"><thead><tr><th>Período</th><th class="r">Valor</th><th>Situação</th></tr></thead><tbody>${xs.map(linhaEsp).join('')}</tbody></table></div>`;
     el.innerHTML = `
@@ -123,12 +126,14 @@
       ${emitir.length ? `<section class="card" id="es-emitir" style="margin-bottom:22px"><div class="card-h"><span class="ic">${ic('receipt')}</span><h3>Notas a emitir</h3><span class="count">${emitir.length}</span></div>
         <div class="card-b" style="padding-bottom:0"><div class="banner ok">${ic('check')}<span><strong>Serviço aprovado: confira os dados e envie sua nota fiscal</strong>Abra o espelho: o botão leva ao emissor da nota e, quando você voltar, o Conectwork pede o PDF da nota.</span></div></div>
         ${tab(emitir, 'es-tab-emitir')}</section>` : ''}
+      ${(() => { const n = todos.filter(x => meuMei(x) && x.status === 'aguardando_nota').length; return n ? `<div class="banner info" id="es-mei-emite" style="margin-bottom:22px">${ic('receipt')}<span><strong>${n} ${n === 1 ? 'nota de MEI' : 'notas dos MEIs'} para você emitir</strong>Toque na nota e ela já abre na empresa do MEI, pronta para emitir. ${CW.emissaoMei && CW.emissaoMei.meus(ctx.contexto.empresaId).length ? `<button class="linkbtn" id="es-mei-lista" style="display:inline">Ver todas em Notas dos MEIs</button>` : ''}</span></div>` : ''; })()}
       <section class="card" id="es-lista"><div class="card-h"><span class="ic">${ic('receipt')}</span><h3>Espelhos da nota</h3><span class="count">${todos.length}</span>${lotes.length ? `<label class="es-flote"><span>Lote</span><select id="es-flote"><option value="">Todos</option>${lotes.map(l => `<option${l === filtroLote ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label>` : ''}</div>
         ${todos.length ? tab(todos, 'es-tab') : `<div class="empty"><div class="ic">${ic('receipt')}</div><strong>Nenhum espelho ainda.</strong><span>Quando uma medição for aprovada, o financeiro de quem contrata prepara o espelho com os dados da nota. Sem medição? Use "Pedir nota" e diga à prestadora o que faturar.</span>${U().passos(['Contrato ativo entre as duas empresas', 'Medição ou entrega aprovada (ou "Pedir nota")', 'O financeiro prepara o espelho e a prestadora emite a nota'])}</div>`}</section>`;
     el.querySelectorAll('[data-preparar]').forEach(b => b.onclick = () => CW.ir('espelhos/preparar/' + b.dataset.preparar));
     el.querySelectorAll('[data-guardado]').forEach(b => b.onclick = () => CW.ir('espelhos/nova/' + b.dataset.guardado));
     const fl = document.getElementById('es-flote'); if (fl) fl.onchange = () => { filtroLote = fl.value; desenharLista(el, ctx); };
-    el.querySelectorAll('[data-abrir]').forEach(r => { const ir = () => CW.ir('espelhos/ver/' + r.dataset.abrir); r.onclick = ir; r.onkeydown = e => { if (e.key === 'Enter') ir(); }; });
+    const bml = document.getElementById('es-mei-lista'); if (bml) bml.onclick = () => CW.ir('emissaomei');
+    el.querySelectorAll('[data-abrir]').forEach(r => { const ir = () => r.dataset.abrirMei && CW.emissaoMei ? CW.emissaoMei.abrir(r.dataset.abrirMei, r.dataset.abrir) : CW.ir('espelhos/ver/' + r.dataset.abrir); r.onclick = ir; r.onkeydown = e => { if (e.key === 'Enter') ir(); }; });
   }
 
   /* ---------- preparar / corrigir ---------- */

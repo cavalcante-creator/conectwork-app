@@ -64,6 +64,16 @@ const { ok, fim } = H.placar('emissaomei');
   await page.click('#em-volta'); await page.waitForSelector('#em-tab', { timeout: 10000 });
   const lst2 = await page.$$eval('#em-tab tbody tr', x => x.map(t => t.innerText.replace(/\s+/g, ' ')));
   ok('E6 "Voltar para as notas dos MEIs" volta para a lista na prestadora (Carlos agora "Emitir a nota")', lst2.some(t => /Carlos Ramos.*(Emitir a nota|Anexar)/.test(t)), JSON.stringify(lst2));
+  // E6b (13/11/2026, "sem precisar entrar um por um"): em Espelhos da nota da prestadora, tocar na nota do MEI já abre na empresa dele
+  const setCargo = c => page.evaluate(c => { const S = JSON.parse(localStorage.getItem('__srv')); S.docs['acessos/nexo_uJU'].cargo = c; localStorage.setItem('__srv', JSON.stringify(S)); }, c);
+  await setCargo('financeiro'); await entrarComo('ju@nexo.com.br'); await escolher('Nexo');
+  await page.evaluate(() => { location.hash = '#espelhos'; }); await H.dorme(1800);
+  const e6b = await page.evaluate(() => ({ b: (document.getElementById('es-mei-emite') || {}).innerText || '', tem: !!document.querySelector('[data-abrir-mei][data-abrir="cn_2026-10-1_11222333000181"]') }));
+  if (e6b.tem) { await page.click('[data-abrir-mei][data-abrir="cn_2026-10-1_11222333000181"]'); await H.dorme(1800); }
+  const e6c = await page.evaluate(() => ({ h: location.hash, f: (document.getElementById('em-volta-faixa') || {}).innerText || '' }));
+  ok('E6b em Espelhos da nota, a nota do MEI leva direto para a empresa dele ("toque para emitir")', /para você emitir/.test(e6b.b) && e6b.tem && /espelhos\/ver\/cn_2026-10-1_11222333000181/.test(e6c.h) && /Bia Costa/.test(e6c.f), JSON.stringify({ e6b, e6c }));
+  await setCargo('tesouraria'); await entrarComo('ju@nexo.com.br'); await escolher('Nexo');
+  await page.evaluate(() => { location.hash = '#emissaomei'; }); await page.waitForSelector('#em-tab', { timeout: 10000 });
   // E7 pagamento: a nota da Bia já conferida → "Anotar o Pix" (vem o Pix da quinzena anterior) → "Pagar" depois de liberado
   const t7 = await page.$eval('#em-tab2', e => e.innerText.replace(/\s+/g, ' '));
   await page.click('[data-em-pix="cn_2026-10-1_11222333000181"]'); await page.waitForSelector('#tt-conta', { timeout: 10000 });
