@@ -32,6 +32,12 @@ const b64url = o => Buffer.from(JSON.stringify(o), 'utf8').toString('base64').re
   await page.evaluate(() => CW.sessao.voltarEquipe('redeempresas/ver/zeta')); await page.waitForSelector('#re-souadm', { timeout: 8000 });
   await page.click('#re-souadm'); await H.dorme(1500);
   ok('P5 na Rede › Empresas, "Me colocar como administrador(a)" também funciona', (await srv())['acessos/zeta_uIASMYN'] && await page.evaluate(() => (CW.sessao.contexto() || {}).empresaId) === 'zeta');
+  // P6 sair da administração (13/11/2026): desativa o próprio acesso (não apaga), a empresa sai da lista e o botão volta a ser "Me colocar"
+  await page.evaluate(() => CW.sessao.voltarEquipe('redeempresas/ver/zeta')); await page.waitForSelector('#re-sairadm', { timeout: 8000 });
+  await page.click('#re-sairadm'); await page.waitForSelector('dialog[open]'); const t6 = await page.$eval('dialog[open]', e => e.innerText); await page.click('dialog[open] [data-dlg-b="1"]'); await H.dorme(1800);
+  await page.waitForSelector('#re-souadm', { timeout: 8000 }).catch(() => null);
+  const a6 = (await srv())['acessos/zeta_uIASMYN'], op6 = await page.evaluate(() => (CW.sessao.estado().opcoes || []).some(o => o.empresaId === 'zeta'));
+  ok('P6 "Sair da administração": o acesso fica desativado (não apaga), a empresa sai da lista e aparece "Me colocar como administrador(a)" de novo', a6 && a6.ativo === false && !op6 && !!(await page.$('#re-souadm')) && /Sair da administração/.test(t6), JSON.stringify({ a6, op6, t6: t6.slice(0, 200) }));
   ok('Sem erros de JavaScript na página', !erros.filter(x => !/ERR_NAME_NOT_RESOLVED/.test(x)).length, erros.join(' | '));
   await browser.close(); fim();
 })().catch(e => { console.error('ERRO NO TESTE', e); process.exit(1); });

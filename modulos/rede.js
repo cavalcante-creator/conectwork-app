@@ -198,7 +198,7 @@
         <section class="card" id="re-acoes"><div class="card-h"><span class="ic">${ic('shield')}</span><h3>Ações da equipe</h3></div><div class="card-b stack" style="gap:10px">
           <button class="btn" id="re-vercomo">${ic('eye')}Ver como a empresa</button>
           ${e.status === 'aprovado' ? ((CW.sessao.estado().opcoes || []).some(o => o.tipo === 'empresa' && o.empresaId === id)
-            ? `<button class="btn sec" id="re-entrar">${ic('building')}Entrar nesta empresa (sou administrador(a))</button>`
+            ? `<button class="btn sec" id="re-entrar">${ic('building')}Entrar nesta empresa (sou administrador(a))</button><button class="btn ghost" id="re-sairadm">${ic('logout')}Sair da administração</button>`
             : `<button class="btn sec" id="re-souadm">${ic('plus')}Me colocar como administrador(a)</button><p class="hint" style="margin:-4px 0 0;font-size:12.5px">Você passa a ser administrador(a) de verdade desta empresa: pode confirmar contratos, medições e notas por ela.</p>`) : ''}
           <p class="hint" style="margin:-4px 0 4px;font-size:12px">Abre o Conectwork como o administrador da empresa vê, só para consultar. Nada pode ser alterado no lugar da empresa.</p>
           <a class="btn sec" href="#cadastros/analise/${esc(id)}" id="re-cadastro">${ic('file')}Ver o cadastro completo</a>
@@ -211,6 +211,7 @@
       </div></div>`;
     document.getElementById('re-voltar').onclick = () => CW.ir('redeempresas');
     const rEn = document.getElementById('re-entrar'); if (rEn) rEn.onclick = () => CW.sessao.entrarEm('empresa:' + id);
+    const rSa = document.getElementById('re-sairadm'); if (rSa) rSa.onclick = async () => { try { await CW.cadastrosMaster.sairAdm(id, nomeEmp(e), 'redeempresas/ver/' + id); } catch (err) { U().toast(CW.fb.mensagemErro(err), 'erro'); } };
     const rAd = document.getElementById('re-souadm'); if (rAd) rAd.onclick = async () => { rAd.disabled = true;
       try { await CW.cadastrosMaster.adminDe(id, nomeEmp(e)); U().toast('Pronto: você é administrador(a) de ' + nomeEmp(e) + '.'); await CW.sessao.recarregar(); CW.sessao.entrarEm('empresa:' + id); }
       catch (err) { rAd.disabled = false; U().toast(CW.fb.mensagemErro(err), 'erro'); } };

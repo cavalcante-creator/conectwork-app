@@ -142,8 +142,9 @@
     /* 12/11/2026 ("por enquanto meu login vai ser administrador de todas"): a equipe entra como administrador(a) da empresa */
     const jaAdm = (CW.sessao.estado().opcoes || []).some(o => o.tipo === 'empresa' && o.empresaId === id);
     const ac = document.getElementById('acoes');
-    if (ac && e.status === 'aprovado') { ac.innerHTML = jaAdm ? `<button class="btn sec" id="cm-entrar">${ic('building')}Entrar nesta empresa</button>` : `<button class="btn sec" id="cm-souadm">${ic('plus')}Me colocar como administrador(a)</button>`;
+    if (ac && e.status === 'aprovado') { ac.innerHTML = jaAdm ? `<button class="btn sec" id="cm-entrar">${ic('building')}Entrar nesta empresa</button><button class="btn ghost" id="cm-sairadm">${ic('logout')}Sair da administração</button>` : `<button class="btn sec" id="cm-souadm">${ic('plus')}Me colocar como administrador(a)</button>`;
       const be = document.getElementById('cm-entrar'); if (be) be.onclick = () => CW.sessao.entrarEm('empresa:' + id);
+      const bs = document.getElementById('cm-sairadm'); if (bs) bs.onclick = async () => { try { await sairAdm(id, nomeEmp(e), 'cadastros/analise/' + id); } catch (err) { U().toast(CW.fb.mensagemErro(err), 'erro'); } };
       const ba = document.getElementById('cm-souadm'); if (ba) ba.onclick = async () => { ba.disabled = true;
         try { await adminDe(id, nomeEmp(e)); U().toast('Pronto: você é administrador(a) de ' + nomeEmp(e) + '.'); await CW.sessao.recarregar(); CW.sessao.entrarEm('empresa:' + id); }
         catch (err) { ba.disabled = false; U().toast(CW.fb.mensagemErro(err), 'erro'); } }; }
@@ -359,7 +360,21 @@
     b.set(db.collection('log').doc(), { em: CW.fb.agora(), uid: u.uid, quem, empresaId: id, acao: 'acesso.equipe', texto: `${quem} (equipe Conectwork) entrou como administrador(a) de ${nome}.`, ref: id });
     await b.commit();
   }
-  CW.cadastrosMaster = { preCadEmpresa, adminDe, preCadMei };
+  /* sair da administração de uma empresa (13/11/2026, "tenho como me tirar de administrador de uma empresa?"): a equipe Conectwork
+     desativa o próprio acesso (ativo:false; nada se apaga). Avisa se ninguém mais administra a empresa. */
+  async function sairAdm(id, nome, rota) {
+    const db = CW.fb.db(), u = CW.fb.auth().currentUser, st = CW.sessao.estado(), quem = (st.perfil && st.perfil.nome) || u.email;
+    let outros = 0; try { outros = CW.fb.lista(await db.collection('acessos').where('empresaId', '==', id).get()).filter(a => a.ativo && a.cargo === 'admin' && a.uid !== u.uid).length; } catch (e) { outros = -1; }
+    const ok = await U().confirmar('Sair da administração?', `Você deixa de ser administrador(a) de ${nome} e ela sai da sua lista de empresas. ${outros === 0 ? 'Atenção: ninguém mais administra esta empresa; convide alguém antes, ou depois volte com "Me colocar como administrador(a)".' : outros > 0 ? `${outros} outra${outros === 1 ? ' pessoa continua' : 's pessoas continuam'} como administrador(a).` : ''} Dá para voltar quando quiser.`, 'Sair da administração');
+    if (!ok) return false;
+    const b = db.batch();
+    b.update(db.doc('acessos/' + id + '_' + u.uid), { ativo: false, atualizadoEm: CW.fb.agora() });
+    b.set(db.collection('log').doc(), { em: CW.fb.agora(), uid: u.uid, quem, empresaId: id, acao: 'acesso.equipe_saiu', texto: `${quem} (equipe Conectwork) saiu da administração de ${nome}.`, ref: id });
+    await b.commit();
+    U().toast('Você saiu da administração de ' + nome + '.');
+    await CW.sessao.recarregar(); if (CW.sessao.voltarEquipe) CW.sessao.voltarEquipe(rota || 'cadastros/analise/' + id); return true;
+  }
+  CW.cadastrosMaster = { preCadEmpresa, adminDe, preCadMei, sairAdm };
   /* convite novo para um MEI já pré-cadastrado (o RH completou o e-mail depois) */
   async function conviteMei(empresaId, x, u, quem) {
     const db = CW.fb.db(), ref = db.collection('convites').doc(), b = db.batch();
