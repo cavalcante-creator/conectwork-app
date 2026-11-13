@@ -57,7 +57,7 @@
     const selo = x => x.st === 'pago' ? `<span class="das-selo pago">${ic('check')}Pago</span>` : x.st === 'vencido' ? `<span class="das-selo venc">Vencido</span>` : `<span class="das-selo aberto">Em aberto</span>`;
     el.innerHTML = `${venc.length ? `<div class="mh-alerta" id="das-alerta"><span class="mh-alerta-ic">${ic('alert')}</span><span class="t"><b>Você tem ${venc.length === 1 ? 'DAS vencido' : venc.length + ' DAS vencidos'}</b><small>Regularize e fique em dia: gere a guia no site oficial e marque aqui quando pagar.</small></span></div>` : ''}
       <div class="das-topo"><div class="das-anos" role="group" aria-label="Ano">${anos.map(a => `<button type="button" class="mh-chip" data-ano="${a}" aria-pressed="${a === ano}">${ic('clock')}${a}</button>`).join('')}</div>
-        <a class="btn sec" href="${esc(PG)}" target="_blank" rel="noopener" id="das-gerar">${ic('receipt')}Gerar a guia no site oficial</a></div>
+        <a class="btn sec" href="${esc(PG)}" target="_blank" rel="noopener" id="das-gerar" data-receita="site do PGMEI (guia do DAS)">${ic('receipt')}Gerar a guia no site oficial</a></div>
       <div class="das-lista" id="das-lista">${lista.length ? lista.map(x => `<div class="das-it ${x.st}" data-mes="${x.m}">
           <div class="das-l">${selo(x)}<b>${esc(mesNome(x.m))} ${x.m.slice(0, 4)}</b></div>
           <div class="das-r"><small>${x.st === 'pago' ? 'Pago' + (x.data ? ' em ' + esc(dataBR(x.data)) : '') : 'Vencimento: ' + esc(dataBR(x.venc))}</small>

@@ -150,12 +150,12 @@
     return `<section class="card" id="ng-agenda" style="margin-bottom:22px"><div class="card-h"><span class="ic">${ic('clock')}</span><h3>Empresa em dia</h3><span class="hint" style="margin-left:auto;font-size:12px">obrigações do MEI</span></div><div class="card-b stack" style="gap:14px">
       <div><p style="margin:0 0 8px;font-size:13.5px;font-weight:600">Guia mensal (DAS) · vence todo dia 20</p>
         ${S.das.map(x => `<div class="docrow ${x.pago ? 'ok' : ''}" data-das="${x.m}"><span class="ic">${ic(x.pago ? 'check' : x.vencido ? 'alert' : 'clock')}</span><div class="t"><strong>DAS de ${esc(mesTxt(x.m))}</strong><small>${x.pago ? 'Pago' + (x.data ? ' em ' + esc(dataBR(x.data)) : '') : (x.vencido ? 'Venceu em ' : 'Vence em ') + esc(dataBR(x.venc))}</small></div>
-          <div class="dc-bt">${x.pago ? '<span class="pill ok">Pago</span>' : `<span class="pill ${x.vencido ? 'danger' : 'warn'}">${x.vencido ? 'Vencido' : 'A pagar'}</span>${pode(ctx) ? `<a class="btn ghost sm" href="${PGMEI}" target="_blank" rel="noopener">Gerar a guia</a><button class="btn sec sm" data-pagou="${x.m}">Já paguei</button>` : ''}`}</div></div>`).join('')}
+          <div class="dc-bt">${x.pago ? '<span class="pill ok">Pago</span>' : `<span class="pill ${x.vencido ? 'danger' : 'warn'}">${x.vencido ? 'Vencido' : 'A pagar'}</span>${pode(ctx) ? `<a class="btn ghost sm" href="${PGMEI}" target="_blank" rel="noopener" data-receita="site do PGMEI">Gerar a guia</a><button class="btn sec sm" data-pagou="${x.m}">Já paguei</button>` : ''}`}</div></div>`).join('')}
         <p class="hint" style="margin:6px 0 0;font-size:12px">A guia sai no PGMEI (Receita Federal) com o CNPJ. Guia vencida: gere de novo no PGMEI, já com multa e juros.</p></div>
       <div class="docrow"><span class="ic">${ic('file')}</span><div class="t"><strong>Relatório mensal das receitas brutas</strong><small>Obrigatório preencher todo mês e guardar com as notas. O Conectwork monta com as suas notas.</small></div>
         <div class="dc-bt"><select id="ng-rel-mes" aria-label="Mês do relatório">${mesesAtras(12).slice(1).map(m => `<option value="${m}" ${m === mesRel ? 'selected' : ''}>${esc(mesTxt(m))}</option>`).join('')}</select><button class="btn sec sm" id="ng-rel">${ic('file')}Baixar PDF</button></div></div>
       <div class="docrow ${S.dasn.entregue ? 'ok' : ''}" id="ng-dasn"><span class="ic">${ic(S.dasn.entregue ? 'check' : 'clock')}</span><div class="t"><strong>Declaração anual (DASN-SIMEI) de ${anoAnt}</strong><small>Prazo: 31/05/${anoAnt + 1} · receita de serviços em ${anoAnt}: <b>${esc(brl(totAnt))}</b>${S.dasn.entregue ? ' · entregue' + (S.dasn.data ? ' em ' + esc(dataBR(S.dasn.data)) : '') : ''}</small></div>
-        <div class="dc-bt">${S.dasn.entregue ? '<span class="pill ok">Entregue</span>' : `<span class="pill ${S.dasn.prazo < hoje ? 'danger' : 'warn'}">${S.dasn.prazo < hoje ? 'Atrasada' : 'A entregar'}</span>${pode(ctx) ? `<button class="btn ghost sm" data-cp-val="${esc(U().formatarDinheiro(totAnt, false))}">Copiar valor</button><a class="btn ghost sm" href="${DASN}" target="_blank" rel="noopener">Fazer a declaração</a><button class="btn sec sm" id="ng-dasn-ok">Já entreguei</button>` : ''}`}</div></div>
+        <div class="dc-bt">${S.dasn.entregue ? '<span class="pill ok">Entregue</span>' : `<span class="pill ${S.dasn.prazo < hoje ? 'danger' : 'warn'}">${S.dasn.prazo < hoje ? 'Atrasada' : 'A entregar'}</span>${pode(ctx) ? `<button class="btn ghost sm" data-cp-val="${esc(U().formatarDinheiro(totAnt, false))}">Copiar valor</button><a class="btn ghost sm" href="${DASN}" target="_blank" rel="noopener" data-receita="site da declaração anual (DASN-SIMEI)">Fazer a declaração</a><button class="btn sec sm" id="ng-dasn-ok">Já entreguei</button>` : ''}`}</div></div>
       <p class="hint" style="margin:0;font-size:12px">Os valores somam as notas do Conectwork e o que você informou de fora. Confira com o seu contador.</p></div></section>`;
   }
   function ligarAgenda(el, ctx, D, K) {
@@ -223,5 +223,39 @@
     telas: { painel: { nome: 'Meu negócio', sub: 'Faturamento do ano, limite do MEI, de quem vem o seu faturamento, outros clientes e o que você tem a receber.', render } }
   });
   /* agenda e assistente do MEI (10/11/2026): leem a situação fiscal que esta tela já calculou, e carregar/contas sob pedido */
-  CW.negocio = { contas, carregar, LIMITE_MEI, situacaoFiscal, vencDas, fiscal: () => fiscalPend, fiscalDoc: () => fiscalDoc, inicioMei: () => inicioMei, PGMEI, DASN, recalcular: f => { fiscalDoc = f; fiscalPend = situacaoFiscal(f); CW.app.pendenciasMudaram(); } };
+  /* ---------- sites da Receita (cartão CNPJ, PGMEI, DASN-SIMEI) · 13/11/2026 ----------
+     Os três pedem o CNPJ: ao tocar, o Conectwork copia o CNPJ, mostra o aviso grande e abre o site numa janela por cima
+     (como o login do Google). A janela mostra "CNPJ copiado" por um instante antes do site. No celular ou com a janela
+     bloqueada, o link segue e abre numa aba (o CNPJ já foi copiado). Links com data-receita usam isto sozinhos. */
+  const cnpjAgora = () => { const c = CW.sessao.contexto() || {}; return String(((c.empresa || {}).cnpj) || ''); };
+  function avisoCnpj(cnpj, site, link) {
+    const { ic, esc } = U();
+    if (link && !link.dataset.txt) { link.dataset.txt = link.innerHTML; link.innerHTML = ic('check') + 'CNPJ copiado'; link.classList.add('copiado'); setTimeout(() => { link.innerHTML = link.dataset.txt; delete link.dataset.txt; link.classList.remove('copiado'); }, 5000); }
+    let a = document.getElementById('mh-copiado'); if (a) a.remove();
+    a = document.createElement('div'); a.id = 'mh-copiado'; a.className = 'mh-copiado'; a.setAttribute('role', 'status');
+    a.innerHTML = `<span class="ic">${ic('check')}</span><span><b>CNPJ copiado</b>${esc(cnpj)} · ${site ? 'no ' + esc(site) + ', clique no campo do CNPJ e cole (Ctrl+V)' : 'é só colar onde precisar (Ctrl+V)'}</span>`;
+    document.body.appendChild(a); setTimeout(() => a.classList.add('sai'), 4200); setTimeout(() => a.remove(), 4600);
+  }
+  function copiarCnpj(site, link) {
+    const cnpj = cnpjAgora(); if (!cnpj) return;
+    try { navigator.clipboard.writeText(U().dig(cnpj)).then(() => avisoCnpj(cnpj, site, link), () => U().toast('CNPJ: ' + cnpj)); } catch (x) { U().toast('CNPJ: ' + cnpj); }
+  }
+  function receita(ev, url, o) {
+    o = o || {}; const cnpj = cnpjAgora(), site = o.site || 'site da Receita';
+    copiarCnpj(site, o.link);
+    const cel = window.matchMedia && matchMedia('(max-width:760px), (pointer:coarse)').matches; if (cel) return;
+    const L = Math.min(1000, screen.availWidth - 40), A = Math.min(800, screen.availHeight - 60);
+    const esq = Math.max(0, (window.screenX || 0) + (window.outerWidth - L) / 2), topo = Math.max(0, (window.screenY || 0) + (window.outerHeight - A) / 2);
+    let w = null; try { w = window.open('about:blank', 'cw-receita', `popup=yes,width=${Math.round(L)},height=${Math.round(A)},left=${Math.round(esq)},top=${Math.round(topo)}`); } catch (x) { w = null; }
+    if (!w) return;   /* bloqueada: o link segue e abre numa aba */
+    if (ev) ev.preventDefault();
+    const esc = U().esc;
+    try { w.document.write(`<!doctype html><meta charset="utf-8"><title>CNPJ copiado</title><body style="margin:0;display:grid;place-items:center;height:100vh;font-family:system-ui,sans-serif;background:#081638;color:#fff;text-align:center"><div><div style="font-size:44px">✓</div><h1 style="margin:8px 0;font-size:24px">CNPJ copiado</h1>${cnpj ? `<p style="font-size:20px;margin:0 0 6px"><b>${esc(cnpj)}</b></p>` : ''}<p style="opacity:.8;margin:0">Abrindo ${esc(o.titulo || site)}… clique no campo do CNPJ e cole (Ctrl+V).</p></div></body>`); w.document.close(); } catch (x) {}
+    try { w.opener = null; } catch (x) {} try { w.focus(); } catch (x) {}
+    setTimeout(() => { try { w.location.href = url; } catch (x) {} }, 1300);
+  }
+  document.addEventListener('click', ev => { const a = ev.target.closest && ev.target.closest('a[data-receita]'); if (!a) return;
+    receita(ev, a.href, { site: a.dataset.receita, link: a.dataset.receitaLink === '1' ? a : null }); });
+
+  CW.negocio = { receita, copiarCnpj, contas, carregar, LIMITE_MEI, situacaoFiscal, vencDas, fiscal: () => fiscalPend, fiscalDoc: () => fiscalDoc, inicioMei: () => inicioMei, PGMEI, DASN, recalcular: f => { fiscalDoc = f; fiscalPend = situacaoFiscal(f); CW.app.pendenciasMudaram(); } };
 })();

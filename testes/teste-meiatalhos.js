@@ -43,6 +43,18 @@ const { ok, fim } = H.placar('meiatalhos');
   await page.reload(); await page.waitForSelector('.shell', { timeout: 10000 }); await H.dorme(800); const w2 = await larg();
   await page.click('#menu-recolher'); await H.dorme(400); const w3 = await larg();
   ok('A6 "Recolher o menu" deixa só os ícones e a logo (com o nome ao passar o mouse), lembra depois de recarregar e abre de novo', w0 > 200 && w1 < 90 && mini.logo && mini.cls && mini.tit === 'Agenda e lembretes' && mini.txt === 'none' && w2 < 90 && w3 > 200, JSON.stringify({ w0, w1, w2, w3, mini }));
+  // A8 "Gerar a guia" (DAS) e "Fazer a declaração" (DASN) seguem a mesma lógica do cartão CNPJ
+  const testaReceita = async (rota, sel, site) => {
+    await page.evaluate(r => { location.hash = r; }, rota); await page.waitForSelector(sel, { timeout: 10000 }); await H.dorme(400);
+    await page.evaluate(() => { window.__cp = null; window.__escrito = ''; Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: t => { window.__cp = t; return Promise.resolve(); } } }); window.__jan = { location: {}, focus() {}, document: { write(h) { window.__escrito = h; }, close() {} } }; window.open = (u, n, f) => { window.__janArgs = [u, n, f]; return window.__jan; }; });
+    await page.click(sel); await H.dorme(1600);
+    return page.evaluate(s => ({ cp: window.__cp, pop: (window.__janArgs || [])[2] || '', href: window.__jan.location.href || '', jan: /CNPJ copiado/.test(window.__escrito), av: (document.getElementById('mh-copiado') || {}).innerText || '', site: s }), site);
+  };
+  const g = await testaReceita('#mei/das', '#das-gerar', 'PGMEI');
+  const dsel = 'a[data-receita*="DASN"]';
+  const dc = await testaReceita('#negocio', dsel, 'DASN');
+  const okR = r => r.cp === '33000167000101' && /popup=yes/.test(r.pop) && /receita\.fazenda\.gov\.br/.test(r.href) && r.jan && /CNPJ copiado/.test(r.av);
+  ok('A8 "Gerar a guia" e "Fazer a declaração" copiam o CNPJ, avisam e abrem o site numa janela por cima', okR(g) && okR(dc) && /pgmei/.test(g.href) && /dasnsimei/.test(dc.href) && /PGMEI/.test(g.av) && /DASN/.test(dc.av), JSON.stringify({ g, dc }));
   const temas = []; await page.evaluate(() => { document.documentElement.dataset.theme = 'light'; try { localStorage.setItem('cw.tema', 'light'); } catch (e) {} });
   for (let i = 0; i < 3; i++) { await page.click('#tema'); await H.dorme(150); temas.push(await page.$eval('#tema', e => e.innerText.trim())); }
   ok('A7 o botão de tema segue a ordem Claro → Escuro → Automático → Claro', temas.join() === 'Escuro,Automático,Claro', temas.join());
