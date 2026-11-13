@@ -43,9 +43,9 @@
   function cartao(x, ctx, gerencia) {
     const { esc, ic, avatar } = U();
     return `<div class="pf-it${x.ativo ? '' : ' enc'}" data-pf="${esc(x._id)}">
-      <div class="pf-top">${avatar(x.nome, '', x.meiEmpresaId || '')}<div class="t"><strong>${esc(x.nome)}</strong><small>${esc(x.funcao || (gerencia ? 'Função não informada' : 'Profissional da equipe'))}</small></div></div>
+      <div class="pf-top">${avatar(x.nome, '', '').replace('<span class="avatar ', `<span data-meilogo="${esc(x.meiEmpresaId && x.meiEmpresaId !== x.prestadoraId ? x.meiEmpresaId : '')}" data-prestlogo="${esc(x.prestadoraId)}" class="avatar `)}<div class="t"><strong>${esc(x.nome)}</strong><small>${esc(x.funcao || (gerencia ? 'Função não informada' : 'Profissional da equipe'))}</small></div></div>
       <div class="pf-meta">${x.cidade ? `<span>${ic('building')}${esc(x.cidade)}${x.uf ? '/' + esc(x.uf) : ''}</span>` : ''}${x.desde ? `<span>${ic('clock')}Na equipe desde ${esc(desdeTxt(x.desde))}</span>` : ''}${gerencia ? `<span>${ic('file')}MEI ${esc(fmtCnpj(x.cnpjNum))}</span>` : ''}</div>
-      <div class="pf-selos">${x.meiEmpresaId ? `<span class="pf-selo ok">${ic('check')}MEI com conta no Conectwork</span>` : `<span class="pf-selo">${ic('file')}CNPJ do MEI conferido</span>`}
+      <div class="pf-selos">${x.meiEmpresaId && x.meiEmpresaId === x.prestadoraId ? `<span class="pf-selo enc">${ic('alert')}O CNPJ deste MEI está ligado à própria ${esc(x.prestadoraNome)}: confira em Cadastros</span>` : x.meiEmpresaId ? `<span class="pf-selo ok">${ic('check')}MEI com conta no Conectwork</span>` : `<span class="pf-selo">${ic('file')}CNPJ do MEI conferido</span>`}
         ${gerencia ? (x.ativo ? (x.publico ? `<span class="pf-selo info">${ic('eye')}Os clientes veem</span>` : `<span class="pf-selo">${ic('eyeoff')}Só para vocês</span>`) : `<span class="pf-selo enc">Vínculo encerrado${x.encerradoEm ? ' em ' + esc(U().formatarData(x.encerradoEm)) : ''}</span>`) : ''}</div>
       ${gerencia && pode(ctx) ? `<div class="pf-a"><button class="btn sec sm" data-pf-ed="${esc(x._id)}">${ic('edit')}Editar</button>
         ${!x.meiEmpresaId && x.ativo ? `<button class="linkbtn" data-pf-conv="${esc(x._id)}" style="font-size:13px">${ic('copy')}Convidar</button>` : ''}
@@ -73,7 +73,16 @@
       ${xs.length ? `<div class="pf-grade" id="pf-grade">${xs.map(x => cartao(x, ctx, true)).join('')}</div>`
         : `<div class="card"><div class="empty"><div class="ic">${ic('users')}</div><strong>${lista.length ? 'Nenhum profissional com esse filtro.' : 'A equipe ainda está vazia.'}</strong><span>${lista.length ? 'Tente outra palavra ou "Todas as funções".' : 'Acrescente os profissionais que prestam serviço pela sua empresa, ou traga de uma vez os que já vieram nas medições.'}</span>${!lista.length && pode(ctx) ? `<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><button class="btn sec" id="pf-trazer2">${ic('list')}Trazer das medições</button><button class="btn" id="pf-novo2">${ic('plus')}Adicionar profissional</button></div>` : ''}</div></div>`}
       <p class="hint" style="margin:16px 0 0;font-size:12px">Vínculo de prestação de serviço: o profissional é MEI e presta serviço pela ${esc(ctx.contexto.nome)}. Só nome, CNPJ do MEI, função e cidade; nada de CPF.</p>`;
-    ligar(el, ctx);
+    ligar(el, ctx); logosMei(el, true);
+  }
+  /* a logo do próprio MEI (a de Minha empresa dele); se for a mesma da prestadora (foi enviada na empresa errada), fica com as
+     iniciais e avisa (13/11/2026, foto "por que apareceu com a logo da Nexus?") */
+  function logosMei(el, avisa) {
+    if (!CW.logos) return;
+    el.querySelectorAll('[data-meilogo]').forEach(async a => { const mei = a.dataset.meilogo; if (!mei) return;
+      try { const [lm, lp] = await Promise.all([CW.logos.buscar(mei), CW.logos.buscar(a.dataset.prestlogo)]); if (!lm) return;
+        if (lp && lm === lp) { if (avisa) { const sl = a.closest('.pf-it') && a.closest('.pf-it').querySelector('.pf-selos'); if (sl && !sl.querySelector('.pf-logoerr')) sl.insertAdjacentHTML('beforeend', `<span class="pf-selo enc pf-logoerr" title="Na empresa deste MEI (Minha empresa) está a logo da prestadora. Troque ou tire a logo lá.">${U().ic('alert')}A logo do MEI é a da prestadora</span>`); } return; }
+        a.dataset.logo = mei; CW.logos.preencher(a.parentNode); } catch (e) { /* fica com as iniciais */ } });
   }
 
   function ligar(el, ctx) {
@@ -234,6 +243,7 @@
         <div class="sv-res"><span><b>${ps.length}</b>prestadora${ps.length === 1 ? '' : 's'}</span><span><b>${tot}</b>profissionais</span></div></div>
         <label class="sv-busca">${ic('busca')}<input id="pf-q2" type="search" aria-label="Procurar profissional" placeholder="Procurar por nome, função ou cidade" value="${esc(F.q)}"></label></section>
       ${ps.length ? ps.map(bloco).join('') : `<div class="card"><div class="empty"><div class="ic">${ic('users')}</div><strong>Nenhuma prestadora com contrato.</strong><span>Quando a sua empresa tiver contrato com uma prestadora, a equipe dela aparece aqui.</span></div></div>`}`;
+    logosMei(el, false);
     const q = document.getElementById('pf-q2'); if (q) q.oninput = () => { F.q = q.value; const pos = q.selectionStart;
       el.querySelectorAll('.pf-it').forEach(c => { c.hidden = !!F.q && !casa(c.innerText, F.q); }); const n = document.getElementById('pf-q2'); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) {} } };
   }
