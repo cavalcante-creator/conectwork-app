@@ -403,11 +403,14 @@
 
   /* ---------- nota fiscal: emitir fora, voltar e anexar (PDF ou XML), conferir ---------- */
   const falta_aceite = x => x.origem === 'repasse' && !(x.aceiteMei && x.aceiteMei.ok === true);
+  /* 13/11/2026 ("o MEI por enquanto não vai aprovar, vai ser ela direto"): quem emite pela prestadora (acesso com emissorPor) não passa
+     pelo cartão "Confira antes de emitir": o "concordo" é gravado no nome dela ao tocar em Emitir ou Anexar (aceiteMei.emissor). */
+  const peloEmissor = (x, ctx) => x.origem === 'repasse' && !!(ctx.contexto.acesso && ctx.contexto.acesso.emissorPor) && !(x.aceiteMei && x.aceiteMei.ok === false);
   function avisos(x, ctx) {
     const { esc, ic, formatarDataHora } = U(), l = lado(x, ctx), rec = (x.recusadas || [])[(x.recusadas || []).length - 1];
     const recTxt = rec ? `<div class="banner danger" id="es-recusa">${ic('alert')}<span><strong>${l === 'prestador' ? 'A ' + esc(x.tomadorNome) + ' recusou a nota' : 'Nota recusada'}${rec.numero ? ' nº ' + esc(rec.numero) : ''}</strong>${esc(rec.motivo)}${l === 'prestador' && x.status === 'aguardando_nota' ? ' · Cancele essa nota no emissor, emita outra e anexe aqui.' : ''}</span></div>` : '';
     /* repasse (13/11/2026, "a Zenith e o André têm que aprovar"): o MEI confere as horas e o valor antes de emitir */
-    if (l === 'prestador' && x.status === 'aguardando_nota' && falta_aceite(x)) {
+    if (l === 'prestador' && x.status === 'aguardando_nota' && falta_aceite(x) && !peloEmissor(x, ctx)) {
       const ac = x.aceiteMei, hs = x.horas != null ? String(x.horas).replace('.', ',') + ' h' : '';
       return recTxt + (ac && ac.ok === false ? `<div class="banner danger" id="es-mei-nao">${ic('alert')}<span><strong>Você disse que não concorda</strong>${esc(ac.motivo || '')} · A ${esc(x.tomadorNome)} vê o motivo e corrige. Se já acertaram, confirme abaixo.</span></div>` : '')
         + `<section class="card" id="es-mei-aceite" style="margin:0 0 22px"><div class="card-b stack" style="gap:12px">
@@ -489,10 +492,17 @@
       if (!mot) return;
       grava(b => { b.update(ref, { aceiteMei: { uid: ctx.sessao.usuario.uid, nome: quem(ctx), em: agora(), ok: false, motivo: mot }, atualizadoEm: agora() });
         log(b, ctx, 'espelho.aceitemei', `${x.prestadorNome} não concordou com o espelho de ${periodoTxt(x.periodo)} (${x.tomadorNome}): ${mot}`, x._id); }, 'Enviado. A empresa vê o motivo.'); };
+    /* emissor da prestadora: grava o "concordo" no nome dela antes de emitir/anexar (a regra da nota exige aceiteMei.ok) */
+    const aceiteAuto = async () => { if (!(peloEmissor(x, ctx) && falta_aceite(x))) return true;
+      const b = db.batch(), ac = { uid: ctx.sessao.usuario.uid, nome: quem(ctx), em: agora(), ok: true, emissor: true };
+      b.update(ref, { aceiteMei: ac, atualizadoEm: agora() });
+      log(b, ctx, 'espelho.aceitemei', `Horas e valor (${brl(x.valorCentavos)}) de ${periodoTxt(x.periodo)} (${x.tomadorNome}) conferidos por quem emite pela ${ctx.contexto.acesso.emissorPorNome || 'prestadora'}.`, x._id);
+      try { await b.commit(); x.aceiteMei = ac; return true; } catch (e) { U().toast(CW.fb.mensagemErro(e), 'erro'); return false; } };
     const em = $('es-emitir-bt');
-    if (em) em.onclick = () => {
+    if (em) em.onclick = async () => {
       const url = emissorDe(ctx);
-      abrirJanelaEmissor(url, x, ctx);
+      abrirJanelaEmissor(url, x, ctx);   /* abre no próprio toque (antes de esperar o banco), senão o navegador bloqueia a janela */
+      if (!(await aceiteAuto())) return;
       try { sessionStorage.setItem('cw.emissao', JSON.stringify({ id: x._id, em: Date.now() })); } catch (e) {}
       const b = db.batch(); b.update(ref, { emissao: { uid: ctx.sessao.usuario.uid, nome: quem(ctx), em: agora() }, atualizadoEm: agora() });
       log(b, ctx, 'espelho.emissao', `Emissor da nota aberto para o espelho de ${periodoTxt(x.periodo)} (${x.tomadorNome}).`, x._id);
@@ -516,7 +526,7 @@
       try { await b.commit(); emissorCache = null; U().toast(res.auto ? 'Voltou ao automático.' : 'Site guardado para toda a empresa.'); } catch (e) { U().toast(CW.fb.mensagemErro(e), 'erro'); }
       desenharVer(el, ctx, x._id);
     };
-    const an = $('es-anexar'); if (an) an.onclick = () => anexar(el, ctx, x, false);
+    const an = $('es-anexar'); if (an) an.onclick = async () => { if (!(await aceiteAuto())) return; anexar(el, ctx, x, false); };
     const bx = $('es-nf-baixar'); if (bx) bx.onclick = () => abrirArquivo(x);
     const ok = $('es-nf-ok');
     if (ok) ok.onclick = async () => {
