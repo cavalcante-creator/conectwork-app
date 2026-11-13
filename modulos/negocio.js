@@ -253,6 +253,8 @@
     try { w.document.write(`<!doctype html><meta charset="utf-8"><title>CNPJ copiado</title><body style="margin:0;display:grid;place-items:center;height:100vh;font-family:system-ui,sans-serif;background:#081638;color:#fff;text-align:center"><div><div style="font-size:44px">✓</div><h1 style="margin:8px 0;font-size:24px">CNPJ copiado</h1>${cnpj ? `<p style="font-size:20px;margin:0 0 6px"><b>${esc(cnpj)}</b></p>` : ''}<p style="opacity:.8;margin:0">Abrindo ${esc(o.titulo || site)}… clique no campo do CNPJ e cole (Ctrl+V).</p></div></body>`); w.document.close(); } catch (x) {}
     try { w.opener = null; } catch (x) {} try { w.focus(); } catch (x) {}
     setTimeout(() => { try { w.location.href = url; } catch (x) {} }, 1300);
+    /* ao fechar a janela (ex.: Documentos: emitiu a certidão), o Conectwork segue sozinho (pede o arquivo) */
+    if (typeof o.aoFechar === 'function') { const t = setInterval(() => { let fechou = false; try { fechou = w.closed; } catch (x) {} if (fechou) { clearInterval(t); o.aoFechar(); } }, 700); setTimeout(() => clearInterval(t), 30 * 60 * 1000); }
   }
   document.addEventListener('click', ev => { const a = ev.target.closest && ev.target.closest('a[data-receita]'); if (!a) return;
     receita(ev, a.href, { site: a.dataset.receita, link: a.dataset.receitaLink === '1' ? a : null }); });

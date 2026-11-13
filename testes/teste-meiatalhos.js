@@ -55,6 +55,13 @@ const { ok, fim } = H.placar('meiatalhos');
   const dc = await testaReceita('#negocio', dsel, 'DASN');
   const okR = r => r.cp === '33000167000101' && /popup=yes/.test(r.pop) && /receita\.fazenda\.gov\.br/.test(r.href) && r.jan && /CNPJ copiado/.test(r.av);
   ok('A8 "Gerar a guia" e "Fazer a declaração" copiam o CNPJ, avisam e abrem o site numa janela por cima', okR(g) && okR(dc) && /pgmei/.test(g.href) && /dasnsimei/.test(dc.href) && /PGMEI/.test(g.av) && /DASN/.test(dc.av), JSON.stringify({ g, dc }));
+  // A9 Documentos: "Emitir" a certidão copia o CNPJ, abre por cima e, ao fechar a janela, já abre o envio do arquivo
+  const ce = await testaReceita('#documentos', 'a[data-emitir="cnd_federal"]', 'certidão');
+  const temCartao = !!(await page.$('a[data-emitir="cartao"]'));
+  await page.evaluate(() => { window.__jan.closed = true; }); await page.waitForSelector('dialog[open] #dc-arq', { timeout: 5000 }).catch(() => null);
+  const dl = await page.evaluate(() => (document.querySelector('dialog[open]') || {}).innerText || '');
+  ok('A9 Documentos: "Emitir" copia o CNPJ e abre por cima; fechando a janela, abre "Enviar" da certidão (e o cartão CNPJ também tem "Emitir")', okR(ce) && /certidaointernet/.test(ce.href) && /certidão federal/.test(ce.av) && /Enviar · Certidão de débitos federais/.test(dl) && temCartao, JSON.stringify({ ce, dl: dl.slice(0, 80), temCartao }));
+  await page.keyboard.press('Escape'); await H.dorme(300);
   const temas = []; await page.evaluate(() => { document.documentElement.dataset.theme = 'light'; try { localStorage.setItem('cw.tema', 'light'); } catch (e) {} });
   for (let i = 0; i < 3; i++) { await page.click('#tema'); await H.dorme(150); temas.push(await page.$eval('#tema', e => e.innerText.trim())); }
   ok('A7 o botão de tema segue a ordem Claro → Escuro → Automático → Claro', temas.join() === 'Escuro,Automático,Claro', temas.join());

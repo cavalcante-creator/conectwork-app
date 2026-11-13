@@ -14,8 +14,10 @@
   const LINKS = {
     cnd_federal: 'https://solucoes.receita.fazenda.gov.br/Servicos/certidaointernet/PJ/Emitir',
     crf_fgts: 'https://consulta-crf.caixa.gov.br/consultacrf/pages/consultaEmpregador.jsf',
-    cndt: 'https://cndt-certidao.tst.jus.br/inicio.faces'
+    cndt: 'https://cndt-certidao.tst.jus.br/inicio.faces',
+    cartao: 'https://solucoes.receita.fazenda.gov.br/Servicos/cnpjreva/Cnpjreva_Solicitacao.asp'
   };
+  const SITE = { cnd_federal: 'site da certidão federal', crf_fgts: 'site do FGTS (Caixa)', cndt: 'site da certidão trabalhista (TST)', cartao: 'site do cartão CNPJ' };
   /* [tipo, nome, grupo, validade?, compartilhar?] */
   const TIPOS = [
     ['contrato', 'Contrato social ou última alteração (ou CCMEI)', 'cadastro', false, false],
@@ -141,7 +143,7 @@
     const linha = s => { const d = s.doc, t = tipoDe(s.tipo);
       return `<div class="docrow dc-row ${s.st === 'ok' ? 'ok' : ''}" data-tipo="${s.tipo}"><span class="ic">${ic(s.st === 'ok' ? 'check' : s.st === 'falta' ? 'upload' : 'alert')}</span>
         <div class="t"><strong>${esc(s.nome)}${obr.includes(s.tipo) ? '' : ' <span class="hint" style="font-weight:400">(opcional)</span>'}</strong><small>${esc(s.txt)}${d ? ' · ' + esc(d.arquivo.nome) + (d.compartilhar ? ' · compartilhado' : '') : ''}</small></div>
-        <div class="dc-bt">${!obr.includes(s.tipo) && s.st === 'falta' ? '<span class="pill info">Não enviado</span>' : pill(s)}${d ? `<button class="btn ghost sm" data-abrir="${esc(d._id)}">Abrir</button>` : ''}${LINKS[s.tipo] && podeEnviar(ctx) ? `<a class="btn ghost sm" href="${LINKS[s.tipo]}" target="_blank" rel="noopener">Emitir</a>` : ''}${podeEnviar(ctx) ? `<button class="btn ${d ? 'sec' : ''} sm" data-enviar="${s.tipo}">${d ? 'Atualizar' : 'Enviar'}</button>` : ''}</div></div>`; };
+        <div class="dc-bt">${!obr.includes(s.tipo) && s.st === 'falta' ? '<span class="pill info">Não enviado</span>' : pill(s)}${d ? `<button class="btn ghost sm" data-abrir="${esc(d._id)}">Abrir</button>` : ''}${LINKS[s.tipo] && podeEnviar(ctx) ? `<a class="btn ghost sm" href="${LINKS[s.tipo]}" target="_blank" rel="noopener" data-emitir="${s.tipo}">Emitir</a>` : ''}${podeEnviar(ctx) ? `<button class="btn ${d ? 'sec' : ''} sm" data-enviar="${s.tipo}">${d ? 'Atualizar' : 'Enviar'}</button>` : ''}</div></div>`; };
     const grupo = g => { const xs = S.filter(s => s.grupo === g); return xs.length ? `<section class="card" id="dc-${g}" style="margin-bottom:22px"><div class="card-h"><span class="ic">${ic(g === 'cadastro' ? 'building' : g === 'certidao' ? 'file' : 'shield')}</span><h3>${esc(GRUPOS[g])}</h3></div>${xs.map(linha).join('')}
       ${g === 'certidao' ? '<p class="hint" style="margin:0;padding:10px 20px;font-size:12px;border-top:1px solid var(--line)">"Emitir" abre o site oficial da certidão. A municipal e a estadual saem no site da sua prefeitura e da Secretaria da Fazenda do estado.</p>' : ''}
       ${g === 'cadastro' ? '<p class="hint" style="margin:0;padding:10px 20px;font-size:12px;border-top:1px solid var(--line)">Só a sua empresa e a equipe Conectwork veem estes documentos.</p>' : ''}</section>` : ''; };
@@ -153,6 +155,10 @@
     const n = document.getElementById('dc-novo'), re = () => desenhar(el, ctx);
     if (n) n.onclick = () => enviar(ctx, null, re);
     el.querySelectorAll('[data-enviar]').forEach(b => b.onclick = () => enviar(ctx, b.dataset.enviar, re));
+    /* 13/11/2026: "Emitir" segue a lógica dos sites da Receita (copia o CNPJ, avisa e abre por cima) e, ao fechar a janela, já pede o arquivo para enviar */
+    el.querySelectorAll('[data-emitir]').forEach(a => a.onclick = ev => { const tp = a.dataset.emitir;
+      if (!CW.negocio || !CW.negocio.receita) return;
+      CW.negocio.receita(ev, a.href, { site: SITE[tp] || 'site oficial', titulo: SITE[tp], aoFechar: () => { if (document.body.contains(a)) enviar(ctx, tp, re); } }); });
     el.querySelectorAll('[data-abrir]').forEach(b => b.onclick = () => abrirArquivo(meus.find(d => d._id === b.dataset.abrir)));
   }
 
