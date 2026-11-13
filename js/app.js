@@ -54,6 +54,13 @@
       if (String(porte).startsWith('MEI') && montado) montar();
     }).catch(() => { try { sessionStorage.setItem(k, ''); } catch (e) {} });
   }
+  /* menu recolhido (13/11/2026, "deixe a possibilidade de recolher o menu para deixar a tela maior"): só os ícones; lembrado no aparelho */
+  const recolhido = () => { try { return localStorage.getItem('cw.menu.recolhido') === '1'; } catch (e) { return false; } };
+  function aplicarRecolhido() {
+    const v = recolhido(); document.documentElement.classList.toggle('menu-mini', v);
+    const b = document.getElementById('menu-recolher'); if (b) { b.title = v ? 'Abrir o menu' : 'Recolher o menu (tela maior)'; b.setAttribute('aria-label', v ? 'Abrir o menu' : 'Recolher o menu'); b.setAttribute('aria-expanded', String(!v)); }
+    document.querySelectorAll('#menu [data-mod]').forEach(x => { x.title = v ? (x.querySelector('span') || {}).textContent || '' : ''; });
+  }
   function alternarMenu() { try { if (enxuto()) localStorage.setItem(chaveCompleto(), '1'); else localStorage.removeItem(chaveCompleto()); } catch (e) {} montar(); }
 
   /* grupos do menu (09/11/2026): títulos pequenos separando o que é contratação, financeiro e empresa */
@@ -101,7 +108,7 @@
     document.documentElement.classList.toggle('mei', porteMei());   /* perfil MEI: visual mais leve e amigável (10/11/2026); vale também com "Ver todas as telas" */
     document.getElementById('app').innerHTML = `<div class="shell">
       <aside class="side">${CURVES}
-        <div class="logo">${LOGO(32)}<span>Conect<b>work</b></span></div>
+        <div class="logo">${LOGO(32)}<span>Conect<b>work</b></span><button class="iconbtn menu-rec" id="menu-recolher" type="button" aria-label="${recolhido() ? 'Abrir o menu' : 'Recolher o menu'}" title="${recolhido() ? 'Abrir o menu' : 'Recolher o menu (tela maior)'}">${ic('back')}</button></div>
         ${ctx.tipo === 'empresa' ? `<div class="empbloco">${avatar(ctx.nome, 'sm', ctx.empresaId)}<div class="t"><small>Empresa</small><strong title="${esc(ctx.nome)}">${esc(ctx.nome)}</strong></div>${CW.sessao.podeTrocar() ? `<button class="iconbtn" id="trocar-empresa" title="Trocar de empresa" aria-label="Trocar de empresa">${ic('swap')}</button>` : ''}</div>`
           : `<div class="empbloco"><span class="avatar sm avatar-cw" title="Equipe Conectwork">${LOGO(26)}</span><div class="t"><small>Você está na</small><strong>Equipe Conectwork</strong></div>${CW.sessao.podeTrocar() ? `<button class="iconbtn" id="trocar-empresa" title="Trocar de empresa" aria-label="Trocar de empresa">${ic('swap')}</button>` : ''}</div>`}
         <nav class="nav" id="menu" aria-label="Principal">${menuHtml(mods)}
@@ -132,6 +139,8 @@
     document.getElementById('meus-dados').onclick = () => ir('meusdados');
     document.getElementById('busca-abrir').onclick = document.getElementById('busca-cel').onclick = () => buscar();
     const ma = document.getElementById('menu-alt'); if (ma) ma.onclick = alternarMenu;
+    document.getElementById('menu-recolher').onclick = () => { const v = !recolhido(); try { localStorage.setItem('cw.menu.recolhido', v ? '1' : ''); } catch (e) {} aplicarRecolhido(); };
+    aplicarRecolhido();
     ['trocar-empresa', 'trocar-empresa-top'].forEach(id => { const tr = document.getElementById(id); if (tr) tr.onclick = () => CW.sessao.trocar(); });
     const tb = document.getElementById('tema'), tc = document.getElementById('tema-cel');   /* tc: o mesmo botão na barra de cima do celular */
     const rotTema = () => { const t = U().tema(), nm = t === 'dark' ? 'Escuro' : t === 'light' ? 'Claro' : 'Automático'; tb.innerHTML = ic(t === 'dark' ? 'moon' : 'sun') + `<span>${nm}</span>`; tc.innerHTML = ic(t === 'dark' ? 'moon' : 'sun'); tc.title = 'Tema: ' + nm; };

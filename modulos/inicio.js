@@ -112,8 +112,8 @@
     { id: 'dinheiro', mod: 'dinheiro', rota: 'dinheiro', t: 'Dinheiro', ic: 'bank' },
     { id: 'agenda', mod: 'agenda', rota: 'agenda', t: 'Agenda', ic: 'clock' },
     { id: 'espelhos', mod: 'espelhos', rota: 'espelhos', t: 'Emitir nota', ic: 'receipt' },
-    { id: 'nacidade', mod: 'nacidade', rota: 'nacidade', t: 'Na sua cidade', ic: 'building' },
-    { id: 'assistentemei', mod: 'assistentemei', rota: 'assistentemei', t: 'Dúvidas', ic: 'help' }
+    { id: 'nacidade', mod: 'nacidade', rota: 'nacidade', t: 'Na sua cidade', ic: 'building' }
+    /* "Dúvidas" saiu (13/11/2026): o Assistente fica no botão redondo do canto de baixo */
   ];
   const MES3 = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
   const CARTAO_CNPJ = 'https://solucoes.receita.fazenda.gov.br/Servicos/cnpjreva/Cnpjreva_Solicitacao.asp';

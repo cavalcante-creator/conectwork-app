@@ -1741,3 +1741,22 @@ html.mei .shell .side,html.mei .shell .logo{background:#13265E}
 .mei-assist[hidden]{display:none}
 body:has(#mei-registrar) .mei-assist{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
 @media (max-width:760px){.mei-assist{right:16px;bottom:calc(84px + env(safe-area-inset-bottom,0px))}body:has(#mei-registrar) .mei-assist{bottom:calc(152px + env(safe-area-inset-bottom,0px))}html.mei main{padding-bottom:150px}}
+/* Menu recolhido (13/11/2026): só os ícones, a tela fica maior. Só no computador; no celular o menu é outro. */
+.menu-rec{display:none}
+@media (min-width:901px){
+  .shell .logo{position:relative}
+  .menu-rec{display:grid;margin-left:auto;width:32px;height:32px;color:#AFC0E6;background:transparent;border:0;border-radius:8px;place-items:center;cursor:pointer;transition:transform 160ms ease-out,background 120ms}
+  .menu-rec:hover{background:rgba(255,255,255,.08);color:#fff}
+  html.menu-mini .shell{grid-template-columns:76px minmax(0,1fr)!important}
+  html.menu-mini .shell .logo{padding:0;justify-content:center;flex-direction:column;gap:2px}
+  html.menu-mini .shell .logo>span,html.menu-mini .shell .logo>svg{display:none}
+  html.menu-mini .menu-rec{margin:0;transform:rotate(180deg)}
+  html.menu-mini .shell .side .empbloco .t,html.menu-mini .shell .side .empbloco .iconbtn{display:none}
+  html.menu-mini .shell .side .empbloco{justify-content:center}
+  html.menu-mini .shell .navgrupo{font-size:0;height:1px;margin:10px 16px;padding:0;background:rgba(255,255,255,.12)}
+  html.menu-mini .shell .nav button{justify-content:center;padding:11px 0}
+  html.menu-mini .shell .nav button>span{display:none}
+  html.menu-mini .shell .nav button svg.i{width:22px;height:22px}
+  html.menu-mini .shell .nav button .badge{position:absolute;top:4px;right:12px;min-width:16px;height:16px;padding:0 4px;font-size:10px}
+  html.menu-mini .shell .side .usercard .t{display:none}
+}

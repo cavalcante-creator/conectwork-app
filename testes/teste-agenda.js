@@ -92,7 +92,7 @@ const { ok, fim } = H.placar('agenda');
     tiles: Array.from(document.querySelectorAll('.mh-serv')).map(t => t.dataset.tile), hoje: document.getElementById('mei-hoje').innerText, lim: (document.getElementById('mei-lim') || {}).innerText || '' }));
   await page.click('.mh-serv[data-tile="agenda"]'); await H.dorme(300); const h10 = await page.evaluate(() => location.hash);
   ok('A10 Início do MEI: "Olá, Lia", o que tem hoje, "Serviços pra você" (abrem a tela) e o limite do MEI',
-    a10.ola === 'Olá, Lia' && a10.topo && a10.mei && a10.tiles.join() === 'das,checkup,negocio,agenda,espelhos,nacidade,assistentemei' && /Hoje/.test(a10.hoje) && /R\$ 35\.000 de R\$ 81\.000/.test(a10.lim) && h10 === '#agenda'
+    a10.ola === 'Olá, Lia' && a10.topo && a10.mei && a10.tiles.join() === 'das,checkup,negocio,agenda,espelhos,nacidade' && /Hoje/.test(a10.hoje) && /R\$ 35\.000 de R\$ 81\.000/.test(a10.lim) && h10 === '#agenda'
     && !(await page.evaluate(() => document.querySelector('.topbar').hidden)), JSON.stringify(a10));
 
   // A9 celular: agenda e assistente cabem sem rolar para o lado
