@@ -118,11 +118,21 @@
   const ehMei = ctx => { let p = ''; try { p = sessionStorage.getItem('cw.porte.' + ctx.empresaId) || ''; } catch (e) {} return String(p).startsWith('MEI'); };
   /* telas da gestão do MEI liberadas também no cadastro rápido (status 'mei') e enquanto o cadastro completo é analisado */
   const meiSemAprov = ctx => ehMei(ctx) && ['mei', 'analise', 'pendencia'].includes(((ctx.empresa) || {}).status);
+  /* 13/11/2026: o Assistente num botão redondo no canto de baixo, à direita, em todas as telas do MEI (some na própria conversa) */
+  let olhar = null;
+  function botao(ligar) {
+    let b = document.getElementById('mei-assist');
+    if (!ligar) { if (b) b.remove(); if (olhar) { window.removeEventListener('hashchange', olhar); olhar = null; } return; }
+    if (!b) { b = document.createElement('button'); b.id = 'mei-assist'; b.className = 'mei-assist'; b.type = 'button'; b.setAttribute('aria-label', 'Tirar uma dúvida com o Assistente'); b.title = 'Tirar uma dúvida';
+      b.innerHTML = CW.ui.ic('help'); b.onclick = () => CW.ir('assistentemei'); document.body.appendChild(b); }
+    if (!olhar) { olhar = () => { const x = document.getElementById('mei-assist'); if (x) x.hidden = /^#assistentemei/.test(location.hash); }; window.addEventListener('hashchange', olhar); }
+    olhar();
+  }
   CW.registrarModulo({
     id: 'assistentemei', nome: 'Assistente', icone: 'help', ordem: 27.5,
     para: ['empresa'], livre: true, semAprovacao: ctx => meiSemAprov(ctx),
     mostrar: ctx => ['prestador', 'ambos'].includes((ctx.empresa || {}).tipo) && ehMei(ctx),
-    iniciar() { conversa = []; dados = null; return () => { conversa = []; dados = null; }; },
+    iniciar() { conversa = []; dados = null; botao(true); return () => { conversa = []; dados = null; botao(false); }; },
     telas: { conversa: { nome: 'Assistente', sub: 'Perguntas sobre o seu MEI respondidas em linguagem simples, com os seus números.', render: desenhar } }
   });
   CW.assistenteMei = { responder, achar };

@@ -1733,3 +1733,11 @@ html.mei .shell .side,html.mei .shell .logo{background:#13265E}
 .es-flote select{height:32px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit;font-size:13px;padding:0 8px;max-width:180px}
 .sg-sw{display:inline-flex;align-items:center;gap:10px;cursor:pointer;font-size:14px}
 .sg-sw input{width:18px;height:18px;accent-color:var(--blue)}
+/* Assistente do MEI num botão redondo no canto de baixo, à direita (13/11/2026) */
+.mei-assist{position:fixed;right:max(20px,env(safe-area-inset-right,0px));bottom:calc(24px + env(safe-area-inset-bottom,0px));z-index:30;width:56px;height:56px;border:0;border-radius:50%;display:grid;place-items:center;background:var(--blue);color:#fff;cursor:pointer;box-shadow:0 14px 28px -12px rgba(23,105,255,.75);touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:transform 140ms ease-out}
+.mei-assist svg.i{width:28px;height:28px}
+.mei-assist:active{transform:scale(.95)}
+.mei-assist:focus-visible{outline:3px solid #fff;outline-offset:2px;box-shadow:0 0 0 6px var(--blue)}
+.mei-assist[hidden]{display:none}
+body:has(#mei-registrar) .mei-assist{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+@media (max-width:760px){.mei-assist{right:16px;bottom:calc(84px + env(safe-area-inset-bottom,0px))}body:has(#mei-registrar) .mei-assist{bottom:calc(152px + env(safe-area-inset-bottom,0px))}html.mei main{padding-bottom:150px}}

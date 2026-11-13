@@ -201,7 +201,7 @@
         <section class="mh-sec"><div class="mh-sec-h"><h3>Serviços pra você</h3></div><div class="mh-servicos" id="mei-servicos"></div></section>
         <button class="mei-mes" id="mei-mes" hidden></button>
         <button class="mei-lim" id="mei-lim" hidden></button>
-        <section class="mh-sec" id="mh-dados"><div class="mh-sec-h"><h3>Dados do seu MEI</h3>${cnpj ? `<a class="linkbtn" href="${CARTAO_CNPJ}" target="_blank" rel="noopener">cartão CNPJ ${ic('chev')}</a>` : ''}</div>
+        <section class="mh-sec" id="mh-dados"><div class="mh-sec-h"><h3>Dados do seu MEI</h3>${cnpj ? `<a class="linkbtn" id="mh-cartao" href="${CARTAO_CNPJ}" target="_blank" rel="noopener" title="Copia o CNPJ e abre o site da Receita: é só colar">cartão CNPJ ${ic('chev')}</a>` : ''}</div>
           <div class="mh-card mh-dados-c"><span class="mh-logo">${CW.ui.avatar(c.nome, 'sm', c.empresaId)}</span><span class="t"><small>Nome do negócio</small><b>${esc(e.razao || e.nome || c.nome)}</b>${cnpj ? `<small>CNPJ ${esc(cnpj)}</small>` : ''}</span>
             ${cnpj ? `<button class="iconbtn" id="mh-copiar" type="button" aria-label="Copiar o CNPJ" title="Copiar o CNPJ">${ic('copy')}</button>` : ''}</div></section>
         <section class="card" id="ini-pv" hidden><div class="card-h"><span class="ic">${ic('alert')}</span><h3>Para fazer</h3><span class="count" id="ini-pv-n" hidden></span></div><div class="card-b" id="ini-pv-b"></div></section>
@@ -211,6 +211,8 @@
     const dm = document.getElementById('mh-demandas'); if (dm) dm.onclick = () => CW.ir('ordens');
     document.getElementById('mh-sino').onclick = () => { const pv = document.getElementById('ini-pv'); if (pv && !pv.hidden) pv.scrollIntoView({ behavior: 'smooth', block: 'start' }); else U().toast('Nada esperando você agora.'); };
     const cp = document.getElementById('mh-copiar'); if (cp) cp.onclick = async () => { try { await navigator.clipboard.writeText(U().dig(e.cnpj)); U().toast('CNPJ copiado.'); } catch (x) { U().toast('CNPJ: ' + cnpj); } };
+    /* 13/11/2026: "cartão CNPJ" já copia o CNPJ (o site da Receita pede o número): é só colar */
+    const ca = document.getElementById('mh-cartao'); if (ca) ca.onclick = () => { try { navigator.clipboard.writeText(U().dig(e.cnpj)).then(() => U().toast('CNPJ copiado: no site da Receita, é só colar (Ctrl+V).'), () => {}); } catch (x) { /* sem área de transferência */ } };
     const rede = document.getElementById('mei-rede'); if (rede) rede.onclick = () => CW.ir('meucadastro');
     const ps = CW.app.pendencias(); meiAtualiza(ps); pvDesenha(ps); mostraPv(ps);
     meiLimite(ctx);
