@@ -461,6 +461,28 @@ async function deve(nome, permitido, op) {
   await deve('Repasse: a empresa que contrata NÃO lê a nota do MEI', false, () => getDoc(doc(db('bruno'), 'espelhos', RID)));
   await deve('Repasse: o MEI registra que abriu o emissor', true, () => updateDoc(doc(db('zeca'), 'espelhos', RID), { emissao: { uid: P.zeca, nome: 'Zeca', em: serverTimestamp() }, atualizadoEm: serverTimestamp() }));
   await deve('Repasse: o MEI NÃO muda o valor', false, () => updateDoc(doc(db('zeca'), 'espelhos', RID), { valorCentavos: 900000, liquidoCentavos: 900000, versao: 2, atualizadoPor: P.zeca, atualizadoEm: serverTimestamp() }));
+  /* o MEI concorda com as horas e o valor antes de emitir (13/11/2026) */
+  const notaMei = (n) => { const f = db('zeca'), b = writeBatch(f);
+    b.set(doc(f, 'espelhos', RID, 'arquivos', n.envio + '-0'), { d: 'JVBERi0x', k: 0, envio: n.envio, em: serverTimestamp() });
+    b.set(doc(f, 'notaschave', n.chaveUnica), { espelhoId: RID, prestadorId: 'meiz', tomadorId: 'beta', em: serverTimestamp() });
+    b.update(doc(f, 'espelhos', RID), { status: 'nota_enviada', nota: n, atualizadoEm: serverTimestamp() }); return b.commit(); };
+  const nMei = { tipo: 'pdf', nomeArquivo: 'nota.pdf', tam: 1000, envio: 'mz01', partes: 1, chaveUnica: '7'.repeat(50), chave: '7'.repeat(50), numero: '3', emitenteCnpj: '', valorCentavos: null, competencia: '2026-12', emissao: '', conferencia: { ok: true, manual: false, itens: [] }, enviadoPor: P.zeca, enviadoPorNome: 'Zeca', enviadoEm: serverTimestamp() };
+  await deve('Repasse: o MEI NÃO envia a nota sem concordar com as horas e o valor', false, () => notaMei(nMei));
+  await deve('Repasse: a prestadora NÃO concorda no lugar do MEI', false, () => updateDoc(doc(db('beto'), 'espelhos', RID), { aceiteMei: { uid: P.beto, nome: 'Beto', em: serverTimestamp(), ok: true }, atualizadoEm: serverTimestamp() }));
+  await deve('Repasse: o MEI NÃO discorda sem dizer o motivo', false, () => updateDoc(doc(db('zeca'), 'espelhos', RID), { aceiteMei: { uid: P.zeca, nome: 'Zeca', em: serverTimestamp(), ok: false, motivo: 'não' }, atualizadoEm: serverTimestamp() }));
+  await deve('Repasse: o MEI diz que não concorda, com o motivo', true, () => updateDoc(doc(db('zeca'), 'espelhos', RID), { aceiteMei: { uid: P.zeca, nome: 'Zeca', em: serverTimestamp(), ok: false, motivo: 'Faltaram 2 horas do dia 20.' }, atualizadoEm: serverTimestamp() }));
+  await deve('Repasse: o MEI NÃO envia a nota tendo discordado', false, () => notaMei(nMei));
+  await deve('Repasse: o MEI concorda com as horas e o valor', true, () => updateDoc(doc(db('zeca'), 'espelhos', RID), { aceiteMei: { uid: P.zeca, nome: 'Zeca', em: serverTimestamp(), ok: true }, atualizadoEm: serverTimestamp() }));
+  await deve('Repasse: depois de concordar, o MEI envia a nota', true, () => notaMei(nMei));
+  /* medição do painel do RH (13/11/2026): o envio já é a aprovação de quem contrata; a prestadora confirma e fica aprovada */
+  await env.withSecurityRulesDisabled(async c => { const f = c.firestore();
+    await setDoc(doc(f, 'medicoes', 'cm_2027-02-1'), med('rita', { periodo: '2027-02-1', origem: 'integracao', ref: 'painel-rh:2027-02-1:BETA' }));
+    await setDoc(doc(f, 'medicoes', 'cm_2027-02-2'), med('rita', { periodo: '2027-02-2' })); });
+  const cp = (k, x) => ({ status: 'aprovada', confirmacao: { uid: P[k], nome: k, em: serverTimestamp() }, aprovacao: Object.assign({ uid: P.rita, nome: 'rita (painel do RH)', em: serverTimestamp(), painel: true }, x || {}), atualizadoEm: serverTimestamp() });
+  await deve('Painel: a prestadora NÃO aprova direto uma medição lançada no Conectwork', false, () => updateDoc(doc(db('beto'), 'medicoes', 'cm_2027-02-2'), cp('beto')));
+  await deve('Painel: NÃO com a aprovação no nome de outra pessoa (não de quem enviou)', false, () => updateDoc(doc(db('beto'), 'medicoes', 'cm_2027-02-1'), cp('beto', { uid: P.beto })));
+  await deve('Painel: quem contrata NÃO confirma no lugar da prestadora', false, () => updateDoc(doc(db('bruno'), 'medicoes', 'cm_2027-02-1'), cp('bruno')));
+  await deve('Painel: a prestadora confirma a medição do painel e ela fica aprovada', true, () => updateDoc(doc(db('beto'), 'medicoes', 'cm_2027-02-1'), cp('beto')));
   /* funções separadas entre as duas empresas: a mesma pessoa pode estar nas duas (ex.: RH da Colafix que também emite pela prestadora) */
   await env.withSecurityRulesDisabled(async c => { const d = c.firestore();
     await setDoc(doc(d, 'acessos', 'beta_' + P.rita), { uid: P.rita, empresaId: 'beta', nome: 'Rita', email: EM.rita, cargo: 'financeiro', extras: [], sem: [], ativo: true });

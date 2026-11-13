@@ -326,6 +326,14 @@ service cloud.firestore {
         && ((request.auth.uid != r.criadoPor && request.auth.uid != r.confirmacao.uid) || (master() && d.aprovacao.excecao == true))
         && mudou().hasOnly(['status','aprovacao','atualizadoEm']);
     }
+    // medição que veio do painel do RH (13/11/2026, "o painel é como se a Colafix tivesse enviado, então está aprovado"):
+    // enviar pelo painel já é a aprovação de quem contrata; a prestadora confirma e a medição fica aprovada direto.
+    function medicaoConfirmarPainel(r, d) {
+      return cargoEm(r.prestadorId, ['admin','financeiro']) && r.status == 'enviada' && r.origem == 'integracao' && d.status == 'aprovada'
+        && (request.auth.uid != r.criadoPor || (master() && d.confirmacao.excecao == true))
+        && d.confirmacao.uid == request.auth.uid && d.aprovacao.uid == r.criadoPor && d.aprovacao.painel == true
+        && mudou().hasOnly(['status','confirmacao','aprovacao','atualizadoEm']);
+    }
     function medicaoCancelar(r, d) {
       return cargoEm(r.tomadorId, ['admin','rh']) && r.status in ['enviada','divergencia','confirmada_prestadora'] && d.status == 'cancelada'
         && mudou().hasOnly(['status','atualizadoEm']);
@@ -340,7 +348,7 @@ service cloud.firestore {
         && ((request.resource.data.status == 'enviada' && medicaoCorrigir(resource.data, request.resource.data))
             || (request.resource.data.status == 'confirmada_prestadora' && medicaoConfirmar(resource.data, request.resource.data))
             || (request.resource.data.status == 'divergencia' && medicaoDivergir(resource.data, request.resource.data))
-            || (request.resource.data.status == 'aprovada' && medicaoAprovar(resource.data, request.resource.data))
+            || (request.resource.data.status == 'aprovada' && (medicaoAprovar(resource.data, request.resource.data) || medicaoConfirmarPainel(resource.data, request.resource.data)))
             || (request.resource.data.status == 'cancelada' && medicaoCancelar(resource.data, request.resource.data)));
       allow delete: if false;
     }
@@ -350,7 +358,7 @@ service cloud.firestore {
     // Valor = o da medição; vencimento = o do contrato (não muda no espelho); líquido = valor − retenções. A prestadora lê. Nada se apaga.
     function camposEspelho() { return ['medicaoId','contratoId','tomadorId','prestadorId','partes','tomadorNome','prestadorNome','prestadorCnpj','tomador',
       'periodo','competencia','descricao','valorCentavos','retencoes','liquidoCentavos','vencimentoDias','obs','status','versao',
-      'criadoPor','criadoPorNome','criadoEm','atualizadoPor','atualizadoPorNome','atualizadoEm','emissao','nota','recusadas','conferenciaNota','origem','osNumero','item','horas','prestadorCnpjNum','contestacao','contestacoes','calc','prazoEmissao','lote']; }
+      'criadoPor','criadoPorNome','criadoEm','atualizadoPor','atualizadoPorNome','atualizadoEm','emissao','nota','recusadas','conferenciaNota','origem','osNumero','item','horas','prestadorCnpjNum','contestacao','contestacoes','calc','prazoEmissao','lote','aceiteMei']; }
     function centavos(v) { return v is int && v >= 0; }
     function espelhoValores(d) {
       let r = d.retencoes;
@@ -443,10 +451,17 @@ service cloud.firestore {
       return cargoEm(r.prestadorId, ['admin','financeiro','operacional']) && r.status == 'aguardando_nota' && d.status == 'aguardando_nota'
         && mudou().hasOnly(['emissao','atualizadoEm']) && d.emissao.uid == request.auth.uid;
     }
+    // o profissional MEI aprova as horas e o valor dele antes de emitir (13/11/2026, "a Zenith e o André têm que aprovar")
+    function espelhoAceiteMei(r, d) {
+      return r.get('origem', '') == 'repasse' && cargoEm(r.prestadorId, ['admin','financeiro','operacional'])
+        && mudou().hasOnly(['aceiteMei','atualizadoEm']) && d.aceiteMei.uid == request.auth.uid && d.aceiteMei.ok is bool
+        && (d.aceiteMei.ok == true || (d.aceiteMei.motivo is string && d.aceiteMei.motivo.size() >= 10 && d.aceiteMei.motivo.size() <= 500));
+    }
     function espelhoNota(id, r, d) {
       let n = d.nota;
       return cargoEm(r.prestadorId, ['admin','financeiro','operacional']) && r.status == 'aguardando_nota' && d.status == 'nota_enviada'
         && mudou().hasOnly(['status','nota','atualizadoEm'])
+        && (r.get('origem', '') != 'repasse' || r.get('aceiteMei', {'ok': false}).ok == true)
         && n.enviadoPor == request.auth.uid && n.chaveUnica is string && n.chaveUnica.size() >= 10 && n.chaveUnica.size() <= 80
         && n.tipo in ['pdf','xml'] && n.partes is int && n.partes >= 1 && n.partes <= 6 && n.conferencia.ok is bool
         && (n.tipo == 'pdf' || (n.conferencia.ok == true && n.valorCentavos == r.valorCentavos))
@@ -519,7 +534,7 @@ service cloud.firestore {
       allow create: if espelhoCriar(id, request.resource.data);
       allow update: if request.resource.data.keys().hasOnly(camposEspelho())
         && ((resource.data.status == 'aguardando_nota' && request.resource.data.status == 'aguardando_nota'
-              && (espelhoCorrigir(resource.data, request.resource.data) || espelhoEmissao(resource.data, request.resource.data)))
+              && (espelhoCorrigir(resource.data, request.resource.data) || espelhoEmissao(resource.data, request.resource.data) || espelhoAceiteMei(resource.data, request.resource.data)))
             || (request.resource.data.status == 'nota_enviada' && espelhoNota(id, resource.data, request.resource.data))
             || (request.resource.data.status == 'nota_ok' && espelhoConferirNota(id, resource.data, request.resource.data))
             || (resource.data.status == 'nota_enviada' && request.resource.data.status == 'aguardando_nota' && espelhoRecusarNota(resource.data, request.resource.data))

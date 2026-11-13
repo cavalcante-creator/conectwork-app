@@ -363,7 +363,7 @@
     const temRet = somaRet(x.retencoes) > 0;
     el.innerHTML = `<div style="margin-bottom:14px"><button class="linkbtn" id="es-voltar">${ic('back')}Voltar para os espelhos</button></div>
       ${avisos(x, ctx)}
-      ${l === 'prestador' && x.status === 'aguardando_nota' && podeEnviar(ctx) ? '<div id="es-assist"></div>' : ''}
+      ${l === 'prestador' && x.status === 'aguardando_nota' && podeEnviar(ctx) && !falta_aceite(x) ? '<div id="es-assist"></div>' : ''}
       <div class="grid-main"><div class="stack">
         <section class="card" id="es-tom"><div class="card-h"><span class="ic">${ic('building')}</span><h3>Tomador do serviço</h3><span style="margin-left:auto">${pill(x.status)}</span></div><div class="card-b"><dl class="dl">
           ${cp('Razão social', t.razao, 'razao', 1)}${cp('CNPJ', t.cnpj, 'cnpj')}${cp('Inscrição municipal', t.im, 'im')}${cp('Endereço', copias.end, 'end', 1)}</dl></div></section>
@@ -401,9 +401,20 @@
   }
 
   /* ---------- nota fiscal: emitir fora, voltar e anexar (PDF ou XML), conferir ---------- */
+  const falta_aceite = x => x.origem === 'repasse' && !(x.aceiteMei && x.aceiteMei.ok === true);
   function avisos(x, ctx) {
     const { esc, ic, formatarDataHora } = U(), l = lado(x, ctx), rec = (x.recusadas || [])[(x.recusadas || []).length - 1];
     const recTxt = rec ? `<div class="banner danger" id="es-recusa">${ic('alert')}<span><strong>${l === 'prestador' ? 'A ' + esc(x.tomadorNome) + ' recusou a nota' : 'Nota recusada'}${rec.numero ? ' nº ' + esc(rec.numero) : ''}</strong>${esc(rec.motivo)}${l === 'prestador' && x.status === 'aguardando_nota' ? ' · Cancele essa nota no emissor, emita outra e anexe aqui.' : ''}</span></div>` : '';
+    /* repasse (13/11/2026, "a Zenith e o André têm que aprovar"): o MEI confere as horas e o valor antes de emitir */
+    if (l === 'prestador' && x.status === 'aguardando_nota' && falta_aceite(x)) {
+      const ac = x.aceiteMei, hs = x.horas != null ? String(x.horas).replace('.', ',') + ' h' : '';
+      return recTxt + (ac && ac.ok === false ? `<div class="banner danger" id="es-mei-nao">${ic('alert')}<span><strong>Você disse que não concorda</strong>${esc(ac.motivo || '')} · A ${esc(x.tomadorNome)} vê o motivo e corrige. Se já acertaram, confirme abaixo.</span></div>` : '')
+        + `<section class="card" id="es-mei-aceite" style="margin:0 0 22px"><div class="card-b stack" style="gap:12px">
+          <p style="margin:0;font-size:15px"><strong>Confira antes de emitir a nota</strong></p>
+          <p style="margin:0">A ${esc(x.tomadorNome)} fechou ${hs ? `<b>${esc(hs)}</b> trabalhadas, ` : ''}no valor de <b>${esc(brl(x.valorCentavos))}</b> (${esc(periodoTxt(x.periodo))}).</p>
+          ${podeEnviar(ctx) ? `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ok" id="es-mei-ok">${ic('check')}Concordo com as horas e o valor</button><button class="btn sec" id="es-mei-nao-bt">${ic('alert')}Não concordo</button></div>` : ''}
+          <p class="hint" style="margin:0;font-size:12.5px">Concordando, aparece o botão para emitir a nota.</p></div></section>`;
+    }
     if (l === 'prestador' && x.status === 'aguardando_nota') {
       const E = emissorCache || { origem: 'padrao', nome: 'Emissor Nacional' }, onde = E.cidade ? E.cidade + '/' + E.uf : '';
       const porque = E.origem === 'empresa' ? 'Site definido pela sua empresa.' : E.origem === 'cidade' ? `Site da prefeitura de ${onde}, escolhido pela cidade da sua empresa.` : `Emissor Nacional (gov.br)${onde ? ', o padrão para ' + onde : ''}.`;
@@ -414,6 +425,8 @@
             <button class="btn ${x.emissao ? '' : 'sec'}" id="es-anexar">${ic('upload')}Anexar a nota (PDF ou XML)</button></div>
           <p class="hint" style="margin:0;font-size:12.5px" id="es-site">${esc(porque)} <button class="linkbtn" id="es-outro-site" style="font-size:12.5px;display:inline">Não é esse o site?</button></p></div></section>` : ''}`;
     }
+    if (l === 'tomador' && x.status === 'aguardando_nota' && x.origem === 'repasse' && x.aceiteMei && x.aceiteMei.ok === false) return recTxt + `<div class="banner danger" id="es-aviso">${ic('alert')}<span><strong>${esc(x.prestadorNome)} não concorda com as horas ou o valor</strong>${esc(x.aceiteMei.motivo || '')} · Corrija o espelho (ou converse com o profissional) e peça para ele conferir de novo.</span></div>`;
+    if (l === 'tomador' && x.status === 'aguardando_nota' && falta_aceite(x)) return recTxt + `<div class="banner info" id="es-aviso">${ic('clock')}<span><strong>Esperando ${esc(x.prestadorNome)} conferir as horas e o valor</strong>Depois que ele concordar, ele emite a nota.</span></div>`;
     if (l === 'tomador' && x.status === 'aguardando_nota') return recTxt + `<div class="banner info" id="es-aviso">${ic('clock')}<span><strong>Esperando a nota da ${esc(x.prestadorNome)}${x.prazoEmissao ? (prazoSit(x) === 'atrasada' ? ` · prazo ${esc(U().formatarData(x.prazoEmissao))} já passou` : ` até ${esc(U().formatarData(x.prazoEmissao))}`) : ''}</strong>${x.emissao ? 'A prestadora abriu o emissor em ' + esc(formatarDataHora(x.emissao.em)) + '. ' : 'A prestadora já vê o espelho. '}A nota é conferida com o contrato, a medição e este espelho.</span></div>`;
     if (x.status === 'nota_enviada') return `<div class="banner ${l === 'tomador' ? 'warn' : 'info'}" id="es-aviso">${ic(l === 'tomador' ? 'alert' : 'clock')}<span><strong>${l === 'tomador' ? 'Nota chegou: confira' : 'Nota enviada'}</strong>${l === 'tomador' ? 'Veja a conferência abaixo, abra o arquivo se precisar e marque "Nota conferida" ou recuse com o motivo.' : 'A ' + esc(x.tomadorNome) + ' confere a nota com o contrato, a medição e o espelho.'}</span></div>`;
     if (x.status === 'nota_contestada') return `<div class="banner danger" id="es-aviso">${ic('alert')}<span><strong>${l === 'tomador' ? 'Nota contestada' : 'A ' + esc(x.tomadorNome) + ' contestou a nota'}</strong>${l === 'tomador' ? 'A nota fica parada e não vira título até você aceitar a explicação ou pedir uma nota nova.' : 'Veja o motivo abaixo: responda explicando ou mande a nota corrigida.'}</span></div>`;
@@ -465,6 +478,16 @@
   function ligarNota(el, ctx, x) {
     const $ = id => document.getElementById(id), db = CW.fb.db(), ref = db.doc('espelhos/' + x._id), agora = CW.fb.agora;
     const grava = async (fn, msg) => { const b = db.batch(); fn(b); try { await b.commit(); if (msg) U().toast(msg); } catch (e) { U().toast(CW.fb.mensagemErro(e), 'erro'); } desenharVer(el, ctx, x._id); };
+    const mo = $('es-mei-ok');
+    if (mo) mo.onclick = () => grava(b => { b.update(ref, { aceiteMei: { uid: ctx.sessao.usuario.uid, nome: quem(ctx), em: agora(), ok: true }, atualizadoEm: agora() });
+      log(b, ctx, 'espelho.aceitemei', `${x.prestadorNome} concordou com as horas e o valor (${brl(x.valorCentavos)}) de ${periodoTxt(x.periodo)} (${x.tomadorNome}).`, x._id); }, 'Pronto. Agora emita a nota.');
+    const mn = $('es-mei-nao-bt');
+    if (mn) mn.onclick = async () => { let mot = null;
+      await U().dialogo({ titulo: 'Não concordo', sub: `A ${x.tomadorNome} vê o motivo e corrige.`, corpo: `<label class="f"><span>O que está diferente?</span><textarea id="mn-mot" rows="4" maxlength="500" placeholder="Ex.: No dia 20 trabalhei até as 18h, faltam 2 horas."></textarea></label><p class="err" id="mn-erro"></p>`,
+        botoes: [{ texto: 'Voltar', valor: null, classe: 'sec' }, { texto: 'Mandar', valor: 'ok', classe: 'dangerous', antes: d => { const t = d.querySelector('#mn-mot').value.trim(); if (t.length < 10) { d.querySelector('#mn-erro').textContent = 'Explique o que está diferente (pelo menos 10 letras).'; return false; } mot = t; return true; } }] });
+      if (!mot) return;
+      grava(b => { b.update(ref, { aceiteMei: { uid: ctx.sessao.usuario.uid, nome: quem(ctx), em: agora(), ok: false, motivo: mot }, atualizadoEm: agora() });
+        log(b, ctx, 'espelho.aceitemei', `${x.prestadorNome} não concordou com o espelho de ${periodoTxt(x.periodo)} (${x.tomadorNome}): ${mot}`, x._id); }, 'Enviado. A empresa vê o motivo.'); };
     const em = $('es-emitir-bt');
     if (em) em.onclick = () => {
       const url = emissorDe(ctx);
@@ -725,7 +748,7 @@
       if (!pronto) return [];
       const comEsp = new Set(espT.map(x => x._id)), out = [];
       if (pode(ctx)) medsAprov.concat(osAprov).filter(m => !comEsp.has(m._id)).forEach(m => out.push({ txt: 'Preparar o espelho da nota', sub: `${m.prestadorNome} · ${periodoTxt(m.periodo)} · ${brl(m.valorCentavos)}`, rota: 'espelhos/preparar/' + m._id }));
-      if (podeEnviar(ctx)) espP.filter(x => x.status === 'aguardando_nota').forEach(x => out.push({ txt: (x.recusadas || []).length ? 'Enviar outra nota (a anterior foi recusada)' : prazoSit(x) === 'atrasada' ? 'Emitir a nota fiscal (o prazo já passou)' : 'Emitir e enviar a nota fiscal', sub: `${x.tomadorNome} · ${periodoTxt(x.periodo)} · ${brl(x.valorCentavos)}${x.prazoEmissao ? ' · até ' + U().formatarData(x.prazoEmissao) : ''}`, rota: 'espelhos/ver/' + x._id }));
+      if (podeEnviar(ctx)) espP.filter(x => x.status === 'aguardando_nota').forEach(x => out.push({ txt: falta_aceite(x) ? 'Conferir as horas e o valor e emitir a nota' : (x.recusadas || []).length ? 'Enviar outra nota (a anterior foi recusada)' : prazoSit(x) === 'atrasada' ? 'Emitir a nota fiscal (o prazo já passou)' : 'Emitir e enviar a nota fiscal', sub: `${x.tomadorNome} · ${periodoTxt(x.periodo)} · ${brl(x.valorCentavos)}${x.prazoEmissao ? ' · até ' + U().formatarData(x.prazoEmissao) : ''}`, rota: 'espelhos/ver/' + x._id }));
       const ultLado = x => { const ms = (x.contestacao && x.contestacao.msgs) || []; return ms.length ? ms[ms.length - 1].lado : 'tomador'; };
       if (podeEnviar(ctx)) espP.filter(x => x.status === 'nota_contestada' && ultLado(x) === 'tomador').forEach(x => out.push({ txt: 'Responder a contestação da nota', sub: `${x.tomadorNome} · ${periodoTxt(x.periodo)} · ${brl(x.valorCentavos)}`, rota: 'espelhos/ver/' + x._id }));
       if (pode(ctx)) espT.filter(x => x.status === 'nota_contestada' && ultLado(x) === 'prestador').forEach(x => out.push({ txt: 'Ver a resposta da contestação da nota', sub: `${x.prestadorNome} · ${periodoTxt(x.periodo)} · ${brl(x.valorCentavos)}`, rota: 'espelhos/ver/' + x._id }));

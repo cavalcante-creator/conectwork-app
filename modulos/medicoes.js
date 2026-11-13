@@ -270,7 +270,7 @@
         <section class="card" id="md-passos"><div class="card-h"><span class="ic">${ic('clock')}</span><h3>Andamento</h3></div><div class="card-b stack" style="gap:16px">
           <ul class="tl">${passo(true, false, 'Medição enviada', formatarDataHora(m.criadoEm) + ' · ' + (m.criadoPorNome || ''))}
             ${passo(!!m.confirmacao, st === 'enviada' || st === 'divergencia', 'Conferida pela prestadora', m.confirmacao ? formatarDataHora(m.confirmacao.em) + ' · ' + m.confirmacao.nome + (m.confirmacao.excecao ? ' (exceção do piloto)' : '') : st === 'divergencia' ? 'divergência apontada' : 'esperando')}
-            ${passo(!!m.aprovacao, st === 'confirmada_prestadora', 'Aprovada pelo aprovador técnico', m.aprovacao ? formatarDataHora(m.aprovacao.em) + ' · ' + m.aprovacao.nome + (m.aprovacao.excecao ? ' (exceção do piloto)' : '') : 'esperando')}</ul>
+            ${m.origem === 'integracao' ? passo(true, false, 'Aprovada pela ' + (m.tomadorNome || 'empresa que contrata') + ' no envio pelo painel do RH', st === 'aprovada' ? 'aprovada ao confirmar' : 'vale quando a prestadora confirmar') : passo(!!m.aprovacao, st === 'confirmada_prestadora', 'Aprovada pelo aprovador técnico', m.aprovacao ? formatarDataHora(m.aprovacao.em) + ' · ' + m.aprovacao.nome + (m.aprovacao.excecao ? ' (exceção do piloto)' : '') : 'esperando')}</ul>
           ${acoes ? `<div style="display:flex;gap:8px;flex-wrap:wrap" id="md-acoes">${acoes}</div>` : ''}
           ${zap ? `<div id="md-zap">${zap}</div>` : ''}
           ${st === 'aprovada' && l === 'prestador' && (m.memoria || []).some(x => x.cnpj) ? `<div><button class="btn" id="md-repasse">${ic('users')}Notas dos profissionais MEI</button><p class="hint" style="margin:6px 0 0;font-size:12.5px">Cada profissional MEI emite a nota dele para a sua empresa pelo valor da linha.</p></div>` : ''}
@@ -290,8 +290,12 @@
     const pt = periodoTxt(m.periodo);
     $('md-voltar').onclick = () => CW.ir('medicoes');
     const c1 = $('md-confirmar');
-    if (c1) c1.onclick = async () => { if (!(await U().confirmar('Confirmar a medição?', `Você confere que a medição de ${pt} está certa: ${brl(m.valorCentavos)}. Depois, o aprovador técnico da ${m.tomadorNome} aprova.`, 'Confirmar'))) return;
-      grava(b => { b.update(ref, { status: 'confirmada_prestadora', confirmacao: Object.assign(assinatura(), m.criadoPor === ctx.sessao.usuario.uid ? { excecao: true } : {}), atualizadoEm: agora() }); log(b, ctx, 'medicao.confirmar', `Medição de ${pt} (${m.tomadorNome}) confirmada: ${brl(m.valorCentavos)}.`, m._id); }, 'Medição confirmada.'); };
+    /* medição do painel do RH (13/11/2026): o envio pelo painel já é a aprovação de quem contrata; a prestadora confirma e ela fica aprovada */
+    const painel = m.origem === 'integracao';
+    if (c1) c1.onclick = async () => { if (!(await U().confirmar('Confirmar a medição?', painel ? `Você confere que a medição de ${pt} está certa: ${brl(m.valorCentavos)}. A ${m.tomadorNome} já aprovou ao enviar pelo painel do RH: confirmando, ela fica aprovada e você já prepara as notas dos profissionais MEI.` : `Você confere que a medição de ${pt} está certa: ${brl(m.valorCentavos)}. Depois, o aprovador técnico da ${m.tomadorNome} aprova.`, 'Confirmar'))) return;
+      const conf = Object.assign(assinatura(), m.criadoPor === ctx.sessao.usuario.uid ? { excecao: true } : {});
+      const up = painel ? { status: 'aprovada', confirmacao: conf, aprovacao: { uid: m.criadoPor, nome: (m.criadoPorNome || '') + ' (painel do RH)', em: m.criadoEm || agora(), painel: true }, atualizadoEm: agora() } : { status: 'confirmada_prestadora', confirmacao: conf, atualizadoEm: agora() };
+      grava(b => { b.update(ref, up); log(b, ctx, painel ? 'medicao.aprovar' : 'medicao.confirmar', `Medição de ${pt} (${m.tomadorNome}) confirmada${painel ? ' pela prestadora e aprovada (enviada pelo painel do RH)' : ''}: ${brl(m.valorCentavos)}.`, m._id); }, painel ? 'Medição confirmada e aprovada. Agora prepare as notas dos profissionais MEI.' : 'Medição confirmada.'); };
     const dv = $('md-divergir');
     if (dv) dv.onclick = async () => {
       let mot = null;

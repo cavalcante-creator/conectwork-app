@@ -121,6 +121,17 @@ const b64url = o => Buffer.from(JSON.stringify(o), 'utf8').toString('base64').re
     /Atualização/.test(b8) && ms8.length === 1 && ms8[0].memoria.length === 3 && ms8[0].valorCentavos === 862050 && /nota separada/.test(b8s) && sp && sp[1].parte === 'pjx01' && sp[1].memoria.length === 1 && sp[1].valorCentavos === 90000 && ids8.length === 2,
     JSON.stringify({ b8: b8.slice(0, 120), b8s: b8s.slice(0, 160), ids8 }));
 
+  // M8c medição do painel do RH: o envio já é a aprovação de quem contrata; a prestadora confirma e ela fica aprovada (13/11/2026)
+  await entrarComo('zeca@zeta.com.br');
+  await page.evaluate(id => { location.hash = '#medicoes/ver/' + id; }, ms8[0]._id); await page.waitForSelector('#md-confirmar', { timeout: 8000 });
+  const and8 = await page.$eval('#md-passos', e => e.innerText);
+  await page.click('#md-confirmar'); await page.waitForSelector('dialog[open]'); const dl8 = await page.$eval('dialog[open]', e => e.innerText); await dlgOk(); await H.dorme(700);
+  const m8c = (await meds()).find(x => x._id === ms8[0]._id);
+  ok('M8c a prestadora confirma a medição do painel e ela já fica aprovada (o envio pelo painel é a aprovação de quem contrata)',
+    /no envio pelo painel do RH/.test(and8) && /já aprovou ao enviar/.test(dl8) && m8c.status === 'aprovada' && m8c.confirmacao.uid === 'uZECA' && m8c.aprovacao.painel === true && m8c.aprovacao.uid === m8c.criadoPor,
+    JSON.stringify({ st: m8c.status, ap: m8c.aprovacao }));
+  await entrarComo('rita@alfa.com.br');
+
   // M9 link quebrado e quem não pode lançar
   await page.evaluate(() => { location.hash = '#medicoes/importar/xyz'; }); await page.waitForSelector('#mi-msg', { timeout: 8000 });
   const m9a = await page.$eval('#mi-msg', e => e.innerText);

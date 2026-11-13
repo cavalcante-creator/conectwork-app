@@ -61,11 +61,15 @@ const { ok, fim } = H.placar('repasse');
   await page.evaluate(() => { location.hash = '#espelhos'; }); await page.waitForSelector('#es-emitir', { timeout: 8000 });
   const lista = await page.$eval('#es-emitir', x => x.innerText);
   await page.click('#es-tab-emitir [data-abrir]'); await page.waitForSelector('#es-tom', { timeout: 8000 }); await H.dorme(400);
-  const ver = await page.evaluate(() => ({ tom: document.getElementById('es-tom').innerText, nota: document.getElementById('es-nota').innerText, and: document.getElementById('es-andamento').innerText, val: document.getElementById('es-valores').innerText, emitir: !!document.getElementById('es-emitir-bt'), linkMed: !!document.querySelector('#es-andamento a[href^="#medicoes"]') }));
-  ok('R4 o MEI vê "Notas a emitir" e o espelho: tomador = a prestadora, valor, horas aprovadas, prazo da prestadora e o botão "Emitir a nota"',
+  const ver = await page.evaluate(() => ({ tom: document.getElementById('es-tom').innerText, nota: document.getElementById('es-nota').innerText, and: document.getElementById('es-andamento').innerText, val: document.getElementById('es-valores').innerText, emitir: !document.getElementById('es-emitir-bt') && /Confira antes de emitir/.test((document.getElementById('es-mei-aceite') || {}).innerText || ''), linkMed: !!document.querySelector('#es-andamento a[href^="#medicoes"]') }));
+  ok('R4 o MEI vê "Notas a emitir" e o espelho: tomador = a prestadora, valor, horas aprovadas, prazo da prestadora; antes de emitir, confere as horas e o valor',
     menu.includes('espelhos') && menu.includes('titulos') && /Nexo Serviços/.test(lista) && /Nexo Serviços Ltda/.test(ver.tom) && /04\.252\.011\/0001-10/.test(ver.tom) && /R\$ 3\.500,00/.test(ver.nota)
     && /Horas aprovadas: 96,8 h/.test(ver.and) && /5 dias depois/.test(ver.val) && /direto para você/.test(ver.val) && ver.emitir && !ver.linkMed, JSON.stringify(ver));
 
+  // R4b o MEI concorda com as horas e o valor: aparece "Emitir a nota" (13/11/2026)
+  await page.click('#es-mei-ok'); await page.waitForSelector('#es-emitir-bt', { timeout: 8000 });
+  const ac = (await srv())[RID].aceiteMei || {};
+  ok('R4b "Concordo com as horas e o valor" grava o aceite do MEI e libera o botão de emitir', ac.ok === true && ac.uid === 'uCARL', JSON.stringify(ac));
   // R5 o MEI abre o emissor: fica registrado
   await page.evaluate(() => { window.open = () => null; }); await page.click('#es-emitir-bt'); await H.dorme(800);
   const e5 = (await srv())[RID];
