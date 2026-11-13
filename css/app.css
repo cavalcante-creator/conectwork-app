@@ -1748,9 +1748,10 @@ body:has(#mei-registrar) .mei-assist{bottom:calc(92px + env(safe-area-inset-bott
   .menu-rec{display:grid;margin-left:auto;width:32px;height:32px;color:#AFC0E6;background:transparent;border:0;border-radius:8px;place-items:center;cursor:pointer;transition:transform 160ms ease-out,background 120ms}
   .menu-rec:hover{background:rgba(255,255,255,.08);color:#fff}
   html.menu-mini .shell{grid-template-columns:76px minmax(0,1fr)!important}
-  html.menu-mini .shell .logo{padding:0;justify-content:center;flex-direction:column;gap:2px}
-  html.menu-mini .shell .logo>span,html.menu-mini .shell .logo>svg{display:none}
-  html.menu-mini .menu-rec{margin:0;transform:rotate(180deg)}
+  html.menu-mini .shell .logo{padding:12px 0 8px;height:auto;min-height:64px;justify-content:center;flex-direction:column;gap:6px}
+  html.menu-mini .shell .logo>span{display:none}
+  html.menu-mini .shell .logo>svg{width:34px!important;height:34px!important;flex:0 0 auto}
+  html.menu-mini .menu-rec{margin:0;width:28px;height:24px;transform:rotate(180deg)}
   html.menu-mini .shell .side .empbloco .t,html.menu-mini .shell .side .empbloco .iconbtn{display:none}
   html.menu-mini .shell .side .empbloco{justify-content:center}
   html.menu-mini .shell .navgrupo{font-size:0;height:1px;margin:10px 16px;padding:0;background:rgba(255,255,255,.12)}
