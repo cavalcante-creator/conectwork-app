@@ -212,7 +212,14 @@
     document.getElementById('mh-sino').onclick = () => { const pv = document.getElementById('ini-pv'); if (pv && !pv.hidden) pv.scrollIntoView({ behavior: 'smooth', block: 'start' }); else U().toast('Nada esperando você agora.'); };
     const cp = document.getElementById('mh-copiar'); if (cp) cp.onclick = async () => { try { await navigator.clipboard.writeText(U().dig(e.cnpj)); U().toast('CNPJ copiado.'); } catch (x) { U().toast('CNPJ: ' + cnpj); } };
     /* 13/11/2026: "cartão CNPJ" já copia o CNPJ (o site da Receita pede o número): é só colar */
-    const ca = document.getElementById('mh-cartao'); if (ca) ca.onclick = () => { try { navigator.clipboard.writeText(U().dig(e.cnpj)).then(() => U().toast('CNPJ copiado: no site da Receita, é só colar (Ctrl+V).'), () => {}); } catch (x) { /* sem área de transferência */ } };
+    const ca = document.getElementById('mh-cartao'); if (ca) ca.onclick = ev => { try { navigator.clipboard.writeText(U().dig(e.cnpj)).then(() => U().toast('CNPJ copiado: no site da Receita, é só colar (Ctrl+V).'), () => {}); } catch (x) { /* sem área de transferência */ }
+      /* 13/11/2026: abre numa janela por cima (como o login do Google); no celular ou se o navegador bloquear, numa aba */
+      const cel = window.matchMedia && matchMedia('(max-width:760px), (pointer:coarse)').matches; if (cel) return;
+      const L = Math.min(1000, screen.availWidth - 40), A = Math.min(800, screen.availHeight - 60);
+      const esq = Math.max(0, (window.screenX || 0) + (window.outerWidth - L) / 2), topo = Math.max(0, (window.screenY || 0) + (window.outerHeight - A) / 2);
+      let w = null; try { w = window.open('about:blank', 'cw-receita', `popup=yes,width=${Math.round(L)},height=${Math.round(A)},left=${Math.round(esq)},top=${Math.round(topo)}`); } catch (x) { w = null; }
+      if (!w) return;   /* bloqueada: o link segue e abre numa aba */
+      ev.preventDefault(); try { w.opener = null; } catch (x) {} try { w.location.href = CARTAO_CNPJ; } catch (x) {} try { w.focus(); } catch (x) {} };
     const rede = document.getElementById('mei-rede'); if (rede) rede.onclick = () => CW.ir('meucadastro');
     const ps = CW.app.pendencias(); meiAtualiza(ps); pvDesenha(ps); mostraPv(ps);
     meiLimite(ctx);

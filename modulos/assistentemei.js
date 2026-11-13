@@ -104,7 +104,7 @@
       const q = document.getElementById('as-q'); if (q) q.focus(); };
     document.getElementById('as-form').onsubmit = e => { e.preventDefault(); perguntar(document.getElementById('as-q').value); };
     el.querySelectorAll('[data-p]').forEach(b => b.onclick = () => perguntar(b.dataset.p));
-    el.querySelectorAll('[data-ir]').forEach(b => b.onclick = () => CW.ir(b.dataset.ir));
+    el.querySelectorAll('[data-ir]').forEach(b => b.onclick = () => { fecharChat(); CW.ir(b.dataset.ir); });
     /* lançamento proposto: Confirmar grava; Mudar abre o formulário já preenchido; Cancelar não grava nada */
     const fecha = (i, extra) => { conversa = conversa.slice(); conversa[i] = Object.assign({}, conversa[i], { feito: true }); if (extra) conversa = conversa.concat([extra]); desenhar(el, ctx); };
     el.querySelectorAll('[data-lanc-ok]').forEach(b => b.onclick = async () => { const i = +b.dataset.lancOk, x = conversa[i].lanc; b.disabled = true;
@@ -122,11 +122,31 @@
   let olhar = null;
   function botao(ligar) {
     let b = document.getElementById('mei-assist');
-    if (!ligar) { if (b) b.remove(); if (olhar) { window.removeEventListener('hashchange', olhar); olhar = null; } return; }
+    if (!ligar) { if (b) b.remove(); fecharChat(); if (olhar) { window.removeEventListener('hashchange', olhar); olhar = null; } return; }
     if (!b) { b = document.createElement('button'); b.id = 'mei-assist'; b.className = 'mei-assist'; b.type = 'button'; b.setAttribute('aria-label', 'Tirar uma dúvida com o Assistente'); b.title = 'Tirar uma dúvida';
-      b.innerHTML = CW.ui.ic('help'); b.onclick = () => CW.ir('assistentemei'); document.body.appendChild(b); }
-    if (!olhar) { olhar = () => { const x = document.getElementById('mei-assist'); if (x) x.hidden = /^#assistentemei/.test(location.hash); }; window.addEventListener('hashchange', olhar); }
+      b.innerHTML = CW.ui.ic('help'); b.onclick = () => (document.getElementById('mei-chat') ? fecharChat() : abrirChat()); document.body.appendChild(b); }
+    if (!olhar) { olhar = () => { const x = document.getElementById('mei-assist'), na = /^#assistentemei/.test(location.hash); if (x) x.hidden = na; if (na) fecharChat(); }; window.addEventListener('hashchange', olhar); }
     olhar();
+  }
+  /* 13/11/2026 ("apertando o Dúvidas ele tem que abrir a telinha por cima, como um chat"): a conversa abre numa janelinha
+     no canto, por cima da tela em que a pessoa está; a mesma conversa da tela do Assistente. Esc ou ✕ fecha. */
+  const ctxAgora = () => { const c = CW.sessao.contexto(); return { contexto: c, sessao: CW.sessao.estado(), soLeitura: CW.permissoes.soLeitura(c), empresa: c && c.empresa }; };
+  const escChat = e => { if (e.key === 'Escape') fecharChat(); };
+  function abrirChat() {
+    if (document.getElementById('mei-chat')) return;
+    const p = document.createElement('section'); p.id = 'mei-chat'; p.className = 'mei-chat'; p.setAttribute('role', 'dialog'); p.setAttribute('aria-label', 'Assistente');
+    p.innerHTML = `<header class="mei-chat-h"><span class="ic">${CW.ui.ic('help')}</span><div><b>Assistente</b><small>Dúvidas sobre o seu MEI</small></div><button class="iconbtn" id="mei-chat-x" type="button" aria-label="Fechar" title="Fechar">${CW.ui.ic('x')}</button></header><div class="mei-chat-b" id="mei-chat-b"></div>`;
+    document.body.appendChild(p);
+    document.getElementById('mei-chat-x').onclick = fecharChat;
+    document.addEventListener('keydown', escChat);
+    const bt = document.getElementById('mei-assist'); if (bt) { bt.classList.add('aberto'); bt.setAttribute('aria-expanded', 'true'); }
+    desenhar(document.getElementById('mei-chat-b'), ctxAgora());
+    const q = document.getElementById('as-q'); if (q) q.focus();
+  }
+  function fecharChat() {
+    const p = document.getElementById('mei-chat'); if (p) p.remove();
+    document.removeEventListener('keydown', escChat);
+    const bt = document.getElementById('mei-assist'); if (bt) { bt.classList.remove('aberto'); bt.setAttribute('aria-expanded', 'false'); }
   }
   CW.registrarModulo({
     id: 'assistentemei', nome: 'Assistente', icone: 'help', ordem: 27.5,
