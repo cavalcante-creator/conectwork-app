@@ -130,6 +130,26 @@ const b64url = o => Buffer.from(JSON.stringify(o), 'utf8').toString('base64').re
   ok('M8c a prestadora confirma a medição do painel e ela já fica aprovada (o envio pelo painel é a aprovação de quem contrata)',
     /no envio pelo painel do RH/.test(and8) && /já aprovou ao enviar/.test(dl8) && m8c.status === 'aprovada' && m8c.confirmacao.uid === 'uZECA' && m8c.aprovacao.painel === true && m8c.aprovacao.uid === m8c.criadoPor,
     JSON.stringify({ st: m8c.status, ap: m8c.aprovacao }));
+  // M8d (13/11/2026, "nesse caso precisa aprovar"): quem enviou pelo painel e também está na prestadora confirma, marcado como exceção
+  await page.evaluate(id => { const S = JSON.parse(localStorage.getItem('__srv')); const m = S.docs['medicoes/' + id];
+    const n = JSON.parse(JSON.stringify(m)); n.status = 'enviada'; delete n.confirmacao; delete n.aprovacao; n.periodo = '2026-12-1'; S.docs['medicoes/' + id.replace('2026-10-1', '2026-12-1')] = n;
+    S.docs['acessos/zeta_' + m.criadoPor] = { uid: m.criadoPor, empresaId: 'zeta', nome: 'Quem enviou', email: 'x', cargo: 'financeiro', extras: [], sem: [], ativo: true };
+    localStorage.setItem('__srv', JSON.stringify(S)); }, ms8[0]._id);
+  const id8d = ms8[0]._id.replace('2026-10-1', '2026-12-1'), autor8 = ms8[0].criadoPor;
+  const email8 = await page.evaluate(u => { const S = JSON.parse(localStorage.getItem('__srv')); return Object.keys(S.users).find(e => S.users[e].uid === u); }, autor8);
+  if (await page.$('#sair')) await page.click('#sair'); await page.waitForSelector('#lg-email'); await H.entrar(page, email8, 'senha123'); await H.dorme(2000);
+  if (!(await page.$('.shell'))) { await page.evaluate(() => { const o = [...document.querySelectorAll('button, [data-emp], li, a')].reverse().find(x => /Zeta/i.test(x.textContent) && x.offsetParent); if (o) o.click(); }); await page.waitForSelector('.shell', { timeout: 8000 }); }
+  else { await page.evaluate(() => { const b = document.querySelector('#trocar-empresa,#trocar-empresa-top'); if (b) b.click(); }); await H.dorme(600);
+    await page.evaluate(() => { const o = [...document.querySelectorAll('dialog[open] button, dialog[open] [data-emp], dialog[open] li')].reverse().find(x => /Zeta/i.test(x.textContent)); if (o) o.click(); }); await H.dorme(1200); }
+  await page.evaluate(id => { location.hash = '#medicoes/ver/' + id; }, id8d); await H.dorme(1500);
+  const t8d = await page.evaluate(() => document.body.innerText);
+  const temBt = !!(await page.$('#md-confirmar'));
+  if (temBt) { await page.click('#md-confirmar'); await page.waitForSelector('dialog[open]'); await dlgOk(); await H.dorme(800); }
+  const m8d = (await meds()).find(x => x._id === id8d);
+  ok('M8d quem enviou pelo painel e está na prestadora confirma (exceção marcada) e a medição fica aprovada',
+    temBt && /enviou esta medição pelo painel do RH/.test(t8d) && !/Outra pessoa confere/.test(t8d) && m8d.status === 'aprovada' && m8d.confirmacao.excecao === true,
+    JSON.stringify({ temBt, st: m8d && m8d.status, c: m8d && m8d.confirmacao, t: t8d.slice(0, 200) }));
+  await page.evaluate(u => { const S = JSON.parse(localStorage.getItem('__srv')); delete S.docs['acessos/zeta_' + u]; localStorage.setItem('__srv', JSON.stringify(S)); try { localStorage.removeItem('cw.empresa'); } catch (e) {} }, autor8);
   await entrarComo('rita@alfa.com.br');
 
   // M9 link quebrado e quem não pode lançar

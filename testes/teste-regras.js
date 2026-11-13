@@ -491,6 +491,11 @@ async function deve(nome, permitido, op) {
   await deve('Medição: quem lançou pelo tomador NÃO confirma pela prestadora', false, () => updateDoc(doc(db('rita'), 'medicoes', 'cm_2027-01-1'), { status: 'confirmada_prestadora', confirmacao: { uid: P.rita, nome: 'Rita', em: serverTimestamp() }, atualizadoEm: serverTimestamp() }));
   await deve('Medição: outra pessoa da prestadora confirma', true, () => updateDoc(doc(db('aldo'), 'medicoes', 'cm_2027-01-1'), { status: 'confirmada_prestadora', confirmacao: { uid: P.aldo, nome: 'Aldo', em: serverTimestamp() }, atualizadoEm: serverTimestamp() }));
   await deve('Medição: quem confirmou pela prestadora NÃO aprova pelo tomador', false, () => updateDoc(doc(db('aldo'), 'medicoes', 'cm_2027-01-1'), { status: 'aprovada', aprovacao: { uid: P.aldo, nome: 'Aldo', em: serverTimestamp() }, atualizadoEm: serverTimestamp() }));
+  /* 13/11/2026: medição do painel do RH: quem enviou e também está na prestadora confirma, marcado como exceção */
+  await env.withSecurityRulesDisabled(async c => { await setDoc(doc(c.firestore(), 'medicoes', 'cm_2027-03-1'), med('rita', { periodo: '2027-03-1', origem: 'integracao', ref: 'painel-rh:2027-03-1:BETA' })); });
+  const cpR = ex => ({ status: 'aprovada', confirmacao: Object.assign({ uid: P.rita, nome: 'Rita', em: serverTimestamp() }, ex ? { excecao: true } : {}), aprovacao: { uid: P.rita, nome: 'Rita (painel do RH)', em: serverTimestamp(), painel: true }, atualizadoEm: serverTimestamp() });
+  await deve('Painel: quem enviou NÃO confirma pela prestadora sem marcar a exceção', false, () => updateDoc(doc(db('rita'), 'medicoes', 'cm_2027-03-1'), cpR(false)));
+  await deve('Painel: quem enviou e está na prestadora confirma, marcado como exceção', true, () => updateDoc(doc(db('rita'), 'medicoes', 'cm_2027-03-1'), cpR(true)));
   await env.withSecurityRulesDisabled(async c => { const d = c.firestore(); await deleteDoc(doc(d, 'acessos', 'beta_' + P.rita)); await deleteDoc(doc(d, 'acessos', 'beta_' + P.aldo)); });
 
   /* ---------- catálogo de serviços (12/11/2026) ---------- */

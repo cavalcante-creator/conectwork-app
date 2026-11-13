@@ -357,7 +357,7 @@ service cloud.firestore {
     // enviar pelo painel já é a aprovação de quem contrata; a prestadora confirma e a medição fica aprovada direto.
     function medicaoConfirmarPainel(r, d) {
       return cargoEm(r.prestadorId, ['admin','financeiro']) && r.status == 'enviada' && r.origem == 'integracao' && d.status == 'aprovada'
-        && (request.auth.uid != r.criadoPor || (master() && d.confirmacao.excecao == true))
+        && (request.auth.uid != r.criadoPor || d.confirmacao.excecao == true)   // 13/11/2026: quem enviou pelo painel e está na prestadora confirma, marcado como exceção
         && d.confirmacao.uid == request.auth.uid && d.aprovacao.uid == r.criadoPor && d.aprovacao.painel == true
         && mudou().hasOnly(['status','confirmacao','aprovacao','atualizadoEm']);
     }

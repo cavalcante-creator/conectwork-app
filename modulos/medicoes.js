@@ -239,8 +239,11 @@
     const separa = t => `<div class="banner info" id="md-separa">${ic('shield')}<span><strong>Outra pessoa ${t}</strong>Você está nas duas empresas desta medição. Funções separadas: quem lança pela empresa que contrata não confere pela prestadora, e quem confere não aprova.</span></div>`;
     /* exceção do piloto (12/11/2026, "faça uma exceção"): a equipe Conectwork faz os passos mesmo tendo feito o anterior; fica marcado */
     const exc = !!(CW.sessao.estado() || {}).master, excAv = `<p class="hint" id="md-excecao" style="margin:0;font-size:12.5px;width:100%">Exceção do piloto: você fez o passo anterior, mas como equipe Conectwork pode seguir. Fica registrado na medição.</p>`;
-    if (l === 'prestador' && st === 'enviada' && pode(ctx, CONFIRMA) && m.criadoPor === eu && !exc) acoes = separa('confere pela prestadora');
-    else if (l === 'prestador' && st === 'enviada' && pode(ctx, CONFIRMA)) acoes = `<button class="btn ok" id="md-confirmar">${ic('check')}Confirmar a medição</button><button class="btn dangerous" id="md-divergir">${ic('alert')}Apontar divergência</button>` + (m.criadoPor === eu ? excAv : '');
+    /* 13/11/2026 ("nesse caso precisa aprovar"): medição do painel do RH é a aprovação de quem contrata; quem enviou e também está
+       na prestadora pode confirmar, marcado como exceção (regra medicaoConfirmarPainel). */
+    const excPainel = m.origem === 'integracao' && m.criadoPor === eu && !exc;
+    if (l === 'prestador' && st === 'enviada' && pode(ctx, CONFIRMA) && m.criadoPor === eu && !exc && !excPainel) acoes = separa('confere pela prestadora');
+    else if (l === 'prestador' && st === 'enviada' && pode(ctx, CONFIRMA)) acoes = `<button class="btn ok" id="md-confirmar">${ic('check')}Confirmar a medição</button><button class="btn dangerous" id="md-divergir">${ic('alert')}Apontar divergência</button>` + (excPainel ? `<p class="hint" id="md-excecao" style="margin:0;font-size:12.5px;width:100%">Você enviou esta medição pelo painel do RH e também está na ${esc(m.prestadorNome)}. Pode confirmar por ela: fica registrado na medição como exceção.</p>` : m.criadoPor === eu ? excAv : '');
     if (l === 'tomador' && (st === 'enviada' || st === 'divergencia') && pode(ctx, LANCA)) acoes = `<button class="btn ${st === 'divergencia' ? '' : 'sec'}" id="md-corrigir">${ic('edit')}Corrigir${st === 'divergencia' ? ' e reenviar' : ''}</button><button class="btn ghost" id="md-cancelar">Cancelar medição</button>`;
     const bloqAp = m.criadoPor === eu || (m.confirmacao && m.confirmacao.uid === eu);
     if (l === 'tomador' && st === 'confirmada_prestadora' && pode(ctx, APROVA) && exc && bloqAp) acoes = `<button class="btn ok" id="md-aprovar">${ic('check')}Aprovar a medição</button>` + excAv;
@@ -269,7 +272,7 @@
       </div><div class="stack">
         <section class="card" id="md-passos"><div class="card-h"><span class="ic">${ic('clock')}</span><h3>Andamento</h3></div><div class="card-b stack" style="gap:16px">
           <ul class="tl">${passo(true, false, 'Medição enviada', formatarDataHora(m.criadoEm) + ' · ' + (m.criadoPorNome || ''))}
-            ${passo(!!m.confirmacao, st === 'enviada' || st === 'divergencia', 'Conferida pela prestadora', m.confirmacao ? formatarDataHora(m.confirmacao.em) + ' · ' + m.confirmacao.nome + (m.confirmacao.excecao ? ' (exceção do piloto)' : '') : st === 'divergencia' ? 'divergência apontada' : 'esperando')}
+            ${passo(!!m.confirmacao, st === 'enviada' || st === 'divergencia', 'Conferida pela prestadora', m.confirmacao ? formatarDataHora(m.confirmacao.em) + ' · ' + m.confirmacao.nome + (m.confirmacao.excecao ? (m.origem === 'integracao' && !m.confirmacao.master ? ' (exceção: enviou pelo painel)' : ' (exceção do piloto)') : '') : st === 'divergencia' ? 'divergência apontada' : 'esperando')}
             ${m.origem === 'integracao' ? passo(true, false, 'Aprovada pela ' + (m.tomadorNome || 'empresa que contrata') + ' no envio pelo painel do RH', st === 'aprovada' ? 'aprovada ao confirmar' : 'vale quando a prestadora confirmar') : passo(!!m.aprovacao, st === 'confirmada_prestadora', 'Aprovada pelo aprovador técnico', m.aprovacao ? formatarDataHora(m.aprovacao.em) + ' · ' + m.aprovacao.nome + (m.aprovacao.excecao ? ' (exceção do piloto)' : '') : 'esperando')}</ul>
           ${acoes ? `<div style="display:flex;gap:8px;flex-wrap:wrap" id="md-acoes">${acoes}</div>` : ''}
           ${zap ? `<div id="md-zap">${zap}</div>` : ''}
