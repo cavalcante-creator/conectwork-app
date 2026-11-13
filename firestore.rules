@@ -187,6 +187,29 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // ---------- Equipe da prestadora · "Meus profissionais" (13/11/2026) ----------
+    // equipe/{prestadora}_{CNPJ do MEI}: o profissional que trabalha pela prestadora (vínculo de prestação de serviço, nunca emprego).
+    // Grava quem é da prestadora (admin, operacional, RH, financeiro); lê a prestadora, o próprio MEI (selo "Equipe …"), a equipe
+    // Conectwork e, se estiver visível e ativo, quem está logado (os clientes da prestadora veem a equipe sem tratar direto com o MEI).
+    function camposEquipe() { return ['prestadoraId','prestadoraNome','cnpj','cnpjNum','nome','funcao','cidade','uf','desde','meiEmpresaId','ativo','publico',
+      'encerradoEm','criadoPor','criadoPorNome','criadoEm','atualizadoEm','atualizadoPor']; }
+    function equipeOk(id, d) {
+      return d.keys().hasOnly(camposEquipe()) && d.cnpjNum is string && d.cnpjNum.matches('[0-9]{14}') && id == d.prestadoraId + '_' + d.cnpjNum
+        && d.nome is string && d.nome.size() >= 3 && d.nome.size() <= 120 && d.funcao is string && d.funcao.size() <= 80
+        && d.ativo is bool && d.publico is bool && d.prestadoraNome is string && d.prestadoraNome.size() <= 120
+        && (d.get('meiEmpresaId', null) == null || (exists(caminho('cnpjs', d.cnpjNum)) && get(caminho('cnpjs', d.cnpjNum)).data.empresaId == d.meiEmpresaId));
+    }
+    match /equipe/{id} {
+      allow read: if master() || membro(resource.data.prestadoraId) || (resource.data.get('meiEmpresaId', null) != null && membro(resource.data.meiEmpresaId))
+        || (logado() && resource.data.publico == true && resource.data.ativo == true);
+      allow create: if cargoEm(request.resource.data.prestadoraId, ['admin','operacional','rh','financeiro']) && equipeOk(id, request.resource.data)
+        && request.resource.data.criadoPor == request.auth.uid;
+      allow update: if cargoEm(resource.data.prestadoraId, ['admin','operacional','rh','financeiro']) && equipeOk(id, request.resource.data)
+        && request.resource.data.prestadoraId == resource.data.prestadoraId && request.resource.data.cnpjNum == resource.data.cnpjNum
+        && request.resource.data.criadoPor == resource.data.criadoPor;
+      allow delete: if false;
+    }
+
     // ---------- Contratos (equipe contínua) · docs/PLANO-COBRANCA-NOTAS.md ----------
     // Lê quem é das duas empresas (e a equipe master). Muda só o administrador de cada lado, e só do jeito previsto:
     // corrigir/cancelar (tomador, antes de assinado), assinar (cada lado o seu), propor e responder mudança de vencimento

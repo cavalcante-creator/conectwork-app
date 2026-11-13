@@ -7,7 +7,7 @@ const { ok, fim } = H.placar('sessao');
 const MODS_TESTE = () => {
   if (CW.app.modulos().some(x => x.id === 'pagar')) { CW.app.montar(); return; }   /* já registrados nesta página */
   const t = id => ({ [id]: { nome: id, render: (el, ctx) => { el.innerHTML = `<p id="tela-${id}">${id}|${ctx.tela}|${ctx.params.join(',')}</p>`; } } });
-  [['pagar', 'cobrancas'], ['receber', 'cobrancas'], ['conta', 'conta'], ['equipeteste'], ['profissionais']].forEach(([id, contrato], i) =>
+  [['pagar', 'cobrancas'], ['receber', 'cobrancas'], ['conta', 'conta'], ['equipeteste'], ['profteste']].forEach(([id, contrato], i) =>
     CW.registrarModulo({ id, nome: 'Mod ' + id, icone: 'list', ordem: 10 + i, contrato, telas: Object.assign(t(id), id === 'pagar' ? { detalhe: { nome: 'Detalhe', render: (el, ctx) => { el.innerHTML = `<p id="tela-detalhe">${ctx.params.join(',')}</p>`; } } } : {}) }));
   CW.app.montar();
 };
@@ -54,7 +54,7 @@ const MODS_TESTE = () => {
   ok('S-fundo dentro do app a página volta ao fundo normal (só as telas de entrada são azuis)', !fx.cls && fx.body !== 'rgb(8, 22, 56)', JSON.stringify(fx));
   await page.evaluate(MODS_TESTE); await H.dorme(200);
   let m = await menu();
-  ok('S8 admin vê tudo o que a empresa contratou (não vê "conta", que a Alfa não contratou)', JSON.stringify(m) === JSON.stringify(['inicio', 'pagar', 'receber', 'equipeteste', 'profissionais', 'servicos', 'contratos', 'ordens', 'medicoes', 'negocio', 'espelhos', 'titulos', 'relatorios', 'cursos', 'nacidade', 'documentos', 'empresa', 'historico']), m.join(','));
+  ok('S8 admin vê tudo o que a empresa contratou (não vê "conta", que a Alfa não contratou)', JSON.stringify(m) === JSON.stringify(['inicio', 'pagar', 'receber', 'equipeteste', 'profteste', 'servicos', 'contratos', 'ordens', 'medicoes', 'negocio', 'espelhos', 'profissionais', 'titulos', 'relatorios', 'cursos', 'nacidade', 'documentos', 'empresa', 'historico']), m.join(','));
 
   // S9 rota por hash com tela e parâmetros
   await page.evaluate(() => { location.hash = '#pagar/detalhe/C-1001/x'; }); await page.waitForSelector('#tela-detalhe');
@@ -93,9 +93,9 @@ const MODS_TESTE = () => {
   ok('S18 menu do financeiro: pagar, receber, relatórios, medições, espelhos e Minha empresa (conta não contratada; usuários e histórico são do admin)', JSON.stringify(m) === JSON.stringify(['inicio', 'pagar', 'receber', 'contratos', 'ordens', 'medicoes', 'negocio', 'espelhos', 'titulos', 'relatorios', 'cursos', 'nacidade', 'documentos', 'empresa']), m.join(','));
 
   // S19 ajuste individual: extras e sem
-  await page.evaluate(() => { const a = CW.sessao.estado().contexto.acesso; a.extras = ['profissionais']; a.sem = ['pagar']; CW.app.montar(); }); await H.dorme(200);
+  await page.evaluate(() => { const a = CW.sessao.estado().contexto.acesso; a.extras = ['profteste']; a.sem = ['pagar']; CW.app.montar(); }); await H.dorme(200);
   m = await menu();
-  ok('S19 ajuste por pessoa: "extras" acrescenta e "sem" tira telas do cargo', JSON.stringify(m) === JSON.stringify(['inicio', 'receber', 'profissionais', 'contratos', 'ordens', 'medicoes', 'negocio', 'espelhos', 'titulos', 'relatorios', 'cursos', 'nacidade', 'documentos', 'empresa']), m.join(','));
+  ok('S19 ajuste por pessoa: "extras" acrescenta e "sem" tira telas do cargo', JSON.stringify(m) === JSON.stringify(['inicio', 'receber', 'profteste', 'contratos', 'ordens', 'medicoes', 'negocio', 'espelhos', 'titulos', 'relatorios', 'cursos', 'nacidade', 'documentos', 'empresa']), m.join(','));
 
   // S20 celular: barra de baixo com até 4 + Mais
   await page.evaluate(() => { const a = CW.sessao.estado().contexto.acesso; a.cargo = 'admin'; a.extras = []; a.sem = []; CW.app.montar(); });

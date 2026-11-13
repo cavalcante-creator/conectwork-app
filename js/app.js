@@ -64,7 +64,7 @@
   function alternarMenu() { try { if (enxuto()) localStorage.setItem(chaveCompleto(), '1'); else localStorage.removeItem(chaveCompleto()); } catch (e) {} montar(); }
 
   /* grupos do menu (09/11/2026): títulos pequenos separando o que é contratação, financeiro e empresa */
-  const GRUPO = { servicos: 'Contratação', contratos: 'Contratação', ordens: 'Contratação', medicoes: 'Contratação', negocio: 'Contratação',
+  const GRUPO = { servicos: 'Contratação', profissionais: 'Contratação', equipes: 'Contratação', contratos: 'Contratação', ordens: 'Contratação', medicoes: 'Contratação', negocio: 'Contratação',
     espelhos: 'Financeiro', titulos: 'Financeiro', relatorios: 'Financeiro',
     documentos: 'Empresa', empresa: 'Empresa', usuarios: 'Empresa', historico: 'Empresa', meucadastro: 'Empresa',
     cadastros: 'Rede', redeempresas: 'Rede', mensalidades: 'Rede', emissores: 'Rede', avisos: 'Rede', painelcidade: 'Rede', equipecw: 'Equipe' };

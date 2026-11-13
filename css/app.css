@@ -1860,3 +1860,26 @@ body:has(#mei-registrar) .mei-assist{bottom:calc(92px + env(safe-area-inset-bott
 @media (min-width:901px){.sv-chips{flex-wrap:wrap;overflow:visible}}
 @media (max-width:420px){.sv-top{flex-wrap:wrap}.sv-of{margin-left:50px}}
 .sv-ofesp-box.so{margin-top:0;padding-top:0;border-top:0}
+/* Meus profissionais · Equipes das prestadoras (13/11/2026) */
+.pf-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.pf-it{display:flex;flex-direction:column;gap:10px;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:var(--shadow);min-width:0}
+.pf-it.enc{opacity:.65}
+.pf-top{display:flex;gap:12px;align-items:center}.pf-top .avatar{width:44px;height:44px;font-size:15px;flex:0 0 auto}
+.pf-top .t{display:grid;gap:2px;min-width:0}.pf-top strong{font-size:15px;overflow-wrap:anywhere}.pf-top small{color:var(--muted);font-size:13px}
+.pf-meta{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--muted)}
+.pf-meta span{display:flex;align-items:center;gap:6px}.pf-meta svg.i{width:14px;height:14px;flex:0 0 auto}
+.pf-selos{display:flex;gap:6px;flex-wrap:wrap}
+.pf-selo{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:500;background:var(--surface2);border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.pf-selo svg.i{width:13px;height:13px}
+.pf-selo.ok{background:rgba(14,138,85,.1);border-color:rgba(14,138,85,.3);color:#0E8A55}
+.pf-selo.info{background:rgba(26,92,240,.1);border-color:rgba(26,92,240,.28);color:#1A5CF0}
+.pf-selo.enc{background:rgba(200,40,40,.08);border-color:rgba(200,40,40,.25);color:#C82828}
+:root[data-theme="dark"] .pf-selo.ok{color:#4ADE80}:root[data-theme="dark"] .pf-selo.info{color:#7AA7FF}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .pf-selo.ok{color:#4ADE80}:root:not([data-theme="light"]) .pf-selo.info{color:#7AA7FF}}
+.pf-a{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--line)}
+.pf-emp{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:var(--shadow)}
+.pf-emp-h{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}.pf-emp-h .avatar{width:44px;height:44px}
+.pf-emp-h h3{margin:0;font-family:var(--fd);font-size:17px}.pf-emp-h small{color:var(--muted);font-size:12.5px}
+.pf-emp .pf-it{background:var(--surface2);box-shadow:none}
+.mh-eq{margin-left:6px}
+@media (max-width:600px){.pf-grade{grid-template-columns:1fr}.pf-emp{padding:14px}}

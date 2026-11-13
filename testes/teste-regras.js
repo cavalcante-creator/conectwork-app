@@ -830,6 +830,26 @@ async function deve(nome, permitido, op) {
   await deve('Fila MEI: o RH NÃO mexe no resultado', false, () => updateDoc(doc(db('rita'), 'filamei', '12345678000195'), { res: { convite: 'outro' }, em: serverTimestamp(), enviadoPor: P.rita, st: 'pendente' }));
   await deve('Fila MEI: o RH manda de novo com o e-mail novo (volta a pendente)', true, () => updateDoc(doc(db('rita'), 'filamei', '12345678000195'), { email: 'joao2@teste.com', em: serverTimestamp(), enviadoPor: P.rita, st: 'pendente' }));
   await deve('Fila MEI: ninguém apaga', false, () => deleteDoc(doc(db('rita'), 'filamei', '12345678000195')));
+  /* equipe da prestadora · Meus profissionais (13/11/2026) */
+  await env.withSecurityRulesDisabled(async c => { const f = c.firestore(); await setDoc(doc(f, 'acessos', 'alfa_' + P.ana), { uid: P.ana, empresaId: 'alfa', nome: 'Ana', email: EM.ana, cargo: 'admin', extras: [], sem: [], ativo: true });
+    await setDoc(doc(f, 'acessos', 'meiz_' + P.zeca), { uid: P.zeca, empresaId: 'meiz', nome: 'Zeca', email: EM.zeca, cargo: 'admin', extras: [], sem: [], ativo: true });
+    await setDoc(doc(f, 'cnpjs', '33000167000101'), { empresaId: 'meiz', criadoEm: serverTimestamp() }); });
+  const eq = (k, x) => Object.assign({ prestadoraId: 'alfa', prestadoraNome: 'Alfa', cnpj: '33.000.167/0001-01', cnpjNum: '33000167000101', nome: 'Zeca Souza', funcao: 'Eletricista', cidade: 'Gravataí', uf: 'RS', desde: '2026-01-10',
+    meiEmpresaId: 'meiz', ativo: true, publico: true, encerradoEm: null, criadoPor: P[k], criadoPorNome: k, criadoEm: serverTimestamp(), atualizadoEm: serverTimestamp(), atualizadoPor: P[k] }, x || {});
+  const EQ = 'alfa_33000167000101';
+  await deve('Equipe: NÃO com a empresa do MEI errada', false, () => setDoc(doc(db('ana'), 'equipe', EQ), eq('ana', { meiEmpresaId: 'beta' })));
+  await deve('Equipe: NÃO com id diferente de prestadora_CNPJ', false, () => setDoc(doc(db('ana'), 'equipe', 'alfa_1'), eq('ana')));
+  await deve('Equipe: quem é de fora NÃO põe profissional na equipe da prestadora', false, () => setDoc(doc(db('carla'), 'equipe', EQ), eq('carla')));
+  await deve('Equipe: NÃO com campo a mais (CPF)', false, () => setDoc(doc(db('ana'), 'equipe', EQ), eq('ana', { cpf: '12345678909' })));
+  await deve('Equipe: o admin da prestadora põe o profissional na equipe', true, () => setDoc(doc(db('ana'), 'equipe', EQ), eq('ana')));
+  await deve('Equipe: o próprio MEI vê que está na equipe (selo)', true, () => getDocs(query(collection(db('zeca'), 'equipe'), where('meiEmpresaId', '==', 'meiz'))));
+  await deve('Equipe: um cliente (logado) vê a equipe visível da prestadora', true, () => getDocs(query(collection(db('carla'), 'equipe'), where('prestadoraId', '==', 'alfa'), where('publico', '==', true), where('ativo', '==', true))));
+  await deve('Equipe: o cliente NÃO lista sem o filtro de visível', false, () => getDocs(query(collection(db('carla'), 'equipe'), where('prestadoraId', '==', 'alfa'))));
+  await deve('Equipe: a prestadora muda a função e esconde dos clientes', true, () => updateDoc(doc(db('ana'), 'equipe', EQ), { funcao: 'Eletricista industrial', publico: false, atualizadoEm: serverTimestamp(), atualizadoPor: P.ana }));
+  await deve('Equipe: escondido, o cliente NÃO lê', false, () => getDoc(doc(db('carla'), 'equipe', EQ)));
+  await deve('Equipe: NÃO troca o CNPJ do profissional', false, () => updateDoc(doc(db('ana'), 'equipe', EQ), { cnpjNum: '11222333000181' }));
+  await deve('Equipe: o MEI NÃO muda o registro da prestadora', false, () => updateDoc(doc(db('zeca'), 'equipe', EQ), { funcao: 'Dono' }));
+  await deve('Equipe: ninguém apaga (encerra o vínculo)', false, () => deleteDoc(doc(db('ana'), 'equipe', EQ)));
 
   await env.cleanup();
   const falhas = res.filter(r => !r.ok).length;

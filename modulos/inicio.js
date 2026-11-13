@@ -192,7 +192,7 @@
     const vis = CW.app.visiveis().map(m => m.id);
     el.innerHTML = `<div id="ini-avisos" class="stack" style="gap:10px"></div>
       <div class="mei-home mh" id="mei-home">
-        <div class="mh-topo"><div class="t"><h2 id="mh-ola">Olá${nome ? ', ' + esc(nome) : ''}</h2>${cnpj ? `<p id="mh-cnpj">${esc(cnpj)}</p>` : ''}<span class="selo-dia mh-selo" id="mh-selo" hidden>${ic('shield')}Prestador em dia</span></div>
+        <div class="mh-topo"><div class="t"><h2 id="mh-ola">Olá${nome ? ', ' + esc(nome) : ''}</h2>${cnpj ? `<p id="mh-cnpj">${esc(cnpj)}</p>` : ''}<span class="selo-dia mh-selo" id="mh-selo" hidden>${ic('shield')}Prestador em dia</span><span id="mh-equipes"></span></div>
           <button class="mh-sino" id="mh-sino" type="button" aria-label="O que precisa de você">${ic('bolt')}<span class="mh-num" id="mh-sino-n" hidden></span></button></div>
         <button class="mh-alerta" id="mh-alerta" type="button" hidden></button>
         ${convite}
@@ -213,6 +213,9 @@
     const cp = document.getElementById('mh-copiar'); if (cp) cp.onclick = () => CW.negocio.copiarCnpj();
     /* "cartão CNPJ": copia o CNPJ, avisa e abre o site da Receita numa janela por cima (CW.negocio.receita, o mesmo de Gerar a guia e Declaração) */
     const ca = document.getElementById('mh-cartao'); if (ca) ca.onclick = ev => CW.negocio.receita(ev, CARTAO_CNPJ, { site: 'o site da Receita', link: ca });
+    /* 13/11/2026: o MEI que faz parte da equipe de uma prestadora mostra o selo "Equipe <prestadora>" (credibilidade) */
+    if (CW.profissionais) CW.profissionais.minhasEquipes(c.empresaId).then(xs => { const box = document.getElementById('mh-equipes'); if (!box || !xs.length) return;
+      box.innerHTML = xs.map(x => `<span class="selo-dia mh-selo mh-eq" title="Você presta serviço pela ${esc(x.prestadoraNome)}${x.desde ? ' desde ' + esc(x.desde.slice(5, 7) + '/' + x.desde.slice(0, 4)) : ''}">${ic('users')}Equipe ${esc(x.prestadoraNome)}</span>`).join(''); });
     const rede = document.getElementById('mei-rede'); if (rede) rede.onclick = () => CW.ir('meucadastro');
     const ps = CW.app.pendencias(); meiAtualiza(ps); pvDesenha(ps); mostraPv(ps);
     meiLimite(ctx);
