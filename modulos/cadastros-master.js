@@ -359,7 +359,7 @@
     b.set(db.collection('log').doc(), { em: CW.fb.agora(), uid: u.uid, quem, empresaId: id, acao: 'acesso.equipe', texto: `${quem} (equipe Conectwork) entrou como administrador(a) de ${nome}.`, ref: id });
     await b.commit();
   }
-  CW.cadastrosMaster = { preCadEmpresa, adminDe };
+  CW.cadastrosMaster = { preCadEmpresa, adminDe, preCadMei };
   /* convite novo para um MEI já pré-cadastrado (o RH completou o e-mail depois) */
   async function conviteMei(empresaId, x, u, quem) {
     const db = CW.fb.db(), ref = db.collection('convites').doc(), b = db.batch();

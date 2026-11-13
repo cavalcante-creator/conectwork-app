@@ -55,7 +55,8 @@
 
   async function desenhar(el, ctx) {
     const { esc, ic } = U();
-    document.getElementById('acoes').innerHTML = pode(ctx) ? `<button class="btn sec" id="pf-trazer">${ic('list')}Trazer das medições</button><button class="btn" id="pf-novo">${ic('plus')}Adicionar profissional</button>` : '';
+    const mst = !!(CW.sessao.estado() || {}).master && pode(ctx) && CW.cadastrosMaster;   /* "Colar lista": só a equipe Conectwork, para o cadastro inicial (13/11/2026) */
+    document.getElementById('acoes').innerHTML = (mst ? `<button class="btn sec" id="pf-colar">${ic('clipboard')}Colar lista</button>` : '') + (pode(ctx) ? `<button class="btn sec" id="pf-trazer">${ic('list')}Trazer das medições</button><button class="btn" id="pf-novo">${ic('plus')}Adicionar profissional</button>` : '');
     if (!lista) { el.innerHTML = `<div class="card"><div class="empty"><div class="giro"></div><span>Carregando a equipe…</span></div></div>`;
       try { await carregar(ctx); } catch (e) { el.innerHTML = `<div class="banner danger">${ic('alert')}<span><strong>Não foi possível abrir a equipe.</strong>${esc(CW.fb.mensagemErro(e))}</span></div>`; return; } }
     const ativos = lista.filter(x => x.ativo), fns = [...new Set(ativos.map(x => x.funcao).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt'));
@@ -82,6 +83,7 @@
     const en = $('pf-enc'); if (en) en.onchange = () => { F.enc = en.checked; desenhar(el, ctx); };
     ['pf-novo', 'pf-novo2'].forEach(id => { const b = $(id); if (b) b.onclick = () => editar(el, ctx, null); });
     ['pf-trazer', 'pf-trazer2'].forEach(id => { const b = $(id); if (b) b.onclick = () => trazer(el, ctx); });
+    const cl = $('pf-colar'); if (cl) cl.onclick = () => colar(el, ctx);
     el.querySelectorAll('[data-pf-ed]').forEach(b => b.onclick = () => editar(el, ctx, lista.find(x => x._id === b.dataset.pfEd)));
     el.querySelectorAll('[data-pf-conv]').forEach(b => b.onclick = async () => { const x = lista.find(y => y._id === b.dataset.pfConv), t = convite(ctx, x);
       try { await navigator.clipboard.writeText(t); U().toast('Convite copiado. Mande para ' + x.nome.split(' ')[0] + ' (WhatsApp ou e-mail).'); } catch (e) { U().toast(t); } });
@@ -162,6 +164,54 @@
     }
     if (feitos) U().toast(`${feitos} profissiona${feitos === 1 ? 'l' : 'is'} na equipe. Complete a função de cada um.`);
     lista = null; desenhar(el, ctx);
+  }
+
+  /* ---------- Colar lista (13/11/2026, "quero já fazer os cadastros e deixar tudo certo"; botão só da equipe Conectwork) ----------
+     Uma pessoa por linha: Nome; CNPJ do MEI; Função; Cidade; UF; Celular; E-mail (`;` ou tab, cabeçalho ignorado; só nome e CNPJ são
+     obrigatórios; nunca CPF). Quem não tem cadastro no Conectwork é pré-cadastrado como MEI (com convite de admin, se tiver e-mail);
+     todos entram na equipe, visíveis para os clientes. Quem já está na equipe fica como está. */
+  function lerColar(txt) {
+    const out = [];
+    String(txt || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean).forEach((l, i) => {
+      const c = l.split(/\t|;/).map(x => x.trim()), ci = c.findIndex(x => dig(x).length === 14);
+      if (ci < 0) { if (i === 0 || /cnpj/i.test(l)) return; out.push({ linha: l, erro: 'sem CNPJ' }); return; }
+      const resto = c.filter((x, j) => j !== ci && x), nome = (c[0] && 0 !== ci ? c[0] : '').replace(/\s+/g, ' ');
+      const email = (resto.find(x => /@/.test(x)) || '').toLowerCase(), telR = dig(resto.find(x => !/@/.test(x) && dig(x).length >= 10 && dig(x).length <= 13) || '');
+      const uf = (resto.find(x => /^[A-Za-z]{2}$/.test(x)) || '').toUpperCase(), txts = resto.filter(x => x !== c[0] && !/@/.test(x) && dig(x).length < 8 && !/^[A-Za-z]{2}$/.test(x));
+      const r = { linha: l, nome, num: dig(c[ci]), cnpj: fmtCnpj(c[ci]), funcao: txts[0] || '', cidade: txts[1] || '', uf, email, tel: telR.length > 11 && telR.startsWith('55') ? telR.slice(2) : telR };
+      if (!U().validarCNPJ(r.num)) r.erro = 'CNPJ inválido'; else if (nome.split(' ').length < 2) r.erro = 'falta o nome e sobrenome';
+      else if (email && !U().validarEmail(email)) r.erro = 'e-mail inválido'; else if (out.some(o => o.num === r.num)) r.erro = 'CNPJ repetido na lista';
+      out.push(r);
+    });
+    return out;
+  }
+  async function colar(el, ctx) {
+    const { esc } = U(); let itens = null;
+    const previa = d => { const xs = lerColar(d.querySelector('#pf-cl-t').value), bons = xs.filter(x => !x.erro), ja = bons.filter(x => lista.some(y => y.cnpjNum === x.num)), ruins = xs.filter(x => x.erro);
+      d.querySelector('#pf-cl-p').innerHTML = !xs.length ? '' : `<b>${bons.length - ja.length}</b> entram na equipe${ja.length ? ` · ${ja.length} já estão` : ''}${ruins.length ? ` · <span style="color:var(--danger)">${ruins.length} com problema</span>` : ''}`
+        + (ruins.length ? `<ul style="margin:6px 0 0;padding-left:18px;font-size:12.5px;color:var(--danger)">${ruins.slice(0, 8).map(x => `<li>${esc(x.linha.slice(0, 60))}: ${esc(x.erro)}</li>`).join('')}</ul>` : ''); return bons.filter(x => !ja.includes(x)); };
+    await U().dialogo({ titulo: 'Colar lista de profissionais', sub: `Entram na equipe da ${ctx.contexto.nome}. Quem ainda não tem cadastro no Conectwork é pré-cadastrado como MEI.`,
+      corpo: `<p class="hint" style="margin:0 0 8px;font-size:12.5px">Uma pessoa por linha: <b>Nome; CNPJ do MEI; Função; Cidade; UF; Celular; E-mail</b> (ou colado do Excel). Só nome e CNPJ são obrigatórios. Nada de CPF.</p>
+        <textarea id="pf-cl-t" rows="9" style="width:100%;font-size:14px" placeholder="Carlos Ramos; 33.000.167/0001-01; Eletricista; Gravataí; RS; 51999990000; carlos@email.com"></textarea><p id="pf-cl-p" style="margin:8px 0 0;font-size:13.5px"></p><p class="err" id="pf-cl-e"></p>`,
+      botoes: [{ texto: 'Voltar', valor: null, classe: 'sec' }, { texto: 'Cadastrar todos', valor: 'ok', antes: d => { const xs = previa(d); if (!xs.length) { d.querySelector('#pf-cl-e').textContent = 'Nenhuma pessoa nova para cadastrar.'; return false; } itens = xs; return true; } }],
+      aoAbrir: d => { const t = d.querySelector('#pf-cl-t'); t.oninput = () => previa(d); t.focus(); } });
+    if (!itens) return;
+    const db = CW.fb.db(), emp = ctx.contexto.empresaId, u = CW.fb.auth().currentUser, st = CW.sessao.estado(), qn = (st.perfil && st.perfil.nome) || u.email, agora = CW.fb.agora;
+    let feitos = 0, preCad = 0; const erros = [];
+    U().toast(`Cadastrando ${itens.length}…`);
+    for (const x of itens) {
+      try {
+        let mei = null; try { const c = CW.fb.dados(await db.doc('cnpjs/' + x.num).get()); mei = (c && c.empresaId) || null; } catch (e) { mei = null; }
+        if (!mei) { const r = await CW.cadastrosMaster.preCadMei({ nome: x.nome, cnpj: x.cnpj, num: x.num, email: x.email, tel: x.tel, prest: ctx.contexto.nome }, u, qn, 'lista colada em Meus profissionais'); mei = r.empresaId; preCad++; }
+        const b = db.batch();
+        b.set(db.doc('equipe/' + emp + '_' + x.num), { prestadoraId: emp, prestadoraNome: ctx.contexto.nome, cnpj: x.cnpj, cnpjNum: x.num, nome: x.nome, funcao: x.funcao.slice(0, 80), cidade: x.cidade.slice(0, 60), uf: x.uf, desde: hoje(), meiEmpresaId: mei,
+          ativo: true, publico: true, encerradoEm: null, criadoPor: u.uid, criadoPorNome: qn, criadoEm: agora(), atualizadoEm: agora(), atualizadoPor: u.uid });
+        log(b, ctx, 'equipe.entrar', `${x.nome} (MEI ${x.cnpj}) entrou na equipe pela lista colada${x.funcao ? ' como ' + x.funcao : ''}.`, emp + '_' + x.num);
+        await b.commit(); feitos++;
+      } catch (e) { erros.push(`${x.nome}: ${CW.fb.mensagemErro(e)}`); }
+    }
+    lista = null; await desenhar(el, ctx);
+    await U().dialogo({ titulo: 'Lista cadastrada', corpo: `<p style="margin:0">${feitos} profissiona${feitos === 1 ? 'l' : 'is'} na equipe da ${esc(ctx.contexto.nome)}${preCad ? `; ${preCad} MEI${preCad === 1 ? '' : 's'} pré-cadastrado${preCad === 1 ? '' : 's'} no Conectwork (quem tinha e-mail recebeu o convite)` : ''}.</p>${erros.length ? `<ul style="margin:10px 0 0;padding-left:18px;color:var(--danger);font-size:13px">${erros.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}` });
   }
 
   /* ---------- Equipes das prestadoras (quem contrata) ---------- */

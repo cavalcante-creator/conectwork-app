@@ -9,6 +9,7 @@ const { ok, fim } = H.placar('profissionais');
     pessoa('uDONO', 'dono@nexo.com.br', 'Davi Nunes', 'nexo', 'admin');
     pessoa('uRITA', 'rita@col.com.br', 'Rita Prado', 'col', 'admin');
     pessoa('uCARL', 'carl@carl.com.br', 'Carlos Ramos', 'meic', 'admin');
+    pessoa('uIASMYN', 'iasmyn@conectwork.com.br', 'Iasmyn', 'nexo', 'admin');
     d.docs['empresas/col'] = { nome: 'Colina Indústria', status: 'aprovado', tipo: 'contratante', modulos: ['cobrancas', 'contratos'], criadoPor: 'uRITA' };
     d.docs['empresas/nexo'] = { nome: 'Nexo Serviços', cnpj: '04.252.011/0001-10', status: 'aprovado', tipo: 'prestador', modulos: ['cobrancas', 'contratos', 'profissionais'], criadoPor: 'uDONO' };
     d.docs['empresas/meic'] = { nome: 'Carlos Ramos', cnpj: '33.000.167/0001-01', status: 'mei', tipo: 'prestador', modulos: [], criadoPor: 'uCARL' };
@@ -53,6 +54,20 @@ const { ok, fim } = H.placar('profissionais');
   await page.waitForSelector('#mh-equipes .mh-eq', { timeout: 8000 }).catch(() => null);
   const selo = await page.evaluate(() => (document.getElementById('mh-equipes') || {}).innerText || '');
   ok('P5 o MEI mostra o selo "Equipe Nexo Serviços" no Início', /Equipe Nexo Serviços/.test(selo), selo);
+  // P6 "Colar lista" (só a equipe Conectwork): pré-cadastra o MEI que não tem cadastro e coloca na equipe; quem já está fica
+  await entrarComo('iasmyn@conectwork.com.br');
+  const esc = await page.$('[data-ctx*="nexo"]'); if (esc) { await esc.click(); await H.dorme(800); }
+  await page.evaluate(() => { location.hash = '#profissionais'; }); await page.waitForSelector('#pf-colar', { timeout: 8000 });
+  await page.click('#pf-colar'); await page.waitForSelector('#pf-cl-t');
+  await page.fill('#pf-cl-t', 'Nome;CNPJ;Função;Cidade;UF;Celular;E-mail\nCarlos Ramos;33.000.167/0001-01;Eletricista\nLia Souza;55.667.788/0001-86;Pintora;Canoas;RS;51988887777;lia@exemplo.com\nErro Teste;11.111.111/1111-11;X'); await H.dorme(300);
+  const prev = await page.$eval('#pf-cl-p', e => e.innerText);
+  await dlgOk(); await page.waitForSelector('dialog[open]', { timeout: 15000 }); await H.dorme(800); const fimTxt = await page.$eval('dialog[open]', e => e.innerText);
+  const S6 = await srv(), l6 = S6['equipe/nexo_55667788000186'], emp6 = l6 && S6['empresas/' + l6.meiEmpresaId], cv6 = Object.values(S6).find(x => x.email === 'lia@exemplo.com' && x.cargo === 'admin');
+  ok('P6 "Colar lista" (equipe Conectwork): prévia, pré-cadastra o MEI novo (com convite) e coloca na equipe com a função e a cidade; quem já estava não muda; linha com CNPJ inválido avisa',
+    /1 entram na equipe/.test(prev) && /1 já estão/.test(prev) && /1 com problema/.test(prev) && l6 && l6.funcao === 'Pintora' && l6.cidade === 'Canoas' && l6.uf === 'RS' && emp6 && emp6.preCadastro === true && !!cv6 && /1 profissional na equipe/.test(fimTxt) && S6['equipe/nexo_33000167000101'].funcao === '', JSON.stringify({ prev, fimTxt: fimTxt.slice(0, 200), l6 }));
+  await page.click('dialog[open] [data-dlg-b="0"]').catch(() => null);
+  await entrarComo('dono@nexo.com.br'); await page.evaluate(() => { location.hash = '#profissionais'; }); await page.waitForSelector('#pf-topo', { timeout: 8000 });
+  ok('P7 o botão "Colar lista" só aparece para a equipe Conectwork', !(await page.$('#pf-colar')));
   ok('Sem erros de JavaScript na página', !erros.filter(x => !/ERR_NAME_NOT_RESOLVED/.test(x)).length, erros.join(' | '));
   await browser.close(); fim();
 })().catch(e => { console.error('ERRO NO TESTE', e); process.exit(1); });
