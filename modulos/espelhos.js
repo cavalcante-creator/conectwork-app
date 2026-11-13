@@ -361,7 +361,7 @@
     const copias = { razao: t.razao, cnpj: U().dig(t.cnpj), im: t.im, end: [t.endereco, t.cidade && t.cidade + '/' + t.uf].filter(Boolean).join(' · '), desc: x.descricao, valor: formatarDinheiro(x.valorCentavos, false) };
     RET.forEach(([k]) => { copias['r_' + k] = formatarDinheiro((x.retencoes || {})[k] || 0, false); });
     const temRet = somaRet(x.retencoes) > 0;
-    el.innerHTML = `<div style="margin-bottom:14px"><button class="linkbtn" id="es-voltar">${ic('back')}Voltar para os espelhos</button></div>
+    el.innerHTML = `${CW.emissaoMei ? CW.emissaoMei.faixaVolta(ctx) : ''}<div style="margin-bottom:14px"><button class="linkbtn" id="es-voltar">${ic('back')}Voltar para os espelhos</button></div>
       ${avisos(x, ctx)}
       ${l === 'prestador' && x.status === 'aguardando_nota' && podeEnviar(ctx) && !falta_aceite(x) ? '<div id="es-assist"></div>' : ''}
       <div class="grid-main"><div class="stack">
@@ -397,6 +397,7 @@
     el.querySelectorAll('[data-copiar]').forEach(b => b.onclick = () => copiar(copias[b.dataset.copiar] || ''));
     const co = document.getElementById('es-corrigir'); if (co) co.onclick = () => CW.ir('espelhos/preparar/' + x._id);
     ultimoCtx = ctx; ligarNota(el, ctx, x); if (CW.avisar) CW.avisar.ligar(el);
+    if (CW.emissaoMei) CW.emissaoMei.ligarVolta(ctx);
     if (CW.assistente && document.getElementById('es-assist')) CW.assistente.bloco(document.getElementById('es-assist'), ctx, x);
   }
 
@@ -413,7 +414,7 @@
           <p style="margin:0;font-size:15px"><strong>Confira antes de emitir a nota</strong></p>
           <p style="margin:0">A ${esc(x.tomadorNome)} fechou ${hs ? `<b>${esc(hs)}</b> trabalhadas, ` : ''}no valor de <b>${esc(brl(x.valorCentavos))}</b> (${esc(periodoTxt(x.periodo))}).</p>
           ${podeEnviar(ctx) ? `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ok" id="es-mei-ok">${ic('check')}Concordo com as horas e o valor</button><button class="btn sec" id="es-mei-nao-bt">${ic('alert')}Não concordo</button></div>` : ''}
-          <p class="hint" style="margin:0;font-size:12.5px">Concordando, aparece o botão para emitir a nota.</p></div></section>`;
+          <p class="hint" style="margin:0;font-size:12.5px">${ctx.contexto.acesso && ctx.contexto.acesso.emissorPor ? `Você emite pela empresa de ${esc(x.prestadorNome)}: confira as horas e o valor com o profissional antes. ` : ''}Concordando, aparece o botão para emitir a nota.</p></div></section>`;
     }
     if (l === 'prestador' && x.status === 'aguardando_nota') {
       const E = emissorCache || { origem: 'padrao', nome: 'Emissor Nacional' }, onde = E.cidade ? E.cidade + '/' + E.uf : '';

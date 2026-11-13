@@ -95,7 +95,9 @@
           <div><button class="btn" id="rp-preparar">${ic('send')}Preparar ${prontos.length === 1 ? 'a nota' : 'as ' + prontos.length + ' notas'} e avisar ${prontos.length === 1 ? 'o profissional' : 'os profissionais'}</button></div></div>` : ''}
         ${!pode(ctx) && prontos.length ? `<div class="card-b" style="padding-top:0"><p class="hint" style="margin:0">Quem prepara as notas é o administrador ou o financeiro da empresa.</p></div>` : ''}
       </section>
+      ${(CW.sessao.estado() || {}).master && its.some(x => x.empId) ? '<section class="card" id="rp-emissor" style="margin-top:14px"></section>' : ''}
       ${semConta.length ? `<p class="hint" style="margin:12px 0 0;font-size:12.5px" id="rp-semconta">${semConta.length} ${semConta.length === 1 ? 'profissional ainda não tem' : 'profissionais ainda não têm'} conta no Conectwork. Mande o convite: quando ${semConta.length === 1 ? 'ele entrar' : 'entrarem'} como MEI com o CNPJ, a nota fica pronta para preparar aqui.</p>` : ''}`;
+    const emBox = document.getElementById('rp-emissor'); if (emBox) blocoEmissor(emBox, ctx, m, its.filter(x => x.empId));
     document.getElementById('rp-voltar').onclick = () => CW.ir('repasse');
     el.querySelectorAll('[data-conv]').forEach(b => b.onclick = () => { const x = its.find(y => String(y.i) === b.dataset.conv); copiar(convite(ctx, m, x)); });
     const bt = document.getElementById('rp-preparar');
@@ -121,6 +123,41 @@
       if (feitos) U().toast(feitos === 1 ? 'Nota preparada. O profissional já vê em "Notas a emitir".' : `${feitos} notas preparadas. Cada profissional já vê em "Notas a emitir".`);
       if (erro) { er.textContent = erro; bt.disabled = false; }
       setTimeout(() => desenharVer(el, ctx, id), 400);
+    };
+  }
+
+  /* quem emite as notas pelos MEIs (13/11/2026): a equipe Conectwork dá a uma pessoa da prestadora acesso "operacional"
+     em cada empresa MEI desta medição (acessos/{MEI}_{uid}, emissorPor = a prestadora). Ela emite tudo em "Notas dos MEIs". */
+  async function blocoEmissor(box, ctx, m, comConta) {
+    const { esc, ic } = U(), db = CW.fb.db(), prest = m.prestadorId;
+    box.innerHTML = `<div class="card-b"><div class="giro"></div></div>`;
+    let equipe = [], ja = {};
+    try {
+      equipe = CW.fb.lista(await db.collection('acessos').where('empresaId', '==', prest).get()).filter(a => a.ativo && a.uid);
+      const outros = CW.fb.lista(await db.collection('acessos').where('emissorPor', '==', prest).get()).filter(a => a.ativo);
+      outros.forEach(a => { (ja[a.uid] = ja[a.uid] || new Set()).add(a.empresaId); });
+    } catch (err) { box.innerHTML = `<div class="card-b"><p class="err">${esc(CW.fb.mensagemErro(err))}</p></div>`; return; }
+    const emps = [...new Set(comConta.map(x => x.empId))];
+    const falta = uid => emps.filter(e => !(ja[uid] && ja[uid].has(e)));
+    const emissores = equipe.filter(a => ja[a.uid]);
+    box.innerHTML = `<div class="card-h"><span class="ic">${ic('users')}</span><h3>Quem emite as notas dos MEIs</h3></div><div class="card-b stack" style="gap:12px">
+      <p style="margin:0;font-size:13.5px">Se uma pessoa da ${esc(m.prestadorNome)} emite as notas no lugar dos profissionais, dê a ela acesso aos MEIs desta medição. Ela vê todas as notas em <b>Notas dos MEIs</b>, com o login dela.</p>
+      ${emissores.length ? `<ul style="margin:0;padding-left:18px;font-size:13.5px" id="rp-em-lista">${emissores.map(a => { const f = falta(a.uid).length; return `<li><b>${esc(a.nome || a.email)}</b> · emite por ${ja[a.uid].size} MEI${ja[a.uid].size === 1 ? '' : 's'}${f ? ` · <span class="pill warn">${f} desta medição sem acesso</span>` : ''}</li>`; }).join('')}</ul>` : ''}
+      ${equipe.length ? `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end"><label class="f" style="margin:0;min-width:240px"><span>Pessoa da ${esc(m.prestadorNome)}</span><select id="rp-em-quem">${equipe.map(a => `<option value="${esc(a.uid)}">${esc(a.nome || a.email)} · ${esc(a.cargo)}</option>`).join('')}</select></label>
+        <button class="btn" id="rp-em-dar">${ic('check')}Dar acesso aos ${emps.length} MEI${emps.length === 1 ? '' : 's'} desta medição</button></div>` : `<p class="hint" style="margin:0">A ${esc(m.prestadorNome)} ainda não tem ninguém na equipe. Convide a pessoa em Usuários e acessos da ${esc(m.prestadorNome)} primeiro.</p>`}
+      <p class="err" id="rp-em-erro" role="alert"></p></div>`;
+    const bt = box.querySelector('#rp-em-dar'); if (!bt) return;
+    bt.onclick = async () => {
+      const uid = box.querySelector('#rp-em-quem').value, p = equipe.find(a => a.uid === uid), f = falta(uid);
+      if (!p) return; if (!f.length) { U().toast((p.nome || p.email) + ' já emite por todos os MEIs desta medição.'); return; }
+      bt.disabled = true;
+      const st = CW.sessao.estado(), eu = CW.fb.auth().currentUser, quemEu = (st.perfil && st.perfil.nome) || eu.email, b = db.batch(), agora = CW.fb.agora;
+      f.forEach(e => b.set(db.doc('acessos/' + e + '_' + uid), { uid, empresaId: e, nome: p.nome || '', email: p.email || '', cargo: 'operacional', extras: [], sem: [], ativo: true,
+        emissorPor: prest, emissorPorNome: m.prestadorNome, criadoEm: agora(), criadoPor: eu.uid }));
+      b.set(db.collection('log').doc(), { em: agora(), uid: eu.uid, quem: quemEu, empresaId: prest, acao: 'acesso.emissor',
+        texto: `${p.nome || p.email} passa a emitir as notas de ${f.length} profissional(is) MEI pela ${m.prestadorNome} (liberado pela equipe Conectwork).`, ref: m._id });
+      try { await b.commit(); U().toast(`Pronto: ${p.nome || p.email} já vê as notas em "Notas dos MEIs".`); blocoEmissor(box, ctx, m, comConta); }
+      catch (err) { bt.disabled = false; box.querySelector('#rp-em-erro').textContent = CW.fb.mensagemErro(err); }
     };
   }
 
