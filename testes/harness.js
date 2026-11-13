@@ -11,7 +11,7 @@ async function abrir(op) {
   op = op || {};
   const browser = await chromium.launch(process.env.CHROME ? { executablePath: process.env.CHROME } : {});
   /* service worker bloqueado aqui: os arquivos vêm do endereço falso; o teste-pwa.js testa o service worker num servidor de verdade */
-  const ctx = await browser.newContext({ viewport: op.viewport || { width: 1280, height: 900 }, serviceWorkers: 'block' });
+  const ctx = await browser.newContext(Object.assign({ viewport: op.viewport || { width: 1280, height: 900 }, serviceWorkers: 'block' }, op.recordVideo ? { recordVideo: op.recordVideo } : {}));
   await ctx.route('**/*', route => {
     const u = route.request().url();
     if (u.includes('gstatic.com/firebasejs/')) return route.fulfill({ contentType: 'text/javascript', body: u.includes('app-compat') ? MOCK : '' });
