@@ -377,7 +377,7 @@ service cloud.firestore {
             || (request.resource.data.status == 'divergencia' && medicaoDivergir(resource.data, request.resource.data))
             || (request.resource.data.status == 'aprovada' && (medicaoAprovar(resource.data, request.resource.data) || medicaoConfirmarPainel(resource.data, request.resource.data)))
             || (request.resource.data.status == 'cancelada' && medicaoCancelar(resource.data, request.resource.data)));
-      allow delete: if false;
+      allow delete: if master();   // dados de teste (13/11/2026): só a equipe Conectwork, pelo botão "Apagar (dados de teste)"
     }
 
     // ---------- Espelho da nota · id = id da medição (uma medição, um espelho) ----------
@@ -569,7 +569,7 @@ service cloud.firestore {
             || (request.resource.data.status == 'nota_contestada' && resource.data.status == 'nota_contestada' && espelhoContestaMsg(resource.data, request.resource.data))
             || (resource.data.status == 'nota_contestada' && request.resource.data.status == 'nota_enviada' && espelhoContestaAceita(resource.data, request.resource.data))
             || (resource.data.status == 'nota_contestada' && request.resource.data.status == 'aguardando_nota' && espelhoContestaNova(resource.data, request.resource.data)));
-      allow delete: if false;
+      allow delete: if master();   // dados de teste (13/11/2026): só a equipe Conectwork, pelo botão "Apagar (dados de teste)"
 
       // arquivo da nota (PDF ou XML) em pedaços: só a prestadora grava, enquanto espera a nota; nunca muda nem some
       match /arquivos/{arq} {
@@ -581,19 +581,21 @@ service cloud.firestore {
           && request.resource.data.d is string && request.resource.data.d.size() <= 750000
           && request.resource.data.k is int && request.resource.data.k >= 0 && request.resource.data.k < 6
           && arq == request.resource.data.envio + '-' + string(request.resource.data.k);
-        allow update, delete: if false;
+        allow update: if false;
+        allow delete: if master();
       }
     }
 
     // ---------- Nota já usada · id = chave de acesso (ou CNPJ do emitente_número): uma nota não serve para dois espelhos ----------
     match /notaschave/{chave} {
-      allow get: if logado() && (resource == null || membro(resource.data.prestadorId) || membro(resource.data.tomadorId));
+      allow get: if logado() && (resource == null || master() || membro(resource.data.prestadorId) || membro(resource.data.tomadorId));
       allow list: if false;
       allow create: if request.resource.data.keys().hasOnly(['espelhoId','prestadorId','tomadorId','em'])
         && cargoEm(request.resource.data.prestadorId, ['admin','financeiro','operacional'])
         && getAfter(caminho('espelhos', request.resource.data.espelhoId)).data.prestadorId == request.resource.data.prestadorId
         && getAfter(caminho('espelhos', request.resource.data.espelhoId)).data.nota.chaveUnica == chave;
-      allow update, delete: if false;
+      allow update: if false;
+      allow delete: if master();
     }
 
     // ---------- Pedidos de nota guardados para enviar depois (12/11/2026) ----------
@@ -673,7 +675,7 @@ service cloud.firestore {
             || (request.resource.data.status == 'agendado' && tituloAgendar(resource.data, request.resource.data))
             || (request.resource.data.status == 'liquidado' && tituloLiquidar(id, resource.data, request.resource.data))
             || (request.resource.data.status == 'baixado' && tituloBaixar(resource.data, request.resource.data)));
-      allow delete: if false;
+      allow delete: if master();   // dados de teste (13/11/2026): só a equipe Conectwork, pelo botão "Apagar (dados de teste)"
 
       // conta para receber: só quem cuida de dinheiro nas duas empresas lê (LGPD); só a prestadora escreve, junto com o título
       match /privado/conta {
@@ -683,7 +685,7 @@ service cloud.firestore {
           && request.resource.data.keys().hasOnly(['banco','agencia','conta','tipo','pix','titular','doc','versao','em','por','porNome'])
           && request.resource.data.por == request.auth.uid
           && getAfter(caminho('titulos', id)).data.conta.versao == request.resource.data.versao;
-        allow delete: if false;
+        allow delete: if master();
       }
       // comprovante do pagamento em pedaços: só a tesouraria (ou admin) do tomador, quando está agendado; nunca muda
       match /arquivos/{arq} {
@@ -694,7 +696,8 @@ service cloud.firestore {
           && request.resource.data.d is string && request.resource.data.d.size() <= 750000
           && request.resource.data.k is int && request.resource.data.k >= 0 && request.resource.data.k < 6
           && arq == request.resource.data.envio + '-' + string(request.resource.data.k);
-        allow update, delete: if false;
+        allow update: if false;
+        allow delete: if master();
       }
     }
 

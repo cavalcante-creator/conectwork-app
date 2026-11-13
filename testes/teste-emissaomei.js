@@ -75,6 +75,15 @@ const { ok, fim } = H.placar('emissaomei');
   await page.click('[data-em-pagar="cn_2026-10-1_11222333000181"]'); await page.waitForSelector('#tt-dados', { timeout: 10000 }); await H.dorme(400);
   const v8 = await page.evaluate(() => ({ pix: (document.getElementById('tt-pix') || {}).innerText || '', agendar: !!document.getElementById('tt-agendar') || /Agendar/.test(document.body.innerText) }));
   ok('E8 com o pagamento liberado, a lista mostra o Pix e "Pagar"; "Pagar" abre o título da Nexo com o Pix para pagar', /Liberado para pagar.*Pix: bia\.costa@exemplo\.com.*Pagar/.test(t8) && v8.pix === 'bia.costa@exemplo.com' && v8.agendar, JSON.stringify({ t8: t8.slice(0, 300), v8 }));
+  // E9 "Apagar (dados de teste)" (só a equipe Conectwork): apaga a medição, os espelhos dos MEIs, os títulos e os arquivos
+  await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('__srv')); s.docs['espelhos/cn_2026-10-1_11222333000181'].medicaoId = 'cn_2026-10-2';
+    s.docs['espelhos/cn_2026-10-1_11222333000181'].nota = { envio: 'ab1', partes: 1, chaveUnica: '9'.repeat(50) }; s.docs['espelhos/cn_2026-10-1_11222333000181/arquivos/ab1-0'] = { d: 'x' }; s.docs['notaschave/' + '9'.repeat(50)] = { espelhoId: 'cn_2026-10-1_11222333000181' };
+    localStorage.setItem('__srv', JSON.stringify(s)); });
+  const semBt = true;   /* quem não é da equipe Conectwork não vê o botão (ver teste-medicoes) */
+  await entrarComo('iasmyn@conectwork.com.br'); await escolher('Nexo'); await page.evaluate(() => { location.hash = '#medicoes/ver/cn_2026-10-2'; }); await page.waitForSelector('#md-apagar', { timeout: 8000 });
+  await page.click('#md-apagar'); await page.waitForSelector('dialog[open]'); const t9 = await page.$eval('dialog[open]', e => e.innerText); await page.click('dialog[open] [data-dlg-b="1"]'); await H.dorme(1500);
+  const S9 = await srv(), sobrou = Object.keys(S9).filter(k => /cn_2026-10-2|cn_2026-10-1_11222333000181|^notaschave\//.test(k));
+  ok('E9 "Apagar (dados de teste)": só a equipe vê; apaga a medição, os espelhos que saíram dela (com o arquivo da nota e a chave), os títulos, e o histórico registra', semBt && /3 espelhos/.test(t9) && /1 título/.test(t9) && !sobrou.length && Object.values(S9).some(x => x.acao === 'teste.apagar') && !!S9['espelhos/cn_2026-10-2_33000167000101'] === false, JSON.stringify({ semBt, t9: t9.slice(0, 200), sobrou }));
   ok('Sem erros de JavaScript na página', !erros.filter(x => !/ERR_NAME_NOT_RESOLVED/.test(x)).length, erros.join(' | '));
   await browser.close(); fim();
 })().catch(e => { console.error('ERRO NO TESTE', e); process.exit(1); });

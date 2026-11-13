@@ -274,13 +274,37 @@
           ${acoes ? `<div style="display:flex;gap:8px;flex-wrap:wrap" id="md-acoes">${acoes}</div>` : ''}
           ${zap ? `<div id="md-zap">${zap}</div>` : ''}
           ${st === 'aprovada' && l === 'prestador' && (m.memoria || []).some(x => x.cnpj) ? `<div><button class="btn" id="md-repasse">${ic('users')}Notas dos profissionais MEI</button><p class="hint" style="margin:6px 0 0;font-size:12.5px">Cada profissional MEI emite a nota dele para a sua empresa pelo valor da linha.</p></div>` : ''}
+          ${(CW.sessao.estado() || {}).master ? `<div id="md-teste" style="border-top:1px dashed var(--line);padding-top:12px"><button class="btn ghost sm" id="md-apagar" style="color:var(--danger)">${ic('x')}Apagar (dados de teste)</button><p class="hint" style="margin:4px 0 0;font-size:12px">Só a equipe Conectwork vê. Apaga esta medição e tudo o que saiu dela (notas, notas dos MEIs, títulos e arquivos).</p></div>` : ''}
           ${st === 'aprovada' ? `<div id="md-espelho"><p class="hint" style="margin:0;font-size:12.5px">Próximo passo: o espelho da nota fiscal, com os dados para a prestadora emitir.</p></div>` : ''}
         </div></section></div></div>`;
     ligarDetalhe(el, ctx, m);
     const rp = document.getElementById('md-repasse'); if (rp) rp.onclick = () => CW.ir('repasse/ver/' + id);
+    const ap = document.getElementById('md-apagar'); if (ap) ap.onclick = () => apagarTeste(ctx, m);
     if (CW.avisar) CW.avisar.ligar(el);
     if (CW.documentos && l === 'tomador' && st !== 'cancelada') CW.documentos.alerta(document.getElementById('md-docs'), m.prestadorId, m.prestadorNome);
     if (st === 'aprovada' && CW.espelhos) CW.espelhos.blocoMedicao(document.getElementById('md-espelho'), ctx, m);
+  }
+
+  /* Apagar (dados de teste) · 13/11/2026 ("preciso deixar limpo para amanhã"; só no período de teste, só a equipe Conectwork):
+     apaga a medição, os espelhos que saíram dela (o da prestadora e os dos MEIs, com os arquivos da nota), os títulos (com a conta
+     e o comprovante) e a reserva da chave da nota. O histórico (log) fica, com o registro de que foi apagado. */
+  async function apagarTeste(ctx, m) {
+    const db = CW.fb.db(), id = m._id;
+    let esps = [];
+    try { esps = CW.fb.lista(await db.collection('espelhos').where('medicaoId', '==', id).get()); } catch (e) { U().toast(CW.fb.mensagemErro(e), 'erro'); return; }
+    const tits = (await Promise.all(esps.map(e => db.doc('titulos/' + e._id).get().then(s => CW.fb.dados(s) ? Object.assign({ _id: e._id }, CW.fb.dados(s)) : null).catch(() => null)))).filter(Boolean);
+    const ok = await U().confirmar('Apagar (dados de teste)?', `Apaga de vez a medição de ${periodoTxt(m.periodo)} (${m.tomadorNome} › ${m.prestadorNome}), ${esps.length} espelho${esps.length === 1 ? '' : 's'} de nota (inclui as notas dos MEIs) e ${tits.length} título${tits.length === 1 ? '' : 's'}. Não dá para desfazer. Use só para limpar testes.`, 'Apagar de vez');
+    if (!ok) return;
+    const docs = [];
+    esps.forEach(e => { const ns = [e.nota].concat(e.recusadas || []).filter(Boolean);
+      ns.forEach(n => { if (n.envio && n.partes) for (let k = 0; k < n.partes; k++) docs.push('espelhos/' + e._id + '/arquivos/' + n.envio + '-' + k); if (n.chaveUnica) docs.push('notaschave/' + n.chaveUnica); }); });
+    tits.forEach(t => { docs.push('titulos/' + t._id + '/privado/conta'); const cp = (t.liquidacao || {}).comprovante; if (cp && cp.envio && cp.partes) for (let k = 0; k < cp.partes; k++) docs.push('titulos/' + t._id + '/arquivos/' + cp.envio + '-' + k); docs.push('titulos/' + t._id); });
+    esps.forEach(e => docs.push('espelhos/' + e._id)); docs.push('medicoes/' + id);
+    let feitos = 0; const falhas = [];
+    for (const d of [...new Set(docs)]) { try { await db.doc(d).delete(); feitos++; } catch (e) { if (!/not.?found/i.test(String(e && (e.code || e.message)))) falhas.push(d); } }
+    try { const b = db.batch(); log(b, ctx, 'teste.apagar', `Dados de teste apagados pela equipe Conectwork: medição ${periodoTxt(m.periodo)} (${m.tomadorNome} › ${m.prestadorNome}), ${esps.length} espelho(s) e ${tits.length} título(s).`, id); await b.commit(); } catch (e) { /* sem histórico */ }
+    if (falhas.length) U().toast(`Não deu para apagar ${falhas.length} item(ns): publique o firestore.rules novo e tente de novo.`, 'erro');
+    else { U().toast('Dados de teste apagados.'); CW.ir('medicoes'); }
   }
 
   function ligarDetalhe(el, ctx, m) {

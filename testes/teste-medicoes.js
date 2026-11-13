@@ -73,7 +73,7 @@ const b64url = o => Buffer.from(JSON.stringify(o), 'utf8').toString('base64').re
   await page.evaluate(id => { location.hash = '#medicoes/ver/' + id; }, m._id); await page.waitForSelector('#md-confirmar', { timeout: 8000 });
   await page.click('#md-confirmar'); await page.waitForSelector('dialog[open]'); await dlgOk(); await H.dorme(500);
   m = (await meds())[0];
-  ok('M5 a prestadora confirma a medição', m.status === 'confirmada_prestadora' && m.confirmacao.uid === 'uZECA', m.status);
+  ok('M5 a prestadora confirma a medição (e não vê "Apagar (dados de teste)", que é só da equipe Conectwork)', !(await page.$('#md-apagar')) && m.status === 'confirmada_prestadora' && m.confirmacao.uid === 'uZECA', m.status);
 
   // M6 quem lançou não aprova (funções separadas)
   await entrarComo('rita@alfa.com.br');

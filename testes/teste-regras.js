@@ -829,6 +829,12 @@ async function deve(nome, permitido, op) {
   await deve('Fila MEI: o RH lê o resultado', true, () => getDoc(doc(db('rita'), 'filamei', '12345678000195')));
   await deve('Fila MEI: o RH NÃO mexe no resultado', false, () => updateDoc(doc(db('rita'), 'filamei', '12345678000195'), { res: { convite: 'outro' }, em: serverTimestamp(), enviadoPor: P.rita, st: 'pendente' }));
   await deve('Fila MEI: o RH manda de novo com o e-mail novo (volta a pendente)', true, () => updateDoc(doc(db('rita'), 'filamei', '12345678000195'), { email: 'joao2@teste.com', em: serverTimestamp(), enviadoPor: P.rita, st: 'pendente' }));
+  /* apagar dados de teste (13/11/2026): só a equipe Conectwork */
+  await deve('Teste: quem é da empresa NÃO apaga a medição', false, () => deleteDoc(doc(db('rita'), 'medicoes', 'cm_2026-11-1')));
+  await deve('Teste: a equipe Conectwork apaga a medição de teste', true, () => deleteDoc(doc(db('master'), 'medicoes', 'cm_2026-11-1')));
+  await deve('Teste: a equipe Conectwork apaga o espelho e a reserva da chave da nota', true, async () => { await deleteDoc(doc(db('master'), 'espelhos', 'cm_2026-11-1')); await deleteDoc(doc(db('master'), 'notaschave', '1'.repeat(50))); });
+  await deve('Teste: a equipe Conectwork apaga o título de teste', true, () => deleteDoc(doc(db('master'), 'titulos', 'cm_2026-11-1')));
+  await deve('Teste: o financeiro NÃO apaga o título', false, () => deleteDoc(doc(db('bruno'), 'titulos', 'e2')));
   await deve('Fila MEI: ninguém apaga', false, () => deleteDoc(doc(db('rita'), 'filamei', '12345678000195')));
   /* equipe da prestadora · Meus profissionais (13/11/2026) */
   await env.withSecurityRulesDisabled(async c => { const f = c.firestore(); await setDoc(doc(f, 'acessos', 'alfa_' + P.ana), { uid: P.ana, empresaId: 'alfa', nome: 'Ana', email: EM.ana, cargo: 'admin', extras: [], sem: [], ativo: true });
