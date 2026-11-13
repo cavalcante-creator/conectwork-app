@@ -2,7 +2,7 @@
    Troque VERSAO a cada publicação: o navegador percebe a mudança, instala a versão nova e apaga os caches antigos.
    Guarda só os arquivos do próprio app, para abrir sem internet. Estratégia: rede primeiro, cache se offline.
    NUNCA guarda Firebase (login e banco), fontes externas nem nada de outra origem: esses pedidos nem passam por aqui. */
-const VERSAO = 'conectwork-v101';
+const VERSAO = 'conectwork-v102';
 
 const ARQUIVOS = [
   './', 'index.html', 'config.js', 'manifest.webmanifest', 'css/app.css',

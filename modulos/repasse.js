@@ -34,7 +34,9 @@
   /* convite para quem ainda não tem conta (copiar ou WhatsApp) */
   function convite(ctx, m, x) {
     const url = ((window.CONECTWORK_CONFIG || {}).urlApp) || location.origin + location.pathname;
-    return `Olá, ${String(x.nome).split(' ')[0]}! A ${ctx.contexto.nome} vai receber as suas notas fiscais pelo Conectwork. Entre em ${url}, toque em "Sou MEI" e cadastre o CNPJ ${fmtCnpj(x.cnpj)}. Depois disso, a nota de ${periodoTxt(m.periodo)} (${brl(x.valorCentavos)}) aparece pronta para você emitir.`;
+    /* 12/11/2026: o link já abre o "Sou MEI" com o CNPJ e o nome preenchidos (?mei=, js/sessao.js) */
+    const pn = String(x.nome).split(' ')[0], lk = url.replace(/[?#].*$/, '') + '?mei=' + String(x.cnpj).replace(/\D/g, '') + '&nome=' + encodeURIComponent(pn);
+    return `Olá, ${pn}! A ${ctx.contexto.nome} vai receber as suas notas fiscais pelo Conectwork. Faça o cadastro do seu MEI (o CNPJ ${fmtCnpj(x.cnpj)} já vai preenchido): ${lk}\n\nDepois disso, a nota de ${periodoTxt(m.periodo)} (${brl(x.valorCentavos)}) aparece pronta para você emitir.`;
   }
 
   /* ---------- lista: medições aprovadas com profissionais MEI ---------- */

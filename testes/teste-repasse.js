@@ -43,7 +43,7 @@ const { ok, fim } = H.placar('repasse');
   await page.evaluate(() => { window.__cp = null; Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: t => { window.__cp = t; return Promise.resolve(); } } }); });
   await page.click('[data-conv="1"]'); await H.dorme(200);
   const conv = await page.evaluate(() => window.__cp || '');
-  ok('R2 "Copiar convite": Sou MEI, o CNPJ e o valor da nota de Bia', /Olá, Bia!/.test(conv) && /Sou MEI/.test(conv) && /11\.222\.333\/0001-81/.test(conv) && /R\$ 3\.000,00/.test(conv), conv);
+  ok('R2 "Copiar convite": link com o CNPJ (?mei=), o CNPJ e o valor da nota de Bia', /Olá, Bia!/.test(conv) && /\?mei=11222333000181&nome=Bia/.test(conv) && /11\.222\.333\/0001-81/.test(conv) && /R\$ 3\.000,00/.test(conv), conv);
 
   // R3 preparar: espelho do Carlos (tomador = a prestadora, valor da linha, prazo escolhido) e histórico
   await page.fill('#rp-venc', '5'); await page.click('#rp-preparar'); await H.dorme(1500);
