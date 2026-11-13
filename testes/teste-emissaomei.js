@@ -26,6 +26,13 @@ const { ok, fim } = H.placar('emissaomei');
       valorCentavos: v, retencoes: { iss: 0, inss: 0, ir: 0, pcc: 0 }, liquidoCentavos: v, vencimentoDias: 5, obs: '', status: 'aguardando_nota', versao: 1, criadoPor: 'uX', criadoEm: '2026-11-01T00:00:00Z' });
     d.docs['espelhos/cn_2026-10-2_33000167000101'] = esp('33.000.167/0001-01', 'meic', 'Carlos Ramos', 96.8, 350000);
     d.docs['espelhos/cn_2026-10-2_11222333000181'] = esp('11.222.333/0001-81', 'meib', 'Bia Costa', 90, 300000);
+    /* a nota da Bia de outubro/1 já foi conferida (título esperando o Pix); a de setembro já teve o Pix anotado */
+    d.docs['espelhos/cn_2026-10-1_11222333000181'] = Object.assign(esp('11.222.333/0001-81', 'meib', 'Bia Costa', 80, 280000), { periodo: '2026-10-1', medicaoId: 'cn_2026-10-1', status: 'nota_ok' });
+    const tit = (id, per, v, extra) => Object.assign({ espelhoId: id, medicaoId: 'cn_' + per, contratoId: null, tomadorId: 'nexo', prestadorId: 'meib', partes: ['nexo', 'meib'], tomadorNome: 'Nexo Serviços', prestadorNome: 'Bia Costa', periodo: per, competencia: per.slice(0, 7),
+      valorCentavos: v, liquidoCentavos: v, retencoes: { iss: 0, inss: 0, ir: 0, pcc: 0 }, vencimentoDias: 5, base: '2026-11-10T00:00:00Z', status: 'aprovado', aprovacao: { uid: 'uIASMYN', nome: 'Iasmyn', em: '2026-11-10T00:00:00Z' }, conta: null, criadoEm: '2026-11-10T00:00:00Z' }, extra || {});
+    d.docs['titulos/cn_2026-10-1_11222333000181'] = tit('cn_2026-10-1_11222333000181', '2026-10-1', 280000);
+    d.docs['titulos/cn_2026-09-2_11222333000181'] = tit('cn_2026-09-2_11222333000181', '2026-09-2', 250000, { status: 'liquidado', conta: { ok: true, revisao: false, versao: 1, em: '2026-10-05T00:00:00Z', nome: 'Bia' } });
+    d.docs['titulos/cn_2026-09-2_11222333000181/privado/conta'] = { banco: '', agencia: '', conta: '', tipo: 'Corrente', pix: 'bia.costa@exemplo.com', titular: 'Bia Costa', doc: '11.222.333/0001-81', versao: 1, em: '2026-10-05T00:00:00Z', por: 'uX', porNome: 'Bia' };
   });
   const srv = () => page.evaluate(() => JSON.parse(localStorage.getItem('__srv')).docs);
   const entrarComo = async email => { if (await page.$('#sair')) await page.click('#sair'); await page.waitForSelector('#lg-email'); await H.entrar(page, email, 'senha123'); await page.waitForSelector('.shell', { timeout: 8000 }).catch(() => null); await H.dorme(800); };
@@ -36,10 +43,12 @@ const { ok, fim } = H.placar('emissaomei');
   await page.evaluate(() => { location.hash = '#repasse/ver/cn_2026-10-2'; }); await page.waitForSelector('#rp-em-dar', { timeout: 10000 });
   const e1 = await page.$eval('#rp-emissor', e => e.innerText);
   ok('E1 a equipe Conectwork vê "Quem emite as notas dos MEIs" com a equipe da prestadora', /Quem emite as notas dos MEIs/.test(e1) && /Julia Prado/.test(e1) && /Dar acesso aos 2 MEIs/.test(e1), e1.slice(0, 300));
-  await page.selectOption('#rp-em-quem', 'uJU'); await page.click('#rp-em-dar'); await page.waitForSelector('#rp-em-lista', { timeout: 8000 });
+  await page.selectOption('#rp-em-quem', 'uJU'); await page.selectOption('#rp-em-oque', 'paga'); await page.click('#rp-em-dar'); await page.waitForSelector('#rp-em-lista', { timeout: 8000 });
   const S = await srv(), a1 = S['acessos/meic_uJU'], a2 = S['acessos/meib_uJU'];
-  ok('E2 dá à Julia acesso "operacional" nos 2 MEIs, marcado como emissora pela prestadora', a1 && a2 && a1.cargo === 'operacional' && a1.emissorPor === 'nexo' && a2.emissorPor === 'nexo' && a1.ativo === true, JSON.stringify(a1));
+  ok('E2 "emite e paga": dá à Julia acesso "financeiro" nos 2 MEIs, marcado como emissora pela prestadora', a1 && a2 && a1.cargo === 'financeiro' && a1.emissorPor === 'nexo' && a2.emissorPor === 'nexo' && a1.ativo === true, JSON.stringify(a1));
 
+  await page.waitForSelector('[data-em-tes="uJU"]', { timeout: 8000 }); await page.click('[data-em-tes="uJU"]'); await page.waitForSelector('dialog[open]'); await page.click('dialog[open] [data-dlg-b="1"]'); await H.dorme(800);
+  ok('E2b "mudar para Tesouraria": a Julia passa a pagar pela prestadora', (await srv())['acessos/nexo_uJU'].cargo === 'tesouraria');
   await entrarComo('ju@nexo.com.br'); await escolher('Nexo');
   await page.evaluate(() => { location.hash = '#emissaomei'; }); await page.waitForSelector('#em-tab', { timeout: 10000 });
   const lst = await page.$$eval('#em-tab tbody tr', x => x.map(t => t.innerText.replace(/\s+/g, ' ')));
@@ -53,6 +62,19 @@ const { ok, fim } = H.placar('emissaomei');
   await page.click('#em-volta'); await page.waitForSelector('#em-tab', { timeout: 10000 });
   const lst2 = await page.$$eval('#em-tab tbody tr', x => x.map(t => t.innerText.replace(/\s+/g, ' ')));
   ok('E6 "Voltar para as notas dos MEIs" volta para a lista na prestadora (Carlos agora "Emitir a nota")', lst2.some(t => /Carlos Ramos.*Emitir a nota/.test(t)), JSON.stringify(lst2));
+  // E7 pagamento: a nota da Bia já conferida → "Anotar o Pix" (vem o Pix da quinzena anterior) → "Pagar" depois de liberado
+  const t7 = await page.$eval('#em-tab2', e => e.innerText.replace(/\s+/g, ' '));
+  await page.click('[data-em-pix="cn_2026-10-1_11222333000181"]'); await page.waitForSelector('#tt-conta', { timeout: 10000 });
+  await page.click('#tt-conta'); await page.waitForSelector('#fc-pix'); const pix0 = await page.$eval('#fc-pix', e => e.value);
+  await page.click('dialog[open] [data-dlg-b="1"]'); await H.dorme(800);
+  const S7 = await srv(), c7 = S7['titulos/cn_2026-10-1_11222333000181/privado/conta'] || {};
+  ok('E7 "Anotar o Pix" abre o título na empresa da Bia, já com o Pix da quinzena anterior, e grava só o Pix', /Esperando liberação.*sem Pix.*Anotar o Pix/.test(t7) && pix0 === 'bia.costa@exemplo.com' && c7.pix === 'bia.costa@exemplo.com' && !c7.banco && S7['titulos/cn_2026-10-1_11222333000181'].conta.ok === true, JSON.stringify({ t7: t7.slice(0, 300), pix0, c7 }));
+  await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('__srv')); s.docs['titulos/cn_2026-10-1_11222333000181'].status = 'liberado'; s.docs['titulos/cn_2026-10-1_11222333000181'].liberacao = { uid: 'uIASMYN', nome: 'Iasmyn' }; localStorage.setItem('__srv', JSON.stringify(s)); });
+  await page.click('#em-volta'); await page.waitForSelector('#em-tab2', { timeout: 10000 }); await H.dorme(400);
+  const t8 = await page.$eval('#em-tab2', e => e.innerText.replace(/\s+/g, ' '));
+  await page.click('[data-em-pagar="cn_2026-10-1_11222333000181"]'); await page.waitForSelector('#tt-dados', { timeout: 10000 }); await H.dorme(400);
+  const v8 = await page.evaluate(() => ({ pix: (document.getElementById('tt-pix') || {}).innerText || '', agendar: !!document.getElementById('tt-agendar') || /Agendar/.test(document.body.innerText) }));
+  ok('E8 com o pagamento liberado, a lista mostra o Pix e "Pagar"; "Pagar" abre o título da Nexo com o Pix para pagar', /Liberado para pagar.*Pix: bia\.costa@exemplo\.com.*Pagar/.test(t8) && v8.pix === 'bia.costa@exemplo.com' && v8.agendar, JSON.stringify({ t8: t8.slice(0, 300), v8 }));
   ok('Sem erros de JavaScript na página', !erros.filter(x => !/ERR_NAME_NOT_RESOLVED/.test(x)).length, erros.join(' | '));
   await browser.close(); fim();
 })().catch(e => { console.error('ERRO NO TESTE', e); process.exit(1); });

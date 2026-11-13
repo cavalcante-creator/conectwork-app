@@ -138,24 +138,35 @@
       outros.forEach(a => { (ja[a.uid] = ja[a.uid] || new Set()).add(a.empresaId); });
     } catch (err) { box.innerHTML = `<div class="card-b"><p class="err">${esc(CW.fb.mensagemErro(err))}</p></div>`; return; }
     const emps = [...new Set(comConta.map(x => x.empId))];
-    const falta = uid => emps.filter(e => !(ja[uid] && ja[uid].has(e)));
+    const cargoDe = {}; try { CW.fb.lista(await db.collection('acessos').where('emissorPor', '==', prest).get()).forEach(a => { cargoDe[a.empresaId + '_' + a.uid] = a.cargo; }); } catch (e) { /* */ }
+    const falta = (uid, paga) => emps.filter(e => !(ja[uid] && ja[uid].has(e)) || (paga && cargoDe[e + '_' + uid] !== 'financeiro'));
     const emissores = equipe.filter(a => ja[a.uid]);
     box.innerHTML = `<div class="card-h"><span class="ic">${ic('users')}</span><h3>Quem emite as notas dos MEIs</h3></div><div class="card-b stack" style="gap:12px">
       <p style="margin:0;font-size:13.5px">Se uma pessoa da ${esc(m.prestadorNome)} emite as notas no lugar dos profissionais, dê a ela acesso aos MEIs desta medição. Ela vê todas as notas em <b>Notas dos MEIs</b>, com o login dela.</p>
-      ${emissores.length ? `<ul style="margin:0;padding-left:18px;font-size:13.5px" id="rp-em-lista">${emissores.map(a => { const f = falta(a.uid).length; return `<li><b>${esc(a.nome || a.email)}</b> · emite por ${ja[a.uid].size} MEI${ja[a.uid].size === 1 ? '' : 's'}${f ? ` · <span class="pill warn">${f} desta medição sem acesso</span>` : ''}</li>`; }).join('')}</ul>` : ''}
-      ${equipe.length ? `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end"><label class="f" style="margin:0;min-width:240px"><span>Pessoa da ${esc(m.prestadorNome)}</span><select id="rp-em-quem">${equipe.map(a => `<option value="${esc(a.uid)}">${esc(a.nome || a.email)} · ${esc(a.cargo)}</option>`).join('')}</select></label>
-        <button class="btn" id="rp-em-dar">${ic('check')}Dar acesso aos ${emps.length} MEI${emps.length === 1 ? '' : 's'} desta medição</button></div>` : `<p class="hint" style="margin:0">A ${esc(m.prestadorNome)} ainda não tem ninguém na equipe. Convide a pessoa em Usuários e acessos da ${esc(m.prestadorNome)} primeiro.</p>`}
+      ${emissores.length ? `<ul style="margin:0;padding-left:18px;font-size:13.5px" id="rp-em-lista">${emissores.map(a => { const f = falta(a.uid).length, paga = [...ja[a.uid]].some(e => cargoDe[e + '_' + a.uid] === 'financeiro'), pagaPrest = ['admin', 'tesouraria'].includes(a.cargo);
+        return `<li><b>${esc(a.nome || a.email)}</b> · ${paga ? 'emite e cuida do Pix' : 'emite'} por ${ja[a.uid].size} MEI${ja[a.uid].size === 1 ? '' : 's'}${f ? ` · <span class="pill warn">${f} desta medição sem acesso</span>` : ''}${paga ? (pagaPrest ? ` · paga pela ${esc(m.prestadorNome)} (${esc(a.cargo)})` : ` · <span class="pill warn">para pagar, o cargo na ${esc(m.prestadorNome)} precisa ser Tesouraria</span> <button class="linkbtn" data-em-tes="${esc(a.uid)}" style="font-size:12.5px">mudar para Tesouraria</button>`) : ''}</li>`; }).join('')}</ul>` : ''}
+      ${equipe.length ? `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end"><label class="f" style="margin:0;min-width:220px"><span>Pessoa da ${esc(m.prestadorNome)}</span><select id="rp-em-quem">${equipe.map(a => `<option value="${esc(a.uid)}">${esc(a.nome || a.email)} · ${esc(a.cargo)}</option>`).join('')}</select></label>
+        <label class="f" style="margin:0;min-width:220px"><span>O que ela faz</span><select id="rp-em-oque"><option value="emite">Só emite as notas</option><option value="paga">Emite as notas e paga (cuida do Pix)</option></select></label>
+        <button class="btn" id="rp-em-dar">${ic('check')}Dar acesso aos ${emps.length} MEI${emps.length === 1 ? '' : 's'} desta medição</button></div>
+        <p class="hint" style="margin:0;font-size:12.5px">"Emite e paga": ela também anota o Pix de cada profissional (vale para as próximas quinzenas) e, com o cargo Tesouraria na ${esc(m.prestadorNome)}, agenda e confirma o pagamento. Quem libera o pagamento continua sendo outra pessoa.</p>` : `<p class="hint" style="margin:0">A ${esc(m.prestadorNome)} ainda não tem ninguém na equipe. Convide a pessoa em Usuários e acessos da ${esc(m.prestadorNome)} primeiro.</p>`}
       <p class="err" id="rp-em-erro" role="alert"></p></div>`;
+    const st = CW.sessao.estado(), eu = CW.fb.auth().currentUser, quemEu = (st.perfil && st.perfil.nome) || eu.email, agora = CW.fb.agora;
+    box.querySelectorAll('[data-em-tes]').forEach(l => l.onclick = async () => { const p = equipe.find(a => a.uid === l.dataset.emTes); if (!p) return;
+      if (!(await U().confirmar('Mudar o cargo para Tesouraria?', `${p.nome || p.email} passa a ter o cargo Tesouraria na ${m.prestadorNome}: agenda e confirma os pagamentos liberados. Hoje é ${p.cargo}.`, 'Mudar'))) return;
+      const b = db.batch(); b.update(db.doc('acessos/' + prest + '_' + p.uid), { cargo: 'tesouraria', atualizadoEm: agora() });
+      b.set(db.collection('log').doc(), { em: agora(), uid: eu.uid, quem: quemEu, empresaId: prest, acao: 'acesso.cargo', texto: `${p.nome || p.email}: cargo ${p.cargo} → tesouraria (paga as notas dos MEIs; equipe Conectwork).`, ref: p.uid });
+      try { await b.commit(); U().toast('Cargo mudado para Tesouraria.'); blocoEmissor(box, ctx, m, comConta); } catch (err) { U().toast(CW.fb.mensagemErro(err), 'erro'); } });
     const bt = box.querySelector('#rp-em-dar'); if (!bt) return;
     bt.onclick = async () => {
-      const uid = box.querySelector('#rp-em-quem').value, p = equipe.find(a => a.uid === uid), f = falta(uid);
-      if (!p) return; if (!f.length) { U().toast((p.nome || p.email) + ' já emite por todos os MEIs desta medição.'); return; }
+      const uid = box.querySelector('#rp-em-quem').value, paga = box.querySelector('#rp-em-oque').value === 'paga', p = equipe.find(a => a.uid === uid), f = falta(uid, paga);
+      if (!p) return; if (!f.length) { U().toast((p.nome || p.email) + ' já tem esse acesso em todos os MEIs desta medição.'); return; }
       bt.disabled = true;
-      const st = CW.sessao.estado(), eu = CW.fb.auth().currentUser, quemEu = (st.perfil && st.perfil.nome) || eu.email, b = db.batch(), agora = CW.fb.agora;
-      f.forEach(e => b.set(db.doc('acessos/' + e + '_' + uid), { uid, empresaId: e, nome: p.nome || '', email: p.email || '', cargo: 'operacional', extras: [], sem: [], ativo: true,
-        emissorPor: prest, emissorPorNome: m.prestadorNome, criadoEm: agora(), criadoPor: eu.uid }));
+      const b = db.batch(), cg = paga ? 'financeiro' : 'operacional';
+      f.forEach(e => { if (ja[uid] && ja[uid].has(e)) b.update(db.doc('acessos/' + e + '_' + uid), { cargo: cg, atualizadoEm: agora() });
+        else b.set(db.doc('acessos/' + e + '_' + uid), { uid, empresaId: e, nome: p.nome || '', email: p.email || '', cargo: cg, extras: [], sem: [], ativo: true,
+          emissorPor: prest, emissorPorNome: m.prestadorNome, criadoEm: agora(), criadoPor: eu.uid }); });
       b.set(db.collection('log').doc(), { em: agora(), uid: eu.uid, quem: quemEu, empresaId: prest, acao: 'acesso.emissor',
-        texto: `${p.nome || p.email} passa a emitir as notas de ${f.length} profissional(is) MEI pela ${m.prestadorNome} (liberado pela equipe Conectwork).`, ref: m._id });
+        texto: `${p.nome || p.email} passa a ${paga ? 'emitir as notas e cuidar do Pix' : 'emitir as notas'} de ${f.length} profissional(is) MEI pela ${m.prestadorNome} (liberado pela equipe Conectwork).`, ref: m._id });
       try { await b.commit(); U().toast(`Pronto: ${p.nome || p.email} já vê as notas em "Notas dos MEIs".`); blocoEmissor(box, ctx, m, comConta); }
       catch (err) { bt.disabled = false; box.querySelector('#rp-em-erro').textContent = CW.fb.mensagemErro(err); }
     };

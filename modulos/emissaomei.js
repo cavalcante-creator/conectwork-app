@@ -29,24 +29,38 @@
     const db = CW.fb.db(), todas = [];
     await Promise.all(acs.map(async a => { try { const s = await db.collection('espelhos').where('prestadorId', '==', a.empresaId).get();
       CW.fb.lista(s).filter(x => x.origem === 'repasse' && x.tomadorId === prest).forEach(x => todas.push(Object.assign(x, { _emp: a.empresaId }))); } catch (e) { /* sem leitura nessa empresa */ } }));
+    /* pagamento (13/11/2026, "ela também paga"): o título de cada nota (mesmo id do espelho) e o Pix */
+    const tits = {};
+    await Promise.all(acs.map(async a => { try { const s = await db.collection('titulos').where('prestadorId', '==', a.empresaId).get(); CW.fb.lista(s).forEach(t => { tits[t._id] = t; }); } catch (e) { /* */ } }));
+    await Promise.all(Object.values(tits).filter(t => t.conta && t.conta.ok).map(async t => { try { const c = CW.fb.dados(await db.doc('titulos/' + t._id + '/privado/conta').get()); if (c) t._pix = c.pix || (c.banco ? c.banco + ' · ag. ' + c.agencia + ' · conta ' + c.conta : ''); } catch (e) { /* sem leitura */ } }));
+    const cargoMei = emp => (acs.find(a => a.empresaId === emp) || {}).cargo;
+    const pagCel = x => { const t = tits[x._id]; if (!t) return x.status === 'nota_ok' ? '' : '<span class="hint">depois da nota</span>';
+      const stt = { aprovado: 'Esperando liberação', liberado: 'Liberado para pagar', agendado: 'Pagamento agendado', liquidado: 'Pago', baixado: 'Pago' }[t.status] || t.status;
+      const pix = t._pix ? `<br><small>Pix: <b>${U().esc(t._pix)}</b> <button class="linkbtn" data-em-copia="${U().esc(t._pix)}" style="font-size:12px">copiar</button></small>` : t.conta && t.conta.ok ? '' : '<br><small class="hint">sem Pix</small>';
+      const bt = !(t.conta && t.conta.ok) && ['aprovado', 'liberado'].includes(t.status) && cargoMei(x._emp) === 'financeiro' ? `<br><button class="btn sm" data-em-pix="${U().esc(x._id)}" data-em-emp="${U().esc(x._emp)}">Anotar o Pix</button>`
+        : ['liberado', 'agendado'].includes(t.status) && t.conta && t.conta.ok ? `<br><button class="btn sm" data-em-pagar="${U().esc(x._id)}">Pagar</button>` : '';
+      return `<span class="pill ${['liquidado', 'baixado'].includes(t.status) ? 'ok' : 'info'}">${U().esc(stt)}</span>${pix}${bt}`; };
     const abertas = todas.filter(x => x.status === 'aguardando_nota' || x.status === 'nota_contestada');
     const ord = (a, b) => String(b.periodo).localeCompare(String(a.periodo)) || String(a.prestadorNome).localeCompare(String(b.prestadorNome), 'pt');
     const linha = x => { const s = sit(x);
       return `<tr class="click" data-em-abrir="${esc(x._id)}" data-em-emp="${esc(x._emp)}" tabindex="0"><td class="m-full"><strong>${esc(x.prestadorNome)}</strong><small>MEI ${esc(x.prestadorCnpj || '')} · ${esc(periodoTxt(x.periodo))}</small></td>
-        <td class="r">${x.horas == null ? '—' : esc(String(x.horas).replace('.', ',')) + ' h'}</td><td class="r"><b>${esc(brl(x.valorCentavos))}</b></td><td><span class="pill ${s[0]}">${esc(s[1])}</span></td>
+        <td class="r">${x.horas == null ? '—' : esc(String(x.horas).replace('.', ',')) + ' h'}</td><td class="r"><b>${esc(brl(x.valorCentavos))}</b></td><td><span class="pill ${s[0]}">${esc(s[1])}</span></td><td>${pagCel(x)}</td>
         <td class="r"><button class="btn sm ${x.status === 'aguardando_nota' ? '' : 'sec'}" data-em-abrir="${esc(x._id)}" data-em-emp="${esc(x._emp)}">${x.status === 'aguardando_nota' ? 'Emitir' : 'Abrir'}</button></td></tr>`; };
-    const tab = (id, xs) => `<div class="scroll"><table class="resp" id="${id}"><thead><tr><th>Profissional</th><th class="r">Horas</th><th class="r">Valor</th><th>Situação</th><th></th></tr></thead><tbody>${xs.sort(ord).map(linha).join('')}</tbody></table></div>`;
+    const tab = (id, xs) => `<div class="scroll"><table class="resp" id="${id}"><thead><tr><th>Profissional</th><th class="r">Horas</th><th class="r">Valor</th><th>Nota</th><th>Pagamento</th><th></th></tr></thead><tbody>${xs.sort(ord).map(linha).join('')}</tbody></table></div>`;
     const resto = todas.filter(x => !abertas.includes(x));
-    el.innerHTML = `<div class="banner info" id="em-aviso">${ic('receipt')}<span><strong>Você emite as notas de ${acs.length} profissionais MEI para a ${esc(ctx.contexto.nome)}</strong>Toque em "Emitir": o Conectwork entra na empresa do profissional e abre a nota dele. Confira as horas e o valor com o profissional, emita e anexe. Depois, "Voltar para as notas dos MEIs".</span></div>
+    el.innerHTML = `<div class="banner info" id="em-aviso">${ic('receipt')}<span><strong>Você emite as notas de ${acs.length} profissionais MEI para a ${esc(ctx.contexto.nome)}</strong>Toque em "Emitir": o Conectwork entra na empresa do profissional e abre a nota dele. Confira as horas e o valor com o profissional, emita e anexe. Depois, "Voltar para as notas dos MEIs". Com a nota conferida, anote o Pix (uma vez por profissional) e pague em "Pagar".</span></div>
       <section class="card" id="em-abertas" style="margin-top:14px"><div class="card-h"><span class="ic">${ic('receipt')}</span><h3>Para emitir</h3><span class="count">${abertas.length}</span></div>
         ${abertas.length ? tab('em-tab', abertas) : `<div class="empty"><div class="ic">${ic('check')}</div><strong>Nenhuma nota para emitir agora.</strong><span>Quando a ${esc(ctx.contexto.nome)} preparar as notas dos profissionais, elas aparecem aqui.</span></div>`}</section>
-      ${resto.length ? `<section class="card" id="em-feitas" style="margin-top:14px"><div class="card-h"><span class="ic">${ic('check')}</span><h3>Já enviadas</h3><span class="count">${resto.length}</span></div>${tab('em-tab2', resto)}</section>` : ''}`;
+      ${resto.length ? `<section class="card" id="em-feitas" style="margin-top:14px"><div class="card-h"><span class="ic">${ic('check')}</span><h3>Notas enviadas e pagamento</h3><span class="count">${resto.length}</span></div>${tab('em-tab2', resto)}</section>` : ''}`;
+    el.querySelectorAll('[data-em-pix]').forEach(b => b.onclick = ev => { ev.stopPropagation(); abrir(b.dataset.emEmp, b.dataset.emPix, 'titulos/ver/'); });
+    el.querySelectorAll('[data-em-pagar]').forEach(b => b.onclick = ev => { ev.stopPropagation(); CW.ir('titulos/ver/' + b.dataset.emPagar); });
+    el.querySelectorAll('[data-em-copia]').forEach(b => b.onclick = async ev => { ev.stopPropagation(); try { await navigator.clipboard.writeText(b.dataset.emCopia); U().toast('Pix copiado.'); } catch (e) { U().toast('Copie o Pix: ' + b.dataset.emCopia); } });
     el.querySelectorAll('[data-em-abrir]').forEach(b => { const ir = ev => { ev.stopPropagation(); abrir(b.dataset.emEmp, b.dataset.emAbrir); }; b.onclick = ir; if (b.tagName === 'TR') b.onkeydown = e => { if (e.key === 'Enter') ir(e); }; });
   }
 
   /* entra na empresa do MEI e abre o espelho */
-  function abrir(empId, espId) {
-    try { sessionStorage.setItem('cw.em.depois', 'espelhos/ver/' + espId); } catch (e) { /* sem armazenamento */ }
+  function abrir(empId, espId, rota) {
+    try { sessionStorage.setItem('cw.em.depois', (rota || 'espelhos/ver/') + espId); } catch (e) { /* sem armazenamento */ }
     CW.sessao.entrarEm('empresa:' + empId);
     setTimeout(() => { let r = ''; try { r = sessionStorage.getItem('cw.em.depois') || ''; sessionStorage.removeItem('cw.em.depois'); } catch (e) { /* */ } if (r) CW.ir(r); }, 60);
   }

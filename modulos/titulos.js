@@ -112,8 +112,8 @@
       if (['aprovado', 'liberado'].includes(st)) acoes += `<button class="btn ${c.ok ? 'sec' : ''}" id="tt-conta">${ic('bank')}${c.ok ? 'Trocar a conta para receber' : 'Informar a conta para receber'}</button>`;
       if (st === 'liquidado') acoes += `<button class="btn ok" id="tt-baixar">${ic('check')}O dinheiro chegou: dar baixa</button>`;
     }
-    const contaTxt = conta ? `${esc(conta.banco)} · ag. ${esc(conta.agencia)} · conta ${esc(conta.conta)} (${esc(conta.tipo || '')})${conta.pix ? '<br>Pix: ' + esc(conta.pix) : ''}<br><span class="hint">Titular: ${esc(conta.titular)} · ${esc(conta.doc)}</span>` : '';
-    el.innerHTML = `<div style="margin-bottom:14px"><button class="linkbtn" id="tt-voltar">${ic('back')}Voltar para pagar e receber</button></div>
+    const contaTxt = conta ? `${conta.banco ? `${esc(conta.banco)} · ag. ${esc(conta.agencia)} · conta ${esc(conta.conta)} (${esc(conta.tipo || '')})` : '<b>Só Pix</b>'}${conta.pix ? '<br>Pix: <b id="tt-pix">' + esc(conta.pix) + '</b>' : ''}${conta.porNome ? '<br><span class="hint">Informada por ' + esc(conta.porNome) + '</span>' : ''}<br><span class="hint">Titular: ${esc(conta.titular)} · ${esc(conta.doc)}</span>` : '';
+    el.innerHTML = `${CW.emissaoMei ? CW.emissaoMei.faixaVolta(ctx) : ''}<div style="margin-bottom:14px"><button class="linkbtn" id="tt-voltar">${ic('back')}Voltar para pagar e receber</button></div>
       <div id="tt-docs"></div>
       ${vencido(t) ? `<div class="banner danger" id="tt-venc">${ic('alert')}<span><strong>Vencido em ${esc(dataTxt(v))}</strong>${l === 'tomador' ? 'O vencimento vem do contrato. Pague o quanto antes e anexe o comprovante.' : 'A empresa que contrata já foi avisada nesta tela.'}</span></div>` : ''}
       ${c.revisao && ['aprovado', 'liberado'].includes(st) ? `<div class="banner warn" id="tt-rev">${ic('shield')}<span><strong>Conta para receber trocada</strong>${l === 'tomador' ? 'Confira a troca com a prestadora por telefone antes de aprovar (revisão reforçada). Até lá, o pagamento não pode ser agendado.' : 'A empresa que contrata confere a troca antes de agendar o pagamento.'}</span></div>` : ''}
@@ -212,6 +212,7 @@
         log(b, ctx, 'titulo.liquidar', `Pagamento de ${brl(t.liquidoCentavos)} para ${t.prestadorNome} confirmado em ${dataTxt(res.data)}, com comprovante.`, t._id);
       }, 'Pagamento confirmado. A prestadora vê o comprovante.');
     };
+    if (CW.emissaoMei) CW.emissaoMei.ligarVolta(ctx);
     const ct = $('tt-conta');
     if (ct) ct.onclick = () => formConta(el, ctx, t, conta);
     const bx = $('tt-baixar');
@@ -225,10 +226,13 @@
     const U0 = U(), db = CW.fb.db(), agora = CW.fb.agora;
     let base = atual;
     if (!base) { try { const pv = CW.fb.dados(await db.doc('empresas/' + ctx.contexto.empresaId + '/privado/cadastro').get()) || {}, bk = pv.banco || {}; base = { banco: bk.banco || '', agencia: bk.agencia || '', conta: bk.conta || '', tipo: bk.tipoConta || '', pix: bk.pix || '' }; } catch (e) { base = {}; } }
+    /* 13/11/2026: sem conta no cadastro (MEI pré-cadastrado), começa com a do último título desta empresa */
+    if (!base.banco && !base.pix) { try { const ant = await ultimaConta(ctx.contexto.empresaId, t._id); if (ant) base = ant; } catch (e) { /* sem anterior */ } }
     const emp = ctx.contexto.empresa || {}, troca = !!(t.conta || {}).ok;
     let dados = null;
     await U0.dialogo({ titulo: troca ? 'Trocar a conta para receber' : 'Conta para receber', sub: troca ? 'A troca passa por revisão reforçada da empresa que paga antes de agendar o pagamento.' : 'Veio do cadastro da sua empresa. Confira antes de enviar.',
       corpo: `<div class="fgrid">
+        <p class="hint c12" style="margin:0;font-size:12.5px">Pode ser só a chave Pix: deixe banco, agência e conta em branco.</p>
         <label class="f c12"><span>Banco</span><select id="fc-banco"><option value="">Escolha</option>${BANCOS.map(b => `<option ${b === base.banco ? 'selected' : ''}>${U0.esc(b)}</option>`).join('')}</select></label>
         <label class="f c4"><span>Agência</span><input id="fc-ag" inputmode="numeric" maxlength="6" value="${U0.esc(base.agencia || '')}"></label>
         <label class="f c4"><span>Conta com dígito</span><input id="fc-ct" inputmode="numeric" maxlength="20" value="${U0.esc(base.conta || '')}"></label>
@@ -239,19 +243,33 @@
       botoes: [{ texto: 'Voltar', valor: null, classe: 'sec' }, { texto: troca ? 'Enviar a conta nova' : 'Enviar a conta', valor: 'ok', antes: d => {
         const g = x => d.querySelector(x).value.trim(), er = d.querySelector('#fc-erro');
         const x = { banco: g('#fc-banco'), agencia: U0.dig(g('#fc-ag')), conta: g('#fc-ct').replace(/[^\dXx-]/g, ''), tipo: g('#fc-tp'), pix: g('#fc-pix') };
-        if (!x.banco) { er.textContent = 'Escolha o banco.'; return false; }
-        if (x.agencia.length < 3) { er.textContent = 'Informe a agência.'; return false; }
-        if (U0.dig(x.conta).length < 3) { er.textContent = 'Informe a conta com o dígito.'; return false; }
+        const soPix = x.pix && !x.banco && !x.agencia && !U0.dig(x.conta);   /* 13/11/2026: só o Pix também vale */
+        if (!soPix) {
+          if (!x.banco) { er.textContent = 'Escolha o banco (ou deixe banco, agência e conta em branco e informe só a chave Pix).'; return false; }
+          if (x.agencia.length < 3) { er.textContent = 'Informe a agência.'; return false; }
+          if (U0.dig(x.conta).length < 3) { er.textContent = 'Informe a conta com o dígito.'; return false; } }
+        if (soPix && x.pix.length < 5) { er.textContent = 'Confira a chave Pix.'; return false; }
         if (troca && atual && atual.banco === x.banco && atual.agencia === x.agencia && atual.conta === x.conta && (atual.pix || '') === x.pix) { er.textContent = 'É a mesma conta de antes.'; return false; }
         dados = x; return true; } }] });
     if (!dados) return;
     const versao = ((t.conta || {}).versao || 0) + 1, b = db.batch();
     b.set(db.doc('titulos/' + t._id + '/privado/conta'), Object.assign({}, dados, { titular: emp.razao || emp.nome || ctx.contexto.nome || '', doc: emp.cnpj || '', versao, em: agora(), por: eu(ctx), porNome: quem(ctx) }));
     b.update(db.doc('titulos/' + t._id), { conta: { ok: true, revisao: troca, versao, em: agora(), nome: quem(ctx) }, atualizadoEm: agora() });
-    log(b, ctx, troca ? 'titulo.conta_trocar' : 'titulo.conta', `${troca ? 'Conta para receber trocada' : 'Conta para receber informada'} no título de ${t.tomadorNome} (${periodoTxt(t.periodo)}): ${dados.banco}, ag. ${dados.agencia}.`, t._id);
+    log(b, ctx, troca ? 'titulo.conta_trocar' : 'titulo.conta', `${troca ? 'Conta para receber trocada' : 'Conta para receber informada'} no título de ${t.tomadorNome} (${periodoTxt(t.periodo)}): ${dados.banco ? dados.banco + ', ag. ' + dados.agencia : 'só a chave Pix'}.`, t._id);
     try { await b.commit(); U0.toast(troca ? 'Conta nova enviada. A empresa que paga confere antes de agendar.' : 'Conta enviada.'); } catch (e) { U0.toast(CW.fb.mensagemErro(e), 'erro'); }
     desenharVer(el, ctx, t._id);
   }
+
+  /* conta do último título com conta desta empresa (quem recebe), para não digitar o Pix de novo a cada quinzena */
+  async function ultimaConta(empId, menos) {
+    const db = CW.fb.db(), ts = CW.fb.lista(await db.collection('titulos').where('prestadorId', '==', empId).get())
+      .filter(x => x._id !== menos && x.conta && x.conta.ok);
+    const k = x => { const e = (x.conta || {}).em; return e && e.seconds ? new Date(e.seconds * 1000).toISOString() : String(e || x.atualizadoEm || ''); };
+    ts.sort((a, b) => k(b).localeCompare(k(a)));
+    for (const x of ts) { try { const c = CW.fb.dados(await db.doc('titulos/' + x._id + '/privado/conta').get()); if (c) return { banco: c.banco || '', agencia: c.agencia || '', conta: c.conta || '', tipo: c.tipo || '', pix: c.pix || '' }; } catch (e) { /* sem leitura */ } }
+    return null;
+  }
+  CW.titulosConta = { ultimaConta };
 
   async function abrirComprovante(t) {
     const cp = (t.liquidacao || {}).comprovante; if (!cp) return;
