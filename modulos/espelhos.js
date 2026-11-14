@@ -103,6 +103,12 @@
     const emitir = espP.filter(x => x.status === 'aguardando_nota');
     const conferir = pode(ctx) ? espT.filter(x => x.status === 'nota_enviada') : [];
     const contest = espT.concat(espP).filter(x => x.status === 'nota_contestada');
+    /* 14/11/2026 (melhoria 3, "cobrar a nota com um toque"): notas que quem paga ainda espera, com a cobrança pronta no WhatsApp */
+    const ms0 = v => !v ? 0 : typeof v.toMillis === 'function' ? v.toMillis() : v.seconds ? v.seconds * 1000 : (Date.parse(v) || 0);
+    const diasEsp = x => Math.max(0, Math.floor((Date.now() - ms0(x.criadoEm)) / 864e5));
+    const atrasada = x => prazoSit(x) === 'atrasada' || (!x.prazoEmissao && diasEsp(x) > 5);
+    const esperando = pode(ctx) ? espT.filter(x => x.status === 'aguardando_nota').sort((a, b) => atrasada(b) - atrasada(a) || diasEsp(b) - diasEsp(a)) : [];
+    const cobradoEm = id => { try { return localStorage.getItem('cw.cobrado.' + id) || ''; } catch (e) { return ''; } };
     const outro = x => lado(x, ctx) === 'tomador' ? x.prestadorNome : x.tomadorNome;
     /* 13/11/2026 ("sem precisar entrar um por um, não pode só direcionar ela direto?"): quem emite pelos MEIs (acesso na empresa
        do MEI) toca na nota do MEI e já cai nela, dentro da empresa do MEI, pronta para emitir */
@@ -123,6 +129,12 @@
         </tbody></table></div></section>` : ''}
       ${contest.length ? `<section class="card" id="es-contest" style="margin-bottom:22px"><div class="card-h"><span class="ic">${ic('alert')}</span><h3>Notas contestadas</h3><span class="count">${contest.length}</span></div>${tab(contest, 'es-tab-contest')}</section>` : ''}
       ${conferir.length ? `<section class="card" id="es-conferir" style="margin-bottom:22px"><div class="card-h"><span class="ic">${ic('alert')}</span><h3>Notas para conferir</h3><span class="count">${conferir.length}</span></div>${tab(conferir, 'es-tab-conferir')}</section>` : ''}
+      ${esperando.length ? `<section class="card" id="es-cobrar" style="margin-bottom:22px"><div class="card-h"><span class="ic">${ic('clock')}</span><h3>Notas que vocês esperam</h3><span class="count">${esperando.length}</span>${esperando.length > 1 ? `<button class="btn sm sec" id="es-cobrar-todos" style="margin-left:auto">${ic('copy')}Copiar a cobrança de todos</button>` : ''}</div>
+        <div class="scroll"><table class="resp" id="es-tab-cobrar"><thead><tr><th>Quem emite</th><th class="r">Valor</th><th>Esperando</th><th></th></tr></thead><tbody>
+        ${esperando.map(x => { const c = cobradoEm(x._id); return `<tr><td class="m-full"><strong>${esc(x.prestadorNome)}</strong><br><small class="hint">${esc(periodoTxt(x.periodo))}</small></td><td class="r" data-r="Valor"><b>${esc(brl(x.valorCentavos))}</b></td>
+          <td data-r="Esperando">${atrasada(x) ? `<span class="pill danger">${x.prazoEmissao ? 'Prazo passou' : diasEsp(x) + ' dias'}</span>` : `<span class="pill warn">${diasEsp(x)} ${diasEsp(x) === 1 ? 'dia' : 'dias'}</span>`}${c ? `<br><small class="hint">cobrado em ${esc(c)}</small>` : ''}</td>
+          <td class="r"><button class="btn sm ${atrasada(x) ? '' : 'sec'}" data-cobrar="${esc(x._id)}">${ic('send')}Cobrar no WhatsApp</button></td></tr>`; }).join('')}
+        </tbody></table></div></section>` : ''}
       ${emitir.length ? `<section class="card" id="es-emitir" style="margin-bottom:22px"><div class="card-h"><span class="ic">${ic('receipt')}</span><h3>Notas a emitir</h3><span class="count">${emitir.length}</span></div>
         <div class="card-b" style="padding-bottom:0"><div class="banner ok">${ic('check')}<span><strong>Serviço aprovado: confira os dados e envie sua nota fiscal</strong>Abra o espelho: o botão leva ao emissor da nota e, quando você voltar, o Conectwork pede o PDF da nota.</span></div></div>
         ${tab(emitir, 'es-tab-emitir')}</section>` : ''}
@@ -132,6 +144,14 @@
     el.querySelectorAll('[data-preparar]').forEach(b => b.onclick = () => CW.ir('espelhos/preparar/' + b.dataset.preparar));
     el.querySelectorAll('[data-guardado]').forEach(b => b.onclick = () => CW.ir('espelhos/nova/' + b.dataset.guardado));
     const fl = document.getElementById('es-flote'); if (fl) fl.onchange = () => { filtroLote = fl.value; desenharLista(el, ctx); };
+    const msgCobra = x => `Olá, ${x.prestadorNome}! Aqui é da ${ctx.contexto.nome}. Ainda falta a nota fiscal de ${periodoTxt(x.periodo)} (${brl(x.valorCentavos)})${x.prazoEmissao ? ', com prazo até ' + U().formatarData(x.prazoEmissao) : ''}. Os dados para emitir estão no Conectwork: ${CW.avisar ? CW.avisar.linkDa('espelhos/ver/' + x._id) : ''}`;
+    const marcaCobrado = id => { try { localStorage.setItem('cw.cobrado.' + id, new Date().toLocaleDateString('pt-BR')); } catch (e) { /* */ } };
+    el.querySelectorAll('[data-cobrar]').forEach(b => b.onclick = () => { const x = esperando.find(e => e._id === b.dataset.cobrar); if (!x) return;
+      try { window.open('https://wa.me/?text=' + encodeURIComponent(msgCobra(x)), '_blank', 'noopener'); } catch (e) { /* */ } marcaCobrado(x._id); desenharLista(el, ctx); });
+    const ct = document.getElementById('es-cobrar-todos'); if (ct) ct.onclick = async () => {
+      const txt = `Olá! Aqui é da ${ctx.contexto.nome}. Ainda faltam estas notas fiscais no Conectwork:\n` + esperando.map(x => `• ${x.prestadorNome}: ${periodoTxt(x.periodo)}, ${brl(x.valorCentavos)} · ${CW.avisar ? CW.avisar.linkDa('espelhos/ver/' + x._id) : ''}`).join('\n');
+      try { await navigator.clipboard.writeText(txt); U().toast('Cobrança de ' + esperando.length + ' notas copiada. É só colar no WhatsApp ou no e-mail.'); } catch (e) { U().toast('Não foi possível copiar. Use "Cobrar no WhatsApp" em cada uma.', 'erro'); return; }
+      esperando.forEach(x => marcaCobrado(x._id)); desenharLista(el, ctx); };
     const bml = document.getElementById('es-mei-lista'); if (bml) bml.onclick = () => CW.ir('emissaomei');
     el.querySelectorAll('[data-abrir]').forEach(r => { const ir = () => r.dataset.abrirMei && CW.emissaoMei ? CW.emissaoMei.abrir(r.dataset.abrirMei, r.dataset.abrir) : CW.ir('espelhos/ver/' + r.dataset.abrir); r.onclick = ir; r.onkeydown = e => { if (e.key === 'Enter') ir(); }; });
   }

@@ -62,6 +62,19 @@ const { ok, fim } = H.placar('pedirnota');
   const n5 = await page.$$eval('#es-tab tbody tr', x => x.length);
   ok('P5 a lista mostra o lote e "nota atrasada"; o filtro de lote mostra só os do lote', /Folha do dia 15/.test(l5) && /nota atrasada/.test(l5) && n5 === 1, JSON.stringify({ l5, n5 }));
 
+  // P5b (14/11/2026): "Notas que vocês esperam" com a cobrança pronta: a atrasada primeiro, WhatsApp e "Copiar a cobrança de todos"
+  await page.selectOption('#es-flote', ''); await H.dorme(300);
+  const c5 = await page.$eval('#es-cobrar', e => e.innerText);
+  await page.evaluate(() => { window.__abriu = []; window.open = u => { window.__abriu.push(u); return null; }; });
+  await page.click('#es-tab-cobrar [data-cobrar]'); await H.dorme(500);
+  const u5 = await page.evaluate(() => decodeURIComponent((window.__abriu[0] || '').split('text=')[1] || ''));
+  const c5b = await page.$eval('#es-cobrar', e => e.innerText);
+  await page.evaluate(() => { window.__clip = ''; Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: t => { window.__clip = t; return Promise.resolve(); } } }); });
+  const temTodos = !!(await page.$('#es-cobrar-todos')); if (temTodos) { await page.click('#es-cobrar-todos'); await H.dorme(500); }
+  const clip = await page.evaluate(() => window.__clip);
+  ok('P5b "Notas que vocês esperam": a de prazo passado primeiro, cobrança no WhatsApp com período, valor e link, "cobrado em" e a cobrança de todos copiada',
+    /Prazo passou/.test(c5.split('\n').slice(0, 8).join(' ')) && /Ainda falta a nota fiscal/.test(u5) && /#espelhos\/ver\//.test(u5) && /cobrado em/.test(c5b) && (!temTodos || /Ainda faltam estas notas/.test(clip)), JSON.stringify({ c5: c5.slice(0, 200), u5: u5.slice(0, 200), clip: clip.slice(0, 120) }));
+
   // P6 a prestadora vê o pedido com o prazo e a pendência; não vê o pedido guardado nem o botão
   await entrarComo('zeca@zeta.com.br');
   await page.evaluate(id => { location.hash = '#espelhos/ver/' + id; }, id); await page.waitForSelector('#es-aviso', { timeout: 8000 });
