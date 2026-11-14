@@ -135,7 +135,7 @@
             ${passo(i >= 2, st === 'liberado', 'Pagamento agendado', t.agendamento ? dataTxt(t.agendamento.data) + ' · ' + t.agendamento.nome : '')}
             ${passo(i >= 3, st === 'agendado', 'Pago (comprovante)', t.liquidacao ? dataTxt(t.liquidacao.data) + ' · ' + t.liquidacao.nome : '')}
             ${passo(i >= 4, st === 'liquidado', 'Recebido pela prestadora', ass(t.baixa))}</ul>
-          ${t.liquidacao ? `<div><button class="btn sec" id="tt-comp">${ic('file')}Abrir o comprovante</button></div>` : ''}
+          ${t.liquidacao ? `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sec" id="tt-comp">${ic('file')}Abrir o comprovante</button><button class="btn sec" id="tt-demo">${ic('receipt')}Baixar o demonstrativo (PDF)</button></div>` : ''}
           ${acoes ? `<div style="display:flex;gap:8px;flex-wrap:wrap" id="tt-acoes">${acoes}</div>` : ''}
           ${zapTit(t, ctx)}
           <p class="hint" style="margin:0;font-size:12.5px">"Agendado" não é "pago": o título só fica pago com o comprovante. O dinheiro não passa pelo Conectwork.</p>
@@ -156,10 +156,46 @@
 
   const lerComo = (f, modo) => new Promise((ok, erro) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = () => erro(r.error); r[modo](f); });
 
+  /* ---------- demonstrativo de pagamento (14/11/2026, melhoria 2): PDF para quem recebe guardar e mostrar (ex.: pedir crédito) ---------- */
+  const JSPDF = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  const carregaScript = (src, ok) => ok() ? Promise.resolve() : new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = src; sc.onload = () => ok() ? res() : rej(new Error('Biblioteca não carregou.')); sc.onerror = () => rej(new Error('Não foi possível baixar a ferramenta do PDF. Confira a internet e tente de novo.')); document.head.appendChild(sc); });
+  const logoPng = () => new Promise(res => { try { const svg = U().LOGO(200).replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" '), img = new Image(), tm = setTimeout(() => res(null), 2500);
+    img.onload = () => { clearTimeout(tm); try { const c = document.createElement('canvas'); c.width = c.height = 200; c.getContext('2d').drawImage(img, 0, 0, 200, 200); res(c.toDataURL('image/png')); } catch (e) { res(null); } };
+    img.onerror = () => { clearTimeout(tm); res(null); }; img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); } catch (e) { res(null); } });
+  /* linhas do demonstrativo (testável sem PDF) */
+  function demoLinhas(t, e) {
+    const r = (e && e.retencoes) || t.retencoes || {}, ret = [['ISS', r.iss], ['INSS', r.inss], ['IR', r.ir], ['PIS/COFINS/CSLL', r.pcc]].filter(x => x[1] > 0);
+    const L = [['Quem pagou', t.tomadorNome + (e && e.tomador && e.tomador.cnpj ? ' · CNPJ ' + e.tomador.cnpj : '')], ['Quem recebeu', t.prestadorNome + (e && e.prestadorCnpj ? ' · CNPJ ' + e.prestadorCnpj : '')],
+      ['Período do serviço', periodoTxt(t.periodo)], ...(e && e.horas != null ? [['Horas aprovadas', String(e.horas).replace('.', ',') + ' h']] : []),
+      ['Nota fiscal', t.notaNumero ? 'nº ' + t.notaNumero : '—'], ['Valor da nota', brl(t.valorCentavos)], ...ret.map(x => ['Retenção ' + x[0], '- ' + brl(x[1])]),
+      ['Valor pago (líquido)', brl(t.liquidoCentavos)], ['Vencimento', dataTxt(vencimento(t))], ['Pago em', t.liquidacao ? dataTxt(t.liquidacao.data) : '—'],
+      ['Pagamento confirmado por', (t.liquidacao && t.liquidacao.nome) || '—'], ...(t.baixa ? [['Recebimento confirmado por', t.baixa.nome || '—']] : [])];
+    return L;
+  }
+  async function demonstrativo(t) {
+    try {
+      let e = null; try { e = CW.fb.dados(await CW.fb.db().doc('espelhos/' + t.espelhoId).get()); } catch (er) { /* sem o espelho, vai sem CNPJ e horas */ }
+      await carregaScript(JSPDF, () => !!(window.jspdf && window.jspdf.jsPDF));
+      const logo = await logoPng(), doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' }), W = 210, M = 16;
+      doc.setFillColor(11, 26, 69); doc.rect(0, 0, W, 34, 'F');
+      if (logo) doc.addImage(logo, 'PNG', M, 8, 18, 18);
+      doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(17); doc.text('Demonstrativo de pagamento', M + (logo ? 23 : 0), 17);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.text('Conectwork · ' + periodoTxt(t.periodo), M + (logo ? 23 : 0), 24);
+      let y = 48; doc.setTextColor(20, 30, 60);
+      demoLinhas(t, e).forEach(([k, v], i) => { if (i % 2 === 0) { doc.setFillColor(241, 243, 247); doc.rect(M, y - 5.5, W - 2 * M, 9, 'F'); }
+        const forte = /Valor pago/.test(k); doc.setFont('helvetica', forte ? 'bold' : 'normal'); doc.setFontSize(forte ? 12 : 10.5);
+        doc.text(String(k), M + 3, y); doc.text(String(v), W - M - 3, y, { align: 'right' }); y += 9; });
+      y += 6; doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(90, 100, 120);
+      doc.text(doc.splitTextToSize('O dinheiro não passa pelo Conectwork: o pagamento foi feito por quem contrata direto para quem presta o serviço. Este demonstrativo registra o pagamento confirmado no Conectwork, com o comprovante anexado. Código do título: ' + t._id + '. Gerado em ' + new Date().toLocaleString('pt-BR') + '.', W - 2 * M), M, y);
+      doc.save('Demonstrativo-' + String(t.prestadorNome || 'pagamento').replace(/[^\wÀ-ú]+/g, '-').slice(0, 40) + '-' + t.periodo + '.pdf');
+    } catch (er) { U().toast(er.message || 'Não foi possível gerar o PDF.', 'erro'); }
+  }
+
   function ligar(el, ctx, t, conta) {
     const db = CW.fb.db(), ref = db.doc('titulos/' + t._id), agora = CW.fb.agora, $ = x => document.getElementById(x), U0 = U();
     const ass = () => ({ uid: eu(ctx), nome: quem(ctx), em: agora() });
     const nome = lado(t, ctx) === 'tomador' ? t.prestadorNome : t.tomadorNome;
+    const dm = $('tt-demo'); if (dm) dm.onclick = () => demonstrativo(t);
     const grava = async (fn, msg) => { const b = db.batch(); fn(b); try { await b.commit(); if (msg) U0.toast(msg); } catch (e) { U0.toast(CW.fb.mensagemErro(e), 'erro'); } desenharVer(el, ctx, t._id); };
     $('tt-voltar').onclick = () => CW.ir('titulos');
     const lib = $('tt-liberar');
@@ -338,5 +374,5 @@
     return tP.filter(t => ['liquidado', 'baixado'].includes(t.status) && t.liquidacao && t.liquidacao.data)
       .map(t => ({ id: t._id, nome: t.tomadorNome, centavos: t.liquidoCentavos || 0, data: String(t.liquidacao.data).slice(0, 10), nota: t.notaNumero || '' }));
   };
-  CW.titulos = { criarNoLote, vencimento, proximos, recebidos };
+  CW.titulos = { demoLinhas,  criarNoLote, vencimento, proximos, recebidos };
 })();

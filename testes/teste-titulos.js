@@ -103,6 +103,12 @@ const { ok, fim } = H.placar('titulos');
   t = await tit();
   await page.evaluate(() => { location.hash = '#titulos'; }); await page.waitForSelector('#tt-pagos', { timeout: 8000 });
   ok('T9 a prestadora vê o comprovante, confirma que o dinheiro chegou e o título vai para "Pagos"', comp && t.status === 'baixado' && t.baixa.uid === 'uZECA', t.status);
+  // T9b (14/11/2026): demonstrativo de pagamento em PDF para quem recebe
+  await abrir(); await page.waitForSelector('#tt-demo', { timeout: 8000 });
+  await page.evaluate(() => { const txt = []; window.__demo = { txt, nome: '' }; const D = function () { return { setFillColor() {}, rect() {}, addImage() {}, setTextColor() {}, setFont() {}, setFontSize() {}, text(a) { txt.push(String(a)); }, splitTextToSize(a) { return a; }, save(n) { window.__demo.nome = n; } }; }; window.jspdf = { jsPDF: D }; });
+  await page.click('#tt-demo'); await H.dorme(1200);
+  const dm = await page.evaluate(() => window.__demo);
+  ok('T9b "Baixar o demonstrativo (PDF)": quem pagou e recebeu, período, nota, valor pago, data do pagamento e o código do título', /Demonstrativo-/.test(dm.nome) && dm.txt.includes('Valor pago (líquido)') && dm.txt.includes('Pago em') && dm.txt.some(x => /não passa pelo Conectwork/.test(x)) && dm.txt.includes('Quem recebeu'), JSON.stringify({ nome: dm.nome, n: dm.txt.length }));
 
   // T12 avaliação do serviço depois do pagamento (no contrato); a prestadora responde
   await entrarComo('aldo@alfa.com.br');
