@@ -27,7 +27,7 @@
   function log(b, ctx, acao, texto, ref) { b.set(CW.fb.db().collection('log').doc(), { em: CW.fb.agora(), uid: ctx.sessao.usuario.uid, quem: quem(ctx), empresaId: ctx.contexto.empresaId, acao, texto, ref: ref || '' }); }
 
   /* ---------- Meus profissionais (a prestadora) ---------- */
-  let lista = null, F = { q: '', fn: '', enc: false };
+  let lista = null, F = { q: '', fn: '', enc: false, ne: false };
   async function carregar(ctx) {
     const db = CW.fb.db(), emp = ctx.contexto.empresaId;
     lista = CW.fb.lista(await db.collection('equipe').where('prestadoraId', '==', emp).get());
@@ -65,14 +65,15 @@
     if (!lista) { el.innerHTML = `<div class="card"><div class="empty"><div class="giro"></div><span>Carregando a equipe…</span></div></div>`;
       try { await carregar(ctx); } catch (e) { el.innerHTML = `<div class="banner danger">${ic('alert')}<span><strong>Não foi possível abrir a equipe.</strong>${esc(CW.fb.mensagemErro(e))}</span></div>`; return; } }
     const ativos = lista.filter(x => x.ativo), fns = [...new Set(ativos.map(x => x.funcao).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt'));
-    const xs = lista.filter(x => (F.enc || x.ativo) && (!F.fn || x.funcao === F.fn) && (!F.q || casa([x.nome, x.funcao, x.cidade, x.cnpjNum].join(' '), F.q)))
+    const naoEntrou = x => x.ativo && (!x.meiEmpresaId || x._entrou === false), nNe = lista.filter(naoEntrou).length;   /* 14/11/2026: quem ainda não entrou */
+    const xs = lista.filter(x => (F.enc || x.ativo) && (!F.ne || naoEntrou(x)) && (!F.fn || x.funcao === F.fn) && (!F.q || casa([x.nome, x.funcao, x.cidade, x.cnpjNum].join(' '), F.q)))
       .sort((a, b) => (b.ativo - a.ativo) || a.nome.localeCompare(b.nome, 'pt'));
     const n = { eq: ativos.length, conta: ativos.filter(x => x.meiEmpresaId).length, pub: ativos.filter(x => x.publico).length, enc: lista.length - ativos.length };
     el.innerHTML = `<section class="sv-topo pf-topo" id="pf-topo">
         <div class="sv-topo-t"><div><h2>Equipe da ${esc(ctx.contexto.nome)}</h2><p>Os profissionais que prestam serviço pela sua empresa. Os clientes veem a equipe (quem estiver marcado como visível) e contratam com a ${esc(ctx.contexto.nome)}, não direto com o profissional.</p></div>
           <div class="sv-res"><span><b>${n.eq}</b>na equipe</span><span><b>${n.conta}</b>com conta</span><span><b>${n.pub}</b>os clientes veem</span></div></div>
         <label class="sv-busca">${ic('busca')}<input id="pf-q" type="search" aria-label="Procurar profissional" placeholder="Procurar por nome, função, cidade ou CNPJ" value="${esc(F.q)}"></label>
-        ${fns.length || n.enc ? `<div class="sv-chips"><button class="chip" data-pf-fn="" aria-pressed="${!F.fn}">Todas as funções</button>${fns.map(f => `<button class="chip" data-pf-fn="${esc(f)}" aria-pressed="${F.fn === f}">${esc(f)} <span>${ativos.filter(x => x.funcao === f).length}</span></button>`).join('')}
+        ${fns.length || n.enc || nNe ? `<div class="sv-chips">${nNe ? `<button class="chip" id="pf-ne" aria-pressed="${!!F.ne}">Ainda não entraram <span>${nNe}</span></button>` : ''}<button class="chip" data-pf-fn="" aria-pressed="${!F.fn}">Todas as funções</button>${fns.map(f => `<button class="chip" data-pf-fn="${esc(f)}" aria-pressed="${F.fn === f}">${esc(f)} <span>${ativos.filter(x => x.funcao === f).length}</span></button>`).join('')}
           ${n.enc ? `<label class="check" style="margin-left:auto"><input type="checkbox" id="pf-enc" ${F.enc ? 'checked' : ''}><span>Mostrar encerrados (${n.enc})</span></label>` : ''}</div>` : ''}
       </section>
       ${xs.length ? `<div class="pf-grade" id="pf-grade">${xs.map(x => cartao(x, ctx, true)).join('')}</div>`
@@ -94,6 +95,7 @@
     const $ = id => document.getElementById(id);
     const q = $('pf-q'); if (q) q.oninput = () => { F.q = q.value; const p = q.selectionStart; desenhar(el, ctx).then(() => { const n = $('pf-q'); if (n) { n.focus(); try { n.setSelectionRange(p, p); } catch (e) {} } }); };
     el.querySelectorAll('[data-pf-fn]').forEach(b => b.onclick = () => { F.fn = b.dataset.pfFn; desenhar(el, ctx); });
+    const ne = $('pf-ne'); if (ne) ne.onclick = () => { F.ne = !F.ne; desenhar(el, ctx); };
     const en = $('pf-enc'); if (en) en.onchange = () => { F.enc = en.checked; desenhar(el, ctx); };
     ['pf-novo', 'pf-novo2'].forEach(id => { const b = $(id); if (b) b.onclick = () => editar(el, ctx, null); });
     ['pf-trazer', 'pf-trazer2'].forEach(id => { const b = $(id); if (b) b.onclick = () => trazer(el, ctx); });
@@ -292,7 +294,7 @@
     id: 'profissionais', nome: 'Meus profissionais', icone: 'users', ordem: 26.4,
     para: ['empresa'], contrato: ['profissionais', 'contratos', 'cobrancas'],
     mostrar: ctx => tipo(ctx) !== 'contratante' && !ehMei(ctx),
-    iniciar() { lista = null; F = { q: '', fn: '', enc: false }; return () => { lista = null; }; },
+    iniciar() { lista = null; F = { q: '', fn: '', enc: false, ne: false }; return () => { lista = null; }; },
     telas: { lista: { nome: 'Meus profissionais', sub: 'A equipe da sua empresa: os profissionais que prestam serviço por ela.', render: (el, ctx) => desenhar(el, ctx) } }
   });
   CW.registrarModulo({

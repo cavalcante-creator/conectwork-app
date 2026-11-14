@@ -10,7 +10,7 @@
   const P = () => CW.permissoes;
   const C = () => CW.cadastro;
 
-  const CHIPS = [['analise', 'Em análise'], ['pendencia', 'Ajuste pedido'], ['aprovado', 'Aprovadas'], ['basico', 'Falta completar'], ['mei', 'MEI (cadastro rápido)'], ['recusado', 'Recusadas'], ['todos', 'Todas']];
+  const CHIPS = [['analise', 'Em análise'], ['pendencia', 'Ajuste pedido'], ['aprovado', 'Aprovadas'], ['naoentrou', 'Ainda não entraram'], ['basico', 'Falta completar'], ['mei', 'MEI (cadastro rápido)'], ['recusado', 'Recusadas'], ['todos', 'Todas']];
   let filtro = 'analise';
   let empresas = null;                 /* lista viva (onSnapshot) */
   const dig = v => String(v == null ? '' : v).replace(/\D/g, '');
@@ -25,15 +25,22 @@
   function desenharLista(el) {
     const { esc, ic, avatar } = U();
     if (!empresas) { el.innerHTML = `<div class="card"><div class="empty"><div class="giro"></div><span>Carregando os cadastros…</span></div></div>`; return; }
-    const conta = s => s === 'todos' ? empresas.length : empresas.filter(e => e.status === s).length;
-    const lista = empresas.filter(e => filtro === 'todos' || e.status === filtro)
+    /* 14/11/2026: "Ainda não entraram" = pré-cadastradas (pela equipe ou pela fila do painel) cujo administrador nunca entrou (entrouEm) */
+    const naoEntrou = e => e.status === 'aprovado' && e.preCadastro && !e.entrouEm;
+    const bate = (e, s) => s === 'todos' || (s === 'naoentrou' ? naoEntrou(e) : e.status === s);
+    const conta = s => empresas.filter(e => bate(e, s)).length;
+    const NE = filtro === 'naoentrou';
+    const dias = v => { const t = v && (v.toDate ? v.toDate() : new Date(v)); return t && !isNaN(t) ? Math.max(0, Math.floor((Date.now() - t.getTime()) / 864e5)) : null; };
+    const lembrado = id => { try { return localStorage.getItem('cw.lembrado.' + id) || ''; } catch (e) { return ''; } };
+    const lista = empresas.filter(e => bate(e, filtro))
       .sort((a, b) => String(b._env || '').localeCompare(String(a._env || '')));
     const linhas = lista.map(e => `<tr class="click" data-abrir="${esc(e._id)}" tabindex="0">
         <td class="m-full"><div class="cell">${avatar(nomeEmp(e), '', e._id)}<div style="min-width:0"><strong>${esc(nomeEmp(e))}</strong><small>${esc(e.razao || '')}</small></div></div></td>
         <td class="m-hide">${esc(e.cnpj || '')}</td><td class="m-hide">${esc(C().TIPOS[e.tipo] || '')}</td>
         <td class="m-hide">${esc([e.cidade, e.uf].filter(Boolean).join('/'))}</td><td class="m-hide">${esc(tempo(e.enviadoEm || e.criadoEm))}</td>
-        <td>${CW.sessao.pillStatus(e.status)}${e.preCadastro ? ' <span class="pill warn">Documentos pendentes</span>' : ''}</td>
-        <td class="r"><button class="btn ${e.status === 'analise' ? '' : 'sec'} sm" data-abrir="${esc(e._id)}">${e.status === 'analise' ? 'Analisar' : 'Abrir'}</button></td></tr>`).join('');
+        <td>${NE ? (() => { const n = dias(e.criadoEm), l = lembrado(e._id); return `<span class="pill ${n != null && n >= 7 ? 'warn' : ''}">${n == null ? 'Ainda não entrou' : n === 0 ? 'Cadastrado hoje' : 'Há ' + n + (n === 1 ? ' dia' : ' dias')}</span>${l ? `<small class="hint" style="display:block;font-size:12px">lembrado em ${esc(l)}</small>` : ''}`; })()
+          : CW.sessao.pillStatus(e.status) + (e.preCadastro ? ' <span class="pill warn">Documentos pendentes</span>' : '')}</td>
+        <td class="r">${NE ? `<button class="btn sm" data-lembrar="${esc(e._id)}">${ic('send')}Mandar de novo</button> ` : ''}<button class="btn ${e.status === 'analise' ? '' : 'sec'} sm" data-abrir="${esc(e._id)}">${e.status === 'analise' ? 'Analisar' : 'Abrir'}</button></td></tr>`).join('');
     el.innerHTML = `<div class="card" id="cm-lista"><div class="card-h"><div class="filters">${CHIPS.map(([k, l]) => `<button class="chip" data-filtro="${k}" aria-pressed="${filtro === k}">${l}<b>${conta(k)}</b></button>`).join('')}</div>
         ${CW.piloto() ? `<button class="btn sec sm" id="cm-prevarios" style="margin-left:auto">${ic('list')}Pré-cadastrar vários MEIs</button>` : ''}<button class="btn sm" id="cm-pre"${CW.piloto() ? '' : ' style="margin-left:auto"'}>${ic('plus')}Pré-cadastrar empresa</button></div>
       ${lista.length ? `<div class="scroll"><table class="resp"><thead><tr><th>Empresa</th><th>CNPJ</th><th>Uso</th><th>Cidade</th><th>Enviado em</th><th>Situação</th><th></th></tr></thead><tbody>${linhas}</tbody></table></div>`
@@ -41,8 +48,33 @@
     el.querySelectorAll('[data-filtro]').forEach(b => b.onclick = () => { filtro = b.dataset.filtro; desenharLista(el); });
     document.getElementById('cm-pre').onclick = () => preCadastro();
     const pvBt = document.getElementById('cm-prevarios'); if (pvBt) pvBt.onclick = () => preVarios();
+    el.querySelectorAll('[data-lembrar]').forEach(b => b.onclick = ev => { ev.stopPropagation(); lembrar(b.dataset.lembrar, el); });
     el.querySelectorAll('[data-abrir]').forEach(r => { const ir = ev => { ev.stopPropagation(); CW.ir('cadastros/analise/' + r.dataset.abrir); };
       r.onclick = ir; if (r.tagName === 'TR') r.onkeydown = ev => { if (ev.key === 'Enter') ir(ev); }; });
+  }
+
+  /* "Mandar de novo" (14/11/2026): o convite que ainda vale (ou, para o MEI sem e-mail, o link do "Sou MEI" com o CNPJ) vai pelo
+     WhatsApp para o celular do responsável; grava no histórico e lembra no aparelho quando foi. */
+  async function lembrar(id, el) {
+    const { dig } = U(), db = CW.fb.db(), e = empresas.find(x => x._id === id) || {};
+    const jan = window.open('about:blank', '_blank');
+    try {
+      const [cs, pv] = await Promise.all([db.collection('convites').where('empresaId', '==', id).where('usado', '==', false).limit(5).get(), db.doc('empresas/' + id + '/privado/cadastro').get().catch(() => null)]);
+      const cv = CW.fb.lista(cs).filter(c => c.cargo === 'admin')[0] || CW.fb.lista(cs)[0] || null, P = (pv && CW.fb.dados(pv)) || {}, resp = P.resp || {};
+      const mei = String((P.dados || {}).porte || '').startsWith('MEI'), cnpj = dig(e.cnpj || '');
+      const nome = String(resp.nome || (cv && cv.nome) || nomeEmp(e)).split(' ')[0];
+      const base = ((window.CONECTWORK_CONFIG || {}).urlApp || (location.origin + location.pathname)).replace(/#.*$/, '').replace(/[^/]*$/, '');
+      let link = '', como = '';
+      if (cv) { link = linkConv(cv._id); como = `Abra o link e crie a sua senha com o e-mail ${cv.email}.`; }
+      else if (mei && cnpj) { link = base + '?mei=' + cnpj + '&nome=' + encodeURIComponent(nome); como = 'Abra o link: o cadastro já vem com o seu CNPJ. É só criar a senha.'; }
+      if (!link) { if (jan) jan.close(); U().toast('Esta empresa não tem convite em aberto nem e-mail. Abra o cadastro e convide a pessoa pelo e-mail dela.', 'erro'); return; }
+      const msg = `Olá, ${nome}! Lembrete do Conectwork: a ${nomeEmp(e)}${cnpj ? ' (CNPJ ' + (e.cnpj || cnpj) + ')' : ''} já está cadastrada e falta só você entrar.\n\n${como}\n${link}`;
+      const tel = dig(resp.celular || (cv && cv.tel) || ''), url = `https://wa.me/${tel.length === 10 || tel.length === 11 ? '55' + tel : ''}?text=${encodeURIComponent(msg)}`;
+      if (jan) { try { jan.opener = null; } catch (x) { /* */ } jan.location.href = url; } else window.open(url, '_blank');
+      try { localStorage.setItem('cw.lembrado.' + id, U().formatarData(new Date())); } catch (x) { /* */ }
+      CW.registrarLog('convite.lembrete', `Lembrete para entrar no Conectwork mandado pelo WhatsApp: ${nomeEmp(e)}.`, id, { empresaId: 'master' }).catch(() => {});
+      desenharLista(el);
+    } catch (err) { if (jan) jan.close(); U().toast(CW.fb.mensagemErro(err), 'erro'); }
   }
 
   /* ---------- análise ---------- */
