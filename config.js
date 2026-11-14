@@ -10,6 +10,7 @@ window.CONECTWORK_CONFIG = {
     appId: "1:468863538962:web:55a0bc24e1ed4a8a69c5cb"
   },
   ambiente: "producao",            // "producao" ou "teste"
+  aprovacaoAutomatica: true,      // false volta a esperar a equipe aprovar cada empresa (14/11/2026: "pode aprovar sozinho")
   piloto: true,                    // false esconde os atalhos do piloto (exceção das funções separadas, "Apagar (dados de teste)", "Colar lista", "Pré-cadastrar vários MEIs", "Trazer do painel do RH")
   urlApp: "https://conectwork.com.br/",
   meiDinheiro: false,              // true liga o Dinheiro do MEI (entradas, saídas e o botão Registrar); desligado a pedido da usuária em 10/11/2026

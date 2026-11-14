@@ -342,13 +342,13 @@
       const u = usuario();
       el.innerHTML = `<div class="wiz">${lado('', '')}<section class="wiz-main"><div class="card cad-fim" id="cad-fim"><div class="card-b">
         <span class="avatar lg" style="background:var(--grad)">${ic('check')}</span>
-        <h1>${W.edit ? (W.completar ? 'Cadastro completo enviado' : 'Correções enviadas') : 'Empresa cadastrada'}</h1>
-        <p class="sub" style="margin:0">Protocolo <strong style="color:var(--ink)" id="cad-protocolo">${esc(W.fim)}</strong>. ${W.edit ? 'A equipe Conectwork confere os dados e os documentos e avisa o resultado. Enquanto isso, você acompanha tudo em "Meu cadastro".' : 'A empresa já está no Conectwork. Para contratar e ser contratada, complete o cadastro (endereço, dados fiscais, conta e documentos) em "Meu cadastro": a equipe Conectwork aprova quando estiver tudo lá.'}</p>
+        <h1>${W.auto ? 'Cadastro aprovado' : W.edit ? (W.completar ? 'Cadastro completo enviado' : 'Correções enviadas') : 'Empresa cadastrada'}</h1>
+        <p class="sub" style="margin:0">Protocolo <strong style="color:var(--ink)" id="cad-protocolo">${esc(W.fim)}</strong>. ${W.auto ? 'Os documentos obrigatórios chegaram e a empresa já está liberada na rede. A equipe Conectwork confere os documentos nos próximos dias e avisa se precisar de algum ajuste.' : W.edit ? 'A equipe Conectwork confere os dados e os documentos e avisa o resultado. Enquanto isso, você acompanha tudo em "Meu cadastro".' : 'A empresa já está no Conectwork. Para contratar e ser contratada, complete o cadastro (endereço, dados fiscais, conta e documentos) em "Meu cadastro": a equipe Conectwork aprova quando estiver tudo lá.'}</p>
         ${!W.edit && u && !u.emailVerified ? `<div class="banner info" style="margin:0;width:100%">${ic('mail')}<span><strong>Confirme seu e-mail</strong>Mandamos um link para ${esc(u.email)}. Confira também a caixa de spam.</span></div>` : ''}
         <ul class="tl" style="width:100%"><li class="done"><span class="dot">${ic('check')}</span>${W.edit ? (W.completar ? 'Cadastro completo enviado' : 'Correções enviadas') : 'Empresa cadastrada'}<small>${U().formatarData(new Date())}</small></li>
           ${W.edit ? '' : `<li class="now"><span class="dot"></span>Completar o cadastro e mandar os documentos<small>em "Meu cadastro"</small></li>`}
-          <li class="${W.edit ? 'now' : ''}"><span class="dot"></span>Conferência dos dados e documentos<small>${W.edit ? 'em andamento' : 'depois'}</small></li>
-          <li><span class="dot"></span>Aprovação e liberação dos módulos<small>pendente</small></li></ul>
+          ${W.auto ? `<li class="done"><span class="dot">${ic('check')}</span>Aprovação e liberação dos módulos<small>agora</small></li><li class="now"><span class="dot"></span>Conferência dos documentos pela equipe<small>nos próximos dias</small></li></ul>` : `<li class="${W.edit ? 'now' : ''}"><span class="dot"></span>Conferência dos dados e documentos<small>${W.edit ? 'em andamento' : 'depois'}</small></li>
+          <li><span class="dot"></span>Aprovação e liberação dos módulos<small>pendente</small></li></ul>`}
         <button class="btn" id="cad-entrar">${ic('arrow')}Entrar no Conectwork</button></div></div></section></div>`;
       document.getElementById('cad-entrar').onclick = () => { W = null; marcar(false); CW.sessao.recarregar(); };
       window.scrollTo(0, 0);
@@ -474,6 +474,27 @@
     }
   }
 
+  /* ---------- aprovação automática (14/11/2026, "pode aprovar sozinho") ----------
+     Depois de mandar o cadastro completo: com os 4 documentos obrigatórios enviados e sem avaliação anterior da equipe
+     (quem já teve ajuste pedido continua esperando a equipe), a empresa entra aprovada no plano de entrada
+     (MEI: gratuito; outras: profissional), marcada autoAprovado. A equipe confere depois em Cadastros.
+     Desligar: aprovacaoAutomatica:false no config.js (a regra autoAprovar continua no firestore.rules). */
+  const PLANO_AUTO = mei => mei ? 'gratuito' : 'profissional';
+  async function autoAprovar(id, d, quem) {
+    if ((window.CONECTWORK_CONFIG || {}).aprovacaoAutomatica === false) return false;
+    if (!['contrato', 'cartao', 'endereco', 'identidade'].every(k => d.docs && d.docs[k])) return false;
+    const db = CW.fb.db(), agora = CW.fb.agora;
+    try {
+      const e = CW.fb.dados(await db.doc('empresas/' + id).get()) || {};
+      if (e.status !== 'analise' || e.avaliadoEm || e.preCadastro) return false;
+      const plano = PLANO_AUTO(isMEI(d)), P = CW.permissoes.PLANOS[plano], b = db.batch(), u = usuario();
+      b.update(db.doc('empresas/' + id), { status: 'aprovado', plano, modulos: P.modulos.slice(), autoAprovado: true, avaliadoEm: agora(), avaliadoPor: 'Aprovação automática' });
+      b.set(db.collection('log').doc(), { em: agora(), uid: u.uid, quem, empresaId: id, acao: 'empresa.autoaprovar', texto: `Cadastro aprovado sozinho (documentos obrigatórios enviados) no plano ${P.nome}. A equipe Conectwork confere depois.`, ref: id });
+      await b.commit();
+      return true;
+    } catch (err) { return false; }   /* sem permissão ou regra antiga publicada: fica em análise, como antes */
+  }
+
   /* ---------- envio ---------- */
   const limpo = o => JSON.parse(JSON.stringify(o, (k, v) => typeof v === 'string' ? v.trim() : v));
 
@@ -494,6 +515,7 @@
         b.set(db.collection('log').doc(), { em: agora(), uid: u.uid, quem, empresaId: id, acao: W.completar ? 'empresa.completar' : 'empresa.corrigir', texto: W.completar ? `Cadastro de ${publico.nome} completado e enviado para aprovação.` : `Cadastro de ${publico.nome} corrigido e reenviado para análise.`, ref: id });
         await b.commit();
         W.fim = W.protocolo || 'reenviado';
+        W.auto = await autoAprovar(id, d, quem);
       } else {
         const num = dig(d.dados.cnpj), empRef = db.collection('empresas').doc(), id = empRef.id;
         const pubR = { tipo: d.tipo, nome: d.dados.fantasia || d.dados.razao, razao: d.dados.razao };
@@ -545,7 +567,7 @@
     desenhar(); window.scrollTo(0, 0);
   }
 
-  CW.cadastro = { TIPOS, PORTES, docsReq, tamanho: b => tamanho(b), AUTORIZACOES, VERSAO_TEXTOS, mostrarTexto, AVISO, forcaSenha, senhaOk, erroConta };
+  CW.cadastro = { TIPOS, PORTES, docsReq, autoAprovar, tamanho: b => tamanho(b), AUTORIZACOES, VERSAO_TEXTOS, mostrarTexto, AVISO, forcaSenha, senhaOk, erroConta };
   CW.entrada.cadastrarEmpresa = comecar;
   CW.entrada.continuarCadastro = continuar;
   CW.entrada.cadastroAberto = aberto;

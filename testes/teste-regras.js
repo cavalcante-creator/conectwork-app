@@ -890,6 +890,27 @@ async function deve(nome, permitido, op) {
   await deve('Emissor: a prestadora NÃO faz a pessoa virar admin do MEI', false, () => updateDoc(doc(db('beto'), 'acessos', 'meiz_' + P.lia), { cargo: 'admin', atualizadoEm: serverTimestamp() }));
   await deve('Emissor: a prestadora tira o acesso (desliga)', true, () => updateDoc(doc(db('beto'), 'acessos', 'meiz_' + P.lia), { ativo: false, atualizadoEm: serverTimestamp() }));
 
+  /* ---------- aprovação automática (14/11/2026) ---------- */
+  const semear2 = async (extra, pv) => env.withSecurityRulesDisabled(async c => { const f = c.firestore();
+    await setDoc(doc(f, 'empresas', 'auto1'), Object.assign({ nome: 'Auto Um', cnpj: '11.444.777/0001-61', status: 'analise', tipo: 'contratante', criadoPor: P.ana }, extra || {}));
+    await setDoc(doc(f, 'empresas', 'auto1', 'privado', 'cadastro'), Object.assign({ dados: { porte: 'ME' }, docs: { contrato: { nome: 'a.pdf' }, cartao: { nome: 'b.pdf' }, endereco: { nome: 'c.pdf' }, identidade: { nome: 'd.pdf' } } }, pv || {}));
+    await setDoc(doc(f, 'acessos', 'auto1_' + P.ana), { uid: P.ana, empresaId: 'auto1', nome: 'Ana', email: EM.ana, cargo: 'admin', extras: [], sem: [], ativo: true }); });
+  const PROF = ['equipe', 'cobrancas', 'integracao', 'contratos', 'profissionais', 'emissao'];
+  const aut = x => Object.assign({ status: 'aprovado', plano: 'profissional', modulos: PROF, autoAprovado: true, avaliadoEm: serverTimestamp(), avaliadoPor: 'Aprovação automática' }, x || {});
+  await semear2(null, { docs: { contrato: { nome: 'a.pdf' }, cartao: { nome: 'b.pdf' } } });
+  await deve('Auto: sem os 4 documentos NÃO aprova sozinho', false, () => updateDoc(doc(db('ana'), 'empresas', 'auto1'), aut()));
+  await semear2();
+  await deve('Auto: NÃO num plano maior (Rede)', false, () => updateDoc(doc(db('ana'), 'empresas', 'auto1'), aut({ plano: 'rede' })));
+  await deve('Auto: NÃO com módulos a mais', false, () => updateDoc(doc(db('ana'), 'empresas', 'auto1'), aut({ modulos: PROF.concat(['conta']) })));
+  await deve('Auto: empresa que não é MEI NÃO entra no gratuito', false, () => updateDoc(doc(db('ana'), 'empresas', 'auto1'), aut({ plano: 'gratuito', modulos: ['cobrancas'] })));
+  await deve('Auto: quem não é da empresa NÃO aprova', false, () => updateDoc(doc(db('carla'), 'empresas', 'auto1'), aut()));
+  await deve('Auto: com os documentos, o admin aprova sozinho no plano Profissional', true, () => updateDoc(doc(db('ana'), 'empresas', 'auto1'), aut()));
+  await semear2({ avaliadoEm: '2026-11-01T00:00:00Z', motivo: 'Ajuste pedido' });
+  await deve('Auto: quem já teve ajuste pedido pela equipe NÃO aprova sozinho', false, () => updateDoc(doc(db('ana'), 'empresas', 'auto1'), aut()));
+  await semear2({ tipo: 'prestador' }, { dados: { porte: 'MEI' } });
+  await deve('Auto: MEI entra no plano gratuito', true, () => updateDoc(doc(db('ana'), 'empresas', 'auto1'), aut({ plano: 'gratuito', modulos: ['cobrancas'] })));
+  await deve('Auto: a equipe marca que conferiu', true, () => updateDoc(doc(db('master'), 'empresas', 'auto1'), { conferidoEm: serverTimestamp(), conferidoPor: 'Iasmyn' }));
+
   await env.cleanup();
   const falhas = res.filter(r => !r.ok).length;
   console.log(`\n${res.length - falhas} de ${res.length} testes de regras passaram.`);

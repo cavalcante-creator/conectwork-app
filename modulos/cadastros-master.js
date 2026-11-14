@@ -10,7 +10,7 @@
   const P = () => CW.permissoes;
   const C = () => CW.cadastro;
 
-  const CHIPS = [['analise', 'Em análise'], ['pendencia', 'Ajuste pedido'], ['aprovado', 'Aprovadas'], ['naoentrou', 'Ainda não entraram'], ['basico', 'Falta completar'], ['mei', 'MEI (cadastro rápido)'], ['recusado', 'Recusadas'], ['todos', 'Todas']];
+  const CHIPS = [['analise', 'Em análise'], ['conferir', 'Aprovadas sozinhas'], ['pendencia', 'Ajuste pedido'], ['aprovado', 'Aprovadas'], ['naoentrou', 'Ainda não entraram'], ['basico', 'Falta completar'], ['mei', 'MEI (cadastro rápido)'], ['recusado', 'Recusadas'], ['todos', 'Todas']];
   let filtro = 'analise';
   let empresas = null;                 /* lista viva (onSnapshot) */
   const dig = v => String(v == null ? '' : v).replace(/\D/g, '');
@@ -21,13 +21,16 @@
   const trocado = (pv, k) => { const c = (pv.conferidos || {})[k], f = (pv.docs || {})[k]; return !!(c && f && c.nome !== f.nome); };
   const tempo = v => { const d = U().formatarData(v); return d || '—'; };
 
+  /* aprovada sozinha (14/11/2026) e a equipe ainda não conferiu os documentos */
+  const paraConferir = e => e.status === 'aprovado' && e.autoAprovado && !e.conferidoEm;
+
   /* ---------- lista ---------- */
   function desenharLista(el) {
     const { esc, ic, avatar } = U();
     if (!empresas) { el.innerHTML = `<div class="card"><div class="empty"><div class="giro"></div><span>Carregando os cadastros…</span></div></div>`; return; }
     /* 14/11/2026: "Ainda não entraram" = pré-cadastradas (pela equipe ou pela fila do painel) cujo administrador nunca entrou (entrouEm) */
     const naoEntrou = e => e.status === 'aprovado' && e.preCadastro && !e.entrouEm;
-    const bate = (e, s) => s === 'todos' || (s === 'naoentrou' ? naoEntrou(e) : e.status === s);
+    const bate = (e, s) => s === 'todos' || (s === 'naoentrou' ? naoEntrou(e) : s === 'conferir' ? paraConferir(e) : e.status === s);
     const conta = s => empresas.filter(e => bate(e, s)).length;
     const NE = filtro === 'naoentrou';
     const dias = v => { const t = v && (v.toDate ? v.toDate() : new Date(v)); return t && !isNaN(t) ? Math.max(0, Math.floor((Date.now() - t.getTime()) / 864e5)) : null; };
@@ -39,7 +42,7 @@
         <td class="m-hide">${esc(e.cnpj || '')}</td><td class="m-hide">${esc(C().TIPOS[e.tipo] || '')}</td>
         <td class="m-hide">${esc([e.cidade, e.uf].filter(Boolean).join('/'))}</td><td class="m-hide">${esc(tempo(e.enviadoEm || e.criadoEm))}</td>
         <td>${NE ? (() => { const n = dias(e.criadoEm), l = lembrado(e._id); return `<span class="pill ${n != null && n >= 7 ? 'warn' : ''}">${n == null ? 'Ainda não entrou' : n === 0 ? 'Cadastrado hoje' : 'Há ' + n + (n === 1 ? ' dia' : ' dias')}</span>${l ? `<small class="hint" style="display:block;font-size:12px">lembrado em ${esc(l)}</small>` : ''}`; })()
-          : CW.sessao.pillStatus(e.status) + (e.preCadastro ? ' <span class="pill warn">Documentos pendentes</span>' : '')}</td>
+          : CW.sessao.pillStatus(e.status) + (e.preCadastro ? ' <span class="pill warn">Documentos pendentes</span>' : '') + (paraConferir(e) ? ' <span class="pill warn">Aprovada sozinha · conferir</span>' : '')}</td>
         <td class="r">${NE ? `<button class="btn sm" data-lembrar="${esc(e._id)}">${ic('send')}Mandar de novo</button> ` : ''}<button class="btn ${e.status === 'analise' ? '' : 'sec'} sm" data-abrir="${esc(e._id)}">${e.status === 'analise' ? 'Analisar' : 'Abrir'}</button></td></tr>`).join('');
     el.innerHTML = `<div class="card" id="cm-lista"><div class="card-h"><div class="filters">${CHIPS.map(([k, l]) => `<button class="chip" data-filtro="${k}" aria-pressed="${filtro === k}">${l}<b>${conta(k)}</b></button>`).join('')}</div>
         ${CW.piloto() ? `<button class="btn sec sm" id="cm-prevarios" style="margin-left:auto">${ic('list')}Pré-cadastrar vários MEIs</button>` : ''}<button class="btn sm" id="cm-pre"${CW.piloto() ? '' : ' style="margin-left:auto"'}>${ic('plus')}Pré-cadastrar empresa</button></div>
@@ -137,6 +140,11 @@
     const mods = `<div class="f"><span style="font-size:12.5px;color:var(--muted);font-weight:500">Módulos liberados</span><div class="mods" id="cm-mods">${P().MODULOS_CONTRATAVEIS.map(m => `<label class="check"><input type="checkbox" data-mod="${m.id}" ${(e.modulos || []).includes(m.id) ? 'checked' : ''}><span>${esc(m.nome)}${m.fase > 1 ? `<span class="tag gray">fase ${m.fase}</span>` : ''}<small>${esc(m.desc)}</small></span></label>`).join('')}</div></div>`;
     let corpo;
     if (st === 'aprovado') corpo = `<div class="banner ok">${ic('check')}<span><strong>Aprovada em ${esc(tempo(e.avaliadoEm))}</strong>Empresa ativa na rede${e.avaliadoPor ? ' · por ' + esc(e.avaliadoPor) : ''}.</span></div>
+      ${e.autoAprovado ? (e.conferidoEm ? `<p class="hint" id="cm-auto-ok" style="margin:0">Aprovada sozinha · documentos conferidos em ${esc(tempo(e.conferidoEm))}${e.conferidoPor ? ' por ' + esc(e.conferidoPor) : ''}.</p>`
+        : `<div class="banner warn" id="cm-auto">${ic('alert')}<span><strong>Aprovada sozinha: confira os documentos</strong>A empresa mandou os documentos obrigatórios e entrou no plano ${esc(P().nomePlano(e.plano))}. Confira acima; se estiver tudo certo, marque como conferido. Se faltar algo, peça o ajuste: a empresa volta para "Ajuste pedido" até corrigir.</span></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ok" id="cm-conferido">${ic('check')}Documentos conferidos</button></div>
+        <label class="f"><span>Motivo do ajuste</span><textarea id="cm-motivo" rows="2" maxlength="500" placeholder="Ex.: O comprovante de endereço está ilegível. Envie uma cópia mais nítida."></textarea><em class="ferr" id="cm-motivo-erro"></em></label>
+        <div><button class="btn warn" id="cm-ajuste">${ic('edit')}Pedir ajuste</button></div>`) : ''}
       ${e.preCadastro ? `<div class="banner warn" id="cm-pre-aviso">${ic('alert')}<span><strong>Pré-cadastro: dados e documentos pendentes</strong>A empresa foi liberada só com o CNPJ. Quando tiver o responsável e os documentos, peça para a empresa completar o cadastro: ela preenche em "Meu cadastro", envia, e você confere e aprova de novo.</span></div>` : ''}
       ${e.preCadastro ? `<div class="fgrid"><label class="f c6"><span>Uso</span><select id="cm-tipo">${Object.entries(C().TIPOS).map(([k, t]) => `<option value="${k}" ${k === e.tipo ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
         <label class="f c6"><span>Porte</span><select id="cm-porte"><option value="">Não informado</option>${C().PORTES.map(x => `<option ${x === (pv.dados || {}).porte ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></label>
@@ -240,6 +248,10 @@
       if (!(await U().confirmar('Recusar o cadastro?', `A ${nomeEmp(e)} não poderá usar o Conectwork com este cadastro. O motivo aparece para a empresa.`, 'Recusar'))) return;
       decidir('recusado', { motivo: m }, 'empresa.recusar', `Cadastro de ${nomeEmp(e)} recusado: ${m}`, `Cadastro de ${nomeEmp(e)} recusado.`); };
 
+    const cf = document.getElementById('cm-conferido');
+    if (cf) cf.onclick = () => { const b = db.batch(); b.update(db.doc('empresas/' + id), { conferidoEm: CW.fb.agora(), conferidoPor: quem });
+      log(b, 'empresa.conferir', `Documentos de ${nomeEmp(e)} (aprovada sozinha) conferidos pela equipe.`); cf.disabled = true;
+      b.commit().then(() => { U().toast('Marcada como conferida.'); refazer(); }).catch(falhou); };
     const sv = document.getElementById('cm-salvar');
     if (sv) sv.onclick = async () => {
       const plano = sel.value, mods = lerMods();
@@ -500,6 +512,11 @@
       });
       CW.inscrever('cadastros-filamei', () => CW.fb.db().collection('filamei').where('st', '==', 'pendente'), snap => { fila = CW.fb.lista(snap); if (fila.length) processarFila(); });
       return () => { empresas = null; fila = []; };
+    },
+    /* empresas aprovadas sozinhas esperando a conferência dos documentos (14/11/2026) */
+    pendencias() {
+      const n = (empresas || []).filter(paraConferir).length;
+      return n ? [{ txt: n === 1 ? 'Conferir os documentos de 1 empresa aprovada sozinha' : `Conferir os documentos de ${n} empresas aprovadas sozinhas`, sub: 'Cadastros › Aprovadas sozinhas', rota: 'cadastros' }] : [];
     },
     telas: {
       lista: { nome: 'Cadastros', sub: 'Empresas que pediram para entrar no Conectwork. Confira os dados e os documentos antes de aprovar.', render: el => desenharLista(el) },
