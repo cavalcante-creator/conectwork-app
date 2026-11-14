@@ -53,6 +53,12 @@
   function desenharLista(el, ctx) {
     const { esc, ic, avatar } = U();
     document.getElementById('acoes').innerHTML = '';
+    /* 14/11/2026: confirmar os pagamentos agendados pelo extrato do banco */
+    if (pronto && tem(ctx, ['admin', 'tesouraria']) && tT.some(t => t.status === 'agendado')) {
+      document.getElementById('acoes').innerHTML = `<button class="btn sec" id="tt-extrato">${ic('upload')}Conferir pelo extrato</button><input type="file" id="tt-ext-arq" accept=".ofx,.csv,.txt,text/csv" hidden>`;
+      const ia = document.getElementById('tt-ext-arq'); document.getElementById('tt-extrato').onclick = () => ia.click();
+      ia.onchange = async () => { const f = ia.files[0]; ia.value = ''; if (f) conferirExtrato(el, ctx, f); };
+    }
     if (!pronto) { el.innerHTML = `<div class="card"><div class="empty"><div class="giro"></div><span>Carregando os títulos…</span></div></div>`; return; }
     const todos = tT.concat(tP);
     const minhas = todos.filter(t => minhaVez(t, ctx));
@@ -307,6 +313,77 @@
   }
   CW.titulosConta = { ultimaConta };
 
+  /* ---------- extrato do banco (14/11/2026): OFX ou planilha (CSV) ----------
+     Lê as saídas do extrato e acha os títulos agendados com o mesmo valor líquido, pagos no dia agendado ou depois (até 3 dias
+     antes também vale). Valor repetido em mais de um título: usa o nome de quem recebe na descrição; sem certeza, fica para
+     conferir. Confirmar grava o pagamento como o botão de sempre, com o trecho do extrato como comprovante (texto). */
+  const semAc = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  function lerOfx(txt) {
+    const out = []; const blocos = String(txt).split(/<STMTTRN>/i).slice(1);
+    const tag = (b, n) => { const m = b.match(new RegExp('<' + n + '>([^<\r\n]*)', 'i')); return m ? m[1].trim() : ''; };
+    blocos.forEach(b => { const v = Number(tag(b, 'TRNAMT').replace(',', '.')), d = tag(b, 'DTPOSTED');
+      if (!isFinite(v) || !/^\d{8}/.test(d)) return;
+      out.push({ data: d.slice(0, 4) + '-' + d.slice(4, 6) + '-' + d.slice(6, 8), centavos: Math.round(v * 100), desc: [tag(b, 'NAME'), tag(b, 'MEMO')].filter(Boolean).join(' · '), id: tag(b, 'FITID') }); });
+    return out;
+  }
+  function lerCsvExtrato(txt) {
+    const L = CW.medicoes.csvLinhas(txt), num = CW.medicoes.numero;
+    const hi = L.findIndex(l => l.some(c => /^data/.test(semAc(c))) && l.some(c => /valor|debito|saida/.test(semAc(c))));
+    if (hi < 0) throw new Error('Não achei as colunas Data e Valor no extrato. Exporte em OFX ou numa planilha com Data, Descrição e Valor.');
+    const cab = L[hi].map(semAc), col = re => cab.findIndex(c => re.test(c));
+    const cD = col(/^data/), cV = col(/^valor/), cDeb = col(/debito|saida/), cH = col(/descri|historico|lancamento|favorecido|memo/);
+    const data = v => { const m = String(v || '').match(/(\d{2})\/(\d{2})\/(\d{2,4})/); if (m) return (m[3].length === 2 ? '20' + m[3] : m[3]) + '-' + m[2] + '-' + m[1]; const n = String(v || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return n ? n[0] : ''; };
+    return L.slice(hi + 1).map((l, i) => { let v = cV >= 0 ? num(l[cV]) : NaN; if (cDeb >= 0 && num(l[cDeb])) v = -Math.abs(num(l[cDeb]));
+      return { data: data(l[cD]), centavos: Math.round((v || 0) * 100), desc: cH >= 0 ? String(l[cH] || '').trim() : '', id: 'l' + (hi + 2 + i) }; }).filter(x => x.data && x.centavos);
+  }
+  function casarExtrato(movs, titulos) {
+    const saidas = movs.filter(m => m.centavos < 0), usados = new Set(), res = [];
+    const dia = s => Date.parse(s + 'T12:00:00');
+    titulos.forEach(t => {
+      const ag = ((t.agendamento || {}).data) || '';
+      const cands = saidas.filter(m => !usados.has(m) && -m.centavos === t.liquidoCentavos && (!ag || dia(m.data) >= dia(ag) - 3 * 864e5));
+      const nome = semAc(t.prestadorNome).split(/\s+/).filter(w => w.length >= 4);
+      const porNome = cands.filter(m => nome.some(w => semAc(m.desc).includes(w)));
+      const outros = titulos.filter(o => o !== t && o.liquidoCentavos === t.liquidoCentavos).length;
+      const m = porNome.length === 1 ? porNome[0] : (cands.length === 1 && !outros ? cands[0] : null);
+      if (m) { usados.add(m); res.push({ t, m, certo: true }); }
+      else if (cands.length) res.push({ t, m: (porNome[0] || cands[0]), certo: false });
+      else res.push({ t, m: null, certo: false });
+    });
+    return res;
+  }
+  async function conferirExtrato(el, ctx, f) {
+    const U0 = U(), { esc } = U0;
+    if (f.size > 2 * 1024 * 1024) { U0.toast('O extrato passa de 2 MB. Exporte só o período dos pagamentos.', 'erro'); return; }
+    let movs;
+    try { const txt = await f.text(); movs = /<STMTTRN>/i.test(txt) ? lerOfx(txt) : lerCsvExtrato(txt); }
+    catch (e) { U0.toast(e.message || 'Não foi possível ler o extrato.', 'erro'); return; }
+    const ags = tT.filter(t => t.status === 'agendado');
+    const res = casarExtrato(movs, ags), achados = res.filter(x => x.m);
+    const linha = (x, i) => { const t = x.t, m = x.m, eu0 = (t.liberacao || {}).uid === eu(ctx);
+      return `<label class="tt-ex ${x.m ? '' : 'nao'}" style="display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line)">
+        <input type="checkbox" data-ex="${i}" ${x.certo && !eu0 ? 'checked' : ''} ${!m || eu0 ? 'disabled' : ''} style="margin-top:4px">
+        <span style="flex:1;min-width:0"><b>${esc(t.prestadorNome)}</b> · ${esc(brl(t.liquidoCentavos))}<br>
+        <small class="hint">${m ? `No extrato: ${esc(dataTxt(m.data))} · ${esc(m.desc || 'sem descrição')}${x.certo ? '' : ' · <b>confira</b> (mais de um lançamento possível)'}` : 'Não achei no extrato um pagamento com esse valor.'}${eu0 ? ' · você liberou este pagamento: outra pessoa confirma' : ''}</small></span></label>`; };
+    let marcados = null;
+    await U0.dialogo({ titulo: 'Conferir pelo extrato', sub: `${movs.filter(m => m.centavos < 0).length} saídas no extrato · ${achados.length} de ${ags.length} pagamentos agendados encontrados`,
+      corpo: `<div id="tt-ex-lista">${res.map(linha).join('')}</div><p class="hint" style="margin:10px 0 0;font-size:12.5px">O trecho do extrato fica como comprovante de cada pagamento. "Agendado" só vira "pago" com o que aparece no extrato.</p>`,
+      botoes: [{ texto: 'Voltar', valor: null, classe: 'sec' }, { texto: 'Confirmar os marcados', valor: 'ok', classe: 'ok', antes: d => { marcados = Array.from(d.querySelectorAll('[data-ex]:checked')).map(i => res[+i.dataset.ex]); return true; } }] });
+    if (!marcados || !marcados.length) return;
+    const db = CW.fb.db(), agora = CW.fb.agora; let feitos = 0; const erros = [];
+    for (const x of marcados) {
+      const t = x.t, m = x.m, txt = `Comprovante pelo extrato do banco\nArquivo: ${f.name}\nData: ${dataTxt(m.data)}\nValor: ${brl(-m.centavos)}\nDescrição: ${m.desc}\nIdentificador do lançamento: ${m.id}\nConferido no Conectwork por ${quem(ctx)}.`;
+      const b64 = btoa(unescape(encodeURIComponent(txt))), envio = Math.random().toString(36).slice(2, 10), b = db.batch();
+      b.set(db.doc(`titulos/${t._id}/arquivos/${envio}-0`), { d: b64, k: 0, envio, em: agora() });
+      b.update(db.doc('titulos/' + t._id), { status: 'liquidado', liquidacao: { uid: eu(ctx), nome: quem(ctx), em: agora(), data: m.data,
+        comprovante: { envio, partes: 1, nome: ('extrato-' + f.name).slice(0, 120) + '.txt', tipo: 'text/plain', tam: txt.length }, extrato: { arquivo: f.name.slice(0, 120), id: String(m.id).slice(0, 80), desc: String(m.desc).slice(0, 160) } }, atualizadoEm: agora() });
+      log(b, ctx, 'titulo.liquidar', `Pagamento de ${brl(t.liquidoCentavos)} para ${t.prestadorNome} confirmado em ${dataTxt(m.data)} pelo extrato do banco (${f.name}).`, t._id);
+      try { await b.commit(); feitos++; t.status = 'liquidado'; } catch (e) { erros.push(t.prestadorNome + ': ' + CW.fb.mensagemErro(e)); }
+    }
+    U0.toast(feitos + (feitos === 1 ? ' pagamento confirmado' : ' pagamentos confirmados') + ' pelo extrato.' + (erros.length ? ' Não deu: ' + erros.join('; ') : ''), erros.length ? 'erro' : '');
+    desenharLista(el, ctx);
+  }
+
   async function abrirComprovante(t) {
     const cp = (t.liquidacao || {}).comprovante; if (!cp) return;
     try {
@@ -374,5 +451,5 @@
     return tP.filter(t => ['liquidado', 'baixado'].includes(t.status) && t.liquidacao && t.liquidacao.data)
       .map(t => ({ id: t._id, nome: t.tomadorNome, centavos: t.liquidoCentavos || 0, data: String(t.liquidacao.data).slice(0, 10), nota: t.notaNumero || '' }));
   };
-  CW.titulos = { demoLinhas,  criarNoLote, vencimento, proximos, recebidos };
+  CW.titulos = { lerOfx, lerCsvExtrato, casarExtrato,  demoLinhas,  criarNoLote, vencimento, proximos, recebidos };
 })();

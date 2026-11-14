@@ -6,7 +6,7 @@
 (function () {
   const CW = window.CW;
   const U = () => CW.ui;
-  const CDN = { xlsx: 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js', jspdf: 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', auto: 'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js', exceljs: 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js' };
+  const CDN = { zip: 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js', xlsx: 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js', jspdf: 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', auto: 'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js', exceljs: 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js' };
   const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
   const RET = [['iss', 'ISS'], ['inss', 'INSS'], ['ir', 'IR'], ['pcc', 'PIS/COFINS/CSLL']];
   const ST_ESP = { aguardando_nota: 'Esperando a nota', nota_enviada: 'Nota para conferir', nota_ok: 'Nota conferida' };
@@ -92,7 +92,7 @@
   async function render(el, ctx) {
     const { esc, ic } = U();
     const mes = /^\d{4}-\d{2}$/.test(ctx.params[0] || '') ? ctx.params[0] : mesAtual();
-    document.getElementById('acoes').innerHTML = `<button class="btn sec" id="rl-xls">${ic('file')}Excel</button><button class="btn sec" id="rl-pdf">${ic('file')}PDF</button>`;
+    document.getElementById('acoes').innerHTML = `<button class="btn sec" id="rl-xls">${ic('file')}Excel</button><button class="btn sec" id="rl-pdf">${ic('file')}PDF</button><button class="btn" id="rl-pacote" title="Um arquivo .zip com o relatório em PDF e Excel, as notas fiscais e os comprovantes de pagamento do mês">${ic('folder')}Pacote para o contador</button>`;
     el.innerHTML = `<div class="card"><div class="empty"><div class="giro"></div><span>Montando o relatório…</span></div></div>`;
     try { dadosCache = await carregar(ctx); } catch (e) { el.innerHTML = `<div class="banner danger">${ic('alert')}<span><strong>Não foi possível montar o relatório.</strong>${esc(CW.fb.mensagemErro(e))}</span></div>`; return; }
     const R = montar(dadosCache, ctx, mes);
@@ -120,6 +120,47 @@
     document.getElementById('rl-mes').onchange = e => CW.ir('relatorios/mes/' + e.target.value);
     document.getElementById('rl-xls').onclick = () => excel(R).catch(er => U().toast(er.message, 'erro'));
     document.getElementById('rl-pdf').onclick = () => pdf(R).catch(er => U().toast(er.message, 'erro'));
+    document.getElementById('rl-pacote').onclick = ev => pacote(R, dadosCache, ctx, ev.currentTarget).catch(er => U().toast(er.message || 'Não foi possível montar o pacote.', 'erro'));
+  }
+
+  /* ---------- pacote para o contador (14/11/2026): um .zip com o relatório (PDF e Excel), as notas fiscais da competência
+     (XML ou PDF, como vieram) e os comprovantes dos pagamentos do mês, numa pasta por assunto, mais um LEIA-ME.txt.
+     Tudo montado no navegador (JSZip do cdnjs); nada sai do Conectwork. ---------- */
+  const limpaNome = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w.\- ]+/g, '').replace(/\s+/g, ' ').trim().slice(0, 80) || 'arquivo';
+  async function baixaPartes(caminho, envio, partes) {
+    const db = CW.fb.db(), ps = await Promise.all(Array.from({ length: partes }, (_, k) => db.doc(`${caminho}/arquivos/${envio}-${k}`).get()));
+    return ps.map(p => (CW.fb.dados(p) || {}).d || '').join('');
+  }
+  async function pacote(R, D, ctx, bt) {
+    if (bt) { bt.disabled = true; bt.dataset.txt = bt.innerHTML; bt.textContent = 'Montando o pacote…'; }
+    try {
+      await carregaScript(CDN.zip, () => !!window.JSZip);
+      const zip = new window.JSZip(), base = `Conectwork-${R.mes}-${limpaNome(R.empresa).replace(/ /g, '-')}`;
+      const [p, x] = await Promise.all([pdf(R, { blob: true }).catch(() => null), excel(R, { blob: true }).catch(() => null)]);
+      if (p) zip.file(`Relatorio-${R.mes}.pdf`, p); if (x) zip.file(`Relatorio-${R.mes}.xlsx`, x);
+      const emp = ctx.contexto.empresaId, falhas = [];
+      const notas = D.esp.filter(e => e.competencia === R.mes && e.nota && e.nota.envio && e.nota.partes);
+      for (const e of notas) {
+        const lado = e.tomadorId === emp ? 'A pagar' : 'A receber', outro = e.tomadorId === emp ? e.prestadorNome : e.tomadorNome;
+        try { const b64 = await baixaPartes('espelhos/' + e._id, e.nota.envio, e.nota.partes), ext = e.nota.tipo === 'xml' ? 'xml' : (String(e.nota.nomeArquivo || '').split('.').pop() || 'pdf').toLowerCase();
+          zip.file(`Notas fiscais/${lado}/${limpaNome(outro)} - nota ${limpaNome(e.nota.numero || e._id)}.${ext}`, b64, { base64: true }); }
+        catch (er) { falhas.push('nota de ' + outro); }
+      }
+      const pagos = D.tit.filter(t => t.liquidacao && (t.liquidacao.data || '').slice(0, 7) === R.mes && t.liquidacao.comprovante);
+      for (const t of pagos) {
+        const cp = t.liquidacao.comprovante, lado = t.tomadorId === emp ? 'Pagos' : 'Recebidos', outro = t.tomadorId === emp ? t.prestadorNome : t.tomadorNome;
+        const ext = cp.tipo === 'text/plain' ? 'txt' : /png/.test(cp.tipo) ? 'png' : /jpe?g/.test(cp.tipo) ? 'jpg' : 'pdf';
+        try { zip.file(`Comprovantes de pagamento/${lado}/${t.liquidacao.data} - ${limpaNome(outro)}.${ext}`, await baixaPartes('titulos/' + t._id, cp.envio, cp.partes), { base64: true }); }
+        catch (er) { falhas.push('comprovante de ' + outro); }
+      }
+      zip.file('LEIA-ME.txt', [`Pacote do mês para o contador · ${R.empresa}${R.cnpj ? ' · CNPJ ' + R.cnpj : ''}`, `Competência: ${mesTxt(R.mes)} · gerado no Conectwork por ${R.quem} em ${new Date().toLocaleString('pt-BR')}.`, '',
+        `Relatorio-${R.mes}.pdf e .xlsx: resumo, notas, retenções, pagamentos, em aberto e medições.`, `Notas fiscais: ${notas.length} (as da competência, como vieram: XML ou PDF).`, `Comprovantes de pagamento: ${pagos.length} (pagamentos confirmados no mês).`,
+        falhas.length ? `Não entraram (abra no Conectwork): ${falhas.join(', ')}.` : '', '', 'O dinheiro não passa pelo Conectwork: sai de quem contrata direto para quem presta. Retenções informadas em cada espelho; as guias são com o contador.'].join('\r\n'));
+      const blob = await zip.generateAsync({ type: 'blob' }), url = URL.createObjectURL(blob), a = document.createElement('a');
+      a.href = url; a.download = base + '.zip'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 8000);
+      CW.registrarLog('relatorio.pacote', `Pacote do mês ${mesTxt(R.mes)} para o contador baixado (${notas.length} notas, ${pagos.length} comprovantes).`, R.mes).catch(() => {});
+      U().toast(`Pacote baixado: relatório, ${notas.length} ${notas.length === 1 ? 'nota' : 'notas'} e ${pagos.length} ${pagos.length === 1 ? 'comprovante' : 'comprovantes'}.` + (falhas.length ? ' Alguns arquivos não entraram (veja o LEIA-ME).' : ''));
+    } finally { if (bt) { bt.disabled = false; bt.innerHTML = bt.dataset.txt; } }
   }
 
   const nomeArq = (R, ext) => `Conectwork-relatorio-${R.mes}-${String(R.empresa).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w]+/g, '-').replace(/^-|-$/g, '')}.${ext}`;
@@ -185,8 +226,8 @@
   }
 
   /* ---------- Excel ---------- */
-  async function excel(R) {
-    try { await carregaScript(CDN.exceljs, () => !!window.ExcelJS); } catch (e) { return excelSimples(R); }
+  async function excel(R, opt) {
+    try { await carregaScript(CDN.exceljs, () => !!window.ExcelJS); } catch (e) { return excelSimples(R, opt); }
     const wb = new window.ExcelJS.Workbook(); wb.creator = 'Conectwork'; wb.created = new Date();
     const hex = c => 'FF' + c.map(x => x.toString(16).padStart(2, '0')).join('').toUpperCase();
     const MOEDA = '"R$" #,##0.00;[Red]-"R$" #,##0.00', fill = c => ({ type: 'pattern', pattern: 'solid', fgColor: { argb: c } });
@@ -266,12 +307,13 @@
     tabela('Por empresa', 'Por empresa', [{ t: 'Empresa', w: 32 }, { t: 'Notas a receber', w: 16, m: 1 }, { t: 'Recebido no mês', w: 16, m: 1 }, { t: 'Em aberto a receber', w: 18, m: 1 }, { t: 'Notas a pagar', w: 16, m: 1 }, { t: 'Pago no mês', w: 16, m: 1 }, { t: 'Em aberto a pagar', w: 18, m: 1 }],
       R.porEmpresa.map(x => ({ v: [x.empresa, reais(x.notasReceber), reais(x.recebido), reais(x.abertoReceber), reais(x.notasPagar), reais(x.pago), reais(x.abertoPagar)] })), { vazio: 'Nenhuma empresa neste mês.' });
     const buf = await wb.xlsx.writeBuffer();
+    if (opt && opt.blob) return new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })), a = document.createElement('a');
     a.href = url; a.download = nomeArq(R, 'xlsx'); document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000);
     U().toast('Planilha baixada.');
   }
   /* planilha simples (SheetJS), se o ExcelJS não carregar */
-  async function excelSimples(R) {
+  async function excelSimples(R, opt) {
     await carregaScript(CDN.xlsx, () => !!window.XLSX);
     const X = window.XLSX, wb = X.utils.book_new();
     const aba = (nome, linhas, larg) => { const ws = X.utils.aoa_to_sheet(linhas); if (larg) ws['!cols'] = larg.map(w => ({ wch: w })); X.utils.book_append_sheet(wb, ws, nome); };
@@ -287,12 +329,13 @@
     aba('Medições', [['Período', 'Lado', 'Empresa', 'Profissionais', 'Valor (R$)', 'Situação'], ...R.medicoes.map(m => [m.periodo, m.lado, m.empresa, m.profissionais, reais(m.valor), m.situacao])], [30, 14, 28, 12, 14, 22]);
     aba('Por empresa', [['Empresa', 'Notas a receber (R$)', 'Recebido (R$)', 'Em aberto a receber (R$)', 'Notas a pagar (R$)', 'Pago (R$)', 'Em aberto a pagar (R$)'],
       ...R.porEmpresa.map(x => [x.empresa, reais(x.notasReceber), reais(x.recebido), reais(x.abertoReceber), reais(x.notasPagar), reais(x.pago), reais(x.abertoPagar)])], [30, 18, 14, 20, 18, 14, 20]);
+    if (opt && opt.blob) return new Blob([X.write(wb, { type: 'array', bookType: 'xlsx' })], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     X.writeFile(wb, nomeArq(R, 'xlsx'));
     U().toast('Planilha baixada.');
   }
 
   /* ---------- PDF ---------- */
-  async function pdf(R) {
+  async function pdf(R, opt) {
     await carregaScript(CDN.jspdf, () => !!(window.jspdf && window.jspdf.jsPDF));
     await carregaScript(CDN.auto, () => !!(window.jspdf.jsPDF.API && window.jspdf.jsPDF.API.autoTable));
     const [logo, lemp] = await Promise.all([logoPng(), logoEmpresa(R)]);
@@ -389,6 +432,7 @@
     const n = doc.getNumberOfPages();
     for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setDrawColor(227, 232, 242); doc.line(M, 201, W - M, 201); doc.setFontSize(7.8); cor('setTextColor', CINZA);
       doc.text(`Conectwork · Relatório do mês · ${R.empresa} · ${mesTxt(R.mes)}`, M, 205.5); doc.text(`Página ${i} de ${n}`, W - M, 205.5, { align: 'right' }); }
+    if (opt && opt.blob) return doc.output('blob');
     doc.save(nomeArq(R, 'pdf'));
     U().toast('PDF baixado.');
   }
