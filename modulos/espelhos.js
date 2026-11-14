@@ -643,7 +643,7 @@
       const conf = N.conferir(x, r);
       if (aviso && conf.manual) conf.itens[0].txt = aviso + ' A empresa que contrata confere à mão.';
       const b64 = String(await lerComo(f, 'readAsDataURL')).replace(/^data:[^,]*,/, '');
-      st = { nome: f.name.slice(0, 120), tam: f.size, tipo: xml ? 'xml' : 'pdf', r, conf, b64, bloqueia: xml && !!r && !conf.ok };
+      st = { nome: f.name.slice(0, 120), tam: f.size, tipo: xml ? 'xml' : 'pdf', r, conf, b64, bloqueia: !!r && (xml ? !conf.ok : !!conf.erroFirme) };
       desenhaRes(d);
     };
     await U().dialogo({ titulo: 'Anexar a nota fiscal', sub: voltou ? 'Voltou do emissor? Se a nota já saiu, anexe o PDF (ou o XML) dela.' : `Espelho de ${periodoTxt(x.periodo)} · ${brl(x.valorCentavos)}`,

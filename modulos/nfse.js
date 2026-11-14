@@ -58,14 +58,23 @@
     return partes.join('\n');
   }
   /* lê o que der do texto do PDF; quem confere é conferir(), que procura os dados do espelho no texto */
+  const valorBR = v => { const n = Number(String(v).replace(/\./g, '').replace(',', '.')); return isFinite(n) ? Math.round(n * 100) : null; };
   function lerTextoPdf(txt) {
     const t = String(txt || '').replace(/ /g, ' ');
     if (t.replace(/\s/g, '').length < 40) return null;   /* PDF escaneado: sem texto */
     const ch = (t.match(/(?<!\d)\d{50}(?!\d)/) || [])[0] || ((t.replace(/(\d)\s+(?=\d)/g, '$1').match(/(?<!\d)\d{50}(?!\d)/) || [])[0]) || '';
-    const num = (t.match(/N[úu]mero\s+da\s+NFS-?e\s*:?\s*(\d+)/i) || t.match(/NFS-?e\s*(?:n[ºo°.]*|N[úu]mero)\s*:?\s*(\d+)/i) || [])[1] || '';
+    const num = (t.match(/N[úu]mero\s+da\s+NFS-?e\s*:?\s*(\d+)/i) || t.match(/NFS-?e\s*(?:n[ºo°.]*|N[úu]mero)\s*:?\s*(\d+)/i) || t.match(/Nota\s+Fiscal[^\n]{0,50}?N[úu]mero\s*:?\s*(\d+)/i) || [])[1] || '';
     const comp = t.match(/Compet[êe]ncia[^0-9]{0,40}(?:\d{2}\/)?(\d{2})\/(\d{4})/i);
     const cnpjs = Array.from(new Set((t.match(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/g) || []).map(dig)));
-    return { tipo: 'pdf', chave: ch, numero: num.replace(/^0+(?=\d)/, ''), competencia: comp ? comp[2] + '-' + comp[1] : '', cnpjs, texto: t, lido: true };
+    /* 14/11/2026 (melhoria "conferir a nota em PDF"): quem é quem e o valor do serviço, pelos títulos do DANFSe/de cada prefeitura.
+       O 1º CNPJ depois de "Emitente"/"Prestador" é o de quem emitiu; o 1º depois de "Tomador" é o de quem paga. */
+    const cnpjDepois = re => { const m = t.search(re); if (m < 0) return ''; const c = t.slice(m).match(/\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}/); return c ? dig(c[0]) : ''; };
+    const emitenteCnpj = cnpjDepois(/EMITENTE|PRESTADOR\s+(?:DE|DO|DOS)\s+SERVI/i), tomadorCnpj = cnpjDepois(/TOMADOR/i);
+    const vm = t.match(/Valor\s+(?:Total\s+)?d[oa]s?\s+Servi[çc]os?[^0-9]{0,30}([\d.]+,\d{2})/i) || t.match(/Valor\s+Total\s+da\s+(?:NFS-?e|Nota)[^0-9]{0,30}([\d.]+,\d{2})/i);
+    const valorCentavos = vm ? valorBR(vm[1]) : null;
+    const valores = (t.match(/\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2}/g) || []).map(valorBR);
+    return { tipo: 'pdf', chave: ch, numero: num.replace(/^0+(?=\d)/, ''), competencia: comp ? comp[2] + '-' + comp[1] : '', cnpjs, emitenteCnpj, tomadorCnpj, valorCentavos, valores, texto: t, lido: true,
+      firme: !!(emitenteCnpj && tomadorCnpj && valorCentavos != null) };
   }
 
   /* ---------- conferência com o espelho ---------- */
@@ -80,16 +89,21 @@
       it('valor', r.valorCentavos === esp.valorCentavos, r.valorCentavos === esp.valorCentavos ? `Valor ${brl(esp.valorCentavos)}` : `Valor da nota ${r.valorCentavos == null ? 'não encontrado' : brl(r.valorCentavos)}; o do espelho é ${brl(esp.valorCentavos)}`);
       if (r.competencia) it('competencia', r.competencia === esp.competencia, r.competencia === esp.competencia ? `Competência ${compTxt(esp.competencia)}` : `Competência ${compTxt(r.competencia)}; a do espelho é ${compTxt(esp.competencia)}`);
     } else {
-      const t = r.texto, valorTxt = CW.ui ? CW.ui.formatarDinheiro(esp.valorCentavos, false) : '';
-      it('emitente', r.cnpjs.includes(prest), r.cnpjs.includes(prest) ? `CNPJ da prestadora do contrato no PDF (${fmtCnpj(prest)})` : `O CNPJ da prestadora do contrato (${fmtCnpj(prest)}) não aparece no PDF`);
-      it('tomador', r.cnpjs.includes(toma), r.cnpjs.includes(toma) ? `CNPJ do tomador no PDF (${fmtCnpj(toma)})` : `O CNPJ do tomador (${fmtCnpj(toma)}) não aparece no PDF`);
-      it('valor', valorTxt && t.includes(valorTxt), t.includes(valorTxt) ? `Valor ${brl(esp.valorCentavos)} no PDF` : `O valor do espelho (${brl(esp.valorCentavos)}) não aparece no PDF`);
+      const em = r.emitenteCnpj, tm = r.tomadorCnpj;
+      if (em) it('emitente', em === prest, em === prest ? `Emitida pela prestadora do contrato (${fmtCnpj(prest)})` : `Emitida por outro CNPJ (${fmtCnpj(em)}); o do contrato é ${fmtCnpj(prest)}`);
+      else it('emitente', (r.cnpjs || []).includes(prest), (r.cnpjs || []).includes(prest) ? `CNPJ da prestadora do contrato no PDF (${fmtCnpj(prest)})` : `O CNPJ da prestadora do contrato (${fmtCnpj(prest)}) não aparece no PDF`);
+      if (tm) it('tomador', tm === toma, tm === toma ? `Tomador certo (${fmtCnpj(toma)})` : `Tomador errado (${fmtCnpj(tm)}); o certo é ${fmtCnpj(toma)}`);
+      else it('tomador', (r.cnpjs || []).includes(toma), (r.cnpjs || []).includes(toma) ? `CNPJ do tomador no PDF (${fmtCnpj(toma)})` : `O CNPJ do tomador (${fmtCnpj(toma)}) não aparece no PDF`);
+      if (r.valorCentavos != null) it('valor', r.valorCentavos === esp.valorCentavos, r.valorCentavos === esp.valorCentavos ? `Valor ${brl(esp.valorCentavos)}` : `Valor da nota ${brl(r.valorCentavos)}; o do espelho é ${brl(esp.valorCentavos)}`);
+      else { const tem = (r.valores || []).includes(esp.valorCentavos); it('valor', tem, tem ? `Valor ${brl(esp.valorCentavos)} no PDF` : `O valor do espelho (${brl(esp.valorCentavos)}) não aparece no PDF`); }
       if (r.competencia) it('competencia', r.competencia === esp.competencia, r.competencia === esp.competencia ? `Competência ${compTxt(esp.competencia)}` : `Competência ${compTxt(r.competencia)}; a do espelho é ${compTxt(esp.competencia)}`);
       if (!r.chave && !r.numero) it('numero', false, 'Não achamos a chave de acesso nem o número da nota no PDF');
     }
     const chaveUnica = r.chave ? r.chave : (r.numero && prest ? prest + '_' + r.numero : '');
     const ok = itens.every(x => x.ok) && !!chaveUnica;
-    return { ok, manual: false, itens, chaveUnica };
+    /* nota que claramente não bate (XML, ou PDF em que achamos emitente, tomador e valor): não deixa enviar */
+    const firme = r.tipo === 'xml' || !!r.firme, erroFirme = firme && itens.some(x => !x.ok && ['emitente', 'tomador', 'valor', 'competencia'].includes(x.k));
+    return { ok, manual: false, itens, chaveUnica, erroFirme };
   }
 
   CW.nfse = { lerXml, lerTextoPdf, textoPdf, conferir, fmtCnpj, dig };

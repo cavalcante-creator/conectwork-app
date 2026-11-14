@@ -100,12 +100,18 @@ const TEXTO_PDF = `DANFSe v1.0 Documento Auxiliar da NFS-e\nChave de Acesso da N
   await abrirEsp('cz_2026-10-2');
   const rec = await page.$eval('#es-recusa', x => x.innerText);
   await page.click('#es-anexar'); await page.waitForSelector('#an-arq', { state: 'attached' });
+  // N6a (14/11/2026): PDF com o valor errado é barrado (achamos emitente, tomador e valor no PDF), como o XML
+  await page.evaluate(t => { window.pdfjsLib.getDocument = () => ({ promise: Promise.resolve({ numPages: 1, getPage: async () => ({ getTextContent: async () => ({ items: t.replace('R$ 7.120,50', 'R$ 7.000,00').split('\n').map(str => ({ str })) }) }) }) }); }, TEXTO_PDF);
+  await arquivo('errada.pdf', 'application/pdf', '%PDF-1.4 errada'); await page.waitForSelector('#an-bloq', { timeout: 8000 });
+  const s6a = await page.evaluate(() => ({ res: document.getElementById('an-res').innerText, dis: document.querySelector('dialog[open] [data-dlg-b="1"]').disabled }));
+  ok('N6a PDF com o valor diferente do espelho é barrado (mostra o valor da nota e o do espelho)', s6a.dis && /Valor da nota R\$ 7\.000,00/.test(s6a.res), JSON.stringify(s6a));
+  await page.evaluate(t => { window.pdfjsLib.getDocument = () => ({ promise: Promise.resolve({ numPages: 1, getPage: async () => ({ getTextContent: async () => ({ items: t.split('\n').map(str => ({ str })) }) }) }) }); }, TEXTO_PDF);
   await arquivo('nota.pdf', 'application/pdf', '%PDF-1.4 teste'); await page.waitForSelector('#an-okmsg', { timeout: 8000 });
   const s6 = await estado();
   await page.click('dialog[open] [data-dlg-b="1"]'); await page.waitForSelector('#es-nf', { timeout: 8000 });
   e = await espDoc('cz_2026-10-2');
   ok('N6 a prestadora vê o motivo da recusa; o PDF da nota é lido (CNPJs, valor, competência, chave) e enviado',
-    /recusou/.test(rec) && /competência/.test(rec) && s6.env && /no PDF/.test(s6.res) && e.status === 'nota_enviada' && e.nota.tipo === 'pdf' && e.nota.chave === CH2 && e.nota.numero === '13' && e.nota.conferencia.ok, JSON.stringify({ res: s6.res.slice(0, 200), st: e.status }));
+    /recusou/.test(rec) && /competência/.test(rec) && s6.env && /Tomador certo/.test(s6.res) && e.status === 'nota_enviada' && e.nota.tipo === 'pdf' && e.nota.chave === CH2 && e.nota.numero === '13' && e.nota.conferencia.ok, JSON.stringify({ res: s6.res.slice(0, 200), st: e.status }));
 
   // N7 PDF escaneado (sem texto): pede o número e vai para conferência à mão
   await abrirEsp('cz_2026-10-1'); await page.click('#es-anexar'); await page.waitForSelector('#an-arq', { state: 'attached' });
