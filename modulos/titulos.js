@@ -99,7 +99,7 @@
     let acoes = '';
     const vez = minhaVez(t, ctx);
     if (l === 'tomador') {
-      const exc = !!(CW.sessao.estado() || {}).master, excAv = `<p class="hint" id="tt-excecao" style="margin:0;font-size:12.5px;width:100%">Exceção do piloto: você fez o passo anterior, mas como equipe Conectwork pode seguir. Fica registrado no pagamento.</p>`;
+      const exc = !!(CW.sessao.estado() || {}).master && CW.piloto(), excAv = `<p class="hint" id="tt-excecao" style="margin:0;font-size:12.5px;width:100%">Exceção do piloto: você fez o passo anterior, mas como equipe Conectwork pode seguir. Fica registrado no pagamento.</p>`;
       if (st === 'aprovado' && tem(ctx, ['admin', 'financeiro'])) acoes += t.aprovacao.uid === eu(ctx) && exc ? `<button class="btn ok" id="tt-liberar">${ic('check')}Liberar para pagamento</button>` + excAv : t.aprovacao.uid === eu(ctx)
         ? `<div class="banner info">${ic('shield')}<span><strong>Outra pessoa libera</strong>Você conferiu a nota. Funções separadas: quem confere a nota não libera o pagamento sozinho.</span></div>`
         : `<button class="btn ok" id="tt-liberar">${ic('check')}Liberar para pagamento</button>`;

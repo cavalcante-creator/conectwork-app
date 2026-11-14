@@ -2,6 +2,9 @@
    Lê a configuração de window.CONECTWORK_CONFIG (config.js). Usa o SDK "compat" 10.14.1 carregado no index.html. */
 (function () {
   const CW = window.CW = window.CW || {};
+  /* atalhos do piloto (exceção das funções separadas, apagar dados de teste, colar listas, trazer do painel do RH):
+     ligados enquanto config.piloto não for false (14/11/2026). Desligar = piloto: false no config.js. */
+  CW.piloto = () => (window.CONECTWORK_CONFIG || {}).piloto !== false;
   let app = null, auth = null, db = null;
 
   /* config.js ausente ou ainda com "COLE_AQUI" → não liga o Firebase e a tela explica o que fazer */

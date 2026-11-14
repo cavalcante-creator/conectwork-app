@@ -21,7 +21,7 @@ async function abrir(op) {
       if (p.endsWith('/')) p += 'index.html';   /* pasta/ → pasta/index.html, como o GitHub Pages */
       if (p === 'vazio.html') return route.fulfill({ contentType: 'text/html', body: '<html><body>vazio</body></html>' });
       if (p === 'config.js' && op.config !== undefined) return route.fulfill({ contentType: 'text/javascript', body: op.config });
-      if (p === 'config.js') return route.fulfill({ contentType: 'text/javascript', body: fs.readFileSync(path.join(RAIZ, p), 'utf8') + (op.microsoft === false ? '' : '\nwindow.CONECTWORK_CONFIG.loginMicrosoft = true;') + (op.dinheiro ? '\nwindow.CONECTWORK_CONFIG.meiDinheiro = true;' : '') });
+      if (p === 'config.js') return route.fulfill({ contentType: 'text/javascript', body: fs.readFileSync(path.join(RAIZ, p), 'utf8') + (op.microsoft === false ? '' : '\nwindow.CONECTWORK_CONFIG.loginMicrosoft = true;') + (op.dinheiro ? '\nwindow.CONECTWORK_CONFIG.meiDinheiro = true;' : '') + (op.piloto === false ? '\nwindow.CONECTWORK_CONFIG.piloto = false;' : '') });
       const f = path.join(RAIZ, p);
       if (fs.existsSync(f) && fs.statSync(f).isFile()) return route.fulfill({ body: fs.readFileSync(f), contentType: TIPOS[path.extname(p)] });
       return route.fulfill({ status: 404, body: '' });

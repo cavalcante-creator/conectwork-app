@@ -35,12 +35,12 @@
         <td>${CW.sessao.pillStatus(e.status)}${e.preCadastro ? ' <span class="pill warn">Documentos pendentes</span>' : ''}</td>
         <td class="r"><button class="btn ${e.status === 'analise' ? '' : 'sec'} sm" data-abrir="${esc(e._id)}">${e.status === 'analise' ? 'Analisar' : 'Abrir'}</button></td></tr>`).join('');
     el.innerHTML = `<div class="card" id="cm-lista"><div class="card-h"><div class="filters">${CHIPS.map(([k, l]) => `<button class="chip" data-filtro="${k}" aria-pressed="${filtro === k}">${l}<b>${conta(k)}</b></button>`).join('')}</div>
-        <button class="btn sec sm" id="cm-prevarios" style="margin-left:auto">${ic('list')}Pré-cadastrar vários MEIs</button><button class="btn sm" id="cm-pre">${ic('plus')}Pré-cadastrar empresa</button></div>
+        ${CW.piloto() ? `<button class="btn sec sm" id="cm-prevarios" style="margin-left:auto">${ic('list')}Pré-cadastrar vários MEIs</button>` : ''}<button class="btn sm" id="cm-pre"${CW.piloto() ? '' : ' style="margin-left:auto"'}>${ic('plus')}Pré-cadastrar empresa</button></div>
       ${lista.length ? `<div class="scroll"><table class="resp"><thead><tr><th>Empresa</th><th>CNPJ</th><th>Uso</th><th>Cidade</th><th>Enviado em</th><th>Situação</th><th></th></tr></thead><tbody>${linhas}</tbody></table></div>`
         : `<div class="empty"><div class="ic">${ic('building')}</div><strong>Nenhum cadastro nesta situação.</strong></div>`}</div>`;
     el.querySelectorAll('[data-filtro]').forEach(b => b.onclick = () => { filtro = b.dataset.filtro; desenharLista(el); });
     document.getElementById('cm-pre').onclick = () => preCadastro();
-    document.getElementById('cm-prevarios').onclick = () => preVarios();
+    const pvBt = document.getElementById('cm-prevarios'); if (pvBt) pvBt.onclick = () => preVarios();
     el.querySelectorAll('[data-abrir]').forEach(r => { const ir = ev => { ev.stopPropagation(); CW.ir('cadastros/analise/' + r.dataset.abrir); };
       r.onclick = ir; if (r.tagName === 'TR') r.onkeydown = ev => { if (ev.key === 'Enter') ir(ev); }; });
   }

@@ -60,7 +60,7 @@
 
   async function desenhar(el, ctx) {
     const { esc, ic } = U();
-    const mst = !!(CW.sessao.estado() || {}).master && pode(ctx) && CW.cadastrosMaster;   /* "Colar lista": só a equipe Conectwork, para o cadastro inicial (13/11/2026) */
+    const mst = !!(CW.sessao.estado() || {}).master && pode(ctx) && CW.cadastrosMaster && CW.piloto();   /* "Colar lista": só a equipe Conectwork, para o cadastro inicial (13/11/2026) */
     document.getElementById('acoes').innerHTML = (mst ? `<button class="btn sec" id="pf-painel">${ic('inbox')}Trazer do painel do RH</button><button class="btn sec" id="pf-colar">${ic('clipboard')}Colar lista</button>` : '') + (pode(ctx) ? `<button class="btn sec" id="pf-trazer">${ic('list')}Trazer das medições</button><button class="btn" id="pf-novo">${ic('plus')}Adicionar profissional</button>` : '');
     if (!lista) { el.innerHTML = `<div class="card"><div class="empty"><div class="giro"></div><span>Carregando a equipe…</span></div></div>`;
       try { await carregar(ctx); } catch (e) { el.innerHTML = `<div class="banner danger">${ic('alert')}<span><strong>Não foi possível abrir a equipe.</strong>${esc(CW.fb.mensagemErro(e))}</span></div>`; return; } }

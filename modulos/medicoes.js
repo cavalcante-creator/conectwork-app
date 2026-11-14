@@ -294,7 +294,7 @@
     let acoes = '';
     const separa = t => `<div class="banner info" id="md-separa">${ic('shield')}<span><strong>Outra pessoa ${t}</strong>Você está nas duas empresas desta medição. Funções separadas: quem lança pela empresa que contrata não confere pela prestadora, e quem confere não aprova.</span></div>`;
     /* exceção do piloto (12/11/2026, "faça uma exceção"): a equipe Conectwork faz os passos mesmo tendo feito o anterior; fica marcado */
-    const exc = !!(CW.sessao.estado() || {}).master, excAv = `<p class="hint" id="md-excecao" style="margin:0;font-size:12.5px;width:100%">Exceção do piloto: você fez o passo anterior, mas como equipe Conectwork pode seguir. Fica registrado na medição.</p>`;
+    const exc = !!(CW.sessao.estado() || {}).master && CW.piloto(), excAv = `<p class="hint" id="md-excecao" style="margin:0;font-size:12.5px;width:100%">Exceção do piloto: você fez o passo anterior, mas como equipe Conectwork pode seguir. Fica registrado na medição.</p>`;
     /* 13/11/2026 ("nesse caso precisa aprovar"): medição do painel do RH é a aprovação de quem contrata; quem enviou e também está
        na prestadora pode confirmar, marcado como exceção (regra medicaoConfirmarPainel). */
     const excPainel = m.origem === 'integracao' && m.criadoPor === eu && !exc;
@@ -333,7 +333,7 @@
           ${acoes ? `<div style="display:flex;gap:8px;flex-wrap:wrap" id="md-acoes">${acoes}</div>` : ''}
           ${zap ? `<div id="md-zap">${zap}</div>` : ''}
           ${st === 'aprovada' && l === 'prestador' && (m.memoria || []).some(x => x.cnpj) ? `<div><button class="btn" id="md-repasse">${ic('users')}Notas dos profissionais MEI</button><p class="hint" style="margin:6px 0 0;font-size:12.5px">Cada profissional MEI emite a nota dele para a sua empresa pelo valor da linha.</p></div>` : ''}
-          ${(CW.sessao.estado() || {}).master ? `<div id="md-teste" style="border-top:1px dashed var(--line);padding-top:12px"><button class="btn ghost sm" id="md-apagar" style="color:var(--danger)">${ic('x')}Apagar (dados de teste)</button><p class="hint" style="margin:4px 0 0;font-size:12px">Só a equipe Conectwork vê. Apaga esta medição e tudo o que saiu dela (notas, notas dos MEIs, títulos e arquivos).</p></div>` : ''}
+          ${(CW.sessao.estado() || {}).master && CW.piloto() ? `<div id="md-teste" style="border-top:1px dashed var(--line);padding-top:12px"><button class="btn ghost sm" id="md-apagar" style="color:var(--danger)">${ic('x')}Apagar (dados de teste)</button><p class="hint" style="margin:4px 0 0;font-size:12px">Só a equipe Conectwork vê. Apaga esta medição e tudo o que saiu dela (notas, notas dos MEIs, títulos e arquivos).</p></div>` : ''}
           ${st === 'aprovada' ? `<div id="md-espelho"><p class="hint" style="margin:0;font-size:12.5px">Próximo passo: o espelho da nota fiscal, com os dados para a prestadora emitir.</p></div>` : ''}
         </div></section></div></div>`;
     ligarDetalhe(el, ctx, m);
