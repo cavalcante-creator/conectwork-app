@@ -46,10 +46,26 @@ const { ok, fim } = H.placar('medplanilha');
   const l4 = await linhas(), t4 = await page.$eval('#md-total', e => e.textContent), e4 = await page.$eval('#md-erro', e => e.textContent);
   ok('P4 Excel: lê a primeira aba (coluna "Profissional") com os números do Excel', l4.length === 2 && l4[1][0] === 'Bruno Teixeira' && l4[1][1] === '44,25' && /2\.080,50/.test(t4), JSON.stringify({ l4, t4, e4 }));
 
-  // P5 planilha sem a coluna Valor explica o que fazer
+  // P5 planilha sem a coluna Valor: abre o "de/para" dizendo o que falta, sem mexer nas linhas
   await page.setInputFiles('#md-arq', { name: 'errada.csv', mimeType: 'text/csv', buffer: Buffer.from('Nome;Horas\nAna Clara Lopes;10\n') }); await H.dorme(300);
-  const e5 = await page.$eval('#md-erro', e => e.textContent);
-  ok('P5 sem a coluna Valor: diz o que falta e não mexe nas linhas', /coluna "Valor"/.test(e5) && (await linhas()).length === 2, e5);
+  const e5 = await page.$eval('#md-depara', e => e.hidden ? '' : e.innerText);
+  ok('P5 sem a coluna Valor: mostra "Qual coluna…" com o que falta e não mexe nas linhas', /coluna do valor/.test(e5) && /Qual coluna da planilha/.test(e5) && (await linhas()).length === 2, e5);
+  await page.click('#md-dp-cancela');
+
+  // P5b de/para (14/11/2026): colunas com outros nomes; a pessoa escolhe e a escolha fica guardada
+  const csv7 = 'Pessoa;Tempo;Pagamento;Documento\nLuiza Moraes;30;750,00;11.222.333/0001-81\nOtavio Reis;12;300;\n';
+  await page.setInputFiles('#md-arq', { name: 'cliente.csv', mimeType: 'text/csv', buffer: Buffer.from(csv7) }); await H.dorme(400);
+  const v7 = await page.$eval('#md-depara', e => e.hidden ? '' : e.innerText);
+  await page.selectOption('#md-dp-n', '0'); await page.selectOption('#md-dp-h', '1'); await page.selectOption('#md-dp-v', '2'); await page.selectOption('#md-dp-c', '3');
+  const ex7 = await page.$eval('[data-ex="md-dp-v"]', e => e.textContent);
+  await page.click('#md-dp-ok'); await H.dorme(300);
+  const l7 = await linhas(), m7 = await page.$eval('#md-plan-msg', e => e.textContent);
+  ok('P5b de/para: escolhe as colunas (mostra um exemplo) e preenche as linhas', /Não achei as colunas do nome e do valor/.test(v7) && /750,00/.test(ex7) && l7.length === 2 && l7[0][0] === 'Luiza Moraes' && l7[0][1] === '30' && l7[0][3] === '11222333000181' && /Valor = "Pagamento"/.test(m7), JSON.stringify({ v7: v7.slice(0, 120), ex7, l7, m7 }));
+  await page.setInputFiles('#md-arq', { name: 'cliente2.csv', mimeType: 'text/csv', buffer: Buffer.from('Pessoa;Tempo;Pagamento;Documento\nCaio Nunes;8;200;\n') }); await H.dorme(400);
+  const l7b = await linhas(), dp7b = await page.$eval('#md-depara', e => e.hidden);
+  ok('P5c a próxima planilha com as mesmas colunas já usa a escolha guardada', dp7b && l7b.length === 1 && l7b[0][0] === 'Caio Nunes' && l7b[0][2] === '200,00', JSON.stringify(l7b));
+  const g7 = await page.evaluate(() => CW.medicoes.adivinhar(['colaborador', 'qtd horas', 'total a pagar', 'cnpj do mei']));
+  ok('P5d adivinha nomes comuns: Colaborador, Qtd horas, Total a pagar, CNPJ', JSON.stringify(g7) === JSON.stringify({ n: 0, h: 1, v: 2, c: 3 }), JSON.stringify(g7));
 
   // P6 números no jeito brasileiro e americano
   const n6 = await page.evaluate(() => ['1.200', '1.200,50', '1200,5', '1,200.50', '1200.5', 'R$ 3.000'].map(CW.medicoes.numero));

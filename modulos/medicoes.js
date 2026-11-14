@@ -92,7 +92,8 @@
           <div class="md-plan"><button type="button" class="linkbtn" id="md-mais">${ic('plus')}Mais um profissional</button>
             ${pre ? '' : `<button type="button" class="linkbtn" id="md-planilha">${ic('upload')}Preencher com uma planilha</button><button type="button" class="linkbtn" id="md-modelo">${ic('file')}Baixar o modelo</button>`}</div>
           <input type="file" id="md-arq" accept=".xlsx,.xls,.csv,text/csv" hidden>
-          <p class="hint" id="md-plan-msg" style="margin:6px 0 0;font-size:12.5px"></p></div>
+          <p class="hint" id="md-plan-msg" style="margin:6px 0 0;font-size:12.5px"></p>
+          <div id="md-depara" class="md-depara" hidden></div></div>
         <div class="md-total"><span>Total da medição</span><b id="md-total">R$ 0,00</b></div>
         <label class="f"><span>Observação <i>(opcional)</i></span><input id="md-obs" maxlength="300" value="${esc((m && m.obs) || '')}"></label>
         <p class="err" id="md-erro" role="alert"></p></form>`,
@@ -121,13 +122,47 @@
         const arq = d.querySelector('#md-arq'), msg = d.querySelector('#md-plan-msg'), bp = d.querySelector('#md-planilha'), bm = d.querySelector('#md-modelo');
         if (bm) bm.onclick = () => baixarModelo();
         if (bp) bp.onclick = () => arq.click();
+        /* "de/para" (14/11/2026): a planilha do cliente pode ter outros nomes de coluna ("Colaborador", "Total a pagar"…).
+           O Conectwork adivinha; se não achar Nome e Valor, ou se a pessoa tocar em "mudar as colunas", escolhe aqui. */
+        const dp = d.querySelector('#md-depara');
+        let lida = null;
+        const aplicar = (map, nomeArq) => {
+          const r = extrair(lida.linhas, lida.hi, map);
+          its.innerHTML = r.itens.map(linhaItem).join(''); ligar(); soma(); d.querySelector('#md-erro').textContent = '';
+          guardarDePara(lida.cab, map); dp.hidden = true; dp.innerHTML = '';
+          const usadas = [['Nome', map.n], ['Horas', map.h], ['Valor', map.v], ['CNPJ do MEI', map.c]].filter(x => x[1] >= 0).map(x => `${x[0]} = "${lida.cab0[x[1]] || 'coluna ' + letra(x[1])}"`).join(' · ');
+          msg.innerHTML = esc(`${r.itens.length} ${r.itens.length === 1 ? 'profissional' : 'profissionais'} da planilha "${nomeArq}".` + (r.pulou ? (r.pulou === 1 ? ' 1 linha sem nome ou sem valor ficou de fora.' : ` ${r.pulou} linhas sem nome ou sem valor ficaram de fora.`) : '') + ' Confira antes de enviar.')
+            + `<br><span id="md-dp-usadas">Colunas usadas: ${esc(usadas)}</span> <button type="button" class="linkbtn" id="md-dp-mudar" style="font-size:12.5px">mudar as colunas</button>`;
+          msg.querySelector('#md-dp-mudar').onclick = () => mostrarDePara(map, nomeArq);
+        };
+        const mostrarDePara = (map, nomeArq, aviso) => {
+          const opt = sel => `<option value="-1">— não tem —</option>` + lida.cab0.map((c, k) => `<option value="${k}" ${k === sel ? 'selected' : ''}>Coluna ${letra(k)}${String(c).trim() ? ' · ' + esc(String(c).trim().slice(0, 40)) : ''}</option>`).join('');
+          const ex = k => { if (k < 0) return ''; const v = lida.linhas.slice(lida.hi + 1).map(l => l[k]).find(v => String(v == null ? '' : v).trim()); return v == null ? '' : String(v).slice(0, 30); };
+          const campo = (id, rot, sel, obr) => `<label class="f"><span>${rot}${obr ? '' : ' <i>(opcional)</i>'}</span><select id="${id}">${opt(sel)}</select><small class="hint md-dp-ex" data-ex="${id}">${ex(sel) ? 'ex.: ' + esc(ex(sel)) : ''}</small></label>`;
+          dp.hidden = false;
+          dp.innerHTML = `<p style="margin:0 0 4px;font-weight:600">Qual coluna da planilha é cada informação?</p>
+            ${aviso ? `<p class="err" style="margin:0 0 6px">${esc(aviso)}</p>` : `<p class="hint" style="margin:0 0 6px;font-size:12.5px">Confira o que o Conectwork entendeu. A escolha fica guardada para a próxima planilha com as mesmas colunas.</p>`}
+            <div class="md-dp-g">${campo('md-dp-n', 'Nome do profissional', map.n, 1)}${campo('md-dp-v', 'Valor a pagar', map.v, 1)}${campo('md-dp-h', 'Horas', map.h)}${campo('md-dp-c', 'CNPJ do MEI', map.c)}</div>
+            <p class="err" id="md-dp-erro" role="alert" style="margin:4px 0 0"></p>
+            <div style="display:flex;gap:8px;margin-top:8px"><button type="button" class="btn sm" id="md-dp-ok">Usar estas colunas</button><button type="button" class="btn sec sm" id="md-dp-cancela">Cancelar</button></div>`;
+          dp.querySelectorAll('select').forEach(x => x.onchange = () => { const e = dp.querySelector(`[data-ex="${x.id}"]`); const t = ex(Number(x.value)); e.textContent = t ? 'ex.: ' + t : ''; });
+          dp.querySelector('#md-dp-cancela').onclick = () => { dp.hidden = true; dp.innerHTML = ''; if (!its.querySelector('.md-it')) msg.textContent = ''; };
+          dp.querySelector('#md-dp-ok').onclick = () => {
+            const g = id => Number(dp.querySelector('#' + id).value), nm = { n: g('md-dp-n'), v: g('md-dp-v'), h: g('md-dp-h'), c: g('md-dp-c') }, er = dp.querySelector('#md-dp-erro');
+            if (nm.n < 0 || nm.v < 0) { er.textContent = 'Escolha a coluna do nome e a do valor.'; return; }
+            if (new Set([nm.n, nm.v, nm.h, nm.c].filter(x => x >= 0)).size < [nm.n, nm.v, nm.h, nm.c].filter(x => x >= 0).length) { er.textContent = 'Cada coluna só pode ser usada uma vez.'; return; }
+            try { aplicar(nm, nomeArq); } catch (e) { er.textContent = e.message || 'Não foi possível ler a planilha com essas colunas.'; }
+          };
+          dp.scrollIntoView({ block: 'nearest' });
+        };
         if (arq) arq.onchange = async () => {
           const f = arq.files[0]; arq.value = ''; if (!f) return;
-          msg.textContent = 'Lendo a planilha…';
+          msg.textContent = 'Lendo a planilha…'; dp.hidden = true; dp.innerHTML = '';
           try {
-            const r = await lerPlanilha(f);
-            its.innerHTML = r.itens.map(linhaItem).join(''); ligar(); soma(); d.querySelector('#md-erro').textContent = '';
-            msg.textContent = `${r.itens.length} ${r.itens.length === 1 ? 'profissional' : 'profissionais'} da planilha "${f.name}".` + (r.pulou ? (r.pulou === 1 ? ' 1 linha sem nome ou sem valor ficou de fora.' : ` ${r.pulou} linhas sem nome ou sem valor ficaram de fora.`) : '') + ' Confira antes de enviar.';
+            lida = await lerPlanilha(f);
+            msg.textContent = '';
+            if (lida.map.n < 0 || lida.map.v < 0) { mostrarDePara(lida.map, f.name, `Não achei ${lida.map.n < 0 && lida.map.v < 0 ? 'as colunas do nome e do valor' : lida.map.n < 0 ? 'a coluna do nome' : 'a coluna do valor'} na planilha. Escolha abaixo.`); return; }
+            try { aplicar(lida.map, f.name); } catch (e) { mostrarDePara(lida.map, f.name, e.message); }
           } catch (e) { msg.textContent = ''; d.querySelector('#md-erro').textContent = e.message || 'Não foi possível ler a planilha.'; }
         };
         ligar(); soma();
@@ -163,6 +198,19 @@
         else if (ch === '"') q = true; else if (ch === sep) { out.push(cur); cur = ''; } else cur += ch; }
       out.push(cur); return out; });
   }
+  const letra = k => { let t = ''; k = k + 1; while (k > 0) { const r = (k - 1) % 26; t = String.fromCharCode(65 + r) + t; k = Math.floor((k - 1) / 26); } return t; };
+  /* nomes de coluna que o Conectwork entende sozinho (sem acento, minúsculas) */
+  const COLS = { n: /^(nome|profissional|colaborador|prestador|funcionario|pj\b|mei\b|razao)/, h: /^(horas?|qtd|quantidade|total de horas|hs\b)/, v: /^(valor|total|a pagar|liquido|bruto|pagar|remuneracao)/, c: /cnpj/ };
+  function adivinhar(cab) {
+    const col = re => cab.findIndex(c => re.test(c));
+    const m = { n: col(COLS.n), h: col(COLS.h), v: col(COLS.v), c: col(COLS.c) };
+    if (m.c >= 0 && m.c === m.n) m.n = cab.findIndex((c, k) => k !== m.c && COLS.n.test(c));
+    if (m.h >= 0 && m.h === m.v) m.v = cab.findIndex((c, k) => k !== m.h && COLS.v.test(c) && !/horas?/.test(c));
+    return m;
+  }
+  const chaveDePara = cab => 'cw.depara.' + cab.join('|').slice(0, 300);
+  function guardarDePara(cab, map) { try { localStorage.setItem(chaveDePara(cab), JSON.stringify(map)); } catch (e) { /* aparelho sem armazenamento: só não lembra */ } }
+  function lembradoDePara(cab) { try { const m = JSON.parse(localStorage.getItem(chaveDePara(cab)) || 'null'); return m && ['n', 'h', 'v', 'c'].every(k => Number.isInteger(m[k]) && m[k] < cab.length) ? m : null; } catch (e) { return null; } }
   async function lerPlanilha(f) {
     if (f.size > 5 * 1024 * 1024) throw new Error('A planilha passa de 5 MB. Deixe só as colunas Nome, Horas, Valor e CNPJ do MEI.');
     let linhas;
@@ -172,13 +220,21 @@
       const wb = window.XLSX.read(await f.arrayBuffer(), { type: 'array' });
       linhas = window.XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: '' });
     }
-    const hi = linhas.findIndex(l => l.some(c => /^(nome|profissional)/.test(semAcento(c))));
-    if (hi < 0) throw new Error('Não achei a coluna "Nome" na planilha. Use o modelo: Nome, Horas, Valor e CNPJ do MEI.');
-    const cab = linhas[hi].map(semAcento), col = re => cab.findIndex(c => re.test(c));
-    const cN = col(/^(nome|profissional)/), cH = col(/^horas?/), cV = col(/^(valor|total)/), cC = col(/cnpj/);
-    if (cV < 0) throw new Error('Não achei a coluna "Valor" na planilha. Use o modelo: Nome, Horas, Valor e CNPJ do MEI.');
+    linhas = (linhas || []).filter(l => Array.isArray(l));
+    if (!linhas.some(l => l.some(c => String(c == null ? '' : c).trim()))) throw new Error('A planilha está vazia.');
+    /* cabeçalho: a linha com o nome do profissional; se nenhuma tiver, a primeira das 15 primeiras com 2 ou mais textos */
+    let hi = linhas.findIndex(l => l.some(c => COLS.n.test(semAcento(c))));
+    if (hi < 0) hi = linhas.slice(0, 15).findIndex(l => l.filter(c => typeof c === 'string' && c.trim() && isNaN(numero(c))).length >= 2);
+    if (hi < 0) hi = 0;
+    const larg = Math.max(...linhas.slice(hi, hi + 50).map(l => l.length));
+    const cab0 = Array.from({ length: larg }, (_, k) => linhas[hi][k] == null ? '' : linhas[hi][k]), cab = cab0.map(semAcento);
+    const lemb = lembradoDePara(cab);
+    return { linhas, hi, cab, cab0, map: lemb || adivinhar(cab), lembrado: !!lemb };
+  }
+  function extrair(linhas, hi, map) {
+    const { n: cN, h: cH, v: cV, c: cC } = map;
     const itens = []; let pulou = 0;
-    linhas.slice(hi + 1).forEach((l, i) => {
+    linhas.slice(hi + 1).forEach(l => {
       const nome = String(l[cN] == null ? '' : l[cN]).trim().replace(/\s+/g, ' '), v = numero(l[cV]);
       if (!nome && (v == null || isNaN(v))) return;   /* linha vazia */
       if (/^total/.test(semAcento(nome))) return;      /* linha de total da planilha */
@@ -186,7 +242,7 @@
       const h = cH >= 0 ? numero(l[cH]) : null, cn = cC >= 0 ? U().dig(String(l[cC] || '')) : '';
       itens.push(Object.assign({ nome: nome.slice(0, 120), horas: h == null || isNaN(h) ? '' : Math.round(h * 100) / 100, valorCentavos: Math.round(v * 100) }, /^\d{14}$/.test(cn) && U().validarCNPJ(cn) ? { cnpj: cn } : {}));
     });
-    if (!itens.length) throw new Error('A planilha não tem nenhuma linha com nome e valor. Confira as colunas Nome e Valor.');
+    if (!itens.length) throw new Error('Nenhuma linha tem nome e valor com essas colunas. Confira qual coluna é o nome e qual é o valor.');
     if (itens.length > 300) throw new Error('A planilha tem mais de 300 profissionais. Divida em duas medições.');
     return { itens, pulou };
   }
@@ -429,5 +485,5 @@
       importar: { nome: 'Medição do painel do RH', sub: 'Confira o que veio do painel do RH antes de enviar para a prestadora.', render: (el, ctx) => importar(el, ctx, ctx.params[0]) }
     }
   });
-  CW.medicoes = { periodoTxt, lerResumo, ultimosPeriodos, numero, csvLinhas };
+  CW.medicoes = { periodoTxt, lerResumo, ultimosPeriodos, numero, csvLinhas, adivinhar, extrair };
 })();
