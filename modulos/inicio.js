@@ -43,20 +43,31 @@
   let passosUlt = null;   /* {ctx, F}: refaz a lista quando as pendências chegam (documentos carregam depois do Início) sem ler de novo */
   async function passos(ctx, F0) {
     const el = document.getElementById('ini-passos'), c = ctx.contexto;
-    if (!el || c.tipo !== 'empresa' || c.empresa.status !== 'aprovado' || (c.acesso || {}).cargo !== 'admin' || ctx.soLeitura) return;
+    const ehMei = !!(CW.app.mei && CW.app.mei());
+    if (!el || c.tipo !== 'empresa' || (c.acesso || {}).cargo !== 'admin' || ctx.soLeitura) return;
+    if (ehMei ? !['aprovado', 'mei', 'analise', 'pendencia'].includes(c.empresa.status) : c.empresa.status !== 'aprovado') return;
     const emp = c.empresaId, kOculto = 'cw.passos.oculto.' + emp;
     try { if (localStorage.getItem(kOculto)) return; } catch (e) {}   /* escondido pela pessoa ou tudo feito: não lê nada */
     const vis = id => CW.app.visiveis().some(m => m.id === id), db = CW.fb.db();
-    const presta = c.empresa.tipo === 'prestador';
+    const presta = c.empresa.tipo === 'prestador' || c.empresa.tipo === 'ambos';
+    /* 14/11/2026: os passos mudam com o tipo de empresa: quem contrata, prestadora (com equipe) e MEI */
+    const perfil = ehMei ? 'mei' : presta ? 'prestadora' : 'contrata';
     const F = F0 || {};
     if (!F0) {
       const tenta = async p => { try { return await p; } catch (e) { return null; } };
-      const [logo, ac, cv, ctT, ctP] = await Promise.all([
+      const [logo, ac, cv, ctT, ctP, of, eq, fi] = await Promise.all([
         tenta(CW.logos ? CW.logos.buscar(emp) : null),
         vis('usuarios') ? tenta(db.collection('acessos').where('empresaId', '==', emp).limit(2).get()) : null,
         vis('usuarios') ? tenta(db.collection('convites').where('empresaId', '==', emp).where('usado', '==', false).limit(1).get()) : null,
         vis('contratos') ? tenta(db.collection('contratos').where('tomadorId', '==', emp).limit(1).get()) : null,
-        vis('contratos') ? tenta(db.collection('contratos').where('prestadorId', '==', emp).limit(1).get()) : null]);
+        vis('contratos') ? tenta(db.collection('contratos').where('prestadorId', '==', emp).limit(1).get()) : null,
+        perfil !== 'contrata' && vis('servicos') ? tenta(db.doc('ofertaserv/' + emp).get()) : null,
+        perfil === 'prestadora' && vis('profissionais') ? tenta(db.collection('equipe').where('prestadoraId', '==', emp).limit(1).get()) : null,
+        perfil === 'mei' ? tenta(db.doc('fiscal/' + emp).get()) : null]);
+      const ofd = of && CW.fb.dados(of), fid = fi && CW.fb.dados(fi);
+      F.servicos = !!(ofd && (((ofd.gerais || []).length) || ((ofd.especificos || []).length)));
+      F.profs = !!(eq && eq.size);
+      F.das = !!(fid && Object.values(fid.das || {}).some(x => x && x.pago));
       F.logo = !!logo;
       F.equipe = !!((ac && ac.size > 1) || (cv && cv.size));
       F.contrato = !!((ctT && ctT.size) || (ctP && ctP.size));
@@ -65,7 +76,23 @@
     let ajudaVista = false; try { ajudaVista = !!localStorage.getItem('cw.ajuda.vista'); } catch (e) {}
     const docsMod = CW.app.visiveis().find(m => m.id === 'documentos');
     const docsPend = CW.app.pendencias().some(p => p.mod === 'documentos' && p.rota === 'documentos'), docsPronto = !docsMod || !CW.documentos || (CW.documentos.carregado ? CW.documentos.carregado() : true);
-    const L = [
+    let checkVisto = false; try { checkVisto = !!localStorage.getItem('cw.checkup.visto.' + emp); } catch (e) {}
+    const visRota = r => CW.app.visiveis().some(m => m.telas && Object.keys(m.telas).some(t => t === r || m.id + '/' + t === r));
+    const L = perfil === 'mei' ? [
+      vis('servicos') && { id: 'servicos', t: 'Marque os serviços que você faz', s: 'As empresas da rede encontram você pelo catálogo de serviços.', ok: F.servicos, rota: 'servicos', bt: 'Marcar' },
+      visRota('mei/das') && { id: 'das', t: 'Marque os DAS que você já pagou', s: 'Assim o Conectwork avisa só o que está em aberto e mostra o selo "Prestador em dia".', ok: F.das, rota: 'mei/das', bt: 'Ver os DAS' },
+      visRota('mei/checkup') && { id: 'checkup', t: 'Faça o check-up do seu MEI', s: 'DAS, declaração anual, limite do faturamento e documentos numa tela só.', ok: checkVisto, rota: 'mei/checkup', bt: 'Fazer o check-up' },
+      { id: 'logo', t: 'Ponha a logo do seu negócio', s: 'Ela aparece para as empresas que trabalham com você.', ok: F.logo, rota: 'empresa', bt: 'Pôr a logo' },
+      vis('ajuda') && { id: 'ajuda', t: 'Veja como o Conectwork funciona', s: 'Respostas curtas sobre notas, DAS, demandas e pagamentos.', ok: ajudaVista, rota: 'ajuda', bt: 'Abrir a ajuda' }
+    ].filter(Boolean) : perfil === 'prestadora' ? [
+      { id: 'logo', t: 'Ponha a logo da empresa', s: 'Ela aparece para quem contrata vocês e para os profissionais da equipe.', ok: F.logo, rota: 'empresa', bt: 'Pôr a logo' },
+      vis('documentos') && { id: 'docs', t: 'Envie os documentos e as certidões', s: 'Quem contrata vê que as certidões estão em dia (a equipe contínua exige).', ok: docsPronto && !docsPend, rota: 'documentos', bt: 'Enviar' },
+      vis('profissionais') && { id: 'profs', t: 'Cadastre os profissionais da sua equipe', s: 'Nome, CNPJ do MEI e função. Quem contrata vê a equipe de vocês (sem CPF).', ok: F.profs, rota: 'profissionais', bt: 'Cadastrar' },
+      vis('servicos') && { id: 'servicos', t: 'Marque os serviços que vocês oferecem', s: 'Quem contrata encontra vocês em "Quem faz", no catálogo de serviços.', ok: F.servicos, rota: 'servicos', bt: 'Marcar' },
+      vis('usuarios') && { id: 'equipe', t: 'Convide quem trabalha no escritório', s: 'Cada pessoa com o próprio e-mail e cargo: financeiro, operacional (emite as notas dos MEIs), tesouraria…', ok: F.equipe, rota: 'usuarios', bt: 'Convidar' },
+      vis('contratos') && { id: 'contrato', t: 'Confira e assine o primeiro contrato', s: 'Quem contrata cadastra o contrato; você confere e assina em Contratos.', ok: F.contrato, rota: 'contratos', bt: 'Ver contratos' },
+      vis('ajuda') && { id: 'ajuda', t: 'Veja como o Conectwork funciona', s: 'Respostas curtas sobre medições, notas dos MEIs e pagamentos.', ok: ajudaVista, rota: 'ajuda', bt: 'Abrir a ajuda' }
+    ].filter(Boolean) : [
       { id: 'logo', t: 'Ponha a logo da empresa', s: 'Ela aparece para quem trabalha com vocês no Conectwork.', ok: F.logo, rota: 'empresa', bt: 'Pôr a logo' },
       vis('documentos') && { id: 'docs', t: 'Envie os documentos e as certidões', s: 'Ficam numa área só da empresa, com o aviso de vencimento.', ok: docsPronto && !docsPend, rota: 'documentos', bt: 'Enviar' },
       vis('usuarios') && { id: 'equipe', t: 'Convide a sua equipe', s: 'Cada pessoa entra com o próprio e-mail e o cargo que você escolher (financeiro, aprovador, tesouraria…).', ok: F.equipe, rota: 'usuarios', bt: 'Convidar' },
@@ -196,6 +223,7 @@
           <button class="mh-sino" id="mh-sino" type="button" aria-label="O que precisa de você">${ic('bolt')}<span class="mh-num" id="mh-sino-n" hidden></span></button></div>
         <button class="mh-alerta" id="mh-alerta" type="button" hidden></button>
         ${convite}
+        <div id="ini-passos" hidden></div>
         ${vis.includes('ordens') ? `<button class="mh-card mh-demandas" id="mh-demandas" type="button"></button>` : ''}
         <button class="mei-hoje" id="mei-hoje" data-ir="agenda"></button>
         <section class="mh-sec"><div class="mh-sec-h"><h3>Serviços pra você</h3></div><div class="mh-servicos" id="mei-servicos"></div></section>
@@ -219,6 +247,7 @@
     const rede = document.getElementById('mei-rede'); if (rede) rede.onclick = () => CW.ir('meucadastro');
     const ps = CW.app.pendencias(); meiAtualiza(ps); pvDesenha(ps); mostraPv(ps);
     meiLimite(ctx);
+    passos(ctx);
     if (CW.avisos) CW.avisos.bloco(document.getElementById('ini-avisos'), ctx);
   }
   function mostraPv(ps) { const c = document.getElementById('ini-pv'); if (c && document.getElementById('mei-home')) c.hidden = !ps.length; }

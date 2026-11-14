@@ -54,7 +54,7 @@ const { ok, fim } = H.placar('ajuda');
   await page.click('#sair'); await page.waitForSelector('#lg-email'); await H.entrar(page, 'zeca@zeta.com.br', 'senha123'); await page.waitForSelector('.shell');
   await page.waitForSelector('#ini-passos:not([hidden]) .ini-ps-l', { timeout: 8000 }); await H.dorme(800);
   const b8 = await page.evaluate(() => ({ docs: document.querySelector('[data-passo="docs"]').className, ct: document.querySelector('[data-passo="contrato"] strong').textContent }));
-  ok('A8b prestadora: documentos pendentes e "Assine o primeiro contrato"', !/ok/.test(b8.docs) && /Assine o primeiro contrato/.test(b8.ct), JSON.stringify(b8));
+  ok('A8b prestadora: documentos pendentes e "Assine o primeiro contrato"', !/ok/.test(b8.docs) && /assine o primeiro contrato/i.test(b8.ct), JSON.stringify(b8));
 
   // A9 busca do topo acha uma pergunta da Ajuda
   const achou = await page.evaluate(() => { const r = (CW.app.visiveis().find(m => m.id === 'ajuda') || {}).buscar(); return r.some(x => /nota recusada/i.test(x.t) || /recusada/.test(x.t)); });

@@ -77,6 +77,7 @@
   /* ---------- Check-up do CNPJ ---------- */
   async function telaCheckup(el, ctx) {
     const { esc, ic } = U();
+    try { localStorage.setItem("cw.checkup.visto." + ctx.contexto.empresaId, "1"); } catch (e) { /* só não marca o passo */ }
     el.innerHTML = `<div class="card"><div class="empty"><div class="giro"></div><span>Fazendo o check-up…</span></div></div>`;
     let K = null;
     try { D = await carregar(ctx); const N = await CW.negocio.carregar(ctx); K = CW.negocio.contas(N); }
