@@ -289,14 +289,14 @@
   }
 
   CW.registrarModulo({
-    id: 'profissionais', nome: 'Meus profissionais', icone: 'users', ordem: 27.1,
+    id: 'profissionais', nome: 'Meus profissionais', icone: 'users', ordem: 26.4,
     para: ['empresa'], contrato: ['profissionais', 'contratos', 'cobrancas'],
     mostrar: ctx => tipo(ctx) !== 'contratante' && !ehMei(ctx),
     iniciar() { lista = null; F = { q: '', fn: '', enc: false }; return () => { lista = null; }; },
     telas: { lista: { nome: 'Meus profissionais', sub: 'A equipe da sua empresa: os profissionais que prestam serviço por ela.', render: (el, ctx) => desenhar(el, ctx) } }
   });
   CW.registrarModulo({
-    id: 'equipes', nome: 'Equipes das prestadoras', icone: 'handshake', ordem: 27.15, livre: true,
+    id: 'equipes', nome: 'Equipes das prestadoras', icone: 'handshake', ordem: 26.5, livre: true,
     para: ['empresa'], contrato: ['contratos', 'cobrancas'],
     mostrar: ctx => tipo(ctx) !== 'prestador' && ['admin', 'solicitante', 'aprovador', 'operacional', 'rh', 'financeiro'].includes(cargo(ctx)),
     telas: {

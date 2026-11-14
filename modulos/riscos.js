@@ -114,7 +114,7 @@
   }
 
   CW.registrarModulo({
-    id: 'riscos', nome: 'Termômetro de risco', nomeCurto: 'Riscos', icone: 'shield', ordem: 27.18, livre: true,
+    id: 'riscos', nome: 'Termômetro de risco', nomeCurto: 'Riscos', icone: 'shield', ordem: 26.6, livre: true,
     para: ['empresa'], contrato: ['contratos', 'cobrancas'],
     mostrar: ctx => tipo(ctx) !== 'prestador' && VE.includes(cargo(ctx)),
     iniciar() { dados = null; return () => { dados = null; }; },
