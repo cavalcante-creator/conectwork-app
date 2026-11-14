@@ -869,6 +869,27 @@ async function deve(nome, permitido, op) {
   await deve('Fila MEI: o RH manda a função e a admissão do PJ', true, () => updateDoc(doc(db('rita'), 'filamei', '12345678000195'), { funcao: 'Eletricista', desde: '2025-03-10', em: serverTimestamp(), enviadoPor: P.rita, st: 'pendente' }));
   await deve('Fila MEI: NÃO com a função comprida demais', false, () => updateDoc(doc(db('rita'), 'filamei', '12345678000195'), { funcao: 'x'.repeat(81), em: serverTimestamp(), enviadoPor: P.rita, st: 'pendente' }));
 
+  /* ---------- a prestadora dá o acesso de quem emite pelos MEIs, sem a equipe Conectwork (14/11/2026) ---------- */
+  P.lia = 'uLIA'; EM.lia = 'lia@beta.com.br';
+  await env.withSecurityRulesDisabled(async c => { const f = c.firestore();
+    await setDoc(doc(f, 'acessos', 'beta_' + P.lia), { uid: P.lia, empresaId: 'beta', nome: 'Lia', email: EM.lia, cargo: 'operacional', extras: [], sem: [], ativo: true });
+    await setDoc(doc(f, 'acessos', 'beta_' + P.beto), { uid: P.beto, empresaId: 'beta', nome: 'Beto', email: EM.beto, cargo: 'admin', extras: [], sem: [], ativo: true });
+    await setDoc(doc(f, 'cnpjs', '33000167000101'), { empresaId: 'meiz', criadoEm: serverTimestamp() });
+    await setDoc(doc(f, 'medicoes', 'cm_2026-12-1'), { contratoId: 'cm', tomadorId: 'alfa', prestadorId: 'beta', partes: ['alfa', 'beta'], periodo: '2026-12-1', status: 'aprovada',
+      memoria: [{ nome: 'Zeca Souza', horas: 40, valorCentavos: 200000, cnpj: '33000167000101' }, { nome: 'Sem Conta Ainda', horas: 20, valorCentavos: 100000, cnpj: '44000000000144' }] }); });
+  const emi = (k, x) => Object.assign({ uid: P.lia, empresaId: 'meiz', nome: 'Lia', email: EM.lia, cargo: 'operacional', extras: [], sem: [], ativo: true,
+    emissorPor: 'beta', emissorPorNome: 'Beta', viaMedicao: 'cm_2026-12-1', viaItem: 0, criadoEm: serverTimestamp(), criadoPor: P[k] }, x || {});
+  await deve('Emissor: quem não é admin da prestadora NÃO dá o acesso', false, () => setDoc(doc(db('lia'), 'acessos', 'meiz_' + P.lia), emi('lia')));
+  await deve('Emissor: NÃO como administrador do MEI', false, () => setDoc(doc(db('beto'), 'acessos', 'meiz_' + P.lia), emi('beto', { cargo: 'admin' })));
+  await deve('Emissor: NÃO para o MEI de outra linha da medição', false, () => setDoc(doc(db('beto'), 'acessos', 'meiz_' + P.lia), emi('beto', { viaItem: 1 })));
+  await deve('Emissor: NÃO para quem não é da equipe da prestadora', false, () => setDoc(doc(db('beto'), 'acessos', 'meiz_' + P.carla), emi('beto', { uid: P.carla })));
+  await deve('Emissor: NÃO por medição de outra prestadora', false, () => setDoc(doc(db('ana'), 'acessos', 'meiz_' + P.bruno), emi('ana', { uid: P.bruno, emissorPor: 'alfa' })));
+  await deve('Emissor: o admin da prestadora dá o acesso a uma pessoa da equipe dele', true, () => setDoc(doc(db('beto'), 'acessos', 'meiz_' + P.lia), emi('beto')));
+  await deve('Emissor: o admin da prestadora vê quem emite pela empresa dele', true, () => getDocs(query(collection(db('beto'), 'acessos'), where('emissorPor', '==', 'beta'))));
+  await deve('Emissor: a prestadora muda para "emite e paga" (financeiro)', true, () => updateDoc(doc(db('beto'), 'acessos', 'meiz_' + P.lia), { cargo: 'financeiro', atualizadoEm: serverTimestamp() }));
+  await deve('Emissor: a prestadora NÃO faz a pessoa virar admin do MEI', false, () => updateDoc(doc(db('beto'), 'acessos', 'meiz_' + P.lia), { cargo: 'admin', atualizadoEm: serverTimestamp() }));
+  await deve('Emissor: a prestadora tira o acesso (desliga)', true, () => updateDoc(doc(db('beto'), 'acessos', 'meiz_' + P.lia), { ativo: false, atualizadoEm: serverTimestamp() }));
+
   await env.cleanup();
   const falhas = res.filter(r => !r.ok).length;
   console.log(`\n${res.length - falhas} de ${res.length} testes de regras passaram.`);

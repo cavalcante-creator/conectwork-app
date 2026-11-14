@@ -124,11 +124,28 @@ service cloud.firestore {
         && d.ativo == true
         && d.extras == [] && d.sem == [];
     }
+    // Quem emite pelos MEIs sem depender da equipe Conectwork (14/11/2026): o administrador da prestadora dá a uma pessoa
+    // ativa da equipe dele acesso operacional ou financeiro na empresa de um MEI que veio numa medição dessa prestadora
+    // (vínculo conferido pela medição: memoria[viaItem].cnpj -> cnpjs/ -> empresa do MEI).
+    function emissorPelaPrestadora(id, d) {
+      let p = d.get('emissorPor', '');
+      let m = get(caminho('medicoes', d.get('viaMedicao', '-'))).data;
+      return p is string && p != '' && admin(p) && d.empresaId != p
+        && d.keys().hasOnly(['uid','empresaId','nome','email','cargo','extras','sem','ativo','emissorPor','emissorPorNome','viaMedicao','viaItem','criadoEm','criadoPor'])
+        && id == d.empresaId + '_' + d.uid && d.cargo in ['operacional','financeiro'] && d.extras == [] && d.sem == [] && d.ativo == true
+        && d.criadoPor == request.auth.uid
+        && exists(caminho('acessos', p + '_' + d.uid)) && get(caminho('acessos', p + '_' + d.uid)).data.ativo == true
+        && m.prestadorId == p && d.viaItem is int && d.viaItem >= 0 && d.viaItem < m.memoria.size()
+        && m.memoria[d.viaItem].cnpj is string
+        && get(caminho('cnpjs', m.memoria[d.viaItem].cnpj)).data.empresaId == d.empresaId;
+    }
     match /acessos/{id} {
-      allow read: if logado() && (resource.data.uid == request.auth.uid || admin(resource.data.empresaId) || master());
+      allow read: if logado() && (resource.data.uid == request.auth.uid || admin(resource.data.empresaId) || master()
+        || admin(resource.data.get('emissorPor', '-')));
       allow create: if master()
         || ('convite' in request.resource.data && aceitaConvite(id))
-        || fundadorVirandoAdmin(id);
+        || fundadorVirandoAdmin(id)
+        || emissorPelaPrestadora(id, request.resource.data);
       // admin muda cargo, ajuste (extras/sem) e bloqueio de OUTRA pessoa; nunca o próprio
       allow update: if master()
         || (admin(resource.data.empresaId)
@@ -137,6 +154,10 @@ service cloud.firestore {
             && request.resource.data.cargo in cargos()
             && request.resource.data.extras is list && request.resource.data.sem is list
             && request.resource.data.ativo is bool)
+        // a prestadora que deu o acesso de quem emite pelos MEIs (14/11/2026) muda só o cargo (emite/paga) e desliga
+        || ('emissorPor' in resource.data && admin(resource.data.emissorPor)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cargo','ativo','atualizadoEm'])
+            && request.resource.data.cargo in ['operacional','financeiro'] && request.resource.data.ativo is bool)
         // a própria pessoa acerta o nome e o e-mail de acesso no acesso dela (Meus dados; e-mail = o do login)
         || (resource.data.uid == request.auth.uid
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nome','email','atualizadoEm'])

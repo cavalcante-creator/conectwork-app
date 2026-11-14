@@ -95,7 +95,7 @@
           <div><button class="btn" id="rp-preparar">${ic('send')}Preparar ${prontos.length === 1 ? 'a nota' : 'as ' + prontos.length + ' notas'} e avisar ${prontos.length === 1 ? 'o profissional' : 'os profissionais'}</button></div></div>` : ''}
         ${!pode(ctx) && prontos.length ? `<div class="card-b" style="padding-top:0"><p class="hint" style="margin:0">Quem prepara as notas é o administrador ou o financeiro da empresa.</p></div>` : ''}
       </section>
-      ${(CW.sessao.estado() || {}).master && its.some(x => x.empId) ? '<section class="card" id="rp-emissor" style="margin-top:14px"></section>' : ''}
+      ${(((CW.sessao.estado() || {}).master) || (cargo(ctx) === 'admin' && !ctx.soLeitura)) && its.some(x => x.empId) ? '<section class="card" id="rp-emissor" style="margin-top:14px"></section>' : ''}
       ${semConta.length ? `<p class="hint" style="margin:12px 0 0;font-size:12.5px" id="rp-semconta">${semConta.length} ${semConta.length === 1 ? 'profissional ainda não tem' : 'profissionais ainda não têm'} conta no Conectwork. Mande o convite: quando ${semConta.length === 1 ? 'ele entrar' : 'entrarem'} como MEI com o CNPJ, a nota fica pronta para preparar aqui.</p>` : ''}`;
     const emBox = document.getElementById('rp-emissor'); if (emBox) blocoEmissor(emBox, ctx, m, its.filter(x => x.empId));
     document.getElementById('rp-voltar').onclick = () => CW.ir('repasse');
@@ -126,8 +126,10 @@
     };
   }
 
-  /* quem emite as notas pelos MEIs (13/11/2026): a equipe Conectwork dá a uma pessoa da prestadora acesso "operacional"
-     em cada empresa MEI desta medição (acessos/{MEI}_{uid}, emissorPor = a prestadora). Ela emite tudo em "Notas dos MEIs". */
+  /* quem emite as notas pelos MEIs (13/11/2026): dá a uma pessoa da prestadora acesso "operacional" (ou "financeiro")
+     em cada empresa MEI desta medição (acessos/{MEI}_{uid}, emissorPor = a prestadora). Ela emite tudo em "Notas dos MEIs".
+     Desde 14/11/2026 o próprio administrador da prestadora faz isso (a regra confere o MEI pela linha da medição:
+     viaMedicao + viaItem); a equipe Conectwork continua podendo. */
   async function blocoEmissor(box, ctx, m, comConta) {
     const { esc, ic } = U(), db = CW.fb.db(), prest = m.prestadorId;
     box.innerHTML = `<div class="card-b"><div class="giro"></div></div>`;
@@ -137,7 +139,8 @@
       const outros = CW.fb.lista(await db.collection('acessos').where('emissorPor', '==', prest).get()).filter(a => a.ativo);
       outros.forEach(a => { (ja[a.uid] = ja[a.uid] || new Set()).add(a.empresaId); });
     } catch (err) { box.innerHTML = `<div class="card-b"><p class="err">${esc(CW.fb.mensagemErro(err))}</p></div>`; return; }
-    const emps = [...new Set(comConta.map(x => x.empId))];
+    const emps = [...new Set(comConta.map(x => x.empId))], itemDe = {}; comConta.forEach(x => { if (!(x.empId in itemDe)) itemDe[x.empId] = x.i; });
+    const souEquipe = !!(CW.sessao.estado() || {}).master, quemLib = souEquipe ? 'pela equipe Conectwork' : 'pelo(a) administrador(a) da ' + m.prestadorNome;
     const cargoDe = {}; try { CW.fb.lista(await db.collection('acessos').where('emissorPor', '==', prest).get()).forEach(a => { cargoDe[a.empresaId + '_' + a.uid] = a.cargo; }); } catch (e) { /* */ }
     const falta = (uid, paga) => emps.filter(e => !(ja[uid] && ja[uid].has(e)) || (paga && cargoDe[e + '_' + uid] !== 'financeiro'));
     const emissores = equipe.filter(a => ja[a.uid]);
@@ -154,7 +157,7 @@
     box.querySelectorAll('[data-em-tes]').forEach(l => l.onclick = async () => { const p = equipe.find(a => a.uid === l.dataset.emTes); if (!p) return;
       if (!(await U().confirmar('Mudar o cargo para Tesouraria?', `${p.nome || p.email} passa a ter o cargo Tesouraria na ${m.prestadorNome}: agenda e confirma os pagamentos liberados. Hoje é ${p.cargo}.`, 'Mudar'))) return;
       const b = db.batch(); b.update(db.doc('acessos/' + prest + '_' + p.uid), { cargo: 'tesouraria', atualizadoEm: agora() });
-      b.set(db.collection('log').doc(), { em: agora(), uid: eu.uid, quem: quemEu, empresaId: prest, acao: 'acesso.cargo', texto: `${p.nome || p.email}: cargo ${p.cargo} → tesouraria (paga as notas dos MEIs; equipe Conectwork).`, ref: p.uid });
+      b.set(db.collection('log').doc(), { em: agora(), uid: eu.uid, quem: quemEu, empresaId: prest, acao: 'acesso.cargo', texto: `${p.nome || p.email}: cargo ${p.cargo} → tesouraria (paga as notas dos MEIs; ${souEquipe ? 'equipe Conectwork' : 'administrador(a)'}).`, ref: p.uid });
       try { await b.commit(); U().toast('Cargo mudado para Tesouraria.'); blocoEmissor(box, ctx, m, comConta); } catch (err) { U().toast(CW.fb.mensagemErro(err), 'erro'); } });
     const bt = box.querySelector('#rp-em-dar'); if (!bt) return;
     bt.onclick = async () => {
@@ -164,9 +167,9 @@
       const b = db.batch(), cg = paga ? 'financeiro' : 'operacional';
       f.forEach(e => { if (ja[uid] && ja[uid].has(e)) b.update(db.doc('acessos/' + e + '_' + uid), { cargo: cg, atualizadoEm: agora() });
         else b.set(db.doc('acessos/' + e + '_' + uid), { uid, empresaId: e, nome: p.nome || '', email: p.email || '', cargo: cg, extras: [], sem: [], ativo: true,
-          emissorPor: prest, emissorPorNome: m.prestadorNome, criadoEm: agora(), criadoPor: eu.uid }); });
+          emissorPor: prest, emissorPorNome: m.prestadorNome, viaMedicao: m._id, viaItem: itemDe[e], criadoEm: agora(), criadoPor: eu.uid }); });
       b.set(db.collection('log').doc(), { em: agora(), uid: eu.uid, quem: quemEu, empresaId: prest, acao: 'acesso.emissor',
-        texto: `${p.nome || p.email} passa a ${paga ? 'emitir as notas e cuidar do Pix' : 'emitir as notas'} de ${f.length} profissional(is) MEI pela ${m.prestadorNome} (liberado pela equipe Conectwork).`, ref: m._id });
+        texto: `${p.nome || p.email} passa a ${paga ? 'emitir as notas e cuidar do Pix' : 'emitir as notas'} de ${f.length} profissional(is) MEI pela ${m.prestadorNome} (liberado ${quemLib}).`, ref: m._id });
       try { await b.commit(); U().toast(`Pronto: ${p.nome || p.email} já vê as notas em "Notas dos MEIs".`); blocoEmissor(box, ctx, m, comConta); }
       catch (err) { bt.disabled = false; box.querySelector('#rp-em-erro').textContent = CW.fb.mensagemErro(err); }
     };
